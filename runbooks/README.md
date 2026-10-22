@@ -24,3 +24,4 @@ want to trigger it by name.
 - [afk-runs](afk-runs.md): unattended AFK runs (night or day): queue, guardrails, pre-push denylist, return report
 - [repo-tidy](repo-tidy.md): daily repo hygiene via `bin/crow-tidy` (safe auto-cleanup in the brief) and the by-hand cleanup steps
 - [own-routines](own-routines.md): write your own daily/weekly-style skills in local/hub-skills from the generic examples
+- [readme-showcase](readme-showcase.md): method for a marketing README per repo (visuals, header options, structure, audit, preview)
