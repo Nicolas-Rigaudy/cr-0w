@@ -1,7 +1,7 @@
 ## req_005_codex_support_and_cleanups - Claude and Codex through cdx: fix the six open issues
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium

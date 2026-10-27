@@ -24,8 +24,9 @@ so applying them to every diff is how known patterns stop reaching reviewers.
 
 ## 2. Check
 1. The repo checklist, item by item.
-2. **Every ledger row**: run its "how to catch it" on the diff for real (the greps, the sibling comparison, docstring vs code). Mark each row hit / clean / n/a with one line of evidence. No row skipped silently.
-3. Then the usual: correctness, failure paths, tests that prove the change, infra impact per environment (destroy/replace, data outside Terraform, permissions).
+2. **Mechanical rules first**: `<hub>/bin/crow-review-check <repo checkout> --base origin/<target>` runs the regex rows of the ledgers (`local/reviews/rules/`) on the diff and exits 1 on a hit. Report its hits as findings and mark those rows hit/clean from its output. The rows without a rule stay in the next step.
+3. **Every other ledger row**: run its "how to catch it" on the diff for real (the greps, the sibling comparison, docstring vs code). Mark each row hit / clean / n/a with one line of evidence. No row skipped silently.
+4. Then the usual: correctness, failure paths, tests that prove the change, infra impact per environment (destroy/replace, data outside Terraform, permissions).
 
 ## 3. Output
 First line: `Patterns: N checked, K hits, M n/a`.

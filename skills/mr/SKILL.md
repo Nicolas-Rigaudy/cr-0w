@@ -18,7 +18,7 @@ Every MR/PR you open for the user follows this flow. Never skip a step to save t
 Runs on its own: the user never has to ask for it. Same gate for a new MR, review fixes (`review-threads`) and any later push.
 1. **Repo context**: read the repo's `CLAUDE.md` and its skills. Untracked `.claude/` dirs exist only in the main checkout, not in worktrees: read `<repo path>/.claude/skills/` and `<hub>/local/skills/<project>/` from there.
 2. **Bug hunt**: start the `code-review` skill on the branch diff against the target (it runs in the background).
-3. **Patterns**: meanwhile run the `review` skill in **self mode**: repo checklist + every ledger row, for real.
+3. **Patterns**: meanwhile run the `review` skill in **self mode**: `bin/crow-review-check` for the regex rules, then the repo checklist + every other ledger row, for real.
 4. **Triage** every `code-review` finding: valid → fix on the branch; otherwise one line on why not (pre-existing, out of scope, wrong). If the code changed, re-check the new diff.
 5. A finding neither the ledgers nor the checklist would have caught gets a ledger row (`self-review` source).
 

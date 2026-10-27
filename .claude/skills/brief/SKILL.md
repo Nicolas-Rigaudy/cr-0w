@@ -5,7 +5,7 @@ context: fork
 model: sonnet
 effort: low
 background: false
-allowed-tools: Bash(bin/crow-activity:*) Bash(bin/crow-releases:*) Bash(bin/crow-tidy:*) Bash(bin/crow-retro:*) Bash(cdx runs:*)
+allowed-tools: Bash(bin/crow-activity:*) Bash(bin/crow-releases:*) Bash(bin/crow-tidy:*) Bash(bin/crow-retro:*) Bash(cdx runs:*) Bash(cdx status:*) Bash(logics-manager fleet:*)
 ---
 
 # Brief
@@ -22,6 +22,12 @@ Release tracks:
 Repo hygiene (safe cleanups already applied, see `runbooks/repo-tidy.md`):
 !`"${CLAUDE_PROJECT_DIR}/bin/crow-tidy" --apply --brief 2>&1 | head -60 || true`
 
+Next moves across every Logics repo (reviews are left out, crow-activity has them):
+!`logics-manager fleet brief --root "$(dirname "${CLAUDE_PROJECT_DIR}")" --no-reviews --limit 5 2>&1 | head -12 || true`
+
+Account headroom:
+!`cdx status --small --cached 2>&1 | grep -v '^Resolv' | head -10 || true`
+
 Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**. Gather cheaply, in this order.
 
 ## Gather
@@ -36,7 +42,8 @@ Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**
    Ask only for key, summary, status and priority fields.
 4. **Vault tasks** (only if a vault is configured): `rg -n "^\s*- \[ \]" "<vault>/00 Inbox" "<vault>/10 Work" "<vault>/20 Personal"` and keep only tasks with a due date (📅 YYYY-MM-DD or `due:`) on or before today. Also count the files in `00 Inbox`. Don't read notes further.
 5. **Release tracks**: already above (Pre-gathered).
-6. **Background runs**: `cdx runs --since today --json`. Keep only running or failed ones.
+6. **Background runs**: `cdx runs --since today --json`. Keep only running or failed ones. **Accounts**: from the headroom table above, one line only when the recommended account is under 30% or an account the owner uses is blocked (with its reset).
+   **Logics next moves**: from the fleet list above, only moves that unblock work (blocked docs, a task at 100% in a repo in delivery); skip pure closeout chores unless nothing else is open.
 7. **Retros**: report files in `local/state/retros/` dated since the last brief (one line each: project, what was applied), unchecked `- [ ]` lines in `local/state/retros/proposals.md`, and `bin/crow-retro status` for failures.
 8. **Mail + calendar**: only if Microsoft 365 tools are available in this session. Today's meetings, and unread mail that needs a reply. If unavailable, print one line saying so and move on.
 

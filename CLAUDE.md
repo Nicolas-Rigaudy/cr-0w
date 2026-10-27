@@ -30,7 +30,7 @@ prod launch > reviews (unblock devs) > sprint tickets > roadmap/management > R&D
 | Send email, post on Teams | 📝 approval first | 📝 approval first |
 | Infra on dev | ✅ only on a claimed, free env (repo's own claim script) | ✅ |
 | Infra on int / prod | 📝 approval, every time | n/a |
-| Dispatch cdx runs | ✅ max 2 in background, on an allowed account (`local/accounts.yaml`) | same |
+| Dispatch cdx runs | ✅ max 2 in background, on an allowed account (cdx `--policy`, `local/accounts.yaml` as fallback) | same |
 
 📝 = show the exact draft and wait for an explicit OK.
 

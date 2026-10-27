@@ -9,7 +9,6 @@
 A session is interrupted when its last user/assistant turn is a usage-limit error.
 Retros and automatic one-shot jobs (/retro, /brief, /daily, /weekly) are left out.
 Each transcript is read once per (mtime, size): unchanged files come from the cache.
-A session that ran in more than one workspace is flagged: cdx refuses to hand those off.
 
 Files, in the state dir (vault.crow_dir, else local/state):
   interrupted-sessions.json   the registry
@@ -126,13 +125,15 @@ def first_prompt(path):
 
 
 def workspaces(path):
-    """Every workspace (cwd) the main conversation ran in; cdx hands off only when there is one."""
-    cwds = set()
+    """Every workspace (cwd) the main conversation ran in, in order of first use."""
+    cwds = []
     with open(path, encoding="utf-8", errors="replace") as fh:
         for ev in events(fh):
             if not ev.get("isSidechain") and isinstance(ev.get("cwd"), str):
-                cwds.add(os.path.realpath(ev["cwd"]))
-    return sorted(cwds)
+                cwd = os.path.realpath(ev["cwd"])
+                if cwd not in cwds:
+                    cwds.append(cwd)
+    return cwds
 
 
 def scan_one(acct, path, size):
@@ -242,8 +243,7 @@ def print_list(reg):
     for s in rows:
         when = (s["last_event"] or "")[:16].replace("T", " ")
         print(f"{when}  {s['account']:<8} {one_line(s['project'], 22):<22} {s['conversation_id']}  "
-              f"{human_size(s['size']):>8}  {one_line(s['first_prompt'] or '(no opening prompt)', 60)}"
-              + ("" if len(s["workspaces"]) == 1 else f"  [{len(s['workspaces'])} workspaces: cdx cannot hand off]"))
+              f"{human_size(s['size']):>8}  {one_line(s['first_prompt'] or '(no opening prompt)', 60)}")
 
 
 def mark_relaunched(cid, source, target, cwd):

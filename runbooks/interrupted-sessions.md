@@ -3,6 +3,12 @@
 When an account hits its 5-hour or weekly limit, the sessions running on it stop on a limit
 message. They can continue on another allowed account through a cdx handoff.
 
+## Fresh stop: use cdx
+- A stop in the last 24 hours: `cdx rescue --dry-run`, then `cdx rescue` (it picks a ready account of the same
+  provider, skips what it already rescued, and respects `cdx set --policy`). Policy lives in cdx; `local/accounts.yaml`
+  only supplies the fallback and the memory mode.
+- `crow sessions` and `crow relaunch` cover what cdx does not: older stops, a chosen target, memory linking.
+
 ## Find
 - `crow sessions`: one line per session whose last turn is a limit error (retros and the
   /brief, /daily, /weekly one-shots are left out). Cheap to rerun: transcripts are cached by mtime and size.
@@ -26,12 +32,8 @@ message. They can continue on another allowed account through a cdx handoff.
    once included an automatic retro instead of the real session.
 
 ## Gotchas
-- cdx only hands off a transcript with exactly one workspace (cwd). A session that changed
-  directory (worktrees, subfolders) is flagged `[N workspaces: cdx cannot hand off]` in the list,
-  and the relaunch refuses it. No folder trick works: cdx counts every cwd in the transcript, so
-  relaunching from the last folder or the worktree root is still refused. The fix is a cdx change
-  (accept the launch folder when it is one of the transcript's workspaces), prepared as a local
-  patch and PR text under `local/state/afk/shots/`; nothing is posted upstream.
+- A session that changed directory (worktrees, subfolders) can be handed off since cdx 0.22: the relaunch
+  starts in the last folder the conversation worked in that still exists.
 - Check `crow runs` before relaunching a background run: a later run may already have resumed it.
 - Accounts with memory mode `session` get `local/memory` linked for the relaunched session, then
   unlinked and committed when it ends.

@@ -54,3 +54,6 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 - Read each report (`crow-runs report <id>`). Summarise the facts in prose: what shipped, and what's left.
 - Put every decision the owner must make into AskUserQuestion: up to 4 per round, each self-contained (project + one line of context), recommended option first. Never leave decisions inside the summary text.
 - Turn the answers into the next dispatch, update the open threads, and start queued work in the freed slots.
+
+## Cap and labels (cdx 0.22)
+- `crow dispatch` passes `--max-parallel 2` (`CROW_MAX_RUNS`) and `--label <project>/<label>` to `cdx run`; cdx refuses a third run with `too_many_runs`, race-free. `--force` passes 0 (no cap). The same-folder check stays in crow.

@@ -8,7 +8,7 @@ The id may be a unique prefix of a session in the interrupted registry (crow-ses
 full id of any top-level transcript. The relaunch refuses when:
   - no id is given, or it does not resolve to exactly one transcript;
   - the target (or the profile holding the source) has policy never, or the target is the source;
-  - the transcript does not have exactly one workspace, or that directory is gone;
+  - none of the workspaces the transcript worked in still exists;
   - `cdx can-resume <target>` says no, or `cdx status` shows the target blocked.
 Then it asks: a `use` account takes y (or --yes); an `ask-first` account needs a typed "yes"
 on a terminal every time, --yes does not count. --dry-run runs only the read-only checks
@@ -27,7 +27,6 @@ HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.re
 BIN = os.path.join(HOME, "bin")
 REAL_HOME = crow_lib.real_home()
 PROFILES = crow_lib.profiles_dir()
-CDX_VERSION_NOTE = "0.21"
 ID_RE = re.compile(r"[A-Za-z0-9_-]+")
 
 
@@ -144,8 +143,8 @@ def source_account(path):
 
 
 def workspace(path, cid):
-    """The one workspace cdx will accept for this transcript (it checks the same thing)."""
-    ids, cwds = set(), set()
+    """The folder the conversation last worked in that still exists (cdx hands off from any folder it worked in)."""
+    ids, cwds = set(), []
     with open(path, encoding="utf-8", errors="replace") as fh:
         for raw in fh:
             try:
@@ -157,15 +156,15 @@ def workspace(path, cid):
             if ev.get("sessionId"):
                 ids.add(ev["sessionId"])
             if isinstance(ev.get("cwd"), str):
-                cwds.add(os.path.realpath(ev["cwd"]))
+                cwd = os.path.realpath(ev["cwd"])
+                if cwd in cwds:
+                    cwds.remove(cwd)
+                cwds.append(cwd)
     if ids != {cid}:
         die(f"transcript holds conversation ids {sorted(ids)}, expected only {cid}")
-    if len(cwds) != 1:
-        die(f"transcript spans {len(cwds)} workspaces ({', '.join(sorted(cwds))}); cdx {CDX_VERSION_NOTE} "
-            "needs exactly one (patch: local/state/afk/shots/*/cdx-handoff-multi-workspace.patch)")
-    ws = cwds.pop()
-    if not os.path.isdir(ws):
-        die(f"workspace {ws} no longer exists")
+    ws = next((c for c in reversed(cwds) if os.path.isdir(c)), None)
+    if not ws:
+        die(f"none of the workspaces ({', '.join(cwds) or 'none'}) exists any more")
     return ws
 
 

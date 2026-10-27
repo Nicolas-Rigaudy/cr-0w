@@ -1,7 +1,7 @@
 ## item_011_background_runs_from_cdx - Count background runs from the cdx CLI (#2)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Progress: 100%

@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""crow-review-check: run the mechanical review rules on a diff, before the model review.
+
+  crow-review-check [<repo>] [--base REF] [--format text|json]
+
+Rules are `logics-manager review` rules kept in local/reviews/rules/common.json and
+local/reviews/rules/<repo-dir-name>.json (the repo-dir name is the ledger name). They are the rows of the
+ledgers in local/reviews/*.md that a regex can catch; the rest stays a manual check in the ledger.
+The engine reads logics/review/rules.json inside the repo, so the merged rules are written there for
+the run and the repo's own file (if any) is put back afterwards. Exit 1 when a rule hits.
+"""
+import json, os, shutil, subprocess, sys
+from pathlib import Path
+
+HOME = Path(os.environ.get("CROW_HOME") or Path(__file__).resolve().parent.parent)
+
+
+def git(repo, *args):
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True).stdout.strip()
+
+
+def main(argv):
+    args = [a for a in argv if not a.startswith("--")]
+    flags = [a for a in argv if a.startswith("--")]
+    base = []
+    if "--base" in argv:
+        i = argv.index("--base")
+        base = ["--base", argv[i + 1]]
+        args = [a for a in args if a != argv[i + 1]]
+        flags = [f for f in flags if f != "--base"]
+    repo = Path(args[0] if args else ".").resolve()
+    top = git(repo, "rev-parse", "--show-toplevel")
+    if not top:
+        sys.exit(f"crow-review-check: {repo} is not a git checkout")
+    top = Path(top)
+    name = Path(git(top, "rev-parse", "--path-format=absolute", "--git-common-dir")).parent.name
+    rules = []
+    for f in (HOME / "local/reviews/rules/common.json", HOME / f"local/reviews/rules/{name}.json"):
+        if f.is_file():
+            rules += json.loads(f.read_text()).get("rules", [])
+    target = top / "logics/review/rules.json"
+    backup = target.read_bytes() if target.is_file() else None
+    if backup:
+        rules = json.loads(backup).get("rules", []) + [r for r in rules if r["id"] not in {x["id"] for x in json.loads(backup).get("rules", [])}]
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps({"version": 1, "rules": rules}))
+    try:
+        r = subprocess.run(["logics-manager", "review", "check", *base, *flags], cwd=top)
+        return r.returncode
+    finally:
+        if backup is not None:
+            target.write_bytes(backup)
+        else:
+            target.unlink()
+            for d in (target.parent, target.parent.parent):
+                try:
+                    d.rmdir()
+                except OSError:
+                    break
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

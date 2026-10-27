@@ -62,7 +62,7 @@ def test_refuses_without_a_conversation_id(hub, cdx, session):
     for args in (["shared"], ["", "shared"], ["../x", "shared"]):
         r = relaunch(hub, cdx, *args, "--yes")
         assert r.returncode == 1 and ("id is required" in r.stderr), r.stderr
-    assert cdx[1]() == []
+    assert [c for c in cdx[1]() if c["argv"][0] != "configs"] == []
 
 
 def test_refuses_never_and_unknown_targets(hub, cdx, session):
@@ -86,12 +86,16 @@ def test_refuses_a_source_in_a_never_account(hub, cdx, session):
     assert r.returncode == 1 and "never uses" in r.stderr
 
 
-def test_refuses_more_than_one_workspace(hub, cdx, tmp_path):
+def test_hands_off_from_the_last_workspace_that_exists(hub, cdx, tmp_path):
     a, b = tmp_path / "a", tmp_path / "b"
     a.mkdir(), b.mkdir()
     transcript(hub, "main", "multi", [user("x"), {**reply(), "cwd": str(b), "sessionId": "multi"}, LIMIT], cwd=str(a))
-    r = relaunch(hub, cdx, "multi", "spare", "--yes")
-    assert r.returncode == 1 and "2 workspaces" in r.stderr
+    assert relaunch(hub, cdx, "multi", "spare", "--yes", "--dry-run").returncode == 0
+    b.rmdir()
+    assert relaunch(hub, cdx, "multi", "spare", "--yes", "--dry-run").returncode == 0
+    a.rmdir()
+    r = relaunch(hub, cdx, "multi", "spare", "--yes", "--dry-run")
+    assert r.returncode == 1 and "exists any more" in r.stderr
 
 
 def test_refuses_blocked_or_unresumable_targets(hub, cdx, session):
@@ -105,7 +109,7 @@ def test_dry_run_checks_cdx_and_launches_nothing(hub, cdx, session):
     assert r.returncode == 0, r.stderr
     assert "cdx handoff main shared --source-conversation abc-123" in r.stdout
     assert "nothing launched" in r.stdout
-    assert [c["argv"][0] for c in cdx[1]()] == ["can-resume", "status"]
+    assert [c["argv"][0] for c in cdx[1]() if c["argv"][0] != "configs"] == ["can-resume", "status"]
     assert not (hub[0] / "local" / "state" / "relaunches.jsonl").exists()
 
 

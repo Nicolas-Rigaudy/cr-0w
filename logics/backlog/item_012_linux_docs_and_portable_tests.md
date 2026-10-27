@@ -1,7 +1,7 @@
 ## item_012_linux_docs_and_portable_tests - Document Linux requirements and make tests portable (#3)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Progress: 100%

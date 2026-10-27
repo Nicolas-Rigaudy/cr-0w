@@ -1,7 +1,7 @@
 ## item_014_codex_hub_instructions - Hub instructions and guard coverage for Codex (#1)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Progress: 100%

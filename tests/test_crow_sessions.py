@@ -109,12 +109,10 @@ def test_show_by_prefix(hub):
     assert r.returncode == 1 and "2 sessions match" in r.stderr
 
 
-def test_flags_sessions_cdx_cannot_hand_off(hub):
+def test_lists_every_workspace_a_session_worked_in(hub):
     transcript(hub, "main", "one", [user("go"), LIMIT], cwd="/work/proj")
     transcript(hub, "main", "two", [user("go"), {**reply(), "cwd": "/work/proj/sub"}, LIMIT], cwd="/work/proj")
     by = {s["conversation_id"]: s for s in scan(hub)["sessions"]}
     assert by["one"]["workspaces"] == ["/work/proj"]
     assert by["two"]["workspaces"] == ["/work/proj", "/work/proj/sub"]
-    out = run(hub, "crow-sessions", "list").stdout.splitlines()
-    assert "cdx cannot hand off" in next(l for l in out if " two " in l)
-    assert "cdx cannot hand off" not in next(l for l in out if " one " in l)
+    assert "cannot hand off" not in run(hub, "crow-sessions", "list").stdout
