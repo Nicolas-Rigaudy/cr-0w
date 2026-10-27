@@ -82,7 +82,7 @@ no merges, drafts before any mail. Edit them to match how you work. Everything y
 
 ## Get started
 
-1. Install [cdx](https://github.com/AlexAgo83/cdx-manager) and Claude Code.
+1. Install [cdx](https://github.com/AlexAgo83/cdx-manager) and Claude Code or Codex (see [`runbooks/claude-and-codex.md`](runbooks/claude-and-codex.md)).
 2. Clone this repo and put `bin/` on your PATH.
 3. Create your private `local/` folder: `mkdir local && git -C local init`, then add `context.md`, `projects.yaml` and `accounts.yaml`
    (start from [`docs/accounts.example.yaml`](docs/accounts.example.yaml)).

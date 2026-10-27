@@ -6,12 +6,20 @@
   crow-accounts memory <name>      permanent | session | none
   crow-accounts allowed            names crow may target (policy use or ask-first)
   crow-accounts require <name>     exit 1 unless crow may target the account
+  crow-accounts provider <name>    claude | codex (from cdx; claude when cdx does not say)
+  crow-accounts permission <name>  cdx permission for hub one-shots: auto (claude), default (codex)
+  crow-accounts hub-session <name> exit 1 when the account's provider cannot run a guarded hub session
+  crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
+  crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
   crow-accounts json               every account with its policy and memory mode
 
 An unknown account, or a policy that is not one of use / ask-first / never, counts as never.
 """
 import json, os, sys
 import yaml
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
 
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 PATH = os.path.join(HOME, "local", "accounts.yaml")
@@ -59,6 +67,20 @@ def main(argv):
         a = find(cfg, argv[1])
         if not a or a["policy"] == "never":
             sys.exit(f"crow: account '{argv[1]}' is not allowed (policy never, see local/accounts.yaml)")
+    elif cmd == "provider" and len(argv) == 2:
+        print(crow_lib.provider_of(argv[1]))
+    elif cmd == "permission" and len(argv) == 2:
+        print(crow_lib.permission(crow_lib.provider_of(argv[1])))
+    elif cmd == "hub-session" and len(argv) == 2:
+        why = crow_lib.hub_session_refusal(crow_lib.provider_of(argv[1]))
+        if why:
+            sys.exit(f"crow: account '{argv[1]}' cannot open a hub session: {why}")
+    elif cmd == "prompt" and len(argv) >= 3:
+        print(crow_lib.oneshot_prompt(crow_lib.provider_of(argv[1]), HOME, argv[2], " ".join(argv[3:])))
+    elif cmd == "check-model" and len(argv) == 3:
+        why = crow_lib.check_model(crow_lib.provider_of(argv[1]), argv[2])
+        if why:
+            sys.exit(f"crow: {why}")
     elif cmd == "json":
         print(json.dumps({"default": cfg.get("default"), "accounts": accounts(cfg)}))
     else:

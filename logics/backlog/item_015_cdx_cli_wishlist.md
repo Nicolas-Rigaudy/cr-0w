@@ -47,3 +47,4 @@
 
 # Notes
 - Generated locally by logics-manager.
+- Wishlist text (checked against cdx 0.22.0 `--help`): `runs --running` filter; `sessions --json` for live interactive sessions; `final_message` in `run-report --json`; documented `profile_dir` per account; `can-resume` taking a conversation id. Reply draft: `local/state/drafts/codex-support-fork-review.md`.

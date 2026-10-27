@@ -44,6 +44,7 @@ EOF
 launch() {
   local dir="$1"; shift
   "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
+  [[ "$dir" == "$CROW_HOME" ]] && "$CROW_HOME/bin/crow-accounts" hub-session "$CROW_ACCOUNT"
   if [[ "$("$CROW_HOME/bin/crow-accounts" memory "$CROW_ACCOUNT")" == session ]]; then
     "$CROW_HOME/bin/crow-memory" link "$CROW_ACCOUNT"
     trap '"$CROW_HOME/bin/crow-memory" unlink "$CROW_ACCOUNT"; "$CROW_HOME/bin/crow-memory" commit' EXIT
@@ -53,10 +54,13 @@ launch() {
   fi
 }
 
+# oneshot <skill> [args]: run a hub skill on the account's provider.
 oneshot() {
-  local prompt="$1" out
+  local prompt out
   "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
-  out=$(cdx run "$CROW_ACCOUNT" --cwd "$CROW_HOME" --prompt "$prompt" --permission auto --json)
+  prompt=$("$CROW_HOME/bin/crow-accounts" prompt "$CROW_ACCOUNT" "$@")
+  out=$(cdx run "$CROW_ACCOUNT" --cwd "$CROW_HOME" --prompt "$prompt" \
+        --permission "$("$CROW_HOME/bin/crow-accounts" permission "$CROW_ACCOUNT")" --json)
   local ok stdout_path
   ok=$(jq -r '.ok' <<<"$out")
   stdout_path=$(jq -r '.stdout_path' <<<"$out")
@@ -79,9 +83,9 @@ cmd="${1:-hub}"
 shift || true
 case "$cmd" in
   hub)      launch "$CROW_HOME" ;;
-  brief)    oneshot "/brief" ;;
-  daily)    oneshot "/daily Draft only: save the draft to the state dir as drafts/daily-$(date +%F).md and print it. Do not post anything." ;;
-  weekly)   oneshot "/weekly" ;;
+  brief)    oneshot brief ;;
+  daily)    oneshot daily "Draft only: save the draft to the state dir as drafts/daily-$(date +%F).md and print it. Do not post anything." ;;
+  weekly)   oneshot weekly ;;
   open)     dir="$(project_path "${1:?usage: crow open <project> [prompt]}")"
             launch "$dir" ${2:+--prompt "$2"} ;;
   term)     # Detach from the calling session: real HOME (kitty config) and no inherited
