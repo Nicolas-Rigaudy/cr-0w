@@ -115,6 +115,8 @@ def gitlab_section(since):
         kind = note.get("noteable_type") or ev.get("target_type")
         if action.startswith("pushed") or kind not in ("MergeRequest", "Issue"):
             continue  # pushes are in the git log; branch/project events are noise
+        if (note.get("body") or "").lstrip("# ").startswith("SonarQube"):
+            continue  # SonarCloud posts its gate comment through the owner's token
         iid = note.get("noteable_iid") or ev.get("target_iid")
         key = (ev["created_at"][:10], action, kind, iid)
         entry = grouped.setdefault(key, {"count": 0, "title": ev.get("target_title") or ""})

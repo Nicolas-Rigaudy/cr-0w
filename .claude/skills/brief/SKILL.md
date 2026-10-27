@@ -29,6 +29,7 @@ Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**
 1. **Open threads + status**: state dir `open-threads.md` and `status.md` (state dir = `vault.crow_dir` or `local/state/`).
 2. **Forge activity**: already above (Pre-gathered). Don't explore repos further. "My open MRs" lists every open MR with its unresolved thread count.
    - "My GitLab/GitHub actions" are the owner's OWN outgoing actions (comments he left on others' MRs, MRs he accepted). Never put them in "Needs you" and never write "comments from you" as a to-do: a comment he left on a colleague's MR is waiting on the colleague. Only "Awaiting my review", unresolved threads on "My open MRs", approvals pending and failed pipelines on his MRs belong in "Needs you". If all three are "none", write "Nothing waiting on you (no review, no open MR)".
+   - Comments on MRs may be SonarCloud's quality-gate note posted through the owner's token (crow-activity filters them). Never read an action as a review he gave unless it is clearly his.
    - Use the actions only as context ("reviewed !210"), and only when it changes the day (e.g. a review he gave that is still unanswered after 2+ days).
 3. **Tracker** (optional, e.g. Jira through the Atlassian MCP; skip if none is connected): `searchJiraIssuesUsingJql` with
    `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done ORDER BY priority DESC`
