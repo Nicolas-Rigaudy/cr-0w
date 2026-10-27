@@ -1,0 +1,7 @@
+{"type": "thread.started", "thread_id": "00000000-0000-0000-0000-000000000000"}
+{"type": "turn.started"}
+{"type": "item.completed", "item": {"id": "item_0", "type": "agent_message", "text": "I’ll read the three instruction files, then run the single local shell command.\n"}}
+{"type": "item.started", "item": {"id": "item_2", "type": "command_execution", "command": "/bin/bash -lc 'python3 -c \"print(6 * 7)\"'", "aggregated_output": "", "exit_code": null, "status": "in_progress"}}
+{"type": "item.completed", "item": {"id": "item_2", "type": "command_execution", "command": "/bin/bash -lc 'python3 -c \"print(6 * 7)\"'", "aggregated_output": "42\n", "exit_code": 0, "status": "completed"}}
+{"type": "item.completed", "item": {"id": "item_3", "type": "agent_message", "text": "Shipped: live Codex smoke test\nResult: 42"}}
+{"type": "turn.completed", "usage": {"input_tokens": 121982, "cached_input_tokens": 90240, "cache_write_input_tokens": 0, "output_tokens": 406, "reasoning_output_tokens": 160}}

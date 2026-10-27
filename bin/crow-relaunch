@@ -18,12 +18,15 @@ The handoff is `cdx handoff <source> <target> --source-conversation <id>`, run f
 session's workspace in a new kitty window (detached, real HOME, no inherited Claude/cdx
 variables); --here runs it in the current terminal instead. Accounts with memory mode session get local/memory linked for the run.
 """
-import json, os, pwd, re, subprocess, sys
+import json, os, re, subprocess, sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
 
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 BIN = os.path.join(HOME, "bin")
-REAL_HOME = pwd.getpwuid(os.getuid()).pw_dir
-PROFILES = os.environ.get("CDX_PROFILES", os.path.join(REAL_HOME, ".cdx", "profiles"))
+REAL_HOME = crow_lib.real_home()
+PROFILES = crow_lib.profiles_dir()
 CDX_VERSION_NOTE = "0.21"
 ID_RE = re.compile(r"[A-Za-z0-9_-]+")
 

@@ -34,3 +34,55 @@ def test_other_tools_unchanged(cr):
     assert cr.summarize_tool("Edit", {"file_path": "/a/b.go"}) == "Edit: /a/b.go"
     assert cr.summarize_tool("Agent", {"description": "Find callers", "prompt": "long"}) == "Agent: Find callers"
     assert cr.summarize_tool("TodoWrite", {}) == "TodoWrite"
+
+
+def _proc(root, pid, argv, exe, env="HOME=/h\0CDX_SESSION_NAME=acct\0"):
+    d = root / str(pid)
+    d.mkdir()
+    (d / "cmdline").write_bytes("\0".join(argv).encode() + b"\0")
+    (d / "environ").write_bytes(env.encode())
+    (d / "exe").symlink_to(exe)
+    (d / "cwd").symlink_to("/tmp")
+
+
+def test_agent_procs_match_claude_and_codex(cr, tmp_path):
+    _proc(tmp_path, 11, ["claude", "-p", "x"], "/usr/bin/claude")
+    _proc(tmp_path, 12, ["/opt/codex", "exec", "x"], "/opt/codex")
+    _proc(tmp_path, 13, ["python3", "x"], "/usr/bin/python3")
+    got = {p["pid"]: p for p in cr.agent_procs(str(tmp_path))}
+    assert {k: v["provider"] for k, v in got.items()} == {11: "claude", 12: "codex"}
+    assert got[12]["account"] == "acct"
+
+
+def test_is_headless_covers_p_print_and_exec(cr):
+    assert cr.is_headless(["claude", "-p", "x"])
+    assert cr.is_headless(["claude", "--print"])
+    assert cr.is_headless(["codex", "exec", "x"])
+    assert not cr.is_headless(["claude", "--resume", "id"])
+
+
+def test_running_runs_are_the_ones_without_ended_at(cr, monkeypatch):
+    rows = {"a": {"run_id": "a", "ended_at": None, "cwd": "/x"}, "b": {"run_id": "b", "ended_at": "t"}}
+    monkeypatch.setattr(cr, "finished_rows", lambda since, ttl=8: rows)
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: "{}")
+    assert [r["run_id"] for r in cr.running_runs()] == ["a"]
+    assert list(cr.finished("7d")) == ["b"]
+
+
+def test_running_runs_fails_when_cdx_does(cr, monkeypatch):
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
+    with pytest.raises(SystemExit):
+        cr.running_runs()
+
+
+def test_final_command_reads_both_providers(tmp_path):
+    import subprocess, sys
+    from conftest import BIN, FIXTURES
+    (tmp_path / "local").mkdir()
+    (tmp_path / "local" / "projects.yaml").write_text("projects: []\n")
+    for name, provider, want in (("run-claude.jsonl", "claude", "Shipped: claude report"),
+                                 ("run-codex.jsonl", "codex", "Shipped: codex report")):
+        out = subprocess.run([sys.executable, str(BIN / "crow-runs"), "final", str(FIXTURES / name), provider],
+                             capture_output=True, text=True,
+                             env={"CROW_HOME": str(tmp_path), "CROW_ACCOUNT": "main", "PATH": "/usr/bin:/bin"})
+        assert out.stdout.strip() == want, out.stderr

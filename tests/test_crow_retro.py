@@ -8,6 +8,7 @@ BIN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 
 
 def load(tmp_path):
+    os.environ.setdefault("CROW_ACCOUNT", "test")  # the import must not need local/accounts.yaml
     loader = importlib.machinery.SourceFileLoader("crow_retro", BIN)
     spec = importlib.util.spec_from_loader("crow_retro", loader)
     mod = importlib.util.module_from_spec(spec)

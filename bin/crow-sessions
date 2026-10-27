@@ -16,14 +16,16 @@ Files, in the state dir (vault.crow_dir, else local/state):
   sessions-cache.json         per-transcript scan results
   relaunches.jsonl            written by crow-relaunch; entries listed there show as relaunched
 """
-import json, os, pwd, sys
+import json, os, sys
 from datetime import datetime, timezone
 
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-REAL_HOME = pwd.getpwuid(os.getuid()).pw_dir
-PROFILES = os.environ.get("CDX_PROFILES", os.path.join(REAL_HOME, ".cdx", "profiles"))
+PROFILES = crow_lib.profiles_dir()
 AUTO_PREFIXES = ("/retro ", "/retro\n", "/brief", "/daily", "/weekly")
 TAIL_BYTES = 256_000
 CACHE_VERSION = 2
