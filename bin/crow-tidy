@@ -80,7 +80,7 @@ def tidy(project, apply):
         notes.append("fetch failed")
 
     current = git(repo, "branch", "--show-current") or "(detached)"
-    n_dirty = dirty(repo)
+    n_dirty = 0 if project.get("dirty") == "ignore" else dirty(repo)
     if current != base:
         notes.append(f"checkout on `{current}`, not `{base}`")
     if n_dirty:
