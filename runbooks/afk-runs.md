@@ -17,6 +17,7 @@ Unattended work while the owner is away. The hub session is the orchestrator; ru
 - Every job works in its own worktree `<repo>.wt/<name>` (`git worktree add`), never in the main checkout: main checkouts may be symlinked into the owner's live desktop. A job never switches the main checkout's branch.
 
 ## Guardrails (in the preambles)
+- Keep tracked files generic: a lesson learned in a work project goes to `local/runbooks/`, with `<project>` in generic text. `bin/crow-precommit-check` (install as the pre-commit hook) refuses staged lines matching the deny list, so a private name never enters history.
 - Personal repos: plain pushes after `bin/crow-prepush-check --check`. Work repos: never a push, MR, ticket or cloud change.
 - A new worktree branch has no upstream: use `git push -u origin <branch>` and confirm with `git log origin/<branch>` (a bare `git push` prints nothing and pushes nothing).
 - Visual, product, outward or manual-verification items are paused and written as a decision (see Report), not decided.
