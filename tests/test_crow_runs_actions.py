@@ -64,5 +64,12 @@ def test_is_headless_covers_p_print_and_exec(cr):
 def test_running_runs_are_the_ones_without_ended_at(cr, monkeypatch):
     rows = {"a": {"run_id": "a", "ended_at": None, "cwd": "/x"}, "b": {"run_id": "b", "ended_at": "t"}}
     monkeypatch.setattr(cr, "finished_rows", lambda since, ttl=8: rows)
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: "{}")
     assert [r["run_id"] for r in cr.running_runs()] == ["a"]
     assert list(cr.finished("7d")) == ["b"]
+
+
+def test_running_runs_fails_when_cdx_does(cr, monkeypatch):
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
+    with pytest.raises(SystemExit):
+        cr.running_runs()
