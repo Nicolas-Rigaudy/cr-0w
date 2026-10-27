@@ -81,10 +81,11 @@ def finished(since, ttl=8):
 
 
 def running_runs():
-    """Background runs cdx still counts as running (no ended_at), any provider."""
-    if not sh("cdx", "runs", "--limit", "1", "--json"):
-        sys.exit("crow: `cdx runs --json` failed; cannot count running runs")
-    return [r for r in finished_rows("7d", ttl=0).values() if not r.get("ended_at")]
+    """Background runs cdx still counts as running, any provider (`cdx runs --running`, cdx 0.23)."""
+    out = sh("cdx", "runs", "--running", "--json")
+    if not out:
+        sys.exit("crow: `cdx runs --running --json` failed; cannot count running runs")
+    return json.loads(out).get("runs", [])
 
 
 def wait(run_ids, poll=20):
@@ -115,7 +116,9 @@ def report(run_id, since="7d"):
         return None
     text = f.read_text(errors="replace")
     provider = r.get("provider") or "claude"
-    result = crow_lib.final_text(text, provider)
+    rep = sh("cdx", "run-report", r["run_id"], "--json")
+    final = (json.loads(rep).get("report", {}) if rep else {}).get("final_message")
+    result = final or crow_lib.final_text(text, provider)
     # A Claude run can end on a short postscript after its report: then take the last report-shaped message
     sid = next((o.get("session_id") for o in crow_lib._json_objects(text) if o.get("type") == "result"), None)
     if provider == "claude" and "Shipped" not in result and sid:

@@ -61,12 +61,24 @@ def test_is_headless_covers_p_print_and_exec(cr):
     assert not cr.is_headless(["claude", "--resume", "id"])
 
 
-def test_running_runs_are_the_ones_without_ended_at(cr, monkeypatch):
-    rows = {"a": {"run_id": "a", "ended_at": None, "cwd": "/x"}, "b": {"run_id": "b", "ended_at": "t"}}
-    monkeypatch.setattr(cr, "finished_rows", lambda since, ttl=8: rows)
-    monkeypatch.setattr(cr, "sh", lambda *a, **k: "{}")
+def test_running_runs_come_from_cdx_running(cr, monkeypatch):
+    calls = []
+
+    def fake(*a, **k):
+        calls.append(a)
+        return '{"runs": [{"run_id": "a", "cwd": "/x"}]}'
+    monkeypatch.setattr(cr, "sh", fake)
     assert [r["run_id"] for r in cr.running_runs()] == ["a"]
-    assert list(cr.finished("7d")) == ["b"]
+    assert calls == [("cdx", "runs", "--running", "--json")]
+
+
+def test_report_prefers_the_final_message_from_cdx(cr, monkeypatch, tmp_path):
+    out = tmp_path / "o.log"
+    out.write_text("")
+    row = {"run_id": "abc123", "ended_at": "t", "provider": "codex", "artifacts": {"stdout_path": str(out)}}
+    monkeypatch.setattr(cr, "finished", lambda since: {"abc123": row})
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: '{"report": {"final_message": "Shipped: from cdx"}}')
+    assert cr.report("abc") == "Shipped: from cdx"
 
 
 def test_running_runs_fails_when_cdx_does(cr, monkeypatch):

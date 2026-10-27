@@ -46,3 +46,9 @@ Unattended work while the owner is away. The hub session is the orchestrator; ru
 - Before saying anything about the run, read `local/state/afk/log.md` and check that the report exists. If the orchestrator died, the report is compiled from `reports/*.md` and `git log`, and the owner is told which jobs never finished.
 - Open the page, then build a comparison page for every visual decision (`bin/crow-compare <spec.json>`: options as columns, scenarios as rows, flip viewer with zoom) and open it before asking. Then ask the pending decisions with AskUserQuestion.
 - Runs that leave a visual decision list, per option, the exact image paths for each scenario (same framing across options), so the spec can be written without searching.
+
+## scrub-env does not work for unattended runs (tested 2026-10-27, cdx 0.22)
+`cdx set <account> --scrub-env on` makes a headless `cdx run` ask approval for every Bash call and MCP tool, which nobody can give: all seven probe checks failed with it on and all passed with it off (same account, same folder).
+Left off. With it off the run env holds only 3 credential-like variables; gh and glab use their keyrings.
+Probe: `cdx set A --scrub-env on`, `cdx run A --cwd <scratch dir> --prompt-file <probe> --permission auto`, then `cdx unset A --scrub-env`.
+Headless probes started in the hub folder are blocked by the hub guard whatever the setting: run them from a scratch folder.
