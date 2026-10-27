@@ -46,6 +46,9 @@ import sys
 
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
 
 def _cdx_python():
     cdx = shutil.which("cdx")
@@ -92,7 +95,7 @@ TITLE_CMD = os.environ.get("CROW_TITLE_CMD") or (
     "claude -p --model haiku --no-session-persistence --tools '' --strict-mcp-config "
     "--system-prompt 'You name coding sessions. Reply with a 3-6 word title for the main work of the whole session, not its opening prompt, in the language of the prompts, naming the project when it is not obvious, "
     "Title Case not required, no quotes, no trailing punctuation.'")
-PROFILES = os.path.expanduser(os.environ.get("CDX_PROFILES", os.path.join(pwd.getpwuid(os.getuid()).pw_dir, ".cdx/profiles")))
+PROFILES = crow_lib.profiles_dir()
 ACTIVE_SECONDS = 120
 
 
