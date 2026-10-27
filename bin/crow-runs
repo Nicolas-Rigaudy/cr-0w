@@ -406,10 +406,15 @@ def dispatch(a):
     if any(x["cwd"] == cwd for x in runs) and not a.force:
         sys.exit(f"crow: a run is already working in {cwd}; --force to override")
     provider = crow_lib.provider_of(ACCOUNT)
-    task = Path(a.prompt_file).read_text() if a.prompt_file else a.prompt
-    if provider == "codex":
-        task = "Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task
-    out = sh("cdx", "run", ACCOUNT, "--cwd", cwd, "--prompt", task, "--power", a.power,
+    src = ["--prompt-file", a.prompt_file] if a.prompt_file else ["--prompt", a.prompt]
+    if provider == "codex":  # Codex does not load CLAUDE.md: start the prompt with the read-first list
+        task = Path(a.prompt_file).read_text() if a.prompt_file else a.prompt
+        pre = Path(STATE / "dispatch")
+        pre.mkdir(parents=True, exist_ok=True)
+        f = pre / f"{a.project}-{a.label}.md".replace("/", "_")
+        f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
+        src = ["--prompt-file", str(f)]
+    out = sh("cdx", "run", ACCOUNT, "--cwd", cwd, *src, "--power", a.power,
              "--permission", crow_lib.permission(provider), "--detach", "--json")
     res = json.loads(out) if out else {"ok": False}
     if not res.get("ok"):
