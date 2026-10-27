@@ -23,3 +23,7 @@ Writing the handoff prompt:
 - Keep the task list; drop instructions the skill already covers.
 - Start with "Read local/owner-prefs.md in the hub" (absolute path from `local/context.md`): repo sessions don't load hub memory.
 - Name the worktree to use (`<repo>.wt/<topic>`), never /tmp.
+
+## Checks before `crow handoff`
+- Pass the registry name from `crow ls` (`<project>`), not an alias: `crow term` rejects aliases after the note is already written.
+- Pass `--task` as a literal string. Never build it with `sed`/command substitution: an empty match saves a note with `Task:` blank (2026-10-27, the session only recovered because it searched the repo). `grep -n '^Task: .' <note>` right after.
