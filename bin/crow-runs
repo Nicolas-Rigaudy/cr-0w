@@ -9,8 +9,8 @@
   (live view: tools/crow-watch, via `crow watch`)
 
 Every dispatch is recorded in <state>/runs.jsonl (run id, project, label, start
-commit). Live agents come from the Claude processes themselves: their cwd, cdx
-account and session transcript (what they are doing right now).
+commit). Running background runs come from `cdx runs --json`. Live agents come from the
+claude and codex processes: their cwd, cdx account and (Claude) session transcript.
 """
 import argparse, json, os, re, shutil, subprocess, sys, time
 from datetime import datetime, timezone
@@ -61,7 +61,8 @@ def ledger():
 _finished_cache = {}
 
 
-def finished(since, ttl=8):
+def finished_rows(since, ttl=8):
+    """Every cdx run since `since` (running ones have no ended_at), keyed by run id."""
     hit = _finished_cache.get(since)
     if hit and time.time() - hit[0] < ttl:
         return hit[1]
@@ -69,6 +70,15 @@ def finished(since, ttl=8):
     runs = {r["run_id"]: r for r in (json.loads(out).get("runs", []) if out else [])}
     _finished_cache[since] = (time.time(), runs)
     return runs
+
+
+def finished(since, ttl=8):
+    return {k: r for k, r in finished_rows(since, ttl).items() if r.get("ended_at")}
+
+
+def running_runs():
+    """Background runs cdx still counts as running (no ended_at), any provider."""
+    return [r for r in finished_rows("2d", ttl=0).values() if not r.get("ended_at")]
 
 
 def wait(run_ids, poll=20):
@@ -141,26 +151,43 @@ def fmt_age(s):
     return f"{s // 60}m" if s < 3600 else f"{s // 3600}h{(s % 3600) // 60:02d}"
 
 
-# ---------- live agents (Claude processes) ----------
+# ---------- live agents (claude and codex processes) ----------
 
-def claude_procs():
+EXE = {"claude": re.compile(r"(^|/)claude$|/claude/versions/"), "codex": re.compile(r"(^|/)codex$")}
+
+
+def provider_of(argv0, exe):
+    return next((p for p, rx in EXE.items() if rx.search(argv0) or rx.search(exe)), None)
+
+
+def agent_procs(proc="/proc"):
+    """Live claude and codex processes (interactive sessions and headless runs)."""
     out = []
-    for d in Path("/proc").iterdir():
+    for d in Path(proc).iterdir():
         if not d.name.isdigit():
             continue
         try:
-            argv = (d / "cmdline").read_bytes().split(b"\0")
-            if not argv or not (argv[0].endswith(b"claude") or b"/claude/versions/" in os.readlink(d / "exe").encode()):
+            argv = [a.decode(errors="replace") for a in (d / "cmdline").read_bytes().split(b"\0") if a]
+            try:
+                exe = os.readlink(d / "exe")
+            except OSError:
+                exe = ""
+            provider = provider_of(argv[0], exe) if argv else None
+            if not provider:
                 continue
-            argv = [a.decode(errors="replace") for a in argv if a]
             env = dict(l.split("=", 1) for l in (d / "environ").read_bytes().decode(errors="replace").split("\0") if "=" in l)
             out.append({
-                "pid": int(d.name), "argv": argv, "cwd": os.readlink(d / "cwd"),
-                "home": env.get("HOME", ""), "started": (d / "cmdline").stat().st_mtime,
+                "pid": int(d.name), "provider": provider, "argv": argv, "cwd": os.readlink(d / "cwd"),
+                "home": env.get("HOME", ""), "account": env.get("CDX_SESSION_NAME"),
+                "started": (d / "cmdline").stat().st_mtime,
             })
         except (OSError, ValueError):
             continue
     return out
+
+
+def is_headless(argv):
+    return "--print" in argv or "-p" in argv or "exec" in argv[1:2]
 
 
 def arg(argv, flag):
@@ -273,7 +300,7 @@ def collect(since="today", include_unledgered=False):
     agents, claimed = [], set()
     titles = session_titles()
 
-    for p in claude_procs():
+    for p in agent_procs():
         # Claude keeps <home>/.claude/sessions/<pid>.json current (session id changes on /clear).
         meta = {}
         try:
@@ -281,11 +308,11 @@ def collect(since="today", include_unledgered=False):
         except (OSError, ValueError):
             pass
         sid = meta.get("sessionId") or arg(p["argv"], "--session-id") or arg(p["argv"], "--resume")
-        if not sid:
+        if not sid and p["provider"] == "claude":
             continue  # short-lived helper process, not an agent
-        kind = "run" if "--print" in p["argv"] or "-p" in p["argv"] else "session"
-        account = (re.search(r"/profiles/([^/]+)/", p["home"]) or [None, "default"])[1]
-        tpath = transcript_path(p["home"], p["cwd"], sid) if sid else None
+        kind = "run" if is_headless(p["argv"]) else "session"
+        account = p["account"] or (re.search(r"/profiles/([^/]+)/", p["home"]) or [None, "default"])[1]
+        tpath = transcript_path(p["home"], p["cwd"], sid) if sid and p["provider"] == "claude" else None
         mtime = tpath.stat().st_mtime if tpath and tpath.exists() else p["started"]
         t = read_transcript(tpath) if tpath else {}
         idle = now - mtime
@@ -296,7 +323,7 @@ def collect(since="today", include_unledgered=False):
         else:
             state = "idle" if kind == "session" else "quiet"
         a = {
-            "kind": kind, "pid": p["pid"], "account": account, "project": project_name(p["cwd"]),
+            "kind": kind, "provider": p["provider"], "pid": p["pid"], "account": account, "project": project_name(p["cwd"]),
             "cwd": p["cwd"], "session_id": sid, "state": state,
             "started_at": datetime.fromtimestamp(p["started"], timezone.utc).isoformat(timespec="seconds"),
             "last_activity_s": int(idle), **{k: t.get(k) for k in ("last_action", "context_tokens", "subagents_active", "recent", "last_prompt")},
@@ -351,7 +378,7 @@ def collect(since="today", include_unledgered=False):
                              "status": "done" if r.get("exit_code") == 0 else "failed",
                              "duration_s": int(r.get("duration_seconds") or 0), "ended_at": r.get("ended_at"), "commits": []})
 
-    busy = sum(1 for a in agents if a["kind"] == "run")
+    busy = len(running_runs())
     pu = project_usage()
     for a in agents:
         split = pu["sessions"].get(a["session_id"])
@@ -368,7 +395,7 @@ def dispatch(a):
         sys.exit(1)
     p = project(a.project)
     cwd = p["path"]
-    runs = [x for x in claude_procs() if "--print" in x["argv"]]
+    runs = running_runs()
     if len(runs) >= MAX_PARALLEL and not a.force:
         sys.exit(f"crow: {len(runs)} runs already running (max {MAX_PARALLEL}); --force to override")
     if any(x["cwd"] == cwd for x in runs) and not a.force:
