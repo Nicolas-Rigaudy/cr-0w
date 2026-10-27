@@ -18,6 +18,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
 HOME = Path(os.environ.get("CROW_HOME") or Path(__file__).resolve().parent.parent)
 ACCOUNT = os.environ.get("CROW_ACCOUNT") or subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "default"], text=True).strip()
 REG = yaml.safe_load(open(HOME / "local/projects.yaml"))
@@ -121,7 +124,7 @@ def report(run_id, since="7d"):
 
 
 def report_from_transcript(session_id):
-    pats = [Path.home() / ".claude/projects", *Path("/home").glob("*/.cdx/profiles/*/claude-home/.claude/projects")]
+    pats = [Path.home() / ".claude/projects", *Path(crow_lib.profiles_dir()).glob("*/claude-home/.claude/projects")]
     for base in pats:
         for t in base.glob(f"*/{session_id}.jsonl"):
             texts = []

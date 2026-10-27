@@ -88,6 +88,11 @@ no merges, drafts before any mail. Edit them to match how you work. Everything y
    (start from [`docs/accounts.example.yaml`](docs/accounts.example.yaml)).
 4. Run `crow brief`, then `crow watch`.
 
+Requirements: Linux. Crow reads `/proc` to find live agents, and uses `kitty` (remote control) with `setsid`
+to open and focus session windows (`crow term`, `crow focus`). Python 3 with PyYAML, `jq`, `git`, `gh` or `glab`
+for forge activity, and Go to build `crow watch`. Tests (`python3 -m pytest`) need only Python and PyYAML: they
+create their own `accounts.yaml` and cdx profiles dir in a temp folder.
+
 Everything outside `local/` is generic. Your people, accounts, projects, memory and state live in `local/`,
 which is ignored by this repo and meant to be its own private repo.
 
