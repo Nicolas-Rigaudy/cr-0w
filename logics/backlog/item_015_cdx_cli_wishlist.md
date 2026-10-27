@@ -48,3 +48,9 @@
 # Notes
 - Generated locally by logics-manager.
 - Wishlist text (checked against cdx 0.22.0 `--help`): `runs --running` filter; `sessions --json` for live interactive sessions; `final_message` in `run-report --json`; documented `profile_dir` per account; `can-resume` taking a conversation id. Reply draft: `local/state/drafts/codex-support-fork-review.md`.
+
+## cdx 0.23 follow-up (2026-10-27)
+Delivered by the maintainer (PR #51): `runs --running --json`, `sessions [--all] --json`, `run-report` final_message, profile_dir/transcripts_dir, `can-resume/resume --conversation`.
+Adopted: running runs, final_message.
+Not adopted yet: profile_dir/transcripts_dir (about 20 direct reads of the profile layout, tests use temp profiles), `--conversation` in crow-relaunch, `cdx sessions` instead of the /proc scan (non-cdx sessions need /proc).
+Issue #6 stays open until the owner closes it.
