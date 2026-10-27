@@ -10,6 +10,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 BIN = REPO / "bin"
+FIXTURES = REPO / "tests" / "fixtures"
 
 ACCOUNTS = """\
 default: main

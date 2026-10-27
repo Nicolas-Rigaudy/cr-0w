@@ -73,3 +73,16 @@ def test_running_runs_fails_when_cdx_does(cr, monkeypatch):
     monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
     with pytest.raises(SystemExit):
         cr.running_runs()
+
+
+def test_final_command_reads_both_providers(tmp_path):
+    import subprocess, sys
+    from conftest import BIN, FIXTURES
+    (tmp_path / "local").mkdir()
+    (tmp_path / "local" / "projects.yaml").write_text("projects: []\n")
+    for name, provider, want in (("run-claude.jsonl", "claude", "Shipped: claude report"),
+                                 ("run-codex.jsonl", "codex", "Shipped: codex report")):
+        out = subprocess.run([sys.executable, str(BIN / "crow-runs"), "final", str(FIXTURES / name), provider],
+                             capture_output=True, text=True,
+                             env={"CROW_HOME": str(tmp_path), "CROW_ACCOUNT": "main", "PATH": "/usr/bin:/bin"})
+        assert out.stdout.strip() == want, out.stderr

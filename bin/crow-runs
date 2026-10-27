@@ -5,6 +5,7 @@
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
   crow-runs json                                     same data as JSON (for widgets)
   crow-runs report <run_id>                          final report of a finished run
+  crow-runs final <stdout_path> [provider]           final message of a run's stdout log (claude | codex)
   crow-runs wait <run_id>...                         block until the runs finish (run in background to get notified)
   (live view: tools/crow-watch, via `crow watch`)
 
@@ -112,14 +113,13 @@ def report(run_id, since="7d"):
     f = Path(r.get("artifacts", {}).get("stdout_path") or "/nonexistent")
     if not f.exists():
         return None
-    try:
-        out = json.loads(f.read_text())
-    except ValueError:
-        return f.read_text(errors="replace")[-4000:]
-    result = out.get("result") or ""
-    # A run can end on a short postscript after its report: then take the last report-shaped message
-    if "Shipped" not in result and out.get("session_id"):
-        full = report_from_transcript(out["session_id"])
+    text = f.read_text(errors="replace")
+    provider = r.get("provider") or "claude"
+    result = crow_lib.final_text(text, provider)
+    # A Claude run can end on a short postscript after its report: then take the last report-shaped message
+    sid = next((o.get("session_id") for o in crow_lib._json_objects(text) if o.get("type") == "result"), None)
+    if provider == "claude" and "Shipped" not in result and sid:
+        full = report_from_transcript(sid)
         if full:
             return full
     return result
@@ -504,6 +504,9 @@ def main():
     d.add_argument("--force", action="store_true")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     sub.add_parser("report").add_argument("run_id")
+    fp = sub.add_parser("final")
+    fp.add_argument("stdout_path")
+    fp.add_argument("provider", nargs="?", default="claude")
     sub.add_parser("wait").add_argument("run_ids", nargs="+")
     for name in ("list", "json"):
         p = sub.add_parser(name)
@@ -515,6 +518,8 @@ def main():
         dispatch(a)
     elif a.cmd == "wait":
         wait(a.run_ids)
+    elif a.cmd == "final":
+        print(crow_lib.final_text(Path(a.stdout_path).read_text(errors="replace"), a.provider))
     elif a.cmd == "report":
         print(report(a.run_id) or "")
     elif a.cmd == "json":

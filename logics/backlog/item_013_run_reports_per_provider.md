@@ -48,3 +48,4 @@
 
 # Notes
 - Generated locally by logics-manager.
+- Codex fixtures follow the documented `codex exec --json` events (no real Codex run was available on 2026-10-27); replace them with a captured run when one exists.

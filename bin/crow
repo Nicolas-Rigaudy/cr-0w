@@ -64,10 +64,9 @@ oneshot() {
     jq -r '.error // "run failed"' <<<"$out" >&2
     exit 1
   fi
-  # cdx stores Claude's JSON result envelope; print only the Markdown result.
+  # cdx stores the provider's raw output; print only the final Markdown message.
   local text
-  text=$(jq -rs 'map(select(type == "object" and .type == "result")) | last | .result // empty' "$stdout_path" 2>/dev/null)
-  [[ -z "$text" ]] && text=$(cat "$stdout_path")
+  text=$("$CROW_HOME/bin/crow-runs" final "$stdout_path" "$(jq -r '.provider // "claude"' <<<"$out")")
   if [[ -t 1 ]] && command -v bat >/dev/null; then
     bat --language md --style plain --paging never <<<"$text"
   else
