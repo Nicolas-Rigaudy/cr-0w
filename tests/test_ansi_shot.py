@@ -1,11 +1,15 @@
 import importlib.machinery
 import importlib.util
+import os
 
 import pytest
 
 from conftest import BIN
 
 pytest.importorskip("PIL")
+pytest.importorskip("fontTools")
+if not os.path.exists("/usr/share/fonts/TTF/FiraCodeNerdFontMono-Regular.ttf"):
+    pytest.skip("default font missing", allow_module_level=True)
 
 
 def _load():

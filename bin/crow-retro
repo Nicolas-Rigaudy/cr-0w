@@ -28,7 +28,10 @@ QUEUE = os.path.join(STATE, "queue")
 LOCK = os.path.join(STATE, ".worker.lock")
 LOG = os.path.join(STATE, "worker.log")
 ACCOUNT = os.environ.get("CROW_ACCOUNT") or subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "default"], text=True).strip()
-PROVIDER = subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "provider", ACCOUNT], text=True).strip()
+try:
+    PROVIDER = subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "provider", ACCOUNT], text=True, stderr=subprocess.DEVNULL).strip()
+except (OSError, subprocess.CalledProcessError):
+    PROVIDER = "claude"  # no cdx or unknown account: the import must not fail, the run reports it
 # Claude default is sonnet; a Codex account runs on its own configured model unless CROW_RETRO_CODEX_MODEL names one.
 MODEL = os.environ.get("CROW_RETRO_MODEL", "sonnet") if PROVIDER == "claude" else os.environ.get("CROW_RETRO_CODEX_MODEL")
 _bad_model = crow_lib.check_model(PROVIDER, MODEL)

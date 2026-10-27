@@ -97,3 +97,8 @@ def test_permission_and_hub_session_guard_per_provider():
     assert crow_lib.permission("codex") == "default"
     assert crow_lib.hub_session_refusal("claude") is None
     assert "guard" in crow_lib.hub_session_refusal("codex")
+
+
+def test_final_text_real_codex_sample():
+    text = (FIX / "run-codex-real.jsonl").read_text()
+    assert crow_lib.final_text(text, "codex") == "Shipped: live Codex smoke test\nResult: 42"
