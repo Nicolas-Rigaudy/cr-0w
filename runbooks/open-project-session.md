@@ -13,6 +13,7 @@ A process spawned from a Claude session inherits two things that break the new w
 
 ## Starting prompt
 `crow handoff <project> --task ... --end-state ...` builds this prompt from the registry (see `sub-project-work.md`).
+`crow handoff` writes the note and opens the kitty window itself (it execs `crow term`). Never run `crow term` again with the same note: that starts a second session on the same task. Check `crow runs` / `ListAgents` for an existing session first.
 `crow open|term <project> "<prompt>"` passes a first message (cdx ≥ 0.21.4, `--prompt`).
 
 Writing the handoff prompt:

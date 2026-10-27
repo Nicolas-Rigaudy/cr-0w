@@ -32,3 +32,7 @@ and listed hooks as checks to run by hand (lint, gates). Git hooks still run.
   remote of such a repo, or `git worktree add` under /tmp: the owner is asked.
 - Markers live in `<state>/hub-guard/<session>.json`; delete them to re-arm the notes.
 - `CROW_HUB_GUARD=off` for hub runs nobody can answer (AFK orchestration only touches `.wt/` worktrees, which pass).
+
+## After a handoff
+- `crow handoff` already opens the kitty window (it calls `crow term`). Never say it "only saved the note" and never run `crow term` again with the same note: that starts a second session on the same task (two sessions racing on a prod release).
+- If the owner says the session crashed or nothing opened, check `pgrep -af "crow open"` / `crow runs` first, then ask before reopening.
