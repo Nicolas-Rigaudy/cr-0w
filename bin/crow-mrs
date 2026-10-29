@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""crow-mrs: open MRs and PRs of the registered projects, read only, as JSON for the deck.
+
+  crow-mrs json              {forges, mrs: [...], branches: [...]}
+  crow-mrs show REPO REF     {files: [{path, add, del, diff}], threads: [{author, at, path, line, body, resolved}]}
+
+An MR or PR is listed when the owner is its author, an assignee or a requested reviewer. Both forges (glab,
+gh) are queried with GET requests only: nothing is posted, resolved or pushed. forges holds "ok" or the error per
+forge. branches lists a main checkout on a branch ahead of the default branch with no open MR.
+REPO is the registry remote (group/name) and REF the MR number.
+"""
+import json, os, pwd, subprocess, sys
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import quote
+
+import yaml
+
+HOME = Path(os.environ.get("CROW_HOME") or Path(__file__).resolve().parent.parent)
+# cdx remaps HOME; glab and gh keep their login in the real one.
+ENV = {**os.environ, "HOME": pwd.getpwuid(os.getuid()).pw_dir}
+
+
+def run(cmd, cwd=None):
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=60, env=ENV)
+    if r.returncode != 0:
+        msg = (r.stderr or r.stdout).strip().splitlines()
+        raise RuntimeError(msg[-1] if msg else "failed")
+    return r.stdout
+
+
+def api(cmd):
+    return json.loads(run(cmd) or "null")
+
+
+def projects():
+    try:
+        reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
+    except FileNotFoundError:
+        return []
+    return [p for p in reg.get("projects") or [] if p.get("forge") in ("gitlab", "github") and p.get("remote")]
+
+
+def short(p):
+    aliases = p.get("aliases") or []
+    return aliases[0] if aliases else p["name"]
+
+
+def pipeline_state(status):
+    return {"success": "passed", "failed": "failed", "canceled": "failed", "running": "running", "pending": "running",
+            "created": "running", "waiting_for_resource": "running", "preparing": "running"}.get(status or "", "none")
+
+
+def role_of(me, author, reviewers, assignees):
+    if author == me:
+        return "AUTHOR"
+    if me in reviewers:
+        return "REVIEWER"
+    return "ASSIGNEE" if me in assignees else ""
+
+
+def row(p, forge, number, **kw):
+    sigil = "!" if forge == "gitlab" else "#"
+    return {"project": short(p), "name": p["name"], "forge": forge, "repo": p["remote"], "number": number,
+            "ref": f"{sigil}{number}", **kw}
+
+
+# ----- GitLab -----
+
+def gitlab_threads(discussions):
+    out = []
+    for d in discussions or []:
+        notes = d.get("notes") or []
+        if not notes or not notes[0].get("resolvable"):
+            continue
+        n = notes[0]
+        pos = n.get("position") or {}
+        out.append({"author": n["author"]["username"], "at": n["created_at"], "path": pos.get("new_path") or "",
+                    "line": pos.get("new_line") or pos.get("old_line") or 0, "body": n["body"],
+                    "resolved": bool(n.get("resolved"))})
+    return out
+
+
+def gitlab_rows(projs, call=api):
+    by_remote = {p["remote"]: p for p in projs if p["forge"] == "gitlab"}
+    if not by_remote:
+        return []
+    me = call(["glab", "api", "user"])["username"]
+    seen = {}
+    for q in ("scope=created_by_me", "scope=assigned_to_me", f"scope=all&reviewer_username={me}"):
+        for mr in call(["glab", "api", f"merge_requests?state=opened&per_page=50&{q}"]) or []:
+            seen[(mr["project_id"], mr["iid"])] = mr
+    rows = []
+    for mr in seen.values():
+        path = mr["references"]["full"].rsplit("!", 1)[0]
+        p = by_remote.get(path)
+        if not p:
+            continue
+        base = f"projects/{mr['project_id']}/merge_requests/{mr['iid']}"
+        detail = call(["glab", "api", base]) or {}
+        role = role_of(me, mr["author"]["username"], [r["username"] for r in mr.get("reviewers") or []],
+                       [a["username"] for a in mr.get("assignees") or []])
+        r = row(p, "gitlab", mr["iid"], title=mr["title"], author=mr["author"]["username"], role=role,
+                draft=bool(mr.get("draft")), pipeline=pipeline_state((detail.get("head_pipeline") or {}).get("status")),
+                updated=mr["updated_at"], created=mr["created_at"], branch=mr["source_branch"], target=mr["target_branch"],
+                url=mr["web_url"], threads_open=0, threads_resolved=0)
+        if role == "AUTHOR":
+            th = gitlab_threads(call(["glab", "api", f"{base}/discussions?per_page=100"]))
+            r["threads_open"] = sum(not t["resolved"] for t in th)
+            r["threads_resolved"] = sum(t["resolved"] for t in th)
+        rows.append(r)
+    return rows
+
+
+def gitlab_show(repo, number, call=api):
+    base = f"projects/{quote(repo, safe='')}/merge_requests/{number}"
+    try:
+        diffs = call(["glab", "api", f"{base}/diffs?per_page=100"])
+    except RuntimeError:
+        diffs = call(["glab", "api", f"{base}/changes"])["changes"]
+    files = [file_entry(d["new_path"], d["diff"]) for d in diffs or []]
+    return {"files": files, "threads": gitlab_threads(call(["glab", "api", f"{base}/discussions?per_page=100"]))}
+
+
+# ----- GitHub -----
+
+THREADS_QUERY = """query($o:String!,$n:String!,$p:Int!){repository(owner:$o,name:$n){pullRequest(number:$p){
+reviewThreads(first:50){nodes{isResolved path line comments(first:1){nodes{author{login} body createdAt}}}}}}}"""
+
+
+def github_threads(data):
+    nodes = (((data or {}).get("data") or {}).get("repository") or {}).get("pullRequest") or {}
+    out = []
+    for t in (nodes.get("reviewThreads") or {}).get("nodes") or []:
+        c = (t.get("comments") or {}).get("nodes") or []
+        if not c:
+            continue
+        out.append({"author": (c[0].get("author") or {}).get("login", ""), "at": c[0]["createdAt"], "path": t.get("path") or "",
+                    "line": t.get("line") or 0, "body": c[0]["body"], "resolved": bool(t.get("isResolved"))})
+    return out
+
+
+def github_pipeline(rollup):
+    states = [(c.get("conclusion") or c.get("state") or c.get("status") or "").upper() for c in rollup or []]
+    if any(s in ("FAILURE", "ERROR", "TIMED_OUT", "CANCELLED") for s in states):
+        return "failed"
+    if any(s in ("PENDING", "IN_PROGRESS", "QUEUED", "EXPECTED", "") for s in states):
+        return "running"
+    return "passed" if states else "none"
+
+
+def github_threads_call(repo, number, call):
+    owner, name = repo.split("/", 1)
+    return github_threads(call(["gh", "api", "graphql", "-f", f"query={THREADS_QUERY}", "-F", f"o={owner}", "-F", f"n={name}",
+                                "-F", f"p={number}"]))
+
+
+def github_rows(projs, call=api):
+    by_remote = {p["remote"]: p for p in projs if p["forge"] == "github"}
+    if not by_remote:
+        return []
+    fields = "repository,number,title,author,isDraft,updatedAt,createdAt,url"
+    me = call(["gh", "api", "user"])["login"]
+    seen = {}
+    for flag in ("--author=@me", "--review-requested=@me", "--assignee=@me"):
+        for pr in call(["gh", "search", "prs", "--state=open", flag, "--json", fields, "-L", "50"]) or []:
+            seen[(pr["repository"]["nameWithOwner"], pr["number"])] = (pr, flag)
+    rows = []
+    for (repo, number), (pr, flag) in seen.items():
+        p = by_remote.get(repo)
+        if not p:
+            continue
+        author = pr["author"]["login"]
+        role = "AUTHOR" if author == me else "REVIEWER" if flag == "--review-requested=@me" else "ASSIGNEE"
+        view = call(["gh", "pr", "view", str(number), "-R", repo, "--json", "headRefName,baseRefName,statusCheckRollup"]) or {}
+        r = row(p, "github", number, title=pr["title"], author=author, role=role, draft=bool(pr.get("isDraft")),
+                pipeline=github_pipeline(view.get("statusCheckRollup")), updated=pr["updatedAt"], created=pr["createdAt"],
+                branch=view.get("headRefName", ""), target=view.get("baseRefName", ""), url=pr["url"],
+                threads_open=0, threads_resolved=0)
+        if role == "AUTHOR":
+            th = github_threads_call(repo, number, call)
+            r["threads_open"] = sum(not t["resolved"] for t in th)
+            r["threads_resolved"] = sum(t["resolved"] for t in th)
+        rows.append(r)
+    return rows
+
+
+def github_show(repo, number, call=api):
+    files = [file_entry(f["filename"], f.get("patch") or "") for f in call(["gh", "api", "--paginate", f"repos/{repo}/pulls/{number}/files"]) or []]
+    return {"files": files, "threads": github_threads_call(repo, number, call)}
+
+
+# ----- shared -----
+
+def file_entry(path, diff):
+    add = sum(1 for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++"))
+    dele = sum(1 for l in diff.splitlines() if l.startswith("-") and not l.startswith("---"))
+    return {"path": path, "add": add, "del": dele, "diff": diff}
+
+
+def git(path, *args):
+    r = subprocess.run(["git", "-C", str(path), *args], capture_output=True, text=True, timeout=15)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def branches_ahead(projs, open_branches):
+    """The main checkout's branch when it is ahead of the default branch with no open MR."""
+    out = []
+    for p in projs:
+        path = p.get("path")
+        if not path or not (Path(path) / ".git").exists():
+            continue
+        base = git(path, "symbolic-ref", "--short", "refs/remotes/origin/HEAD") or "main"
+        cur = git(path, "branch", "--show-current")
+        if not cur or cur == base.split("/")[-1] or cur in open_branches.get(p["remote"], set()):
+            continue
+        n = git(path, "rev-list", "--count", f"{base}..{cur}")
+        if n.isdigit() and int(n) > 0:
+            out.append({"project": short(p), "branch": cur, "ahead": int(n)})
+    return out
+
+
+def list_all(projs, gl=gitlab_rows, gh=github_rows):
+    forges, rows = {}, []
+    for name, fn in (("gitlab", gl), ("github", gh)):
+        try:
+            rows += fn(projs)
+            forges[name] = "ok"
+        except Exception as exc:  # a failing forge must not hide the other one
+            forges[name] = f"{name} sync failed: {exc}"
+    open_branches = {}
+    for r in rows:
+        open_branches.setdefault(r["repo"], set()).add(r["branch"])
+    rows.sort(key=lambda r: (r["project"], r["updated"]))
+    return {"forges": forges, "mrs": rows, "branches": branches_ahead(projs, open_branches),
+            "now": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
+def show(projs, repo, number, gl=gitlab_show, gh=github_show):
+    p = next((p for p in projs if p["remote"] == repo), None)
+    if not p:
+        raise SystemExit(f"crow-mrs: {repo} is not a registered remote")
+    return (gl if p["forge"] == "gitlab" else gh)(repo, number)
+
+
+def main(argv):
+    if argv[:1] == ["json"]:
+        json.dump(list_all(projects()), sys.stdout)
+    elif argv[:1] == ["show"] and len(argv) == 3:
+        json.dump(show(projects(), argv[1], argv[2].lstrip("!#")), sys.stdout)
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
