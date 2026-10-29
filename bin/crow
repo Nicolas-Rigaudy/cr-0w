@@ -5,8 +5,8 @@
 #   crow brief           print the morning brief (one-shot run)
 #   crow daily           draft today's daily into the state dir (one-shot run; post it from the hub)
 #   crow weekly          build the weekly rollup + slide outline (one-shot run)
-#   crow open <project> [prompt]  open a session in a registered project, optionally on a first message
-#   crow term <project> [prompt]  same, in a new kitty window (safe to call from inside a Claude session)
+#   crow open [--model M] <project> [prompt]  open a session in a registered project, optionally on a first message (model: opus, sonnet)
+#   crow term [--model M] <project> [prompt]  same, in a new kitty window (safe to call from inside a Claude session)
 #   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
 #   crow handoff <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
 #   crow ls              list registered projects
@@ -84,16 +84,18 @@ shift || true
 case "$cmd" in
   hub)      launch "$CROW_HOME" ;;
   brief)    oneshot brief ;;
-  daily)    oneshot daily "Draft only: save the draft to the state dir as drafts/daily-$(date +%F).md and print it. Do not post anything." ;;
+  daily)    oneshot daily "Draft only: write the draft where the skill says and print it. Do not post anything." ;;
   weekly)   oneshot weekly ;;
-  open)     dir="$(project_path "${1:?usage: crow open <project> [prompt]}")"
+  open)     [[ "${1:-}" == --model ]] && { export ANTHROPIC_MODEL="${2:?usage: crow open [--model M] <project> [prompt]}"; shift 2; }
+            dir="$(project_path "${1:?usage: crow open [--model M] <project> [prompt]}")"
             launch "$dir" ${2:+--prompt "$2"} ;;
   term)     # Detach from the calling session: real HOME (kitty config) and no inherited
             # Claude/cdx variables (session markers, ANTHROPIC_PROFILE, CDX_SESSION_NAME).
-            dir="$(project_path "${1:?usage: crow term <project> [prompt]}")"
+            model=(); [[ "${1:-}" == --model ]] && { model=(--model "${2:?usage: crow term [--model M] <project> [prompt]}"); shift 2; }
+            dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt]}")"
             strip=(); for v in $(compgen -e | grep -E '^(CLAUDE|CLAUDECODE|ANTHROPIC_|CDX_)'); do strip+=(-u "$v"); done
             env "${strip[@]}" HOME="$(getent passwd "$(id -un)" | cut -d: -f6)" \
-              setsid -f kitty --title "crow · $1" "$CROW_HOME/bin/crow" open "$@" >/dev/null 2>&1 ;;
+              setsid -f kitty --title "crow · $1" "$CROW_HOME/bin/crow" open "${model[@]}" "$@" >/dev/null 2>&1 ;;
   work)     exec "$CROW_HOME/bin/crow-project" work "$@" ;;
   handoff)  prompt="$("$CROW_HOME/bin/crow-project" handoff "$@")"
             exec "$CROW_HOME/bin/crow" term "$1" "$prompt" ;;
