@@ -1,10 +1,10 @@
 ## item_018_0_3_mrs_tab_both_forges_read_only - 0.3 MRs tab: both forges, read only
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 85%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -45,3 +45,6 @@
 # Priority
 - Priority: Medium
 - Rationale: Ships on its own; order follows the build plan in the spec.
+
+# Tasks
+- `task_006_0_3_mrs_tab_both_forges_read_only`

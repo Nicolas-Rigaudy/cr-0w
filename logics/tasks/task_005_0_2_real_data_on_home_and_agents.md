@@ -44,7 +44,7 @@
 - Shipped crow-registry (registry, identities, git hygiene as JSON), crow-focus --send, the data layer (data.go), the live refresh loop (runs and sessions 2s, usage and accounts 30s, registry 60s) and the Agents tab.
 - Answer path: a x e c stage text in the input line, enter sends it with `crow-focus --pid P --send TEXT` (kitty remote control). Only the command builder and dry run are tested; no live trial was done.
 - Deferred: pause and stop from the palette (destructive, cannot be verified unattended). attach (`g`, palette) and relaunch (`R`, behind a confirm) are wired.
-- Home Blockers and Today show an honest note until the forges (item_018) and calendar/mail are connected.
+- Home Blockers and the MR counts now read the MRs source (item_018). Today shows an honest note until calendar and mail are connected; ticket blockers are not wired.
 
 # Links
 - Request: `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`
