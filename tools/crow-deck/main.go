@@ -41,6 +41,9 @@ type model struct {
 	mrSel, mrPane, mrFile, mrItem int
 	mrKey                         string // key of the selected MR, keeps the cursor on it across refreshes
 	mrToggle                      bool
+
+	usePane, useSel int
+	useFortnight    bool
 }
 
 func newModel(cfg config) model {
@@ -145,6 +148,10 @@ func (m model) mrsView() mrsView {
 		file: m.mrFile, item: m.mrItem, toggle: m.mrToggle}
 }
 
+func (m model) usageView() usageViewState {
+	return usageViewState{lk: m.look(), fx: m.fx, sync: m.sync, sel: m.useSel, pane: m.usePane, fortnight: m.useFortnight, now: m.now}
+}
+
 func (m *model) selectAgent(i int) {
 	m.agentSel = max(0, min(len(m.fx.Agents)-1, i))
 	if m.agentSel < len(m.fx.Agents) {
@@ -203,6 +210,12 @@ func (m *model) moveSel(d int) {
 		}
 		return
 	}
+	if m.page == 4 {
+		if m.usePane == upAccounts {
+			m.useSel = max(0, min(len(m.fx.Gauges)-1, m.useSel+d))
+		}
+		return
+	}
 	if m.page != 0 {
 		return
 	}
@@ -222,6 +235,8 @@ func (m *model) moveFocus(d int) {
 		m.agentPane = (m.agentPane + d + agentPanes) % agentPanes
 	case 2:
 		m.mrPane = (m.mrPane + d + mrPanes) % mrPanes
+	case 4:
+		m.usePane = (m.usePane + d + usagePanes) % usagePanes
 	}
 }
 
@@ -374,6 +389,14 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveSel(1)
 	case "k", "up":
 		m.moveSel(-1)
+	case "d":
+		if m.page == 4 {
+			m.useFortnight = !m.useFortnight
+		}
+	case "p", "l", "[", "]":
+		if m.page == 4 {
+			m.flash = k + ": editing the account policy arrives with the actions slice"
+		}
 	case "/":
 		m.flash = "/ history and search arrive with a later slice"
 	case "enter", "h", "r", "x", "R", "a", "e", "c", "g", "T", "M", "P", "s":
@@ -382,6 +405,10 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		if m.page == 2 {
 			return m.mrKeyPress(k)
+		}
+		if m.page == 4 && k == "r" {
+			m.flash = "refreshing usage…"
+			return m, fetchCmd(srcUsage)
 		}
 		m.flash = k + ": actions are not wired yet"
 	}
@@ -535,6 +562,9 @@ func (m model) context() []keyHint {
 	if m.page == 2 {
 		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"a x e c", "decide"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
 	}
+	if m.page == 4 {
+		return []keyHint{{"j k", "account"}, {"tab", "pane"}, {"d", "7 / 14 days"}, {"r", "refresh"}, {"p l [ ]", "policy"}}
+	}
 	if m.page != 0 {
 		return []keyHint{{"1-5", "tab"}, {"j k", "move"}}
 	}
@@ -568,6 +598,8 @@ func (m model) View() string {
 		body = m.agentsView().body(m.w, bh)
 	case m.page == 2:
 		body = m.mrsView().body(m.w, bh)
+	case m.page == 4:
+		body = m.usageView().body(m.w, bh)
 	default:
 		body = lk.placeholder(m.page, m.w, bh, m.sync)
 	}

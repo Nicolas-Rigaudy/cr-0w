@@ -14,6 +14,10 @@ type gauge struct {
 	Burn     string
 	RunsUsed int
 	RunsMax  int
+	// Usage tab.
+	WeekReset string // "Nov 2 17:00" or "Mon"
+	Empty     string // clock the 5h window runs empty at the current burn
+	BurnPct   float64
 }
 
 // Agent groups on the Agents tab, in display order.
@@ -115,6 +119,8 @@ type fixtures struct {
 	MRErrs    map[string]string // detail fetch errors by MR key
 	MRsReady  bool              // the forges answered at least once
 	ForgeErrs []string
+	// Usage tab; nil until crow-usage answered.
+	Usage *usageView
 }
 
 func mockFixtures() *fixtures {
@@ -122,8 +128,8 @@ func mockFixtures() *fixtures {
 		Now: "Thu 29 Oct 14:02", Synced: "14:01",
 		Health: health{Identity: true, CDX: true, StaleTrees: 1},
 		Gauges: []gauge{
-			{"main", 60, "16:10", 63, "", "", 0, 0},
-			{"spare", 40, "", -1, "ask-first", "burn 4%/h", 1, 2},
+			{Account: "main", FiveH: 60, Reset: "16:10", Week: 63, WeekReset: "Mon", Empty: "19:40", BurnPct: 8, Policy: "use", Burn: "burn 8%/h", RunsUsed: 0, RunsMax: 2},
+			{Account: "spare", FiveH: 40, Reset: "19:30", Week: 31, WeekReset: "Sun", Empty: "21:10", BurnPct: 4, Policy: "ask-first", Burn: "burn 4%/h", RunsUsed: 1, RunsMax: 2},
 		},
 		Agents: mockAgents(),
 		Slots:  [2]int{1, 2},
@@ -171,7 +177,8 @@ func mockFixtures() *fixtures {
 			{"vault", 5, 6, "", false},
 		},
 		Repos: 7, Dirty: 3, Ahead: 2,
-		MRs: mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
+		Usage: mockUsage(),
+		MRs:   mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
 	mockMRCounts(f)
 	return f
@@ -222,6 +229,7 @@ func emptyFixtures() *fixtures {
 	f.Agents, f.Blockers, f.Today, f.Mail, f.Next, f.Projects = nil, nil, nil, nil, nil, nil
 	f.MRs, f.Branches, f.MRDetails = nil, nil, nil
 	f.MRsAwaiting, f.MRsMine, f.MRsThreads = 0, 0, 0
+	f.Usage = nil
 	f.Gauges[1].RunsUsed = 0
 	return f
 }

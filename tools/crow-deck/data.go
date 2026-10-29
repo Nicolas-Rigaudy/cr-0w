@@ -103,14 +103,46 @@ type usageSession struct {
 	Start    string           `json:"start"`
 	End      string           `json:"end"`
 	Activity map[string][]int `json:"activity"`
+	Kind     string           `json:"kind"`
+	Today    struct {
+		CostUSD float64 `json:"cost_usd"`
+	} `json:"today"`
+}
+
+type usageName struct {
+	Name    string  `json:"name"`
+	CostUSD float64 `json:"cost_usd"`
+}
+
+type usageTotals struct {
+	CostUSD         float64     `json:"cost_usd"`
+	CacheSavedUSD   float64     `json:"cache_saved_usd"`
+	RoutingSavedUSD float64     `json:"routing_saved_usd"`
+	CachePct        int         `json:"cache_pct"`
+	ByProject       []usageName `json:"by_project"`
+	ByModel         []usageName `json:"by_model"`
 }
 
 type usageSnap struct {
-	Limits   []limitRow     `json:"limits"`
-	Sessions []usageSession `json:"sessions"`
-	Days     []struct {
-		Date string `json:"date"`
+	GeneratedAt string         `json:"generated_at"`
+	Limits      []limitRow     `json:"limits"`
+	Sessions    []usageSession `json:"sessions"`
+	Today       usageTotals    `json:"today"`
+	Week        usageTotals    `json:"week"`
+	Days        []struct {
+		Date    string  `json:"date"`
+		CostUSD float64 `json:"cost_usd"`
 	} `json:"days"`
+	History []struct {
+		Date    string  `json:"date"`
+		CostUSD float64 `json:"cost_usd"`
+	} `json:"history"`
+	RTK struct {
+		TodaySavedTokens int     `json:"today_saved_tokens"`
+		TodaySavedPct    float64 `json:"today_saved_pct"`
+		SavedTokens      int     `json:"saved_tokens"`
+		SavedPct         float64 `json:"saved_pct"`
+	} `json:"rtk"`
 }
 
 type acctPolicy struct {
@@ -534,12 +566,13 @@ func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) []gauge {
 			continue
 		}
 		g := gauge{Account: l.Account, FiveH: *l.Remaining5hPct, Week: -1, Policy: pol, RunsUsed: used[l.Account], RunsMax: slots}
-		g.Reset = resetTime(l.Reset5hAt)
+		g.Reset, g.WeekReset = resetTime(l.Reset5hAt), l.ResetWeekAt
+		g.Empty = emptyClock(l.EmptyAt)
 		if l.RemainingWeekPct != nil {
 			g.Week = *l.RemainingWeekPct
 		}
 		if l.Burn5h != nil {
-			g.Burn = fmt.Sprintf("burn %.0f%%/h", *l.Burn5h)
+			g.Burn, g.BurnPct = fmt.Sprintf("burn %.0f%%/h", *l.Burn5h), *l.Burn5h
 		}
 		out = append(out, g)
 	}
@@ -679,6 +712,7 @@ func buildFixtures(in liveInput) *fixtures {
 		fx.Slots = [2]int{ls.runs.Slots.Busy, ls.runs.Slots.Max}
 	}
 	fx.Gauges = gaugeRows(ls.runs, ls.usage, ls.acct)
+	fx.Usage = usageViewOf(ls.usage, ls.reg, now)
 	fx.Who = whoWorked(now, ls.usage, ls.intr, ls.reg)
 	if ls.reg != nil {
 		fx.Next = openThreads(filepath.Join(ls.reg.StateDir, "open-threads.md"), ls.reg)

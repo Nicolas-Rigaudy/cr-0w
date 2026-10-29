@@ -48,6 +48,7 @@ func TestShots(t *testing.T) {
 		}
 		agentShots(write, ti, sizes)
 		mrsShots(write, ti, sizes)
+		usageShots(write, ti, sizes)
 		for _, st := range []string{stEmpty, stError, stLoading, stStale} {
 			for _, sn := range []string{"wide", "small"} {
 				m := newModel(defaultConfig())
@@ -138,4 +139,28 @@ func mrsShots(write func(string, model), ti int, sizes map[string][2]int) {
 	m.fx.MRs, m.fx.MRDetails = m.fx.MRs[:0:0], nil
 	m.fx.ForgeErrs = []string{"github sync failed: gh auth expired"}
 	write(name+"-MRs-wide-forge-error", m)
+}
+
+// usageShots: the Usage tab beyond the default view: the fortnight, an account selected,
+// every pane in single-pane mode, and the data states.
+func usageShots(write func(string, model), ti int, sizes map[string][2]int) {
+	name := themes[ti].name
+	base := func(sn string) model {
+		m := newModel(defaultConfig())
+		m.th, m.page, m.w, m.h = ti, 4, sizes[sn][0], sizes[sn][1]
+		return m
+	}
+	m := base("wide")
+	m.useFortnight = true
+	write(name+"-Usage-wide-14d", m)
+	for pane, pn := range []string{"accounts", "forecast", "spend", "savings", "cost"} {
+		m = base("small")
+		m.usePane = pane
+		write(fmt.Sprintf("%s-Usage-small-%s", name, pn), m)
+	}
+	for _, st := range []string{stEmpty, stError, stLoading, stStale} {
+		m = base("wide")
+		m.setSync(st)
+		write(fmt.Sprintf("%s-Usage-wide-%s", name, st), m)
+	}
 }
