@@ -2,12 +2,17 @@
 """crow-registry: the project registry (local/projects.yaml) plus cheap git state, as JSON for the deck.
 
   crow-registry json   {identities, state_dir, projects: [{name, short, scope, forge, remote, path, release, status,
-                        logics, git: {email, dirty, ahead, stale_trees}}]}
+                        logics, road, git: {email, dirty, ahead, stale_trees}}]}
+
+road is read from release.roadmap (a Logics roadmap doc, path relative to the project or absolute): {done, total,
+current, exit} with the milestones under "# Milestones" as "## version - title" headings. A milestone is done when its
+heading says "(delivered)" or its exit signal starts with "Met". current and exit describe the first milestone not done.
+road is null without a readable roadmap. The doc carries no target dates, so none are reported.
 
 state_dir is vault.crow_dir, else local/state. short is the first alias, else the name. stale_trees counts <path>.wt/* worktrees already merged into
 the default branch. Read only.
 """
-import json, os, subprocess, sys
+import json, os, re, subprocess, sys
 from pathlib import Path
 
 import yaml
@@ -49,6 +54,36 @@ def git_state(path):
             "ahead": int(ahead) if ahead and ahead.isdigit() else 0, "stale_trees": stale_trees(path)}
 
 
+def road_info(path, roadmap):
+    """Milestone progress of a Logics roadmap doc, or None when there is none to read."""
+    if not roadmap:
+        return None
+    doc = Path(roadmap) if os.path.isabs(roadmap) else Path(path) / roadmap
+    try:
+        text = doc.read_text()
+    except OSError:
+        return None
+    if "# Milestones" not in text:
+        return None
+    body = text.split("# Milestones", 1)[1]
+    body = re.split(r"\n# (?!#)", body, maxsplit=1)[0]
+    miles = []
+    for chunk in re.split(r"\n(?=## )", "\n" + body):
+        head = re.match(r"## (.+)", chunk.strip())
+        if not head:
+            continue
+        title = head.group(1).strip()
+        sig = re.search(r"^- Exit signal: (.+)$", chunk, re.M)
+        sig = sig.group(1).strip() if sig else ""
+        miles.append({"title": re.sub(r"\s*\(delivered\)\s*$", "", title), "exit": sig,
+                      "done": "(delivered)" in title or sig.startswith("Met")})
+    if not miles:
+        return None
+    nxt = next((m for m in miles if not m["done"]), None)
+    return {"done": sum(m["done"] for m in miles), "total": len(miles), "current": nxt["title"] if nxt else "",
+            "exit": nxt["exit"] if nxt else ""}
+
+
 def load():
     try:
         reg = yaml.safe_load(open(os.path.join(HOME, "local", "projects.yaml"))) or {}
@@ -61,7 +96,8 @@ def load():
             "name": p["name"], "short": aliases[0] if aliases else p["name"],
             "scope": p.get("scope", ""), "forge": p.get("forge", "none"), "remote": p.get("remote", ""),
             "path": p.get("path", ""), "release": p.get("release") or {}, "status": p.get("status", ""),
-            "logics": bool(p.get("logics")), "git": git_state(p.get("path", "")),
+            "logics": bool(p.get("logics")),
+            "road": road_info(p.get("path", ""), (p.get("release") or {}).get("roadmap")), "git": git_state(p.get("path", "")),
         })
     state = (reg.get("vault") or {}).get("crow_dir") or os.path.join(HOME, "local", "state")
     return {"identities": reg.get("identities") or {}, "state_dir": state, "projects": out}
