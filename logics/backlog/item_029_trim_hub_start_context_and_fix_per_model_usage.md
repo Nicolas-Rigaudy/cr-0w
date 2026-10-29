@@ -8,7 +8,7 @@
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:14:14
+> Indicators reviewed: 2026-10-29 17:16:27
 
 # AI Context
 - Summary: Measure the 31-50k start context of hub sessions and drop unused parts; fix crow-usage's per-model split that shows Haiku spend absent from transcripts.
@@ -21,6 +21,7 @@
 
 # Scope
 - In:
+  - `bin/crow-cost-audit --days N --json`: the runbooks/cost-audit.md method as a script (dedup, context buckets, per-project, per-skill), used for the baseline and the re-measure
   - measure the start context by part, drop plugins/skills/MCP servers the hub never uses
   - fix the per-model split in crow-usage with a test
 - Out:

@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:14:15
+> Indicators reviewed: 2026-10-29 17:16:27
 
 # AI Context
 - Summary: Delivery order for req_008: account choice, context cap, run failover, retro batch, gather script, start context, then re-measure.
@@ -26,7 +26,7 @@
 - [ ] 4. 4. Weekday retro batch, then remove the SessionEnd hook.
 - [ ] 5. 5. Gather script for brief, daily and weekly.
 - [ ] 7. 7. Trim start context and fix per-model usage.
-- [ ] 8. 8. Re-measure 14-day spend with the audit method and record it.
+- [ ] 8. 8. Re-measure 14-day spend with `bin/crow-cost-audit` (runbooks/cost-audit.md) and record it next to the baseline.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] Keep commit creation under operator control; do not force one commit per micro-step.
 - [ ] GATE: do not close until lint, audit, and scaffold validation pass.
