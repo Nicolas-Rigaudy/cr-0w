@@ -25,6 +25,7 @@ This records the run in `<state>/runs.jsonl` so `crow runs` can show its label a
 When relaunching an interrupted run, add `--resumes <run_id>` so the old run is folded into the new one.
 
 ## Track
+- **Never forgotten (2026-10-29):** `crow dispatch` starts a detached desktop notifier, and a UserPromptSubmit + SessionStart hook runs `crow-runs inbox --hook`, which lists finished runs not reported yet (`<state>/runs-seen.json`; `report` also marks a run seen). When the hook prints "UNREPORTED BACKGROUND RUNS", report them first. The `wait` below is still required: it is the only thing that wakes an idle session.
 - **Get notified:** right after dispatching, start `bin/crow-runs wait <run_id>` as a *background* Bash command (one per run).
   It exits when the run finishes, and that exit wakes the session, so there's no need to ask the owner "tell me when it's done".
   The waiter only lives as long as the session. A run that finishes while no session is open shows up in `crow runs` / `crow watch`.

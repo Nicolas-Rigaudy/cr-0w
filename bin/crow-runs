@@ -7,6 +7,8 @@
   crow-runs report <run_id>                          final report of a finished run
   crow-runs final <stdout_path> [provider]           final message of a run's stdout log (claude | codex)
   crow-runs wait <run_id>...                         block until the runs finish (run in background to get notified)
+  crow-runs inbox [--hook] [--peek]                  finished runs not reported yet (the hook runs it on every prompt)
+  crow-runs notify <run_id>...                       wait, then desktop-notify (dispatch starts it detached)
   (live view: tools/crow-watch, via `crow watch`)
 
 Every dispatch is recorded in <state>/runs.jsonl (run id, project, label, start
@@ -106,6 +108,59 @@ def wait(run_ids, poll=20):
             time.sleep(poll)
 
 
+SEEN = STATE / "runs-seen.json"
+
+
+def seen_ids():
+    try:
+        return set(json.loads(SEEN.read_text()))
+    except (OSError, ValueError):
+        return set()
+
+
+def mark_seen(*run_ids):
+    ids = seen_ids() | set(run_ids)
+    SEEN.parent.mkdir(parents=True, exist_ok=True)
+    SEEN.write_text(json.dumps(sorted(ids)))
+
+
+def inbox(hook=False, peek=False):
+    """Finished runs dispatched by crow whose report nobody has read yet. Printed once, then marked seen."""
+    recs = {r["run_id"]: r for r in ledger()}
+    done = finished("7d", ttl=0)
+    seen = seen_ids()
+    fresh = [(done[k], recs[k]) for k in recs if k in done and k not in seen]
+    if not fresh:
+        return
+    if hook:
+        print("UNREPORTED BACKGROUND RUNS. Tell the owner now, before anything else: one line each (what finished, "
+              "state), then read the report (`bin/crow-runs report <id>`) and summarise it. Put decisions in AskUserQuestion.")
+    for r, rec in fresh:
+        state = "done" if r.get("exit_code") == 0 else "failed"
+        print(f"- {state} {r['run_id'][:8]} {rec.get('project', '')}  {rec.get('label', '')}  (ended {r['ended_at']})")
+    if not peek:
+        mark_seen(*(r["run_id"] for r, _ in fresh))
+
+
+def notify(run_ids, poll=20, max_hours=12):
+    """Wait for the runs, then raise a desktop notification for each. Survives the session that started it.
+    Gives up after `max_hours` so a lost run does not leave a poller behind."""
+    recs = {r["run_id"]: r for r in ledger()}
+    pending = {next((k for k in recs if k.startswith(i)), i) for i in run_ids}
+    deadline = time.time() + max_hours * 3600
+    while pending and time.time() < deadline:
+        done = finished("7d", ttl=0)
+        for rid in sorted(pending):
+            if rid in done:
+                rec = recs.get(rid, {})
+                ok = done[rid].get("exit_code") == 0
+                subprocess.run(["notify-send", "-a", "crow", "-u", "normal" if ok else "critical",
+                                f"Run {'done' if ok else 'failed'}: {rec.get('project', '')}", rec.get("label", rid[:8])])
+                pending.discard(rid)
+        if pending:
+            time.sleep(poll)
+
+
 def report(run_id, since="7d"):
     """Final report text of a finished run (the `result` of its stdout JSON)."""
     r = next((v for k, v in finished(since).items() if k.startswith(run_id)), None)
@@ -119,6 +174,7 @@ def report(run_id, since="7d"):
     rep = sh("cdx", "run-report", r["run_id"], "--json")
     final = (json.loads(rep).get("report", {}) if rep else {}).get("final_message")
     result = final or crow_lib.final_text(text, provider)
+    mark_seen(r["run_id"])
     # A Claude run can end on a short postscript after its report: then take the last report-shaped message
     sid = next((o.get("session_id") for o in crow_lib._json_objects(text) if o.get("type") == "result"), None)
     if provider == "claude" and "Shipped" not in result and sid:
@@ -439,7 +495,10 @@ def dispatch(a):
     STATE.mkdir(parents=True, exist_ok=True)
     with LEDGER.open("a") as f:
         f.write(json.dumps(rec) + "\n")
+    subprocess.Popen([sys.executable, os.path.realpath(__file__), "notify", rec["run_id"]],
+                     start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"dispatched {rec['run_id'][:8]}  {p['name']}  {a.label}")
+    print(f"NEXT: start `bin/crow-runs wait {rec['run_id'][:8]}` as a background Bash command now (wakes this session when the run ends)")
 
 
 C = {"dim": "\033[2m", "b": "\033[1m", "g": "\033[32m", "y": "\033[33m", "r": "\033[31m", "c": "\033[36m", "m": "\033[35m", "0": "\033[0m"}
@@ -524,6 +583,9 @@ def main():
     fp.add_argument("stdout_path")
     fp.add_argument("provider", nargs="?", default="claude")
     sub.add_parser("wait").add_argument("run_ids", nargs="+")
+    sub.add_parser("notify").add_argument("run_ids", nargs="+")
+    ib = sub.add_parser("inbox")
+    ib.add_argument("--hook", action="store_true"); ib.add_argument("--peek", action="store_true")
     for name in ("list", "json"):
         p = sub.add_parser(name)
         p.add_argument("--since", default="today")
@@ -534,6 +596,10 @@ def main():
         dispatch(a)
     elif a.cmd == "wait":
         wait(a.run_ids)
+    elif a.cmd == "notify":
+        notify(a.run_ids)
+    elif a.cmd == "inbox":
+        inbox(a.hook, a.peek)
     elif a.cmd == "final":
         print(crow_lib.final_text(Path(a.stdout_path).read_text(errors="replace"), a.provider))
     elif a.cmd == "report":
