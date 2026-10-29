@@ -1,0 +1,150 @@
+{
+  "title": "crow cost and reliability pass: batched retros, script gathers, session names, account choice",
+  "references": [
+    "bin/crow",
+    "bin/crow-retro",
+    "bin/crow-digest",
+    "bin/crow-usage",
+    "bin/crow-runs",
+    "bin/crow-accounts",
+    "bin/crow-project",
+    ".claude/skills/brief/SKILL.md",
+    ".claude/skills/retro/SKILL.md",
+    "runbooks/session-retros.md",
+    "runbooks/dispatch-background-runs.md",
+    "logics/backlog/item_015_cdx_cli_wishlist.md"
+  ],
+  "request": {
+    "complexity": "Medium",
+    "theme": "Hub cost",
+    "needs": [
+      "Over 14 days, half the spend came from Opus turns whose context was already above 150k tokens (median 242k). Long sessions should be compacted or restarted before that point, and the owner should see when a session crosses it.",
+      "Every finished session starts its own retro run. Retros should run once a day as one batch, on the sessions that show a signal worth learning from, picked without a model.",
+      "The brief, daily and weekly skills spend most of their tokens on tool turns that only gather data. A script should gather everything it can and hand the model one compact JSON.",
+      "Sessions get titles from four sources (account name, a small-model titler, dispatch labels, /rename). One deterministic naming scheme should replace the model titler.",
+      "crow open, term and handoff always launch on the default account, which prompts when a session already runs there; two sessions on one profile share OAuth and can log each other out. crow should pick a free allowed account.",
+      "Headless runs should use the cdx features that cap and protect them: spend budget, failover on a usage limit, fallback model, run kind.",
+      "Hub sessions start with 31-50k tokens of context; the parts the hub never uses should go.",
+      "crow-usage attributes Opus and Sonnet tokens of multi-model sessions to Haiku, so the per-model numbers are wrong."
+    ],
+    "context": [
+      "Audit with the measured numbers and sources: local/state/research/crow-audit.md (private).",
+      "cdx has its own retro (`cdx set --retro on`, `cdx retro`): per session, read-only, lessons as text. crow keeps its own skill (it applies lessons) and reuses `cdx run --kind retro --failover --budget --power low`.",
+      "`cdx select` does not skip profiles with a live interactive session; `cdx sessions --json` lists them.",
+      "Claude Code accepts `-n/--name` at launch; cdx has no per-launch passthrough for it yet (wishlist item_015).",
+      "cdx is not owned by the hub's owner: crow only calls its documented CLI."
+    ],
+    "acceptance_criteria": [
+      "AC1: no SessionEnd retro hook remains; a daily batch analyses only pre-filtered sessions in one run and writes one dated report.",
+      "AC2: brief, daily and weekly read one JSON from a gather script; each fork needs at most the tracker/mail calls plus its answer.",
+      "AC3: every session shown by crow has a name `<project> · <kind> · <slug>` computed without a model; the model titler is gone.",
+      "AC4: crow open, term and handoff launch on a free allowed account, or ask when none is free; they never start a second session on a busy profile unasked.",
+      "AC5: dispatch, AFK and retro runs pass a budget and failover; the long-session warning and context cap are live; crow-usage per-model totals match the transcripts."
+    ]
+  },
+  "product": {
+    "title": "crow cost and reliability pass",
+    "overview": "Cut the hub's token spend where it is measured to go (long Opus contexts, per-session retros, gather turns) and make the automatic parts deterministic.",
+    "goals": [
+      "Lower 14-day spend by 10-15% at the same amount of work.",
+      "No lost retros or runs on a usage limit.",
+      "Same names and same drafts for the same input."
+    ],
+    "non_goals": [
+      "The HQ/deck UI redesign (req_007).",
+      "Changes to cdx itself beyond wishlist entries."
+    ]
+  },
+  "backlog_items": [
+    {
+      "title": "Context cap and long-session warning",
+      "priority": "High",
+      "complexity": "Low",
+      "theme": "Hub cost",
+      "request_acs": ["AC5"],
+      "problem": ["Opus turns above 150k context are half the spend; nothing warns before a session gets there."],
+      "scope_in": ["auto-compact window in the cdx profile settings (value chosen by the owner)", "crow-usage flag for sessions over the threshold, shown in crow-watch and the brief", "runbook line: /wrap then fresh session"],
+      "scope_out": ["per-turn model switching"],
+      "acceptance_criteria": ["AC1: the chosen cap is set in every allowed profile and documented.", "AC2: crow-watch and the brief name any live session over the threshold."]
+    },
+    {
+      "title": "Daily retro batch with a no-model pre-filter",
+      "priority": "High",
+      "complexity": "Medium",
+      "theme": "Hub cost",
+      "request_acs": ["AC1"],
+      "problem": ["One Sonnet retro per session (53 in 14 days); a usage limit drops the retro."],
+      "scope_in": ["crow-retro scan: day's transcripts, skip retros/probes/one-shots and sessions under 3 prompts, keep sessions with correction signals", "one `cdx run --kind retro --failover --budget --power low` over all kept digests", "one dated report with a section per session", "timer (cron or systemd user unit) plus `crow-retro run` by hand", "remove the SessionEnd hook, update runbooks/session-retros.md and the brief"],
+      "scope_out": ["cdx's built-in retro switch"],
+      "acceptance_criteria": ["AC1: pre-filter is deterministic and tested on fixture transcripts.", "AC2: one run per day at most, report lists skipped sessions with the reason.", "AC3: profile settings have no SessionEnd retro hook."]
+    },
+    {
+      "title": "Gather script for brief, daily and weekly",
+      "priority": "Medium",
+      "complexity": "Medium",
+      "theme": "Hub cost",
+      "request_acs": ["AC2"],
+      "problem": ["The forks spend 6-13 tool turns at 40k+ context each gathering files and command output."],
+      "scope_in": ["bin/crow-gather brief|daily|weekly --json (activity, releases, tidy, fleet, AFK log, open threads, status, vault tasks, runs, retros, since date, target paths, tracker ids from local config)", "skills read the JSON through one `!` block"],
+      "scope_out": ["MCP calls (tracker, mail) stay in the model"],
+      "acceptance_criteria": ["AC1: each skill has one pre-gathered JSON block and no file-reading steps.", "AC2: JSON stays under 15k tokens on a busy day."]
+    },
+    {
+      "title": "Deterministic session names",
+      "priority": "Medium",
+      "complexity": "Low",
+      "theme": "Hub cost",
+      "request_acs": ["AC3"],
+      "problem": ["Titles come from four sources and a small model; they change between refreshes."],
+      "scope_in": ["scheme `<project> · <kind> · <slug>` computed at launch by crow and from transcripts for older sessions", "remove CROW_TITLE_CMD and the titler worker", "/rename still wins", "wishlist entry: per-launch name passthrough in cdx"],
+      "scope_out": ["renaming sessions inside Claude Code"],
+      "acceptance_criteria": ["AC1: same session gives the same name on every run of crow-usage.", "AC2: no `claude -p` call left in crow-usage."]
+    },
+    {
+      "title": "Free-account choice for crow open, term and handoff",
+      "priority": "High",
+      "complexity": "Low",
+      "theme": "Hub orchestration",
+      "request_acs": ["AC4"],
+      "problem": ["crow always launches on the default account and hits the 'session already running' prompt."],
+      "scope_in": ["pick among allowed accounts without a live session (`cdx sessions --json`), ranked by `cdx select`", "ask-first accounts and an all-busy case ask the owner", "`--on-busy fail` for scripted launches", "pass `--task/--end-state` to cdx in crow handoff"],
+      "scope_out": ["forcing a second session on a busy profile"],
+      "acceptance_criteria": ["AC1: with the default account busy, crow handoff proposes the next allowed free account.", "AC2: tests cover busy, ask-first and none-free cases."]
+    },
+    {
+      "title": "Budget, failover and kind on headless runs",
+      "priority": "Medium",
+      "complexity": "Low",
+      "theme": "Hub cost",
+      "request_acs": ["AC5"],
+      "problem": ["Two overnight runs cost over $8 each; a usage limit stops runs and retros."],
+      "scope_in": ["crow-runs dispatch and AFK: `--budget`, `--failover`, `--fallback-model`", "retro runs: `--kind retro`", "defaults in local config"],
+      "scope_out": ["interactive sessions (cdx applies budget to headless runs only)"],
+      "acceptance_criteria": ["AC1: every crow headless run carries a budget and failover.", "AC2: runbook documents the defaults."]
+    },
+    {
+      "title": "Trim hub start context and fix per-model usage",
+      "priority": "Low",
+      "complexity": "Low",
+      "theme": "Hub cost",
+      "request_acs": ["AC5"],
+      "problem": ["Hub sessions start at 31-50k tokens; crow-usage shows Haiku spend that the transcripts do not contain."],
+      "scope_in": ["measure the start context by part, drop plugins/skills/MCP servers the hub never uses", "fix the per-model split in crow-usage with a test"],
+      "scope_out": ["changes to project CLAUDE.md content"],
+      "acceptance_criteria": ["AC1: start context measured before and after in the runbook.", "AC2: per-model totals match a transcript recount within 2%."]
+    }
+  ],
+  "orchestration_task": {
+    "title": "Deliver the crow cost and reliability pass",
+    "plan": [
+      "1. Free-account choice (unblocks parallel sessions).",
+      "2. Context cap and long-session warning.",
+      "3. Budget, failover and kind on headless runs.",
+      "4. Daily retro batch, then remove the SessionEnd hook.",
+      "5. Gather script for brief, daily and weekly.",
+      "6. Deterministic session names.",
+      "7. Trim start context and fix per-model usage.",
+      "8. Re-measure 14-day spend with the audit method and record it."
+    ]
+  }
+}

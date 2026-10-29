@@ -84,7 +84,7 @@ shift || true
 case "$cmd" in
   hub)      launch "$CROW_HOME" ;;
   brief)    oneshot brief ;;
-  daily)    oneshot daily "Draft only: save the draft to the state dir as drafts/daily-$(date +%F).md and print it. Do not post anything." ;;
+  daily)    oneshot daily "Draft only: write the draft where the skill says and print it. Do not post anything." ;;
   weekly)   oneshot weekly ;;
   open)     dir="$(project_path "${1:?usage: crow open <project> [prompt]}")"
             launch "$dir" ${2:+--prompt "$2"} ;;
