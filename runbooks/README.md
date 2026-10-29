@@ -21,6 +21,7 @@ want to trigger it by name.
 - [ci-secrets](ci-secrets.md): prod-scoped CI variables and secrets (owner runs the generator script; scope/protect rules)
 - [interrupted-sessions](interrupted-sessions.md): list sessions cut off by a usage limit and relaunch them on another allowed account (always by id)
 - [memory](memory.md): memory lives in local/memory, linked into allowed cdx profiles (never copied)
+- [design-canvas](design-canvas.md): add or change boards in a Design canvas artifact without losing the owner's layout (live index merge, one file per publish)
 - [tui-render](tui-render.md): render a TUI (or ANSI mockup) to PNG in the kitty theme at real monitor sizes; fallback-glyph and contrast checks
 - [afk-runs](afk-runs.md): unattended AFK runs (night or day): queue, guardrails, pre-push denylist, return report
 - [repo-tidy](repo-tidy.md): daily repo hygiene via `bin/crow-tidy` (safe auto-cleanup in the brief) and the by-hand cleanup steps
