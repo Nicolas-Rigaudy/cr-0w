@@ -8,10 +8,10 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:12:33
+> Indicators reviewed: 2026-10-29 17:14:15
 
 # AI Context
-- Summary: Delivery order for req_008: account choice, context cap, run failover, retro batch, gather script, names, start context, then re-measure.
+- Summary: Delivery order for req_008: account choice, context cap, run failover, retro batch, gather script, start context, then re-measure.
 - Keywords: deliver, crow, cost, reliability, pass
 - Use when: implementing any item_023..item_029 slice.
 - Skip when: work outside req_008.
@@ -25,7 +25,6 @@
 - [ ] 3. 3. Failover, fallback model and kind on headless runs (optional budget).
 - [ ] 4. 4. Weekday retro batch, then remove the SessionEnd hook.
 - [ ] 5. 5. Gather script for brief, daily and weekly.
-- [ ] 6. 6. Deterministic session names.
 - [ ] 7. 7. Trim start context and fix per-model usage.
 - [ ] 8. 8. Re-measure 14-day spend with the audit method and record it.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
@@ -51,7 +50,7 @@
 - request-AC5 -> `item_023_context_cap_and_long_session_warning`. Proof deferred to slice closeout.
 - request-AC1 -> `item_024_daily_retro_batch_with_a_no_model_pre_filter`. Proof deferred to slice closeout.
 - request-AC2 -> `item_025_gather_script_for_brief_daily_and_weekly`. Proof deferred to slice closeout.
-- request-AC3 -> `item_026_deterministic_session_names`. Proof deferred to slice closeout.
+- request-AC3 -> `item_029_trim_hub_start_context_and_fix_per_model_usage`. Proof deferred to slice closeout.
 - request-AC4 -> `item_027_free_account_choice_for_crow_open_term_and_handoff`. Proof deferred to slice closeout.
 - request-AC5 -> `item_028_budget_failover_and_kind_on_headless_runs`. Proof deferred to slice closeout.
 - request-AC5 -> `item_029_trim_hub_start_context_and_fix_per_model_usage`. Proof deferred to slice closeout.

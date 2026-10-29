@@ -7,7 +7,7 @@
 > Complexity: Medium
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:12:34
+> Indicators reviewed: 2026-10-29 17:14:15
 
 # AI Context
 - Summary: Cost and reliability pass from the 2026-10-29 audit: long Opus contexts, per-session retros, gather turns, model titles, busy-account launches, unprotected headless runs.
@@ -35,7 +35,7 @@
 # Acceptance criteria
 - AC1: no SessionEnd retro hook remains; a daily batch analyses only pre-filtered sessions in one run and writes one dated report.
 - AC2: brief, daily and weekly read one JSON from a gather script; each fork needs at most the tracker/mail calls plus its answer.
-- AC3: every session shown by crow has a name `<project> · <kind> · <slug>` computed without a model; the model titler is gone.
+- AC3: the Haiku session titler stays (owner decision 2026-10-29); crow-usage shows its real cost.
 - AC4: crow open, term and handoff launch on a free allowed account, or ask when none is free; they never start a second session on a busy profile unasked.
 - AC5: dispatch, AFK and retro runs pass failover and a fallback model; the long-session warning and context cap are live; crow-usage per-model totals match the transcripts.
 

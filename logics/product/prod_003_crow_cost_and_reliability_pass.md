@@ -6,7 +6,7 @@
 > Related task: `task_003_deliver_the_crow_cost_and_reliability_pass`
 > Related architecture: (none yet)
 > Reminder: Update status, linked refs, scope, decisions, success signals, and open questions when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:12:33
+> Indicators reviewed: 2026-10-29 17:14:15
 
 # Overview
 Cut the hub's token spend where it is measured to go (long Opus contexts, per-session retros, gather turns) and make the automatic parts deterministic.
@@ -41,7 +41,7 @@ flowchart LR
 - crow keeps its own retro skill (it applies lessons) and reuses cdx run flags instead of cdx's built-in retro.
 - Pre-filters, names and gathers are scripts; models only write prose and apply lessons.
 - Accounts with a live session are never reused unasked.
-- Owner decisions 2026-10-29: auto-compact at 150k with a warning at 120k and help splitting into scoped sessions; retro batch Monday to Friday evening, none on weekends; no default spend cap on headless runs (optional per run).
+- Owner decisions 2026-10-29: auto-compact at 150k with a warning at 120k and help splitting into scoped sessions; retro batch Monday to Friday evening, none on weekends; no default spend cap on headless runs (optional per run); the Haiku session titler stays, deterministic names dropped.
 
 # Success signals
 - 14-day spend re-measured with the audit method drops 10-15% at similar session counts.

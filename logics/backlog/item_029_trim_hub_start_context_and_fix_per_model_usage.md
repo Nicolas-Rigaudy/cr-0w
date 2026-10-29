@@ -8,6 +8,7 @@
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-10-29 17:14:14
 
 # AI Context
 - Summary: Measure the 31-50k start context of hub sessions and drop unused parts; fix crow-usage's per-model split that shows Haiku spend absent from transcripts.
@@ -31,6 +32,7 @@
 
 # AC Traceability
 - request-AC5 -> This backlog slice. Proof: AC1: start context measured before and after in the runbook.
+- request-AC3 -> This backlog slice. Proof: AC2: per-model totals match a transcript recount within 2%.
 
 # Decision framing
 - Product framing: Not needed

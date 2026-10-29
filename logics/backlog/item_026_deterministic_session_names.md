@@ -1,13 +1,14 @@
 ## item_026_deterministic_session_names - Deterministic session names
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Obsolete
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-10-29 17:14:20
 
 # AI Context
 - Summary: Names are `<project> · <kind> · <slug>`, computed at launch or from the transcript; the Haiku titler in crow-usage goes away.
@@ -43,6 +44,7 @@
 - Architecture decision(s): (none yet)
 - Request: `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`
 - Primary task(s): `task_003_deliver_the_crow_cost_and_reliability_pass`
+- Superseded by: `item_029_trim_hub_start_context_and_fix_per_model_usage`
 
 # Priority
 - Priority: Medium
