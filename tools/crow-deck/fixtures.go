@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 // Mock data for the skeleton. All of it is invented and kept consistent across pages
 // (counts, badges, run slots). Real sources arrive with the later slices.
 
@@ -14,12 +16,47 @@ type gauge struct {
 	RunsMax  int
 }
 
+// Agent groups on the Agents tab, in display order.
+const (
+	gNeeds   = iota // waits for the owner
+	gRunning        // interactive sessions at work
+	gRuns           // background runs and paused runs
+	gDone           // finished today
+)
+
+var groupNames = []string{"needs you", "running", "background runs", "finished today"}
+
+type tailLine struct{ At, Text string }
+
 type agentRow struct {
-	State   string // working, needs, waiting, done
-	Name    string
+	State   string // working, idle, needs, waiting (paused), done
+	Name    string // project, the Home column
 	Account string
 	Doing   string
 	Since   string
+	// Agents tab.
+	Group       int
+	Short       string // list label: session title, run label
+	Meta        string // tail header: account, tokens, age
+	Ask         string // the agent's last words when it waits for the owner
+	Tail        []tailLine
+	Project     string
+	Title       string
+	Ctx         int
+	PID         int
+	Session     string // session id, or run id for runs
+	Cwd         string
+	Interrupted bool
+	Started     time.Time
+}
+
+// hspan is a stretch of the day in hours (8.5 = 08:30).
+type hspan struct{ From, To float64 }
+
+// whoRow is one line of "Who worked when": active stretches, then paused ones.
+type whoRow struct {
+	Name, Account string
+	On, Off       []hspan
 }
 
 type blocker struct {
@@ -64,6 +101,11 @@ type fixtures struct {
 	Next                []nextRow
 	Projects            []projRow
 	Repos, Dirty, Ahead int
+	Slots               [2]int // background runs busy, cap
+	Who                 []whoRow
+	Live                bool   // from the scripts, not invented
+	Sync                string // sync state of live data
+	SyncNote            string // stale age or failing source for the header dot
 	// Counts behind the tab badges and the Blockers title.
 	MRsAwaiting, MRsMine, MRsThreads int
 }
@@ -76,16 +118,10 @@ func mockFixtures() *fixtures {
 			{"main", 60, "16:10", 63, "", "", 0, 0},
 			{"spare", 40, "", -1, "ask-first", "burn 4%/h", 1, 2},
 		},
-		Agents: []agentRow{
-			{"working", "crow", "main", "writing designs, Home landscape in the canvas", "4m"},
-			{"needs", "atlas", "main", "MR review session, asks you to undraft", "1m"},
-			{"working", "vault", "main", "designing the CR-0W data layout", "12m"},
-			{"waiting", "run 99a8", "spare", "asks before using spare (ask-first), R relaunch", "9m"},
-			{"done", "notes", "main", "finished: 0.40 pill, 3 commits, unpushed", "12:30"},
-			{"done", "tools", "main", "finished: AC2 tests green, 1 commit", "11:05"},
-			{"done", "lint", "main", "finished: panel layout notes", "09:40"},
-			{"done", "run 77c1", "spare", "finished: retro batch, 4 sessions", "08:15"},
-		},
+		Agents: mockAgents(),
+		Slots:  [2]int{1, 2},
+		Who:    mockWho(),
+		Sync:   stFresh,
 		Blockers: []blocker{
 			{"needs", "!214 atlas", "PRJ-565 typed ids, CI running, blocks !213", "2h"},
 			{"blocked", "!213 atlas", "PRJ-503 init prod, waits for !214", "prod"},
@@ -132,6 +168,45 @@ func mockFixtures() *fixtures {
 	}
 }
 
+func mockAgents() []agentRow {
+	ask := "The commit subject has no file scope. Keep this finding?"
+	rows := []agentRow{
+		{State: "needs", Name: "atlas", Account: "main", Doing: "asks you: finding 2, the commit subject has no file scope", Since: "2m", Group: gNeeds,
+			Short: "review !220", Meta: "main · medium · 31k tokens · 2m", Ask: ask,
+			Tail: []tailLine{
+				{"14:04", "$ crow review !220 --patterns atlas"}, {"14:04", "loaded 14 ledger patterns, 3 touch retry.py"},
+				{"14:05", "reading retry.py (84 lines changed)"}, {"14:05", "◆ BACKOFF comes from the environment, not in config.md"},
+				{"14:06", "checking config.md"}}},
+		{State: "needs", Name: "atlas", Account: "main", Doing: "asks you: undraft the MR?", Since: "1m", Group: gNeeds,
+			Short: "atlas undraft?", Meta: "main · 22k tokens · 1m", Ask: "Undraft !213 now that CI is green?",
+			Tail: []tailLine{{"14:05", "CI passed on !213"}, {"14:05", "waiting for your answer"}}},
+		{State: "working", Name: "crow", Account: "main", Doing: "writing designs, Home landscape in the canvas", Since: "4m", Group: gRunning,
+			Short: "crow designs", Meta: "main · 64k tokens · 4m", Tail: []tailLine{{"14:02", "Edit: HomeL_merge.dc.html"}, {"14:05", "Bash: crow-compare"}}},
+		{State: "working", Name: "vault", Account: "main", Doing: "designing the CR-0W data layout", Since: "12m", Group: gRunning,
+			Short: "vault data layout", Meta: "main · 41k tokens · 12m", Tail: []tailLine{{"13:58", "Read: layout.md"}, {"14:03", "Write: layout.md"}}},
+		{State: "waiting", Name: "run 99a8", Account: "spare", Doing: "paused on the 5h limit, back 16:10, R relaunch", Since: "9m", Group: gRuns,
+			Short: "99a8 paused", Meta: "spare · 5h limit", Interrupted: true,
+			Tail: []tailLine{{"13:53", "stopped on the 5h limit"}, {"", "back 16:10 (R relaunches it on another account)"}}},
+		{State: "done", Name: "notes", Account: "main", Doing: "finished: 0.40 pill, 3 commits, unpushed", Since: "12:30", Group: gDone,
+			Short: "notes 3 commits", Meta: "done · 18m", Tail: []tailLine{{"12:30", "finished: 0.40 pill, 3 commits, unpushed"}}},
+		{State: "done", Name: "tools", Account: "main", Doing: "finished: AC2 tests green, 1 commit", Since: "11:05", Group: gDone,
+			Short: "tools AC2", Meta: "done · 9m", Tail: []tailLine{{"11:05", "finished: AC2 tests green, 1 commit"}}},
+		{State: "done", Name: "lint", Account: "main", Doing: "finished: panel layout notes", Since: "09:40", Group: gDone,
+			Short: "lint notes", Meta: "done · 6m", Tail: []tailLine{{"09:40", "finished: panel layout notes"}}},
+	}
+	return rows
+}
+
+func mockWho() []whoRow {
+	return []whoRow{
+		{Name: "crow designs", Account: "main", On: []hspan{{9.5, 14.1}}},
+		{Name: "atlas session", Account: "main", On: []hspan{{10, 11.4}, {13.2, 14.1}}},
+		{Name: "vault", Account: "main", On: []hspan{{10.8, 12}, {13.6, 14.1}}},
+		{Name: "notes", Account: "main", On: []hspan{{12, 12.5}}},
+		{Name: "run 99a8", Account: "spare", On: []hspan{{11.4, 13.4}}, Off: []hspan{{13.4, 16.2}}},
+	}
+}
+
 // emptyFixtures: no agent, no MR, no blocker.
 func emptyFixtures() *fixtures {
 	f := mockFixtures()
@@ -141,11 +216,11 @@ func emptyFixtures() *fixtures {
 	return f
 }
 
-// needsYou is the badge on the Agents tab: agents waiting for the owner.
+// agentsNeedYou is the badge on the Agents tab: agents waiting for the owner.
 func (f *fixtures) agentsNeedYou() int {
 	n := 0
 	for _, a := range f.Agents {
-		if a.State == "needs" || a.State == "waiting" {
+		if a.Group == gNeeds {
 			n++
 		}
 	}
