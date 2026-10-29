@@ -3,6 +3,7 @@ local/
 .claude/settings.local.json
 *.bak
 tools/crow-watch/crow-watch
+tools/crow-deck/crow-deck
 __pycache__/
 .pytest_cache/
 .claude/skills/daily
