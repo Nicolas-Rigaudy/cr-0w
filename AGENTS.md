@@ -1,1 +1,2 @@
 @LOGICS.md
+@CLAUDE.md
