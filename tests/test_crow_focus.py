@@ -33,3 +33,10 @@ def test_dry_run_needs_account_and_cwd(hub):
     ok = run(hub, "crow-focus", "--pid", "5", "--account", "main", "--cwd", "/tmp", "--dry-run")
     assert ok.returncode == 0 and "cdx main --dir /tmp --resume" in ok.stdout
     assert run(hub, "crow-focus", "--pid", "5", "--dry-run").returncode != 0
+
+
+def test_send_dry_run_and_command(hub):
+    ok = run(hub, "crow-focus", "--pid", "5", "--send", "yes", "--dry-run")
+    assert ok.returncode == 0 and "'yes'" in ok.stdout and "pid 5" in ok.stdout
+    assert cf.send_args("unix:/s", 7, "no") == ["kitten", "@", "--to", "unix:/s", "send-text", "--match", "id:7", "--", "no\r"]
+    assert run(hub, "crow-focus", "--send", "yes", "--dry-run").returncode != 0

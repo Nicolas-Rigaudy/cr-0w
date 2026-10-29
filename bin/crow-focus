@@ -2,11 +2,14 @@
 """crow-focus: bring a Claude session to the front, or resume it when no window holds it.
 
   crow-focus --pid PID --account ACCOUNT --cwd DIR [--dry-run]
+  crow-focus --pid PID --send TEXT [--dry-run]
 
 Focus: asks every kitty instance (remote control, socket-only) for its windows and focuses the
 one running PID, matching the window's own process or any ancestor of PID (the shell the
 session was started from). Resume: when no window holds it (the process is gone or runs
 outside kitty), opens a new kitty window in DIR running `cdx ACCOUNT --dir DIR --resume`.
+--send types TEXT and Enter into the window holding PID (the deck's answer to an agent question) and
+never resumes: it exits 1 when no window holds the session.
 --dry-run prints what it would do and does nothing.
 """
 import glob, json, os, pwd, subprocess, sys
@@ -58,6 +61,25 @@ def focus(pid):
     return None
 
 
+def send_args(sock, wid, text):
+    """kitten command that types text and Enter into window wid."""
+    return ["kitten", "@", "--to", sock, "send-text", "--match", f"id:{wid}", "--", text + "\r"]
+
+
+def send(pid, text):
+    """Type text into the window holding pid. True when a window took it."""
+    for sock in sorted(glob.glob(f"{RUNTIME}/kitty-*")):
+        sock = "unix:" + sock
+        try:
+            wid = find_window(kitty_ls(sock), pid)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            continue
+        if wid is not None:
+            subprocess.run(send_args(sock, wid, text), check=True, timeout=5)
+            return True
+    return False
+
+
 def clean_env():
     """Detach from the calling session: real HOME, no inherited Claude/cdx variables."""
     env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDE", "ANTHROPIC_", "CDX_"))}
@@ -74,6 +96,17 @@ def main(argv):
         pid = int(opts.get("pid", 0))
     except ValueError:
         sys.exit(__doc__)
+    if "send" in opts:
+        if not pid:
+            sys.exit(__doc__)
+        if dry:
+            print(f"type {opts['send']!r} and Enter into the kitty window holding pid {pid}")
+            return 0
+        if send(pid, opts["send"]):
+            print("sent")
+            return 0
+        print(f"crow-focus: no kitty window holds pid {pid}", file=sys.stderr)
+        return 1
     account, cwd = opts.get("account"), opts.get("cwd")
     if not account or not cwd:
         sys.exit(__doc__)
