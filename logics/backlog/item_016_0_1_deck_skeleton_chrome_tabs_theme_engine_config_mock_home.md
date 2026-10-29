@@ -1,10 +1,10 @@
 ## item_016_0_1_deck_skeleton_chrome_tabs_theme_engine_config_mock_home - 0.1 deck skeleton: chrome, tabs, theme engine, config, mock Home
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -52,3 +52,9 @@
 # Priority
 - Priority: Medium
 - Rationale: Ships on its own; order follows the build plan in the spec.
+
+# Tasks
+- `task_004_0_1_deck_skeleton_chrome_tabs_theme_engine_config_mock_home`
+
+# Notes
+- Task `task_004_0_1_deck_skeleton_chrome_tabs_theme_engine_config_mock_home` was finished via `logics-manager flow finish task` on 2026-10-29.
