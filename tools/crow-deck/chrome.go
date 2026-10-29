@@ -30,6 +30,7 @@ type chromeState struct {
 	fx      *fixtures
 	flash   string
 	context []keyHint
+	hist    bool // Agents shows the history
 }
 
 type keyHint struct{ key, desc string }
@@ -194,7 +195,21 @@ func (lk *look) tabs(w int, cs chromeState) string {
 		}
 		l = append(l, spc(2))
 	}
+	if cs.page == 1 {
+		if sw := lk.liveSwitch(cs.hist); l.width()+2+sw.width() <= w {
+			return lr(l, sw, w).render(w, false, lk.sel)
+		}
+	}
 	return l.render(w, false, lk.sel)
+}
+
+// liveSwitch is the live / history switch on the Agents tab row.
+func (lk *look) liveSwitch(hist bool) line {
+	live, his := seg{"live", lk.acc}, seg{" history ", lk.sub}
+	if hist {
+		live, his = seg{"live", lk.sub}, seg{" history ", lk.sel.Bold(true)}
+	}
+	return line{live, spc(1), {"/", lk.key}, his}
 }
 
 // rule is the thin line under the tabs.

@@ -109,9 +109,11 @@ type fixtures struct {
 	Repos, Dirty, Ahead int
 	Slots               [2]int // background runs busy, cap
 	Who                 []whoRow
-	Live                bool   // from the scripts, not invented
-	Sync                string // sync state of live data
-	SyncNote            string // stale age or failing source for the header dot
+	Hist                []histSession // History, newest first
+	HistTotal           int           // sessions in the archive, 0: len(Hist)
+	Live                bool          // from the scripts, not invented
+	Sync                string        // sync state of live data
+	SyncNote            string        // stale age or failing source for the header dot
 	// Counts behind the tab badges and the Blockers title.
 	MRsAwaiting, MRsMine, MRsThreads int
 	// MRs tab.
@@ -136,7 +138,8 @@ func mockFixtures() *fixtures {
 		Agents: mockAgents(),
 		Slots:  [2]int{1, 2},
 		Who:    mockWho(),
-		Sync:   stFresh,
+		Hist:   mockHist(mockNow()), HistTotal: 212,
+		Sync: stFresh,
 		Blockers: []blocker{
 			{"needs", "!214 atlas", "PRJ-565 typed ids, CI running, blocks !213", "2h"},
 			{"blocked", "!213 atlas", "PRJ-503 init prod, waits for !214", "prod"},
@@ -230,6 +233,7 @@ func mockWho() []whoRow {
 func emptyFixtures() *fixtures {
 	f := mockFixtures()
 	f.Agents, f.Blockers, f.Today, f.Mail, f.Next, f.Projects = nil, nil, nil, nil, nil, nil
+	f.Hist, f.HistTotal = nil, 0
 	f.MRs, f.Branches, f.MRDetails = nil, nil, nil
 	f.MRsAwaiting, f.MRsMine, f.MRsThreads = 0, 0, 0
 	f.Usage = nil

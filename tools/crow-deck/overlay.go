@@ -31,7 +31,7 @@ func paletteCommands() []command {
 	for _, s := range syncStates {
 		cs = append(cs, command{"mock " + s, "show the " + s + " state (invented data)"})
 	}
-	cs = append(cs, command{"attach", "jump to the selected agent's window"}, command{"relaunch", "continue the selected paused session on another account"})
+	cs = append(cs, command{"history", "search the session history (Agents)"}, command{"live", "back to the live agents"}, command{"attach", "jump to the selected agent's window"}, command{"relaunch", "continue the selected paused session on another account"})
 	return append(cs, command{"quit", "leave the deck"})
 }
 
@@ -70,7 +70,8 @@ func (lk *look) helpOverlay(w, h int, page int) []string {
 	keys := [][2]string{
 		{"1-5", "tabs"}, {"tab", "next pane (one pane at a time under 100 columns)"}, {"j k", "move in the list"},
 		{"m", "mode: work, perso, all"}, {"t", "switch theme"}, {":", "palette"}, {"?", "this help"},
-		{"/", "history and search (later slice)"}, {"a x e c", "Agents: answer yes, no, edit, chat"},
+		{"/", "Agents: history and search; esc back to live"},
+		{"p a d M s x", "History: filter project, account, date, model, status; clear"}, {"a x e c", "Agents: answer yes, no, edit, chat"},
 		{"enter", "Agents: send the typed answer"}, {"g", "Agents: jump to the agent's window"},
 		{"R", "Agents: relaunch a paused run"}, {"h r x", "handoff, review, snooze (later slices)"}, {"q", "quit"},
 	}

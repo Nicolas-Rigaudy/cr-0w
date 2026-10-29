@@ -104,6 +104,11 @@ type usageSession struct {
 	End      string           `json:"end"`
 	Activity map[string][]int `json:"activity"`
 	Kind     string           `json:"kind"`
+	Branch   string           `json:"branch"`
+	Models   []string         `json:"models"`
+	Tokens   int              `json:"tokens"`
+	CostUSD  float64          `json:"cost_usd"`
+	Messages int              `json:"user_messages"`
 	Today    struct {
 		CostUSD float64 `json:"cost_usd"`
 	} `json:"today"`
@@ -723,6 +728,7 @@ func buildFixtures(in liveInput) *fixtures {
 	fx.Gauges = gaugeRows(ls.runs, ls.usage, ls.acct)
 	fx.Usage = usageViewOf(ls.usage, ls.reg, now)
 	fx.Who = whoWorked(now, ls.usage, ls.intr, ls.reg)
+	fx.Hist = histOf(ls.usage, ls.reg, now)
 	if ls.reg != nil {
 		fx.Next = openThreads(filepath.Join(ls.reg.StateDir, "open-threads.md"), ls.reg)
 		for _, p := range ls.reg.Projects {

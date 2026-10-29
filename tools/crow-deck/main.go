@@ -47,11 +47,17 @@ type model struct {
 
 	usePane, useSel int
 	useFortnight    bool
+
+	hist       bool // Agents shows the session history instead of the live view
+	histF      histFilter
+	histTyping bool
+	histSel    int
+	histPane   int
 }
 
 func newModel(cfg config) model {
 	th := max(0, themeIndex(cfg.Theme))
-	return model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pBlockers, w: 160, h: 45, now: mockNow()}
+	return model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pBlockers, w: 160, h: 45, now: mockNow(), histF: newHistFilter()}
 }
 
 // mockNow is a fixed time of day (14:07) so mock renders are stable.
@@ -155,6 +161,10 @@ func (m model) projectsView() projectsView {
 	return projectsView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, mode: m.mode, sel: m.prjSel, pane: m.prjPane, zoom: m.prjZoom}
 }
 
+func (m model) histView() histView {
+	return histView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, mode: m.mode, f: m.histF, typing: m.histTyping, sel: m.histSel, pane: m.histPane}
+}
+
 func (m model) usageView() usageViewState {
 	return usageViewState{lk: m.look(), fx: m.fx, sync: m.sync, sel: m.useSel, pane: m.usePane, fortnight: m.useFortnight, now: m.now}
 }
@@ -183,6 +193,7 @@ func (m *model) setSync(s string) {
 	}
 	m.sel = [homePanes]int{}
 	m.agentSel, m.agentKey, m.input, m.typing = 0, "", "", false
+	m.histSel = 0
 }
 
 func (m *model) cycleTheme(d int) {
@@ -197,6 +208,11 @@ func (m model) homeView() homeView {
 }
 
 func (m *model) moveSel(d int) {
+	if m.page == 1 && m.hist {
+		hv := m.histView()
+		m.histSel = max(0, min(len(hv.rows())-1, hv.sel+d))
+		return
+	}
 	if m.page == 1 {
 		m.selectAgent(m.agentSel + d)
 		m.input, m.typing = "", false
@@ -243,6 +259,10 @@ func (m *model) moveFocus(d int) {
 	case 0:
 		m.focus = (m.focus + d + homePanes) % homePanes
 	case 1:
+		if m.hist {
+			m.histPane = (m.histPane + d + histPanes) % histPanes
+			return
+		}
 		m.agentPane = (m.agentPane + d + agentPanes) % agentPanes
 	case 2:
 		m.mrPane = (m.mrPane + d + mrPanes) % mrPanes
@@ -284,6 +304,10 @@ func (m *model) exec(c string) tea.Cmd {
 		}
 	case "mock":
 		m.setSync(arg)
+	case "history":
+		m.page, m.hist = 1, true
+	case "live":
+		m.page, m.hist, m.histTyping = 1, false, false
 	case "attach":
 		if a := m.curAgent(); a != nil {
 			return attachCmd(*a)
@@ -342,6 +366,11 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.overlay == ovNone && m.page == 1 && m.typing {
 		return m.typingKey(msg)
+	}
+	if m.overlay == ovNone && m.page == 1 && m.hist {
+		if nm, ok := m.histKey(msg); ok {
+			return nm, nil
+		}
 	}
 	switch m.overlay {
 	case ovConfirm:
@@ -419,7 +448,11 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.flash = k + ": editing the account policy arrives with the actions slice"
 		}
 	case "/":
-		m.flash = "/ history and search arrive with a later slice"
+		if m.page == 1 {
+			m.hist, m.histTyping, m.histPane = true, true, hpList
+		} else {
+			m.flash = "/ filters the Projects cards with the actions slice"
+		}
 	case "enter", "h", "r", "x", "R", "a", "e", "c", "g", "T", "M", "P", "s":
 		if m.page == 1 {
 			return m.agentKeyPress(k)
@@ -593,6 +626,12 @@ func (m model) paletteKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) context() []keyHint {
+	if m.page == 1 && m.hist {
+		if m.histTyping {
+			return []keyHint{{"enter", "keep text"}, {"esc", "stop typing"}}
+		}
+		return []keyHint{{"/", "search"}, {"p a d M s", "filter"}, {"x", "clear"}, {"j k", "session"}, {"tab", "pane"}, {"esc", "back to live"}}
+	}
 	if m.page == 1 {
 		if m.typing {
 			return []keyHint{{"enter", "send"}, {"esc", "cancel"}}
@@ -623,7 +662,7 @@ func (m model) View() string {
 		return "terminal too small" + strings.Repeat("\n", max(0, m.h-1))
 	}
 	lk := m.look()
-	cs := chromeState{page: m.page, mode: m.mode, sync: m.sync, fx: m.fx, flash: m.flash, context: m.context()}
+	cs := chromeState{page: m.page, mode: m.mode, sync: m.sync, fx: m.fx, flash: m.flash, context: m.context(), hist: m.page == 1 && m.hist}
 	bh := m.h - 4
 	var body []string
 	switch {
@@ -637,6 +676,8 @@ func (m model) View() string {
 		body = lk.confirmOverlay(m.w, bh, m.curAgent())
 	case m.page == 0:
 		body = m.homeView().body(m.w, bh)
+	case m.page == 1 && m.hist:
+		body = m.histView().body(m.w, bh)
 	case m.page == 1:
 		body = m.agentsView().body(m.w, bh)
 	case m.page == 2:

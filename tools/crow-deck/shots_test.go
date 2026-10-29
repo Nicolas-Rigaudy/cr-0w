@@ -49,6 +49,7 @@ func TestShots(t *testing.T) {
 		agentShots(write, ti, sizes)
 		mrsShots(write, ti, sizes)
 		usageShots(write, ti, sizes)
+		histShots(write, ti, sizes)
 		projectShots(write, ti, sizes)
 		for _, st := range []string{stEmpty, stError, stLoading, stStale} {
 			for _, sn := range []string{"wide", "small"} {
@@ -193,5 +194,46 @@ func projectShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m = base("wide")
 		m.setSync(st)
 		write(fmt.Sprintf("%s-Projects-wide-%s", name, st), m)
+	}
+}
+
+// histShots: the History view behind / in Agents: the list, a search, a filter, a live-style
+// row without detail, every pane in single-pane mode, and the data states.
+func histShots(write func(string, model), ti int, sizes map[string][2]int) {
+	name := themes[ti].name
+	base := func(sn string) model {
+		m := newModel(defaultConfig())
+		m.th, m.page, m.w, m.h, m.mode, m.hist = ti, 1, sizes[sn][0], sizes[sn][1], "all", true
+		return m
+	}
+	for _, sn := range []string{"wide", "portrait", "small"} {
+		m := base(sn)
+		m.histSel = 1
+		write(fmt.Sprintf("%s-History-%s", name, sn), m)
+	}
+	m := base("wide")
+	m.histF.query, m.histTyping = "retry", true
+	write(name+"-History-wide-search", m)
+	m = base("wide")
+	m.histF.account, m.histF.model, m.histF.days = "main", "sonnet", 7
+	write(name+"-History-wide-filtered", m)
+	m = base("wide")
+	m.histF.query = "zzz"
+	write(name+"-History-wide-nomatch", m)
+	m = base("wide")
+	m.histSel = 3
+	for i := range m.fx.Hist {
+		m.fx.Hist[i].Detail = false
+	}
+	write(name+"-History-wide-nodetail", m)
+	for pane, pn := range []string{"list", "preview"} {
+		m = base("small")
+		m.histPane = pane
+		write(fmt.Sprintf("%s-History-small-%s", name, pn), m)
+	}
+	for _, st := range []string{stEmpty, stError, stLoading, stStale} {
+		m = base("wide")
+		m.setSync(st)
+		write(fmt.Sprintf("%s-History-wide-%s", name, st), m)
 	}
 }
