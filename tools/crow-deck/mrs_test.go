@@ -208,3 +208,19 @@ func TestMRsActionKeysDoNotPretend(t *testing.T) {
 		}
 	}
 }
+
+func TestHomeBlockersComeFromMRs(t *testing.T) {
+	withANSI(t)
+	m, _ := liveMRModel(t)
+	m.page = 0
+	out := m.View()
+	for _, want := range []string{"waits for your review", "2 threads to answer", "1 awaits you"} {
+		if !hasText(out, want) {
+			t.Errorf("home lacks %q", want)
+		}
+	}
+	m = send(m, srcMsg{src: srcMRs, val: &mrsSnap{Forges: map[string]string{"gitlab": "ok", "github": "ok"}}, at: testNow()})
+	if !hasText(m.View(), "No MR blocks you") {
+		t.Error("an MR list with nothing to do should say so")
+	}
+}

@@ -120,14 +120,16 @@ func (hv homeView) spec(i, iw int) boxSpec {
 		if n := len(fx.Blockers); n > 0 {
 			sp.title += " " + strconv.Itoa(n)
 		}
-		if !fx.Live {
+		if !fx.Live || fx.MRsReady {
 			sp.right = line{{"MRs: ", lk.sub}, {fmt.Sprintf("%d awaits you", fx.MRsAwaiting), lk.warn}, {fmt.Sprintf(" · %d mine · %d thread", fx.MRsMine, fx.MRsThreads), lk.sub}}
 		}
 		switch {
 		case hv.sync == stError:
 			sp.rows = []line{{{"◆ forge sync failed: login expired, log in again", lk.bad}}}
+		case len(fx.Blockers) == 0 && fx.Live && !fx.MRsReady:
+			sp.rows = []line{{{"Waiting for the forges (MRs tab).", lk.sub}}}
 		case len(fx.Blockers) == 0 && fx.Live:
-			sp.rows = []line{{{"Review and ticket blockers need the forges (MRs tab).", lk.sub}}}
+			sp.rows = []line{{{"No MR blocks you. Ticket blockers are not wired.", lk.sub}}}
 		case len(fx.Blockers) == 0:
 			sp.rows = []line{{{"Nothing blocks you.", lk.sub}}}
 		default:
