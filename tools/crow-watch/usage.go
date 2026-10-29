@@ -64,19 +64,22 @@ type slice struct {
 }
 
 type usageSession struct {
-	ID       string           `json:"id"`
-	Account  string           `json:"account"`
-	Project  string           `json:"project"`
-	Title    string           `json:"title"`
-	Kind     string           `json:"kind"`
-	Models   []string         `json:"models"`
-	Start    string           `json:"start"`
-	End      string           `json:"end"`
-	Active   bool             `json:"active"`
-	Tokens   int              `json:"tokens"`
-	CostUSD  *float64         `json:"cost_usd"`
-	ByDay    map[string]slice `json:"by_day"`
-	Activity map[string][]int `json:"activity"`
+	ID      string   `json:"id"`
+	Account string   `json:"account"`
+	Project string   `json:"project"`
+	Title   string   `json:"title"`
+	Kind    string   `json:"kind"`
+	Models  []string `json:"models"`
+	Start   string   `json:"start"`
+	End     string   `json:"end"`
+	Active  bool     `json:"active"`
+	Tokens  int      `json:"tokens"`
+	// Context size of the last turn and its level: ok, warn (wrap and split), over (past the cap).
+	ContextTokens int              `json:"context_tokens"`
+	ContextLevel  string           `json:"context_level"`
+	CostUSD       *float64         `json:"cost_usd"`
+	ByDay         map[string]slice `json:"by_day"`
+	Activity      map[string][]int `json:"activity"`
 	// Points of the account's current 5h and weekly windows this session used.
 	LimitShare struct {
 		FiveHour *float64 `json:"five_hour_pct"`
@@ -533,6 +536,13 @@ func (u *usage) rowLine(r sessRow, width int, open bool) line {
 	title := s.Title
 	if title == "" {
 		title = "session " + short(s.ID)
+	}
+	if s.Active && today && s.ContextLevel != "" && s.ContextLevel != "ok" { // long context: wrap and split
+		mark = seg{"▲ ", sYellow}
+		if s.ContextLevel == "over" {
+			mark = seg{"▲ ", sErr}
+		}
+		title = fmt.Sprintf("%dk ctx · %s", s.ContextTokens/1000, title)
 	}
 	ps, ts := sBold, sPlain
 	if !today {

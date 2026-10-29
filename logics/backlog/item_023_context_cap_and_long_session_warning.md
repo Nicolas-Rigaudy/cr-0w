@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -32,6 +32,10 @@
 - AC1: the 150k cap is set in every allowed profile and documented.
 - AC2: crow-watch and the brief name any live session over 120k.
 - AC3: past the warning, the hub proposes a wrap and a split into scoped handoffs.
+
+# Delivery notes
+- AC2, AC3 done: `bin/crow-ctx`, `context_tokens`/`context_level` in crow-usage, crow-watch Usage row mark, brief section, CLAUDE.md rule, `runbooks/long-sessions.md`.
+- AC1 pending: `bin/crow-ctx cap apply` writes the setting into profiles outside the repo; the owner runs it once and checks `bin/crow-ctx cap check`.
 
 # AC Traceability
 - request-AC5 -> This backlog slice. Proof: AC1: the chosen cap is set in every allowed profile and documented.

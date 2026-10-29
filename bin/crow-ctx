@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""crow-ctx: live sessions with a long context, and the auto-compact cap for the cdx profiles.
+
+  crow-ctx [--json]            live sessions past the warning (default 120k), from crow-usage
+  crow-ctx --brief             the same as one line per session, nothing when all are short
+  crow-ctx cap check           every allowed profile has the auto-compact window set (exit 1 if not)
+  crow-ctx cap apply           set it in every allowed profile's settings.json (env.CLAUDE_CODE_AUTO_COMPACT_WINDOW)
+
+Thresholds: CROW_CTX_WARN (default 120000) and CROW_CTX_CAP (default 150000), shared with crow-usage.
+CROW_USAGE_JSON=<file> reads a saved `crow-usage --json` instead of running it.
+The warning proposes `/wrap`, then one crow handoff per narrow end state (runbooks/long-sessions.md).
+"""
+import json, os, subprocess, sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+BIN = os.path.dirname(os.path.realpath(__file__))
+WARN = int(os.environ.get("CROW_CTX_WARN", 120_000))
+CAP = int(os.environ.get("CROW_CTX_CAP", 150_000))
+ENV_KEY = "CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+
+
+def usage():
+    path = os.environ.get("CROW_USAGE_JSON")
+    if path:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    out = subprocess.run([os.path.join(BIN, "crow-usage"), "--json"], capture_output=True, text=True)
+    if out.returncode:
+        sys.exit("crow-ctx: crow-usage failed: " + out.stderr.strip()[-200:])
+    return json.loads(out.stdout)
+
+
+def long_sessions(data):
+    """Live sessions at or past the warning, longest first."""
+    found = [s for s in data.get("sessions", []) if s.get("active") and (s.get("context_tokens") or 0) >= WARN]
+    return sorted(found, key=lambda s: -s["context_tokens"])
+
+
+def label(s):
+    return f"{s['context_tokens'] // 1000}k"
+
+
+def advice(s):
+    state = "past the cap" if s["context_tokens"] > CAP else "near the cap"
+    return (f"{s.get('project') or '?'}: {s.get('title') or s['id'][:8]} ({s['account']}) {label(s)} {state}; "
+            f"/wrap, then split the rest into crow handoffs with one end state each")
+
+
+def allowed_profiles():
+    names = subprocess.run([os.path.join(BIN, "crow-accounts"), "allowed"], capture_output=True, text=True).stdout.split()
+    return [(n, os.path.join(crow_lib.profiles_dir(), n, "claude-home", ".claude", "settings.json")) for n in names]
+
+
+def read_settings(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        return {}
+
+
+def cap_state():
+    """(account, path, current value) for every allowed profile."""
+    return [(n, p, (read_settings(p).get("env") or {}).get(ENV_KEY)) for n, p in allowed_profiles()]
+
+
+def cap_apply():
+    for n, path, cur in cap_state():
+        if cur == str(CAP):
+            print(f"{n}: already {CAP}")
+            continue
+        data = read_settings(path)
+        data.setdefault("env", {})[ENV_KEY] = str(CAP)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2)
+            fh.write("\n")
+        os.replace(tmp, path)
+        print(f"{n}: set {CAP}")
+
+
+def main(argv):
+    if argv[:1] == ["cap"] and argv[1:2] == ["check"]:
+        bad = [n for n, _, cur in cap_state() if cur != str(CAP)]
+        for n, _, cur in cap_state():
+            print(f"{n}: {cur or 'unset'}")
+        sys.exit(1 if bad else 0)
+    if argv[:2] == ["cap", "apply"]:
+        return cap_apply()
+    flags = set(argv)
+    if flags - {"--json", "--brief"}:
+        sys.exit(__doc__)
+    found = long_sessions(usage())
+    if "--json" in flags:
+        print(json.dumps([{"id": s["id"], "account": s["account"], "project": s.get("project"), "title": s.get("title"),
+                           "context_tokens": s["context_tokens"], "level": "over" if s["context_tokens"] > CAP else "warn",
+                           "advice": advice(s)} for s in found]))
+    elif "--brief" in flags:
+        for s in found:
+            print(f"- {s.get('project') or '?'}: {s.get('title') or s['id'][:8]} is at {label(s)} of context; wrap and split")
+    else:
+        for s in found:
+            print(advice(s))
+        if not found:
+            print(f"no live session past {WARN // 1000}k")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

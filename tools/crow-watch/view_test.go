@@ -318,3 +318,19 @@ func TestLineBarShortWidths(t *testing.T) {
 		}
 	}
 }
+
+// A live session past the warning shows its context size on its row.
+func TestLongContextMark(t *testing.T) {
+	u := fixtureUsage(t)
+	m := model{w: 160, h: 62, usage: u, view: vUsage, period: "w", now: fixtureNow(), reports: map[string]string{}}
+	contains(t, "plain", m.View(), nil, []string{"k ctx ·"})
+	for i := range u.rows {
+		if r := &u.rows[i]; !r.head && r.day == u.todayKey() {
+			s := *r.s
+			s.Active, s.ContextTokens, s.ContextLevel = true, 132000, "warn"
+			r.s = &s
+			break
+		}
+	}
+	contains(t, "warned", m.View(), []string{"132k ctx ·", "▲"}, nil)
+}
