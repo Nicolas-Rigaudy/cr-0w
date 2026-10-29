@@ -47,6 +47,7 @@ func TestShots(t *testing.T) {
 			}
 		}
 		agentShots(write, ti, sizes)
+		mrsShots(write, ti, sizes)
 		for _, st := range []string{stEmpty, stError, stLoading, stStale} {
 			for _, sn := range []string{"wide", "small"} {
 				m := newModel(defaultConfig())
@@ -95,4 +96,46 @@ func agentShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m.setSync(st)
 		write(fmt.Sprintf("%s-Agents-wide-%s", name, st), m)
 	}
+}
+
+// mrsShots: the MRs tab beyond the default view: a review with findings, an own MR with a
+// thread and its fix, the flipped card, every pane in single-pane mode, and the data states.
+func mrsShots(write func(string, model), ti int, sizes map[string][2]int) {
+	name := themes[ti].name
+	base := func(sn string) model {
+		m := newModel(defaultConfig())
+		m.th, m.page, m.w, m.h = ti, 2, sizes[sn][0], sizes[sn][1]
+		return m
+	}
+	m := base("wide")
+	m.mrSel = 2
+	write(name+"-MRs-wide-review", m)
+	m.mrItem = 1
+	write(name+"-MRs-wide-review-2", m)
+	m = base("wide")
+	m.mrSel = 1
+	write(name+"-MRs-wide-threads", m)
+	m = base("wide")
+	m.mrSel, m.mrToggle = 1, true
+	write(name+"-MRs-wide-threads-flipped", m)
+	m = base("wide")
+	m.mode = "all"
+	write(name+"-MRs-wide-all", m)
+	m = base("portrait")
+	m.mrSel = 2
+	write(name+"-MRs-portrait-review", m)
+	for pane, pn := range []string{"list", "diff", "card"} {
+		m = base("small")
+		m.mrSel, m.mrPane = 2, pane
+		write(fmt.Sprintf("%s-MRs-small-%s", name, pn), m)
+	}
+	for _, st := range []string{stEmpty, stError, stLoading, stStale} {
+		m = base("wide")
+		m.setSync(st)
+		write(fmt.Sprintf("%s-MRs-wide-%s", name, st), m)
+	}
+	m = base("wide")
+	m.fx.MRs, m.fx.MRDetails = m.fx.MRs[:0:0], nil
+	m.fx.ForgeErrs = []string{"github sync failed: gh auth expired"}
+	write(name+"-MRs-wide-forge-error", m)
 }

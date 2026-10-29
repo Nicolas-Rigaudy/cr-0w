@@ -23,7 +23,7 @@ type actionMsg struct{ text string }
 const tickEvery = 2 * time.Second
 
 // Refresh cadence in ticks: runs and sessions every tick, usage and accounts every 15
-// (30s), the registry every 30 (60s).
+// (30s), the registry and the forges every 30 (60s).
 const (
 	usageTicks    = 15
 	registryTicks = 30
@@ -35,6 +35,7 @@ var fetchers = map[string]func() (any, error){
 	srcUsage:    func() (any, error) { return fetchUsage() },
 	srcAccounts: func() (any, error) { return fetchAccounts() },
 	srcRegistry: func() (any, error) { return fetchRegistry() },
+	srcMRs:      func() (any, error) { return fetchMRs() },
 }
 
 func fetchCmd(src string) tea.Cmd {
@@ -49,7 +50,7 @@ func tickCmd() tea.Cmd {
 }
 
 func allSources() []string {
-	return []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry}
+	return []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry, srcMRs}
 }
 
 // refreshCmds picks the sources due at this tick.
@@ -59,7 +60,7 @@ func refreshCmds(tick int) []tea.Cmd {
 		cmds = append(cmds, fetchCmd(srcUsage), fetchCmd(srcAccounts))
 	}
 	if tick%registryTicks == 0 {
-		cmds = append(cmds, fetchCmd(srcRegistry))
+		cmds = append(cmds, fetchCmd(srcRegistry), fetchCmd(srcMRs))
 	}
 	return cmds
 }
@@ -129,3 +130,22 @@ func relaunchCmd(a agentRow) tea.Cmd {
 		return actionMsg{"relaunched on " + target}
 	}
 }
+
+// detailMsg is the diff and threads of one MR.
+type detailMsg struct {
+	key string
+	d   *mrDetail
+	err error
+	at  time.Time
+}
+
+var detailFetcher = fetchMRDetail
+
+func detailCmd(r mrRow) tea.Cmd {
+	return func() tea.Msg {
+		d, err := detailFetcher(r)
+		return detailMsg{key: r.key(), d: d, err: err, at: time.Now()}
+	}
+}
+
+const detailTTL = 2 * time.Minute

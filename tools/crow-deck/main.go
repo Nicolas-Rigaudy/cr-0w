@@ -37,6 +37,10 @@ type model struct {
 	agentPane int
 	input     string
 	typing    bool
+
+	mrSel, mrPane, mrFile, mrItem int
+	mrKey                         string // key of the selected MR, keeps the cursor on it across refreshes
+	mrToggle                      bool
 }
 
 func newModel(cfg config) model {
@@ -79,6 +83,7 @@ func (m *model) rebuild() {
 	if m.sync == stLoading {
 		return
 	}
+	m.keepMR()
 	for i, a := range m.fx.Agents {
 		if a.Session != "" && a.Session == m.agentKey {
 			m.agentSel = i
@@ -86,6 +91,58 @@ func (m *model) rebuild() {
 		}
 	}
 	m.selectAgent(m.agentSel)
+}
+
+// keepMR keeps the MR cursor on its MR when the list changes.
+func (m *model) keepMR() {
+	vis := visibleMRs(m.fx, m.mode)
+	for i, r := range vis {
+		if r.key() == m.mrKey {
+			m.mrSel = i
+			return
+		}
+	}
+	m.selectMR(m.mrSel)
+}
+
+func (m *model) selectMR(i int) {
+	vis := visibleMRs(m.fx, m.mode)
+	i = max(0, min(len(vis)-1, i))
+	m.mrSel = i
+	key := ""
+	if i < len(vis) {
+		key = vis[i].key()
+	}
+	if key != m.mrKey {
+		m.mrKey, m.mrFile, m.mrItem, m.mrToggle = key, 0, 0, false
+	}
+}
+
+// wantDetail starts the diff fetch of the selected MR when none is fresh or running.
+func (m *model) wantDetail() tea.Cmd {
+	if m.live == nil || m.page != 2 {
+		return nil
+	}
+	vis := visibleMRs(m.fx, m.mode)
+	if m.mrSel >= len(vis) {
+		return nil
+	}
+	r := vis[m.mrSel]
+	e := m.live.details[r.key()]
+	if e != nil && (e.busy || m.now.Sub(e.at) < detailTTL) {
+		return nil
+	}
+	if e == nil {
+		e = &detailEntry{}
+		m.live.details[r.key()] = e
+	}
+	e.busy = true
+	return detailCmd(r)
+}
+
+func (m model) mrsView() mrsView {
+	return mrsView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, mode: m.mode, sel: m.mrSel, pane: m.mrPane,
+		file: m.mrFile, item: m.mrItem, toggle: m.mrToggle}
 }
 
 func (m *model) selectAgent(i int) {
@@ -131,6 +188,21 @@ func (m *model) moveSel(d int) {
 		m.input, m.typing = "", false
 		return
 	}
+	if m.page == 2 {
+		mv := m.mrsView()
+		switch m.mrPane {
+		case mpList:
+			m.selectMR(m.mrSel + d)
+		case mpDiff:
+			if det := mv.detail(); det != nil {
+				m.mrFile = max(0, min(len(det.Files)-1, mv.fileIdx(det)+d))
+			}
+		case mpCard:
+			m.mrItem = max(0, min(mv.items()-1, mv.itemIdx(mv.items())+d))
+			m.followItem()
+		}
+		return
+	}
 	if m.page != 0 {
 		return
 	}
@@ -148,6 +220,8 @@ func (m *model) moveFocus(d int) {
 		m.focus = (m.focus + d + homePanes) % homePanes
 	case 1:
 		m.agentPane = (m.agentPane + d + agentPanes) % agentPanes
+	case 2:
+		m.mrPane = (m.mrPane + d + mrPanes) % mrPanes
 	}
 }
 
@@ -178,6 +252,7 @@ func (m *model) exec(c string) tea.Cmd {
 	case "mode":
 		if validMode(arg) {
 			m.mode = arg
+			m.keepMR()
 		}
 	case "mock":
 		m.setSync(arg)
@@ -196,6 +271,12 @@ func (m *model) exec(c string) tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	nm, cmd := m.update(msg)
+	mm := nm.(model)
+	return mm, tea.Batch(cmd, mm.wantDetail())
+}
+
+func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
@@ -212,6 +293,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case srcMsg:
 		if m.live != nil {
 			m.live.apply(msg)
+			m.rebuild()
+		}
+	case detailMsg:
+		if m.live != nil {
+			m.live.applyDetail(msg)
 			m.rebuild()
 		}
 	case actionMsg:
@@ -275,6 +361,7 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.overlay = ovTheme
 	case "m":
 		m.mode = map[string]string{"work": "perso", "perso": "all", "all": "work"}[m.mode]
+		m.keepMR()
 	case "?":
 		m.overlay = ovHelp
 	case ":":
@@ -289,9 +376,12 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveSel(-1)
 	case "/":
 		m.flash = "/ history and search arrive with a later slice"
-	case "enter", "h", "r", "x", "R", "a", "e", "c", "g":
+	case "enter", "h", "r", "x", "R", "a", "e", "c", "g", "T", "M", "P", "s":
 		if m.page == 1 {
 			return m.agentKeyPress(k)
+		}
+		if m.page == 2 {
+			return m.mrKeyPress(k)
 		}
 		m.flash = k + ": actions are not wired yet"
 	}
@@ -303,6 +393,50 @@ func (m model) curAgent() *agentRow {
 		return &m.fx.Agents[m.agentSel]
 	}
 	return nil
+}
+
+// followItem moves the diff to the file of the card the cursor is on.
+func (m *model) followItem() {
+	mv := m.mrsView()
+	d := mv.detail()
+	if d == nil {
+		return
+	}
+	path := ""
+	if f := mv.curFinding(d); f != nil {
+		path = f.Path
+	} else if t := mv.curThread(d); t != nil && mv.threadsMode() {
+		path = t.Path
+	}
+	for i, f := range d.Files {
+		if path != "" && f.Path == path {
+			m.mrFile = i
+		}
+	}
+}
+
+// mrKeyPress handles the MRs page keys. The page is read only: T flips the card kind, the
+// other action keys say what arrives later.
+func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
+	mv := m.mrsView()
+	switch k {
+	case "T":
+		m.mrToggle, m.mrItem = !m.mrToggle, 0
+		m.followItem()
+	case "enter":
+		m.mrPane = min(mpCard, m.mrPane+1)
+	case "a", "x", "e", "c":
+		m.flash = k + ": saving a decision on a finding arrives with the review slice"
+	case "M", "P":
+		m.flash = k + ": opening and posting go through the mr and review skills, not wired here"
+	case "g", "h", "r", "R", "s":
+		if mv.cur() == nil {
+			m.flash = "no MR selected"
+		} else {
+			m.flash = k + ": not wired on the MRs page yet"
+		}
+	}
+	return m, nil
 }
 
 // agentKeyPress handles the Agents page action keys.
@@ -398,6 +532,9 @@ func (m model) context() []keyHint {
 		}
 		return []keyHint{{"j k", "agent"}, {"a x e c", "answer"}, {"enter", "send"}, {"g", "jump"}, {"/", "history"}, {"tab", "pane"}}
 	}
+	if m.page == 2 {
+		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"a x e c", "decide"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
+	}
 	if m.page != 0 {
 		return []keyHint{{"1-5", "tab"}, {"j k", "move"}}
 	}
@@ -429,6 +566,8 @@ func (m model) View() string {
 		body = m.homeView().body(m.w, bh)
 	case m.page == 1:
 		body = m.agentsView().body(m.w, bh)
+	case m.page == 2:
+		body = m.mrsView().body(m.w, bh)
 	default:
 		body = lk.placeholder(m.page, m.w, bh, m.sync)
 	}

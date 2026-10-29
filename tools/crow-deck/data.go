@@ -201,6 +201,7 @@ const (
 	srcUsage    = "usage"
 	srcAccounts = "accounts"
 	srcRegistry = "registry"
+	srcMRs      = "mrs"
 )
 
 // liveState holds the last good payload of every source with its age and last error.
@@ -210,12 +211,22 @@ type liveState struct {
 	usage *usageSnap
 	acct  []acctPolicy
 	reg   *registry
+	mrs   *mrsSnap
 	at    map[string]time.Time
 	err   map[string]string
+	// MR diffs and threads, fetched when an MR is selected.
+	details map[string]*detailEntry
+}
+
+type detailEntry struct {
+	d    *mrDetail
+	at   time.Time
+	err  string
+	busy bool
 }
 
 func newLiveState() *liveState {
-	return &liveState{at: map[string]time.Time{}, err: map[string]string{}}
+	return &liveState{at: map[string]time.Time{}, err: map[string]string{}, details: map[string]*detailEntry{}}
 }
 
 // srcMsg is one source's result.
@@ -244,7 +255,25 @@ func (ls *liveState) apply(msg srcMsg) {
 		ls.acct = v
 	case *registry:
 		ls.reg = v
+	case *mrsSnap:
+		ls.mrs = v
 	}
+}
+
+// applyDetail stores the diff of one MR; a failure is kept with its time so it is retried
+// after the TTL, not on every tick.
+func (ls *liveState) applyDetail(msg detailMsg) {
+	e := ls.details[msg.key]
+	if e == nil {
+		e = &detailEntry{}
+		ls.details[msg.key] = e
+	}
+	e.busy, e.at = false, msg.at
+	if msg.err != nil {
+		e.err = firstLine(msg.err.Error())
+		return
+	}
+	e.d, e.err = msg.d, ""
 }
 
 // syncState summarises the sources for the header dot: loading until runs arrived, red
@@ -255,12 +284,19 @@ func (ls *liveState) syncState(now time.Time) (state, note string) {
 	if ls.runs == nil && len(ls.err) == 0 {
 		return stLoading, ""
 	}
-	for _, src := range []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry} {
+	for _, src := range []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry, srcMRs} {
 		if _, bad := ls.err[src]; bad {
 			return stError, map[string]string{
 				srcRuns: "cdx not running", srcSessions: "sessions scan failed", srcUsage: "usage failed",
-				srcAccounts: "accounts failed", srcRegistry: "registry failed",
+				srcAccounts: "accounts failed", srcRegistry: "registry failed", srcMRs: "forge sync failed",
 			}[src]
+		}
+	}
+	if ls.mrs != nil {
+		for _, name := range []string{"gitlab", "github"} {
+			if st := ls.mrs.Forges[name]; st != "" && st != "ok" {
+				return stError, name + " sync failed"
+			}
 		}
 	}
 	for _, t := range ls.at {
@@ -654,6 +690,25 @@ func buildFixtures(in liveInput) *fixtures {
 			if p.Git.Ahead > 0 {
 				fx.Ahead++
 			}
+		}
+	}
+	if ls.mrs != nil {
+		fx.MRs, fx.Branches, fx.MRsReady = mrOrder(ls.mrs.MRs), ls.mrs.Branches, true
+		fx.MRsAwaiting, fx.MRsMine, fx.MRsThreads = mrCounts(fx.MRs)
+		fx.Blockers = mrBlockers(now, fx.MRs)
+		for _, name := range []string{"gitlab", "github"} {
+			if st := ls.mrs.Forges[name]; st != "" && st != "ok" {
+				fx.ForgeErrs = append(fx.ForgeErrs, st)
+			}
+		}
+	}
+	fx.MRDetails, fx.MRErrs = map[string]*mrDetail{}, map[string]string{}
+	for k, e := range ls.details {
+		if e.d != nil {
+			fx.MRDetails[k] = e.d
+		}
+		if e.err != "" {
+			fx.MRErrs[k] = e.err
 		}
 	}
 	fx.Sync = state

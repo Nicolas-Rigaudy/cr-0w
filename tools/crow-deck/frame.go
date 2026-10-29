@@ -124,8 +124,12 @@ type boxSpec struct {
 	hdr     line // table header, above the rows
 	rows    []line
 	sel     int // selected row, -1 none
+	selN    int // rows the selection spans (0 or 1: one)
 	focused bool
 }
+
+// has reports whether display row i is inside the selection starting at sel.
+func (sp boxSpec) has(i, sel int) bool { return sel >= 0 && i >= sel && i < sel+max(1, sp.selN) }
 
 // innerW is the width available to a row inside a box of width w.
 func (lk *look) innerW(w int) int {
@@ -155,8 +159,8 @@ func (lk *look) box(sp boxSpec, w, h int) block {
 	}
 	n := max(0, h-lk.boxH(0)-hdr) // row slots
 	off := 0
-	if sp.sel >= n && n > 0 {
-		off = sp.sel - n + 1
+	if end := sp.sel + max(1, sp.selN); sp.sel >= 0 && end > n && n > 0 {
+		off = min(sp.sel, end-n)
 	}
 	var lines []line
 	if hdr == 1 {
@@ -213,7 +217,7 @@ func (lk *look) boxRound(sp boxSpec, w, inner int, lines []line, sel int) block 
 	}
 	out := block{top + bs.Render(rep("─", w-used)) + end}
 	for i, l := range lines {
-		out = append(out, bs.Render("│")+" "+l.render(inner, i == sel, lk.sel)+" "+bs.Render("│"))
+		out = append(out, bs.Render("│")+" "+l.render(inner, sp.has(i, sel), lk.sel)+" "+bs.Render("│"))
 	}
 	bot := bs.Render("╰" + rep("─", w-2) + "╯")
 	if sp.bottom != "" && len(sp.bottom)+6 <= w {
@@ -245,7 +249,7 @@ func (lk *look) boxHUD(sp boxSpec, w, inner int, lines []line, sel int) block {
 	}
 	out := block{top}
 	for i, l := range lines {
-		out = append(out, bs.Render("▏")+" "+l.render(inner, i == sel, lk.sel)+" ")
+		out = append(out, bs.Render("▏")+" "+l.render(inner, sp.has(i, sel), lk.sel)+" ")
 	}
 	idx := " " + twoDigits(sp.index) + " "
 	left := "▏▏▏▏" + idx + "▏▏▏▏ "
@@ -297,7 +301,7 @@ func (lk *look) boxCyber(sp boxSpec, w, inner int, lines []line, sel int) block 
 	}
 	out := block{top + bs.Render(rep("─", w-used)) + end}
 	for i, l := range lines {
-		out = append(out, bs.Render("│")+" "+l.render(inner, i == sel, lk.sel)+" "+bs.Render("│"))
+		out = append(out, bs.Render("│")+" "+l.render(inner, sp.has(i, sel), lk.sel)+" "+bs.Render("│"))
 	}
 	corner := lk.dim.Render("◢")
 	if sp.focused {
@@ -328,7 +332,7 @@ func (lk *look) boxSoft(sp boxSpec, w, inner int, lines []line, sel int) block {
 	titleRow := lr(line{spc(2), {sp.title, ts}}, right, w)
 	out := block{titleRow.render(w, false, lk.sel)}
 	for i, l := range lines {
-		out = append(out, sp2(2)+l.render(inner, i == sel, lk.sel)+sp2(2))
+		out = append(out, sp2(2)+l.render(inner, sp.has(i, sel), lk.sel)+sp2(2))
 	}
 	return out
 }

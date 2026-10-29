@@ -108,10 +108,17 @@ type fixtures struct {
 	SyncNote            string // stale age or failing source for the header dot
 	// Counts behind the tab badges and the Blockers title.
 	MRsAwaiting, MRsMine, MRsThreads int
+	// MRs tab.
+	MRs       []mrRow
+	Branches  []mrBranch
+	MRDetails map[string]*mrDetail
+	MRErrs    map[string]string // detail fetch errors by MR key
+	MRsReady  bool              // the forges answered at least once
+	ForgeErrs []string
 }
 
 func mockFixtures() *fixtures {
-	return &fixtures{
+	f := &fixtures{
 		Now: "Thu 29 Oct 14:02", Synced: "14:01",
 		Health: health{Identity: true, CDX: true, StaleTrees: 1},
 		Gauges: []gauge{
@@ -164,8 +171,10 @@ func mockFixtures() *fixtures {
 			{"vault", 5, 6, "", false},
 		},
 		Repos: 7, Dirty: 3, Ahead: 2,
-		MRsAwaiting: 1, MRsMine: 2, MRsThreads: 1,
+		MRs: mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
+	mockMRCounts(f)
+	return f
 }
 
 func mockAgents() []agentRow {
@@ -211,6 +220,7 @@ func mockWho() []whoRow {
 func emptyFixtures() *fixtures {
 	f := mockFixtures()
 	f.Agents, f.Blockers, f.Today, f.Mail, f.Next, f.Projects = nil, nil, nil, nil, nil, nil
+	f.MRs, f.Branches, f.MRDetails = nil, nil, nil
 	f.MRsAwaiting, f.MRsMine, f.MRsThreads = 0, 0, 0
 	f.Gauges[1].RunsUsed = 0
 	return f
