@@ -92,6 +92,8 @@ func glyphOf(lk *look, state string) seg {
 }
 
 // listRows builds the grouped list. idx maps a display row to its agent (-1: group header).
+const labelW, acctW = 16, 8
+
 func (av agentsView) listRows(iw int) (rows []line, idx []int) {
 	lk, fx := av.lk, av.fx
 	for g := range groupNames {
@@ -116,12 +118,8 @@ func (av agentsView) listRows(iw int) (rows []line, idx []int) {
 		for _, i := range members {
 			a := fx.Agents[i]
 			label := cmpOr(a.Short, a.Name)
-			acctW := 8
-			left := line{glyphOf(lk, a.State), spc(1), {label, lk.bold}}
-			right := line{{fit(a.Account, acctW), lk.sub}, spc(1), {fmt.Sprintf("%5s", a.Since), lk.sub}}
-			if a.Account == "" {
-				right = line{{fmt.Sprintf("%*s", acctW+6, a.Since), lk.sub}}
-			}
+			left := line{glyphOf(lk, a.State), spc(1), {fit(label, labelW), lk.bold}, spc(1), {fit(a.Account, acctW), lk.sub}, spc(1), {a.Doing, lk.plain}}
+			right := line{{a.Since, lk.sub}}
 			rows = append(rows, lr(left, right, iw))
 			idx = append(idx, i)
 		}
@@ -141,8 +139,9 @@ func (av agentsView) listSpec(iw int) boxSpec {
 		return sp
 	}
 	sp.title += fmt.Sprintf(" %d", len(av.fx.Agents))
-	sp.rows, _ = av.listRows(iw)
-	_, idx := av.listRows(iw)
+	sp.hdr = lk.headRow(iw, []col{{"agent", labelW, 1}, {"account", acctW, 1}, {"doing", 0, 0}}, "since")
+	var idx []int
+	sp.rows, idx = av.listRows(iw)
 	for d, i := range idx {
 		if i == av.sel {
 			sp.sel = d
@@ -401,7 +400,7 @@ func (av agentsView) body(w, h int) []string {
 		w2 := w - gap - w1
 		top = hcat([]int{w1, w2}, gap, av.listBox(w1, topH), av.tailBox(w2, topH))
 	} else {
-		listH := min(topH*2/5, lk.boxH(len(av.listRowsOnly())))
+		listH := min(topH*2/5, lk.boxH(len(av.listRowsOnly())+1))
 		listH = max(listH, lk.boxH(3))
 		top = vcat(av.listBox(w, listH), blankLines(w, gapV), av.tailBox(w, topH-listH-gapV))
 	}

@@ -40,10 +40,13 @@ func TestShots(t *testing.T) {
 			write(fmt.Sprintf("%s-home-%s", th.name, sn), m)
 		}
 		for p := 1; p < len(pageNames); p++ {
-			m := newModel(defaultConfig())
-			m.th, m.page = ti, p
-			write(fmt.Sprintf("%s-%s-wide", th.name, pageNames[p]), m)
+			for _, sn := range []string{"wide", "portrait", "small"} {
+				m := newModel(defaultConfig())
+				m.th, m.page, m.w, m.h = ti, p, sizes[sn][0], sizes[sn][1]
+				write(fmt.Sprintf("%s-%s-%s", th.name, pageNames[p], sn), m)
+			}
 		}
+		agentShots(write, ti, sizes)
 		for _, st := range []string{stEmpty, stError, stLoading, stStale} {
 			for _, sn := range []string{"wide", "small"} {
 				m := newModel(defaultConfig())
@@ -63,4 +66,33 @@ func TestShots(t *testing.T) {
 	write("overlay-help", m)
 	m.overlay, m.query = ovPalette, "th"
 	write("overlay-palette", m)
+}
+
+// agentShots: the Agents tab beyond the default view: a running agent, the paused run, the
+// answer line in use, every pane in single-pane mode, and the data states.
+func agentShots(write func(string, model), ti int, sizes map[string][2]int) {
+	name := themes[ti].name
+	base := func(sn string) model {
+		m := newModel(defaultConfig())
+		m.th, m.page, m.w, m.h = ti, 1, sizes[sn][0], sizes[sn][1]
+		return m
+	}
+	m := base("wide")
+	m.selectAgent(2)
+	write(name+"-Agents-wide-running", m)
+	m.selectAgent(4)
+	write(name+"-Agents-wide-paused", m)
+	m = base("wide")
+	m.input, m.typing = "yes, but keep the scope", true
+	write(name+"-Agents-wide-typing", m)
+	for pane, pn := range []string{"list", "tail", "who"} {
+		m = base("small")
+		m.agentPane = pane
+		write(fmt.Sprintf("%s-Agents-small-%s", name, pn), m)
+	}
+	for _, st := range []string{stEmpty, stError, stLoading, stStale} {
+		m = base("wide")
+		m.setSync(st)
+		write(fmt.Sprintf("%s-Agents-wide-%s", name, st), m)
+	}
 }
