@@ -352,10 +352,10 @@ func TestAccentOverride(t *testing.T) {
 func TestOverlaysFit(t *testing.T) {
 	withANSI(t)
 	for _, sz := range [][2]int{{170, 46}, {90, 30}} {
-		for ov := range []int{ovHelp, ovPalette, ovTheme} {
+		for ov := range []int{ovHelp, ovPalette, ovTheme, ovPost, ovConfirm} {
 			m := newModel(defaultConfig())
 			m.w, m.h = sz[0], sz[1]
-			m.overlay = []int{ovHelp, ovPalette, ovTheme}[ov]
+			m.overlay = []int{ovHelp, ovPalette, ovTheme, ovPost, ovConfirm}[ov]
 			checkFit(t, fmt.Sprintf("overlay %d %dx%d", m.overlay, sz[0], sz[1]), m.View(), sz[0], sz[1])
 		}
 	}

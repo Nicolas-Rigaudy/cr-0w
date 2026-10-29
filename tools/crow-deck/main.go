@@ -385,6 +385,15 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.overlay = ovNone
 		}
 		return m, nil
+	case ovPost:
+		switch k {
+		case "enter":
+			m.flash = "post is not wired: it stays behind the review skill and your OK"
+			m.overlay = ovNone
+		case "esc", "n", "q":
+			m.overlay = ovNone
+		}
+		return m, nil
 	case ovPalette:
 		return m.paletteKey(msg)
 	case ovTheme:
@@ -527,8 +536,14 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 		m.mrPane = min(mpCard, m.mrPane+1)
 	case "a", "x", "e", "c":
 		m.flash = k + ": saving a decision on a finding arrives with the review slice"
-	case "M", "P":
-		m.flash = k + ": opening and posting go through the mr and review skills, not wired here"
+	case "P":
+		if mv.cur() == nil {
+			m.flash = "no MR selected"
+		} else {
+			m.overlay = ovPost
+		}
+	case "M":
+		m.flash = k + ": opening goes through the mr skill, not wired here"
 	case "g", "h", "r", "R", "s":
 		if mv.cur() == nil {
 			m.flash = "no MR selected"
@@ -674,6 +689,8 @@ func (m model) View() string {
 		body = lk.themeOverlay(m.w, bh, m.th)
 	case m.overlay == ovConfirm:
 		body = lk.confirmOverlay(m.w, bh, m.curAgent())
+	case m.overlay == ovPost:
+		body = lk.postOverlay(m.w, bh, m.mrsView().cur())
 	case m.page == 0:
 		body = m.homeView().body(m.w, bh)
 	case m.page == 1 && m.hist:

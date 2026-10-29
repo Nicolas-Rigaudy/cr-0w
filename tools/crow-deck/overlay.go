@@ -13,6 +13,7 @@ const (
 	ovPalette
 	ovTheme
 	ovConfirm
+	ovPost
 )
 
 type command struct{ name, desc string }
@@ -132,6 +133,23 @@ func (lk *look) confirmOverlay(w, h int, a *agentRow) []string {
 		{{"It opens a new window and uses that account's limits.", lk.sub}},
 		nil,
 		{{"enter", lk.key}, spc(1), {"relaunch", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}},
+	}
+	return lk.overlayBlock(sp, w, h)
+}
+
+// postOverlay is the confirm drawn before a post or push. The deck never sends: enter is
+// shown disabled and the text says where it goes through.
+func (lk *look) postOverlay(w, h int, r *mrRow) []string {
+	sp := boxSpec{title: "Post", sel: -1}
+	ref := "this MR"
+	if r != nil {
+		ref = r.Ref + " " + r.Name
+	}
+	sp.rows = []line{
+		{{"Post the accepted findings and replies on " + ref + "?", lk.plain}},
+		{{"Nothing leaves the deck yet.", lk.sub}},
+		nil,
+		{{"enter", lk.sub}, spc(1), {"post (not wired)", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"close", lk.sub}},
 	}
 	return lk.overlayBlock(sp, w, h)
 }

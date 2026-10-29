@@ -202,10 +202,23 @@ func TestMRsMockCards(t *testing.T) {
 func TestMRsActionKeysDoNotPretend(t *testing.T) {
 	m := newModel(defaultConfig())
 	m.page = 2
-	for _, k := range []string{"a", "P", "M"} {
+	for _, k := range []string{"a", "M"} {
 		if n := send(m, keyMsg(k)); n.flash == "" {
 			t.Errorf("%s: no flash", k)
 		}
+	}
+}
+
+func TestPostConfirmIsDisabled(t *testing.T) {
+	m := newModel(defaultConfig())
+	m.page = 2
+	m = send(m, keyMsg("P"))
+	if m.overlay != ovPost || !hasText(m.View(), "post (not wired)") {
+		t.Fatalf("P must open the post confirm, overlay %d", m.overlay)
+	}
+	m = send(m, tea.KeyMsg{Type: tea.KeyEnter})
+	if m.overlay != ovNone || !strings.Contains(m.flash, "not wired") {
+		t.Errorf("enter must close and say it is not wired: overlay %d, flash %q", m.overlay, m.flash)
 	}
 }
 

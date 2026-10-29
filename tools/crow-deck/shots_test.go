@@ -64,12 +64,16 @@ func TestShots(t *testing.T) {
 		write(fmt.Sprintf("%s-home-wide-all", th.name), m)
 		m.overlay = ovTheme
 		write(fmt.Sprintf("%s-overlay-theme", th.name), m)
+		m.overlay = ovHelp
+		write(fmt.Sprintf("%s-overlay-help", th.name), m)
+		m.overlay, m.query = ovPalette, "th"
+		write(fmt.Sprintf("%s-overlay-palette", th.name), m)
+		m.page, m.overlay = 2, ovPost
+		write(fmt.Sprintf("%s-overlay-post", th.name), m)
+		m.page, m.overlay = 1, ovConfirm
+		m.selectAgent(4)
+		write(fmt.Sprintf("%s-overlay-relaunch", th.name), m)
 	}
-	m := newModel(defaultConfig())
-	m.overlay = ovHelp
-	write("overlay-help", m)
-	m.overlay, m.query = ovPalette, "th"
-	write("overlay-palette", m)
 }
 
 // agentShots: the Agents tab beyond the default view: a running agent, the paused run, the
