@@ -102,12 +102,12 @@ which is ignored by this repo and meant to be its own private repo.
 
 | Path | What |
 |---|---|
-| `bin/crow` | launcher: hub session, one-shot briefs, project sessions, run dispatch, `crow watch` |
+| `bin/crow` | launcher, grouped as Start, See, Delegate, Rituals, Data (`crow --help`): hub session, one-shot briefs, project sessions, runs, `crow deck` |
 | `bin/crow-runs`, `bin/crow-usage`, `bin/crow-activity` | background runs, usage and cost across accounts, git/MR activity |
 | `bin/crow-accounts`, `bin/crow-memory` | account policy, and memory stored once in `local/memory` and linked into allowed profiles |
 | `bin/crow-sessions`, `bin/crow-relaunch` | registry of sessions cut off by a usage limit, and the guarded relaunch |
 | `bin/crow-retro`, `bin/crow-digest` | automatic retrospective after every session |
-| `bin/crow-tidy`, `bin/crow-releases` | repo hygiene report with safe cleanup, release-track progress |
+| `bin/crow-tidy`, `bin/crow-releases`, `bin/crow-doctor` | repo hygiene report with safe cleanup, release-track progress (`crow projects`), read-only checks of identity, accounts and stale worktrees (`crow doctor`) |
 | `bin/ansi-shot` | render any terminal output to a PNG in your own theme (how the screenshots here are made) |
 | `tools/crow-watch` | the terminal board (Go, Bubble Tea) |
 | `integrations/` | optional desktop-shell widgets |

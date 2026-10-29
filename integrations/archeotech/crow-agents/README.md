@@ -25,7 +25,7 @@ sessions waiting on you, and toasts when a run ends.
   had already ended when the shell started don't fire; a run never fires twice.
   Waiting sessions don't notify (Claude already does).
 
-Data comes from `crow json` every 5 s and `crow sessions list --json` every minute
+Data comes from `crow json` every 5 s and `crow runs sessions list --json` every minute
 (one poller per shell, shared by every placed instance). Commands run as `bash -lc` with `~/.local/bin` prepended to `PATH`.
 
 ## Install
@@ -44,7 +44,7 @@ a panel opener.
 |---|---|---|
 | `command` | `crow json` | Prints the agents snapshot as JSON |
 | `watchCommand` | `kitty -e crow watch` | Run by the panel's "open crow watch" button |
-| `sessionsCommand` | `crow sessions list --json` | Sessions stopped by a usage limit; empty turns them off |
+| `sessionsCommand` | `crow runs sessions list --json` | Sessions stopped by a usage limit; empty turns them off |
 | `notifications` | on | Run finished / usage-limit toasts |
 
 The shell passes config only to bar instances. The panel uses whatever the pill

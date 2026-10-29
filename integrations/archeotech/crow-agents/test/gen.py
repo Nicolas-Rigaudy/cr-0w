@@ -53,7 +53,7 @@ for k, v in fx.items():
     with open(os.path.join(out, "fx", f"{k}.json"), "w") as fh:
         json.dump(v, fh, indent=1)
 
-# crow sessions list --json: one session stopped by the 5h limit an hour ago
+# crow runs sessions list --json: one session stopped by the 5h limit an hour ago
 # (shown under NEEDS YOU), one already relaunched (hidden).
 stops = {"sessions": [
     {"conversation_id": "5ab51b0c-0000-4000-8000-000000000001", "account": "work", "project": "notes-plugin",

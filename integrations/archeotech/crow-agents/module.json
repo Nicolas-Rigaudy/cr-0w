@@ -44,8 +44,8 @@
     "sessionsCommand": {
       "type": "string",
       "label": "Interrupted sessions command",
-      "default": "crow sessions list --json",
-      "placeholder": "crow sessions list --json",
+      "default": "crow runs sessions list --json",
+      "placeholder": "crow runs sessions list --json",
       "description": "Lists sessions stopped by a usage limit (shown under Needs you). Empty turns it off."
     },
     "compactBelow": {

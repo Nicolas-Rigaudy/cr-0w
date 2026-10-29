@@ -239,7 +239,7 @@ func TestAgentsView(t *testing.T) {
 		[]string{"ctx 12%", "ctx 6%", "context used", "1/2", "old00000", "dotfiles", "so far", " a…"})
 	m.selKey = "5ab51b0c-0000"
 	m.rebuild()
-	contains(t, "interrupted details", m.View(), []string{"stopped by the 5h limit", "crow relaunch 5ab51b0c", "commit the books flow fix"}, nil)
+	contains(t, "interrupted details", m.View(), []string{"stopped by the 5h limit", "crow runs relaunch 5ab51b0c", "commit the books flow fix"}, nil)
 	m.selKey = "1d7947d7-6f95-cc15-d38d-84cdfadca8ff"
 	m.rebuild()
 	contains(t, "waiting details", m.View(), []string{"Latest prompt", "can you check the pill?"}, nil)

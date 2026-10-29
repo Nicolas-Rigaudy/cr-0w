@@ -12,7 +12,7 @@ Singleton {
     property string command: "crow json"
     property string watchCommand: "kitty -e crow watch"
     // Sessions cut off by a usage limit (crow-sessions); "" turns the list off.
-    property string sessionsCommand: "crow sessions list --json"
+    property string sessionsCommand: "crow runs sessions list --json"
     property var registry: []         // last good crow-sessions list
     property bool notifications: true
     property int intervalMs: 5000

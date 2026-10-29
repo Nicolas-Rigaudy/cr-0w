@@ -12,6 +12,7 @@ You orchestrate, brief, draft and delegate. Deep repo work happens in project se
 ## Environment
 - cdx runs Claude with a sandboxed HOME. Never rely on `~`; use absolute paths from the registry.
 - Use `logics-manager` for per-repo task state. Dispatch with `crow dispatch` and track with `crow runs` (see runbooks/dispatch-background-runs.md).
+- `crow --help` groups the CLI: Start, See, Delegate, Rituals, Data. `crow doctor` checks identity, accounts and stale worktrees (read only). Old names (`sessions`, `relaunch`, `releases`) still work and print a hint.
 - `bin/crow-activity` gathers git/MR/PR activity cheaply. Run it instead of exploring repos by hand.
 
 ## Priorities (resource order)

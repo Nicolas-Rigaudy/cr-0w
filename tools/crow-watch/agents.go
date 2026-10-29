@@ -318,7 +318,7 @@ func (m model) detailLines(width int) []line {
 			wrap(s.LastPrompt, 3)
 		}
 		out = append(out, line{}, line{{"Relaunch on another account", sHead}},
-			line{{"  crow relaunch " + short(s.ID), sCyan}, {"   asks before it moves the session", sSub}})
+			line{{"  crow runs relaunch " + short(s.ID), sCyan}, {"   asks before it moves the session", sSub}})
 		return out
 	}
 	if a := it.agent; a != nil {

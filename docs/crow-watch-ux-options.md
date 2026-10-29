@@ -60,9 +60,9 @@ recommendation line is worth adding later if the owner wants it (decision below)
 
 | Option | What changes | Good | Costs |
 |---|---|---|---|
-| **A, rows in Needs you** (built, read only) | Sessions stopped by a limit in the last 24 h (from `crow sessions list --json`, not relaunched, not open again) show as `‖` rows under Needs you: "main 5h limit, back 19:46", "· N folders" when cdx cannot hand them off. The details show the last prompt and `crow relaunch <id>`. | Blocked work is where the owner already looks. No new tab. | The relaunch itself still runs from a terminal (decision 2 of item_009 is open). |
+| **A, rows in Needs you** (built, read only) | Sessions stopped by a limit in the last 24 h (from `crow runs sessions list --json`, not relaunched, not open again) show as `‖` rows under Needs you: "main 5h limit, back 19:46", "· N folders" when cdx cannot hand them off. The details show the last prompt and `crow relaunch <id>`. | Blocked work is where the owner already looks. No new tab. | The relaunch itself still runs from a terminal (decision 2 of item_009 is open). |
 | B, a Resume tab | item_009's option A: a fifth tab with the registry, accounts and the exact cdx command. | Room for the account choice and a dry run. | One more place to look; blocked work hides behind a key. |
-| C, banner only | A one-line banner with the count; the list stays in `crow sessions`. | Smallest change. | The sessions themselves are not on the board. |
+| C, banner only | A one-line banner with the count; the list stays in `crow runs sessions`. | Smallest change. | The sessions themselves are not on the board. |
 
 ## Bar panels
 

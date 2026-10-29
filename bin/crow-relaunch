@@ -110,14 +110,14 @@ def status(argv):
         rec = st["recommended"]
         print(f"\n{current} is blocked ({st['current_blocked']}). " +
               (f"Recommended target: {rec} ({accounts()[rec]['policy']}); relaunch with "
-               f"`crow relaunch <id> {rec}` (see `crow sessions`)." if rec else "No allowed account is usable."))
+               f"`crow runs relaunch <id> {rec}` (see `crow runs sessions`)." if rec else "No allowed account is usable."))
 
 
 # ---------- relaunch ----------
 
 def resolve(ref):
     if not ref or not ID_RE.fullmatch(ref):
-        die("a conversation id is required (see `crow sessions`); never relaunch without one")
+        die("a conversation id is required (see `crow runs sessions`); never relaunch without one")
     reg = json.loads(helper("crow-sessions", "scan", "--json"))
     hits = [s for s in reg["sessions"] if s["conversation_id"].startswith(ref)]
     if len(hits) > 1:
@@ -131,7 +131,7 @@ def resolve(ref):
             if os.path.isfile(os.path.join(base, slug, ref + ".jsonl")):
                 paths.append(os.path.join(base, slug, ref + ".jsonl"))
     if len(paths) != 1:
-        die(f"conversation '{ref}' matches {len(paths)} transcripts; use a full id from `crow sessions`")
+        die(f"conversation '{ref}' matches {len(paths)} transcripts; use a full id from `crow runs sessions`")
     return ref, paths[0]
 
 
