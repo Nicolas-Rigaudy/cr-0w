@@ -1,26 +1,35 @@
 #!/usr/bin/env bash
 # crow: launcher for the CR-0W hub, built on cdx.
 #
+# Start
 #   crow                 open the hub session
+#   crow open [--model M] <project> [prompt]  open a session in a registered project, optionally on a first message (model: opus, sonnet)
+#   crow term [--model M] <project> [prompt]  same, in a new kitty window (safe to call from inside a Claude session)
+#   crow handoff <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
+#   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
+# See
+#   crow deck [--theme t] control room: 5 tabs, 4 themes (? for keys)
+#   crow watch           older live board: 1 agents · 2 usage (? for keys)
+#   crow runs [--all]    background runs: status, task, commits so far
+#   crow runs sessions [...]   sessions cut off by a usage limit (see crow-sessions)
+#   crow ls              list registered projects
+#   crow json            agents as JSON (for widgets)
+#   crow report <run_id> print a run's final report
+# Delegate
+#   crow dispatch <project> <label> --prompt-file F   start a tracked background run
+#   crow runs relaunch <id> <account> [--dry-run] [--here]   continue a cut-off session on another allowed account; relaunch status
+#   crow focus --pid P --account A --cwd D   focus a session's kitty window, or resume it
+# Rituals
 #   crow brief           print the morning brief (one-shot run)
 #   crow daily           draft today's daily into the state dir (one-shot run; post it from the hub)
 #   crow weekly          build the weekly rollup + slide outline (one-shot run)
-#   crow open [--model M] <project> [prompt]  open a session in a registered project, optionally on a first message (model: opus, sonnet)
-#   crow term [--model M] <project> [prompt]  same, in a new kitty window (safe to call from inside a Claude session)
-#   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
-#   crow handoff <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
-#   crow ls              list registered projects
-#   crow runs [--all]    background runs: status, task, commits so far
-#   crow dispatch <project> <label> --prompt-file F   start a tracked background run
-#   crow focus --pid P --account A --cwd D   focus a session's kitty window, or resume it
-#   crow json            agents as JSON (for widgets); crow report <run_id> prints a run's final report
-#   crow watch           live board: 1 agents · 2 usage (? for keys)
-#   crow deck [--theme t] control room skeleton: 5 tabs, 4 themes, mock Home (? for keys)
-#   crow sessions [...] sessions cut off by a usage limit (see crow-sessions)
-#   crow relaunch <id> <account> [--dry-run] [--here]   continue one on another allowed account; crow relaunch status
+# Data
 #   crow usage [--json]  token usage, cost and limits across cdx accounts (see crow-usage)
 #   crow activity [...]  raw activity (see crow-activity --help)
-#   crow releases [...]  release tracks: roadmap progress toward public releases
+#   crow projects [...]  release tracks: roadmap progress toward public releases
+#   crow doctor [--json] identity, accounts, stale worktrees (read only)
+#
+# Old names still work and print a hint: sessions, relaunch (now under runs), releases (now projects).
 set -euo pipefail
 
 CROW_HOME="${CROW_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
@@ -80,6 +89,9 @@ oneshot() {
   jq -r '"\n— \(.usage.total_tokens) tokens · \(.duration_seconds|floor)s · run \(.run_id)"' <<<"$out" >&2
 }
 
+# hint <old> <new>: one line on stderr when an old command name is used (stdout stays clean).
+hint() { echo "crow: '$1' is now '$2' (the old name still works)" >&2; }
+
 cmd="${1:-hub}"
 shift || true
 case "$cmd" in
@@ -104,7 +116,11 @@ case "$cmd" in
 import yaml
 for p in yaml.safe_load(open('$REGISTRY'))['projects']:
     print(f\"{p['name']:<30} {p['scope']:<9} {p['status']:<9} {p['path']}\")" ;;
-  runs)     exec "$CROW_HOME/bin/crow-runs" list "$@" ;;
+  runs)     case "${1:-}" in
+              sessions) shift; exec "$CROW_HOME/bin/crow-sessions" "$@" ;;
+              relaunch) shift; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
+              *)        exec "$CROW_HOME/bin/crow-runs" list "$@" ;;
+            esac ;;
   dispatch) exec "$CROW_HOME/bin/crow-runs" dispatch "$@" ;;
   json)     exec "$CROW_HOME/bin/crow-runs" json "$@" ;;
   report)   exec "$CROW_HOME/bin/crow-runs" report "$@" ;;
@@ -121,11 +137,13 @@ for p in yaml.safe_load(open('$REGISTRY'))['projects']:
             fi
             exec "$bin" "$@" ;;
   focus)    exec "$CROW_HOME/bin/crow-focus" "$@" ;;
-  sessions) exec "$CROW_HOME/bin/crow-sessions" "$@" ;;
-  relaunch) exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
+  sessions) hint "crow sessions" "crow runs sessions"; exec "$CROW_HOME/bin/crow-sessions" "$@" ;;
+  relaunch) hint "crow relaunch" "crow runs relaunch"; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
   usage)    exec "$CROW_HOME/bin/crow-usage" "$@" ;;
   activity) exec "$CROW_HOME/bin/crow-activity" "$@" ;;
-  releases) exec "$CROW_HOME/bin/crow-releases" "$@" ;;
-  -h|--help|help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//' ;;
+  projects) exec "$CROW_HOME/bin/crow-releases" "$@" ;;
+  releases) hint "crow releases" "crow projects"; exec "$CROW_HOME/bin/crow-releases" "$@" ;;
+  doctor)   exec "$CROW_HOME/bin/crow-doctor" "$@" ;;
+  -h|--help|help) sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;
   *)        echo "crow: unknown command '$cmd' (crow help)" >&2; exit 1 ;;
 esac
