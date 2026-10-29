@@ -120,10 +120,14 @@ func (hv homeView) spec(i, iw int) boxSpec {
 		if n := len(fx.Blockers); n > 0 {
 			sp.title += " " + strconv.Itoa(n)
 		}
-		sp.right = line{{"MRs: ", lk.sub}, {fmt.Sprintf("%d awaits you", fx.MRsAwaiting), lk.warn}, {fmt.Sprintf(" · %d mine · %d thread", fx.MRsMine, fx.MRsThreads), lk.sub}}
+		if !fx.Live {
+			sp.right = line{{"MRs: ", lk.sub}, {fmt.Sprintf("%d awaits you", fx.MRsAwaiting), lk.warn}, {fmt.Sprintf(" · %d mine · %d thread", fx.MRsMine, fx.MRsThreads), lk.sub}}
+		}
 		switch {
 		case hv.sync == stError:
 			sp.rows = []line{{{"◆ forge sync failed: login expired, log in again", lk.bad}}}
+		case len(fx.Blockers) == 0 && fx.Live:
+			sp.rows = []line{{{"Review and ticket blockers need the forges (MRs tab).", lk.sub}}}
 		case len(fx.Blockers) == 0:
 			sp.rows = []line{{{"Nothing blocks you.", lk.sub}}}
 		default:
@@ -147,7 +151,9 @@ func (hv homeView) spec(i, iw int) boxSpec {
 		for _, m := range fx.Mail {
 			sp.rows = append(sp.rows, line{{m, lk.sub}})
 		}
-		if len(sp.rows) == 0 {
+		if len(sp.rows) == 0 && fx.Live {
+			sp.rows = []line{{{"Calendar and mail are not connected.", lk.sub}}}
+		} else if len(sp.rows) == 0 {
 			sp.rows = []line{{{"Nothing scheduled.", lk.sub}}}
 		}
 	case pNext:
@@ -247,6 +253,8 @@ func (hv homeView) agentRow(a agentRow, iw int) line {
 	switch a.State {
 	case "working":
 		g = seg{"●", lk.ok}
+	case "idle":
+		g = seg{"○", lk.sub}
 	case "needs":
 		g = seg{"◆", lk.mag}
 	case "waiting":

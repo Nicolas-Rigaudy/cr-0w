@@ -12,6 +12,7 @@ const (
 	ovHelp
 	ovPalette
 	ovTheme
+	ovConfirm
 )
 
 type command struct{ name, desc string }
@@ -28,8 +29,9 @@ func paletteCommands() []command {
 		cs = append(cs, command{"mode " + m, "filter Next and Blockers by scope"})
 	}
 	for _, s := range syncStates {
-		cs = append(cs, command{"mock " + s, "show the " + s + " state (skeleton data)"})
+		cs = append(cs, command{"mock " + s, "show the " + s + " state (invented data)"})
 	}
+	cs = append(cs, command{"attach", "jump to the selected agent's window"}, command{"relaunch", "continue the selected paused session on another account"})
 	return append(cs, command{"quit", "leave the deck"})
 }
 
@@ -68,8 +70,9 @@ func (lk *look) helpOverlay(w, h int, page int) []string {
 	keys := [][2]string{
 		{"1-5", "tabs"}, {"tab", "next pane (one pane at a time under 100 columns)"}, {"j k", "move in the list"},
 		{"m", "mode: work, perso, all"}, {"t", "switch theme"}, {":", "palette"}, {"?", "this help"},
-		{"/", "search or filter (lists, later slices)"}, {"a x e c", "answer: accept, refuse, edit, chat (later slices)"},
-		{"enter h r x R", "open, handoff, review, snooze, relaunch (later slices)"}, {"q", "quit"},
+		{"/", "history and search (later slice)"}, {"a x e c", "Agents: answer yes, no, edit, chat"},
+		{"enter", "Agents: send the typed answer"}, {"g", "Agents: jump to the agent's window"},
+		{"R", "Agents: relaunch a paused run"}, {"h r x", "handoff, review, snooze (later slices)"}, {"q", "quit"},
 	}
 	sp := boxSpec{title: "Keys", sel: -1}
 	for _, k := range keys {
@@ -115,4 +118,19 @@ func (lk *look) accentFor(t theme) int {
 		return lk.custom
 	}
 	return t.accent
+}
+
+func (lk *look) confirmOverlay(w, h int, a *agentRow) []string {
+	sp := boxSpec{title: "Relaunch", sel: -1}
+	name := "this session"
+	if a != nil {
+		name = cmpOr(a.Short, a.Name)
+	}
+	sp.rows = []line{
+		{{"Continue " + name + " on the account crow-relaunch recommends?", lk.plain}},
+		{{"It opens a new window and uses that account's limits.", lk.sub}},
+		nil,
+		{{"enter", lk.key}, spc(1), {"relaunch", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}},
+	}
+	return lk.overlayBlock(sp, w, h)
 }

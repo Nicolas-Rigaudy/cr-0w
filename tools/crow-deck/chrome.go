@@ -41,9 +41,9 @@ func (lk *look) syncSegs(cs chromeState) line {
 	case stLoading:
 		return line{lk.dot(lk.warn), spc(1), {"syncing…", lk.sub}}
 	case stStale:
-		return line{lk.dot(lk.warn), spc(1), {"stale 2h", lk.warn}}
+		return line{lk.dot(lk.warn), spc(1), {cmpOr(cs.fx.SyncNote, "stale 2h"), lk.warn}}
 	case stError:
-		return line{lk.dot(lk.bad), spc(1), {"forge sync failed", lk.bad}}
+		return line{lk.dot(lk.bad), spc(1), {cmpOr(cs.fx.SyncNote, "forge sync failed"), lk.bad}}
 	}
 	return line{lk.dot(lk.ok), spc(1), {lk.cap("synced ") + cs.fx.Synced, lk.sub}}
 }
