@@ -92,3 +92,12 @@ def test_show_returns_files_with_counts_and_threads():
     out = mod.gitlab_show("grp/demo-service", "5", call=call)
     assert out["files"] == [{"path": "a.py", "add": 2, "del": 1, "diff": diff}]
     assert out["threads"][0]["line"] == 2 and out["threads"][0]["resolved"] is False
+
+
+def test_findings_are_read_from_the_state_dir(tmp_path, monkeypatch):
+    mod = load()
+    monkeypatch.setattr(mod, "HOME", tmp_path)
+    (tmp_path / "local" / "state" / "reviews").mkdir(parents=True)
+    (tmp_path / "local" / "state" / "reviews" / "grp_demo-service-5.json").write_text('[{"title": "t", "path": "a.py", "line": 2}]')
+    assert mod.findings("grp/demo-service", "5") == [{"title": "t", "path": "a.py", "line": 2}]
+    assert mod.findings("grp/demo-service", "6") == []

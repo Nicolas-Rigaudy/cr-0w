@@ -2,7 +2,7 @@
 """crow-mrs: open MRs and PRs of the registered projects, read only, as JSON for the deck.
 
   crow-mrs json              {forges, mrs: [...], branches: [...]}
-  crow-mrs show REPO REF     {files: [{path, add, del, diff}], threads: [{author, at, path, line, body, resolved}]}
+  crow-mrs show REPO REF     {files: [{path, add, del, diff}], threads: [{author, at, path, line, body, resolved}], findings: [...]}
 
 An MR or PR is listed when the owner is its author, an assignee or a requested reviewer. Both forges (glab,
 gh) are queried with GET requests only: nothing is posted, resolved or pushed. forges holds "ok" or the error per
@@ -61,7 +61,7 @@ def role_of(me, author, reviewers, assignees):
 
 def row(p, forge, number, **kw):
     sigil = "!" if forge == "gitlab" else "#"
-    return {"project": short(p), "name": p["name"], "forge": forge, "repo": p["remote"], "number": number,
+    return {"project": short(p), "name": p["name"], "scope": p.get("scope", ""), "forge": forge, "repo": p["remote"], "number": number,
             "ref": f"{sigil}{number}", **kw}
 
 
@@ -216,7 +216,7 @@ def branches_ahead(projs, open_branches):
             continue
         n = git(path, "rev-list", "--count", f"{base}..{cur}")
         if n.isdigit() and int(n) > 0:
-            out.append({"project": short(p), "branch": cur, "ahead": int(n)})
+            out.append({"project": short(p), "scope": p.get("scope", ""), "branch": cur, "ahead": int(n)})
     return out
 
 
@@ -236,11 +236,26 @@ def list_all(projs, gl=gitlab_rows, gh=github_rows):
             "now": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
+def findings(repo, number):
+    """Review findings the review skill saved: <state>/reviews/<group>_<name>-<number>.json, a list of
+    {title, path, line, body, pattern, seen, comment, state}."""
+    try:
+        reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
+    except FileNotFoundError:
+        reg = {}
+    state = Path((reg.get("vault") or {}).get("crow_dir") or HOME / "local" / "state")
+    try:
+        return json.load(open(state / "reviews" / f"{repo.replace('/', '_')}-{number}.json"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
 def show(projs, repo, number, gl=gitlab_show, gh=github_show):
     p = next((p for p in projs if p["remote"] == repo), None)
     if not p:
         raise SystemExit(f"crow-mrs: {repo} is not a registered remote")
-    return (gl if p["forge"] == "gitlab" else gh)(repo, number)
+    out = (gl if p["forge"] == "gitlab" else gh)(repo, number)
+    return {**out, "findings": findings(repo, number)}
 
 
 def main(argv):
