@@ -1,13 +1,14 @@
 ## item_017_0_2_real_data_on_home_and_agents - 0.2 real data on Home and Agents
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-10-29 18:27:41
 
 # AI Context
 - Summary: Home and Agents fed by cdx and crow-runs: right now, needs you, running, background runs, finished, who-worked-when timeline, live tail with agent questions.
@@ -47,3 +48,6 @@
 # Priority
 - Priority: Medium
 - Rationale: Ships on its own; order follows the build plan in the spec.
+
+# Tasks
+- `task_005_0_2_real_data_on_home_and_agents`
