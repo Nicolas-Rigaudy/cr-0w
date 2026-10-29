@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-10-29 17:12:34
 
 # AI Context
 - Summary: Cost and reliability pass from the 2026-10-29 audit: long Opus contexts, per-session retros, gather turns, model titles, busy-account launches, unprotected headless runs.
@@ -16,17 +17,17 @@
 
 # Needs
 - Over 14 days, half the spend came from Opus turns whose context was already above 150k tokens (median 242k). Long sessions should be compacted or restarted before that point, and the owner should see when a session crosses it.
-- Every finished session starts its own retro run. Retros should run once a day as one batch, on the sessions that show a signal worth learning from, picked without a model.
+- Every finished session starts its own retro run. Retros should run once a day, Monday to Friday, as one batch, on the sessions that show a signal worth learning from, picked without a model.
 - The brief, daily and weekly skills spend most of their tokens on tool turns that only gather data. A script should gather everything it can and hand the model one compact JSON.
 - Sessions get titles from four sources (account name, a small-model titler, dispatch labels, /rename). One deterministic naming scheme should replace the model titler.
 - crow open, term and handoff always launch on the default account, which prompts when a session already runs there; two sessions on one profile share OAuth and can log each other out. crow should pick a free allowed account.
-- Headless runs should use the cdx features that cap and protect them: spend budget, failover on a usage limit, fallback model, run kind.
+- Headless runs should use the cdx features that protect them: failover on a usage limit, fallback model, run kind, and an optional per-run spend budget (no default).
 - Hub sessions start with 31-50k tokens of context; the parts the hub never uses should go.
 - crow-usage attributes Opus and Sonnet tokens of multi-model sessions to Haiku, so the per-model numbers are wrong.
 
 # Context
 - Audit with the measured numbers and sources: local/state/research/crow-audit.md (private).
-- cdx has its own retro (`cdx set --retro on`, `cdx retro`): per session, read-only, lessons as text. crow keeps its own skill (it applies lessons) and reuses `cdx run --kind retro --failover --budget --power low`.
+- cdx has its own retro (`cdx set --retro on`, `cdx retro`): per session, read-only, lessons as text. crow keeps its own skill (it applies lessons) and reuses `cdx run --kind retro --failover --power low`. Calling cdx's retro from crow's would add a second model pass per session for lessons crow already extracts.
 - `cdx select` does not skip profiles with a live interactive session; `cdx sessions --json` lists them.
 - Claude Code accepts a name flag at launch; cdx has no per-launch passthrough for it yet (cdx wishlist).
 - cdx is not owned by the hub's owner: crow only calls its documented CLI.
@@ -36,7 +37,7 @@
 - AC2: brief, daily and weekly read one JSON from a gather script; each fork needs at most the tracker/mail calls plus its answer.
 - AC3: every session shown by crow has a name `<project> · <kind> · <slug>` computed without a model; the model titler is gone.
 - AC4: crow open, term and handoff launch on a free allowed account, or ask when none is free; they never start a second session on a busy profile unasked.
-- AC5: dispatch, AFK and retro runs pass a budget and failover; the long-session warning and context cap are live; crow-usage per-model totals match the transcripts.
+- AC5: dispatch, AFK and retro runs pass failover and a fallback model; the long-session warning and context cap are live; crow-usage per-model totals match the transcripts.
 
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.

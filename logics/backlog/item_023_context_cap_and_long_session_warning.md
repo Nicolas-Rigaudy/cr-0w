@@ -8,6 +8,7 @@
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-10-29 17:12:32
 
 # AI Context
 - Summary: Opus turns over 150k context were 52% of 14-day spend; set an auto-compact cap in the cdx profiles and flag long sessions in crow-watch and the brief.
@@ -20,15 +21,17 @@
 
 # Scope
 - In:
-  - auto-compact window in the cdx profile settings (value chosen by the owner)
-  - crow-usage flag for sessions over the threshold, shown in crow-watch and the brief
-  - runbook line: /wrap then fresh session
+  - auto-compact window at 150k in every allowed cdx profile (owner decision 2026-10-29)
+  - early warning at 120k: crow-usage flags the session, crow-watch and the brief show it
+  - scoping help at the warning: propose `/wrap`, then split the rest into smaller sessions (crow handoff with one narrow end state each)
+  - runbook: when to wrap, how to scope a session to one end state
 - Out:
   - per-turn model switching
 
 # Acceptance criteria
-- AC1: the chosen cap is set in every allowed profile and documented.
-- AC2: crow-watch and the brief name any live session over the threshold.
+- AC1: the 150k cap is set in every allowed profile and documented.
+- AC2: crow-watch and the brief name any live session over 120k.
+- AC3: past the warning, the hub proposes a wrap and a split into scoped handoffs.
 
 # AC Traceability
 - request-AC5 -> This backlog slice. Proof: AC1: the chosen cap is set in every allowed profile and documented.

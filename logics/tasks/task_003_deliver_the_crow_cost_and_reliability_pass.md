@@ -8,9 +8,10 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Indicators reviewed: 2026-10-29 17:12:33
 
 # AI Context
-- Summary: Delivery order for req_008: account choice, context cap, run budgets, retro batch, gather script, names, start context, then re-measure.
+- Summary: Delivery order for req_008: account choice, context cap, run failover, retro batch, gather script, names, start context, then re-measure.
 - Keywords: deliver, crow, cost, reliability, pass
 - Use when: implementing any item_023..item_029 slice.
 - Skip when: work outside req_008.
@@ -21,8 +22,8 @@
 # Plan
 - [ ] 1. 1. Free-account choice (unblocks parallel sessions).
 - [ ] 2. 2. Context cap and long-session warning.
-- [ ] 3. 3. Budget, failover and kind on headless runs.
-- [ ] 4. 4. Daily retro batch, then remove the SessionEnd hook.
+- [ ] 3. 3. Failover, fallback model and kind on headless runs (optional budget).
+- [ ] 4. 4. Weekday retro batch, then remove the SessionEnd hook.
 - [ ] 5. 5. Gather script for brief, daily and weekly.
 - [ ] 6. 6. Deterministic session names.
 - [ ] 7. 7. Trim start context and fix per-model usage.
