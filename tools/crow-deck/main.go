@@ -42,6 +42,9 @@ type model struct {
 	mrKey                         string // key of the selected MR, keeps the cursor on it across refreshes
 	mrToggle                      bool
 
+	prjSel, prjPane int
+	prjZoom         bool
+
 	usePane, useSel int
 	useFortnight    bool
 }
@@ -148,6 +151,10 @@ func (m model) mrsView() mrsView {
 		file: m.mrFile, item: m.mrItem, toggle: m.mrToggle}
 }
 
+func (m model) projectsView() projectsView {
+	return projectsView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, mode: m.mode, sel: m.prjSel, pane: m.prjPane, zoom: m.prjZoom}
+}
+
 func (m model) usageView() usageViewState {
 	return usageViewState{lk: m.look(), fx: m.fx, sync: m.sync, sel: m.useSel, pane: m.usePane, fortnight: m.useFortnight, now: m.now}
 }
@@ -210,6 +217,10 @@ func (m *model) moveSel(d int) {
 		}
 		return
 	}
+	if m.page == 3 {
+		m.prjSel = max(0, min(len(m.projectsView().visible())-1, m.prjSel+d))
+		return
+	}
 	if m.page == 4 {
 		if m.usePane == upAccounts {
 			m.useSel = max(0, min(len(m.fx.Gauges)-1, m.useSel+d))
@@ -235,6 +246,8 @@ func (m *model) moveFocus(d int) {
 		m.agentPane = (m.agentPane + d + agentPanes) % agentPanes
 	case 2:
 		m.mrPane = (m.mrPane + d + mrPanes) % mrPanes
+	case 3:
+		m.prjPane = (m.prjPane + d + projPanes) % projPanes
 	case 4:
 		m.usePane = (m.usePane + d + usagePanes) % usagePanes
 	}
@@ -389,6 +402,14 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveSel(1)
 	case "k", "up":
 		m.moveSel(-1)
+	case "z":
+		if m.page == 3 {
+			m.prjZoom = !m.prjZoom
+		}
+	case "o":
+		if m.page == 3 {
+			m.flash = m.projectKey(k)
+		}
 	case "d":
 		if m.page == 4 {
 			m.useFortnight = !m.useFortnight
@@ -406,6 +427,10 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.page == 2 {
 			return m.mrKeyPress(k)
 		}
+		if m.page == 3 {
+			m.flash = m.projectKey(k)
+			return m, nil
+		}
 		if m.page == 4 && k == "r" {
 			m.flash = "refreshing usage…"
 			return m, fetchCmd(srcUsage)
@@ -413,6 +438,21 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.flash = k + ": actions are not wired yet"
 	}
 	return m, nil
+}
+
+// projectKey explains an action key on the Projects page: it needs a selected project, and
+// the actions themselves arrive with the actions slice.
+func (m model) projectKey(k string) string {
+	c := m.projectsView().cur()
+	if c == nil {
+		return "no project selected"
+	}
+	for _, a := range cardActions {
+		if a[0] == k {
+			return k + ": " + a[1] + " on " + c.Name + " is not wired yet"
+		}
+	}
+	return k + ": not wired"
 }
 
 func (m model) curAgent() *agentRow {
@@ -562,6 +602,9 @@ func (m model) context() []keyHint {
 	if m.page == 2 {
 		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"a x e c", "decide"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
 	}
+	if m.page == 3 {
+		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o", "action"}, {"z", "zoom"}, {"/", "filter"}, {"m", "work / perso / all"}}
+	}
 	if m.page == 4 {
 		return []keyHint{{"j k", "account"}, {"tab", "pane"}, {"d", "7 / 14 days"}, {"r", "refresh"}, {"p l [ ]", "policy"}}
 	}
@@ -598,10 +641,10 @@ func (m model) View() string {
 		body = m.agentsView().body(m.w, bh)
 	case m.page == 2:
 		body = m.mrsView().body(m.w, bh)
-	case m.page == 4:
-		body = m.usageView().body(m.w, bh)
+	case m.page == 3:
+		body = m.projectsView().body(m.w, bh)
 	default:
-		body = lk.placeholder(m.page, m.w, bh, m.sync)
+		body = m.usageView().body(m.w, bh)
 	}
 	out := []string{lk.header(m.w, cs), lk.tabs(m.w, cs), lk.rule(m.w)}
 	out = append(out, body...)

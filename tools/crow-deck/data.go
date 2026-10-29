@@ -171,7 +171,16 @@ type regProject struct {
 		State   string `json:"state"`
 		Roadmap string `json:"roadmap"`
 	} `json:"release"`
-	Git regGit `json:"git"`
+	Road *regRoad `json:"road"`
+	Git  regGit   `json:"git"`
+}
+
+// regRoad is the milestone progress crow-registry reads from the roadmap doc.
+type regRoad struct {
+	Done    int    `json:"done"`
+	Total   int    `json:"total"`
+	Current string `json:"current"`
+	Exit    string `json:"exit"`
 }
 
 type registry struct {
@@ -736,6 +745,8 @@ func buildFixtures(in liveInput) *fixtures {
 			}
 		}
 	}
+	fx.Cards, fx.Quiet = projectCardsOf(now, ls.reg, fx.Agents, fx.Next, fx.MRs)
+	fx.Projects = projectRows(fx.Cards)
 	fx.MRDetails, fx.MRErrs = map[string]*mrDetail{}, map[string]string{}
 	for k, e := range ls.details {
 		if e.d != nil {

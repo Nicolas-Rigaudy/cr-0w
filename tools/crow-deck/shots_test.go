@@ -49,6 +49,7 @@ func TestShots(t *testing.T) {
 		agentShots(write, ti, sizes)
 		mrsShots(write, ti, sizes)
 		usageShots(write, ti, sizes)
+		projectShots(write, ti, sizes)
 		for _, st := range []string{stEmpty, stError, stLoading, stStale} {
 			for _, sn := range []string{"wide", "small"} {
 				m := newModel(defaultConfig())
@@ -162,5 +163,35 @@ func usageShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m = base("wide")
 		m.setSync(st)
 		write(fmt.Sprintf("%s-Usage-wide-%s", name, st), m)
+	}
+}
+
+// projectShots: the Projects tab beyond the default view: the zoomed timeline, a card
+// selected, every pane in single-pane mode, and the data states.
+func projectShots(write func(string, model), ti int, sizes map[string][2]int) {
+	name := themes[ti].name
+	base := func(sn string) model {
+		m := newModel(defaultConfig())
+		m.th, m.page, m.w, m.h, m.mode = ti, 3, sizes[sn][0], sizes[sn][1], "all"
+		return m
+	}
+	m := base("wide")
+	write(name+"-Projects-wide-all", m)
+	m.prjSel = 2
+	write(name+"-Projects-wide-lint", m)
+	m.prjZoom = true
+	write(name+"-Projects-wide-zoom", m)
+	m = base("wide")
+	m.mode = "work"
+	write(name+"-Projects-wide-work", m)
+	for pane, pn := range []string{"cards", "timeline"} {
+		m = base("small")
+		m.prjPane = pane
+		write(fmt.Sprintf("%s-Projects-small-%s", name, pn), m)
+	}
+	for _, st := range []string{stEmpty, stError, stLoading, stStale} {
+		m = base("wide")
+		m.setSync(st)
+		write(fmt.Sprintf("%s-Projects-wide-%s", name, st), m)
 	}
 }

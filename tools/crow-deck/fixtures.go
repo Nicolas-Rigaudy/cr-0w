@@ -104,6 +104,8 @@ type fixtures struct {
 	Mail                []string
 	Next                []nextRow
 	Projects            []projRow
+	Cards               []projCard // Projects tab
+	Quiet               []string   // projects without a roadmap or activity
 	Repos, Dirty, Ahead int
 	Slots               [2]int // background runs busy, cap
 	Who                 []whoRow
@@ -180,6 +182,7 @@ func mockFixtures() *fixtures {
 		Usage: mockUsage(),
 		MRs:   mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
+	f.Cards, f.Quiet = mockCards(mockNow())
 	mockMRCounts(f)
 	return f
 }
@@ -230,6 +233,7 @@ func emptyFixtures() *fixtures {
 	f.MRs, f.Branches, f.MRDetails = nil, nil, nil
 	f.MRsAwaiting, f.MRsMine, f.MRsThreads = 0, 0, 0
 	f.Usage = nil
+	f.Cards, f.Quiet = nil, nil
 	f.Gauges[1].RunsUsed = 0
 	return f
 }
