@@ -43,6 +43,9 @@ def default_branch(repo):
 
 
 def merged(repo, branch, base):
+    # A branch cut from base with no commits of its own has the base tip: not merged work.
+    if git(repo, "rev-parse", branch) == git(repo, "rev-parse", base):
+        return False
     return subprocess.run(["git", "-C", str(repo), "merge-base", "--is-ancestor", branch, base],
                           capture_output=True).returncode == 0
 
