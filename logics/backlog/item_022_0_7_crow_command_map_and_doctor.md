@@ -1,10 +1,10 @@
 ## item_022_0_7_crow_command_map_and_doctor - 0.7 crow command map and doctor
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -44,3 +44,6 @@
 # Priority
 - Priority: Medium
 - Rationale: Ships on its own; order follows the build plan in the spec.
+
+# Tasks
+- `task_009_0_7_crow_command_map_and_doctor`
