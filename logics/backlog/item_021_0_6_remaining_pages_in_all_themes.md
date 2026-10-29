@@ -1,10 +1,10 @@
 ## item_021_0_6_remaining_pages_in_all_themes - 0.6 remaining pages in all themes
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 75%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -43,3 +43,6 @@
 # Priority
 - Priority: Medium
 - Rationale: Ships on its own; order follows the build plan in the spec.
+
+# Tasks
+- `task_008_0_6_remaining_pages_in_all_themes`
