@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""crow-doctor: is the hub set up right. Read only; it fixes nothing.
+
+  crow-doctor           identity, accounts, stale worktrees, one line each
+  crow-doctor --json    the same checks as JSON: {ok, checks: [{area, level, summary, details}]}
+
+identity   git user.email of each registered repo against the registry identity of its scope
+accounts   default account, accounts crow may target, cdx on PATH
+worktrees  <repo>.wt/* trees already merged into the default branch (crow tidy --apply removes them)
+
+Exit 1 when a check fails, 0 otherwise (warnings do not fail).
+"""
+import importlib.machinery
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+
+
+def load_registry():
+    loader = importlib.machinery.SourceFileLoader("crow_registry", os.path.join(HERE, "crow-registry"))
+    spec = importlib.util.spec_from_loader("crow_registry", loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+def accounts_json():
+    r = subprocess.run([os.path.join(HERE, "crow-accounts"), "json"], capture_output=True, text=True)
+    try:
+        return json.loads(r.stdout)
+    except ValueError:
+        return None
+
+
+def check(area, level, summary, details=()):
+    return {"area": area, "level": level, "summary": summary, "details": list(details)}
+
+
+def identity(reg):
+    ids, bad, checked = reg["identities"], [], 0
+    for p in reg["projects"]:
+        email, want = p["git"]["email"], ids.get(p["scope"], "")
+        if not email or not want:
+            continue
+        checked += 1
+        if email != want:
+            bad.append(f"{p['name']} ({p['scope']}): {email}, registry says {want}")
+    if not ids:
+        return check("identity", "warn", "no identities in the registry")
+    if bad:
+        return check("identity", "fail", f"{len(bad)} of {checked} repos use another email", bad)
+    return check("identity", "ok", f"{checked} repos match the registry")
+
+
+def accounts(acc):
+    if acc is None:
+        return check("accounts", "fail", "crow-accounts did not answer")
+    allowed = [a["name"] for a in acc["accounts"] if a["policy"] in ("use", "ask-first")]
+    details = [f"{a['name']}: {a['policy']}, memory {a['memory']}" for a in acc["accounts"]]
+    if not shutil.which("cdx"):
+        return check("accounts", "fail", "cdx is not on PATH", details)
+    default = next((a for a in acc["accounts"] if a["name"] == acc["default"]), None)
+    if default is None:
+        return check("accounts", "fail", f"default account '{acc['default']}' is not configured", details)
+    if default["policy"] not in ("use", "ask-first"):
+        return check("accounts", "fail", f"default account '{default['name']}' has policy {default['policy']}", details)
+    return check("accounts", "ok", f"default {default['name']}, {len(allowed)} of {len(acc['accounts'])} allowed", details)
+
+
+def stale_worktrees(reg, mod):
+    found = []
+    for p in reg["projects"]:
+        trees = Path(p["path"] + ".wt") if p["path"] else None
+        if not trees or not trees.is_dir():
+            continue
+        base = mod.default_ref(p["path"])
+        for tree in sorted(trees.glob("*")):
+            head = mod.git(tree, "rev-parse", "HEAD")
+            if head and subprocess.run(["git", "-C", p["path"], "merge-base", "--is-ancestor", head, base],
+                                       capture_output=True).returncode == 0:
+                found.append(f"{p['name']}: {tree.name}")
+    if found:
+        return check("worktrees", "warn", f"{len(found)} merged worktrees left behind", found)
+    return check("worktrees", "ok", "no merged worktrees left behind")
+
+
+def main(argv):
+    if argv not in ([], ["--json"]):
+        sys.exit(__doc__)
+    mod = load_registry()
+    reg = mod.load()
+    checks = [identity(reg), accounts(accounts_json()), stale_worktrees(reg, mod)]
+    ok = all(c["level"] != "fail" for c in checks)
+    if argv:
+        json.dump({"ok": ok, "checks": checks}, sys.stdout)
+        print()
+    else:
+        mark = {"ok": "ok  ", "warn": "warn", "fail": "FAIL"}
+        for c in checks:
+            print(f"{mark[c['level']]}  {c['area']:<10} {c['summary']}")
+            for d in c["details"] if c["level"] != "ok" or c["area"] == "accounts" else []:
+                print(f"      {d}")
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
