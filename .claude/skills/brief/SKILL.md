@@ -41,7 +41,7 @@ Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**
 
 ## Gather
 0. **Last AFK run first**: if `local/state/afk/log.md` has entries since yesterday evening, read it and the AFK report before anything else. Never state how the night ended without it; if the report is missing, say which jobs never finished and offer to compile it (see `runbooks/afk-runs.md`, Morning).
-1. **Open threads + status**: state dir `open-threads.md` and `status.md` (state dir = `vault.crow_dir` or `local/state/`).
+1. **Open threads + status**: state dir `open-threads.md` and `status.md` (state dir = `vault.crow_dir` or `local/state/`). Format: `runbooks/open-threads.md`. Show `## Me` first, then `## Waiting` with each line's age in days. List lines untouched for 14 days or more as stale and ask keep, re-date or drop (drop removes the line). Skip `## Crow` unless it changes the day. Never write a status note into the file.
 2. **Forge activity**: already above (Pre-gathered). Don't explore repos further. "My open MRs" lists every open MR with its unresolved thread count.
    - "My GitLab/GitHub actions" are the owner's OWN outgoing actions (comments he left on others' MRs, MRs he accepted). Never put them in "Needs you" and never write "comments from you" as a to-do: a comment he left on a colleague's MR is waiting on the colleague. Only "Awaiting my review", unresolved threads on "My open MRs", approvals pending and failed pipelines on his MRs belong in "Needs you". If all three are "none", write "Nothing waiting on you (no review, no open MR)".
    - Comments on MRs may be SonarCloud's quality-gate note posted through the owner's token (crow-activity filters them). Never read an action as a review he gave unless it is clearly his.

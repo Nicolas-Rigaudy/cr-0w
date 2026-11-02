@@ -19,7 +19,7 @@ Run `bin/crow-afk-preflight <path of every repo that might get a job>` and act o
 - Runs stopped by a usage limit: `bin/crow-sessions` and `bin/crow-runs list`.
 - Pending owner decisions already taken: `local/state/afk/decisions-*.md` (they unblock items).
 - Each registered project in `local/projects.yaml` (personal first; work repos only as local-only jobs): `logics-manager status` in the repo for the next eligible items, and the "Next eligible" line of its last AFK report.
-- Open threads tagged with a project in the state dir's `open-threads.md`.
+- The `## Crow` section of the state dir's `open-threads.md` (format: `runbooks/open-threads.md`). Ignore `## Me` and `## Waiting`.
 For each candidate, note what it needs: a database, a GUI, cloud access, a visual choice, an owner decision. Anything the machine can't provide goes on the "needs env" list.
 
 ## 4. Ask the owner, once, before writing anything

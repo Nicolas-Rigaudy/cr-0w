@@ -1,10 +1,10 @@
 ## item_052_open_threads_in_three_sections_me_crow_waiting - Open threads in three sections: me, crow, waiting
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Small
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -37,8 +37,8 @@
 - AC4: No skill writes a status note into the file.
 
 # AC Traceability
-- request-AC2 -> AC1, AC2. Proof: runbook + wrap/eod skill diff.
-- request-AC3 -> AC2, AC3. Proof: skills diff.
+- request-AC2 -> AC1, AC2. Proof: `runbooks/open-threads.md` (sections, line shape, done and stale rules), linked in `runbooks/README.md`; `skills/wrap/SKILL.md` and `.claude/skills/eod/SKILL.md` write by section and move done lines to `activity/`.
+- request-AC3 -> AC2, AC3. Proof: `.claude/skills/brief/SKILL.md` (Me, Waiting with age, stale list), `.claude/skills/afk/SKILL.md` (Crow only); AC4: no skill writes status notes, stated in wrap, eod, brief and the runbook.
 
 # Decision framing
 - Product framing: Not needed
