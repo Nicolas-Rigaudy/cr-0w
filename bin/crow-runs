@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crow-runs: dispatch background runs and see what every agent is doing.
 
-  crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--power P] [--model M]
+  crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--power P] [--model M] [--permission review]
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
   crow-runs json                                     same data as JSON (for widgets)
   crow-runs report <run_id>                          final report of a finished run
@@ -460,7 +460,8 @@ def dispatch(a):
     p = project(a.project)
     cwd = p["path"]
     runs = running_runs()
-    if any(x["cwd"] == cwd for x in runs) and not a.force:
+    # A review run cannot write, so it may share the folder with another run.
+    if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
         sys.exit(f"crow: a run is already working in {cwd}; --force to override")
     provider = crow_lib.provider_of(ACCOUNT)
     src = ["--prompt-file", a.prompt_file] if a.prompt_file else ["--prompt", a.prompt]
@@ -472,7 +473,7 @@ def dispatch(a):
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
     out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", cwd, *src, "--power", a.power, *(["--model", a.model] if a.model else []),
-             "--permission", crow_lib.permission(provider), "--detach", "--json",
+             "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
              "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])],
              capture_output=True, text=True).stdout.strip()
     try:
@@ -488,7 +489,7 @@ def dispatch(a):
         "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "start_sha": sh("git", "rev-parse", "HEAD", cwd=cwd),
         "branch": sh("git", "branch", "--show-current", cwd=cwd),
-        "prompt_file": a.prompt_file, "power": a.power, "model": a.model,
+        "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
     }
     if a.resumes:
         rec["resumes"] = next((r["run_id"] for r in ledger() if r["run_id"].startswith(a.resumes)), a.resumes)
@@ -577,6 +578,7 @@ def main():
     g.add_argument("--prompt-file"); g.add_argument("--prompt")
     d.add_argument("--power", default="medium")
     d.add_argument("--model", help="model for this run (opus, sonnet); default is the account model")
+    d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     sub.add_parser("report").add_argument("run_id")

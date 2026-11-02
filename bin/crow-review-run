@@ -1,0 +1,374 @@
+#!/usr/bin/env python3
+"""crow-review-run: review one MR in a read-only background run and keep its findings as JSON.
+
+  crow-review-run start REPO NUMBER [--mode peer|self] [--model M] [--power P] [--force]
+  crow-review-run sync REPO NUMBER       fold a finished run into the findings file (no-op otherwise)
+  crow-review-run show REPO NUMBER       the findings file, synced first
+  crow-review-run check FILE             validate a findings file against the schema (exit 1 on errors)
+
+REPO is the registry remote (group/name), NUMBER the MR or PR number. The findings file is
+<state>/reviews/<group>_<name>-<number>.json (schema: runbooks/review-findings.md).
+
+start writes a context bundle (MR threads, diff, review ledgers) under the repo's git dir, then
+dispatches `crow-runs dispatch --permission review` (Claude plan mode: no edits, no writes). The run
+prints its findings as one JSON object in its final message; sync parses it, validates it and writes
+the file. Nothing is posted, pushed or committed.
+"""
+import argparse, json, os, re, subprocess, sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import yaml
+
+BIN = Path(os.path.dirname(os.path.realpath(__file__)))
+HOME = Path(os.environ.get("CROW_HOME") or BIN.parent)
+
+SCHEMA = 1
+SEVERITIES = ("blocking", "suggestion", "nit", "question")
+STATES = ("pending", "accepted", "refused", "edited", "chat")
+RUN_STATES = ("running", "done", "failed")
+DEFAULT_MODEL = "opus"
+
+
+def registry():
+    try:
+        return yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
+    except FileNotFoundError:
+        return {}
+
+
+def state_dir():
+    return Path((registry().get("vault") or {}).get("crow_dir") or HOME / "local" / "state")
+
+
+def findings_path(repo, number):
+    return state_dir() / "reviews" / f"{repo.replace('/', '_')}-{number}.json"
+
+
+def project_of(repo):
+    p = next((p for p in registry().get("projects") or [] if p.get("remote") == repo), None)
+    if not p:
+        sys.exit(f"crow-review-run: {repo} is not a registered remote")
+    return p
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+# ---------- schema ----------
+
+def validate_finding(f, i):
+    where = f"findings[{i}]"
+    errs = []
+    if not isinstance(f, dict):
+        return [f"{where}: not an object"]
+    for k in ("title", "body"):
+        if not isinstance(f.get(k), str) or not f[k].strip():
+            errs.append(f"{where}.{k}: required non-empty string")
+    for k in ("path", "comment", "fix", "pattern"):
+        if k in f and f[k] is not None and not isinstance(f[k], str):
+            errs.append(f"{where}.{k}: must be a string")
+    if "line" in f and f["line"] is not None and (not isinstance(f["line"], int) or isinstance(f["line"], bool) or f["line"] < 0):
+        errs.append(f"{where}.line: must be a non-negative integer")
+    if f.get("severity") not in SEVERITIES:
+        errs.append(f"{where}.severity: one of {', '.join(SEVERITIES)}")
+    return errs
+
+
+def validate_output(doc):
+    """Errors in the object a review run prints (an empty list when it is valid)."""
+    if not isinstance(doc, dict):
+        return ["output: not a JSON object"]
+    errs = []
+    if not isinstance(doc.get("summary", ""), str):
+        errs.append("summary: must be a string")
+    if not isinstance(doc.get("findings"), list):
+        return errs + ["findings: required list"]
+    for i, f in enumerate(doc["findings"]):
+        errs += validate_finding(f, i)
+    return errs
+
+
+def validate_file(doc):
+    """Errors in a findings file (an empty list when it is valid)."""
+    if not isinstance(doc, dict):
+        return ["file: not a JSON object"]
+    errs = []
+    if doc.get("schema") != SCHEMA:
+        errs.append(f"schema: must be {SCHEMA}")
+    for k in ("repo", "project"):
+        if not isinstance(doc.get(k), str) or not doc[k]:
+            errs.append(f"{k}: required string")
+    if not isinstance(doc.get("number"), int):
+        errs.append("number: required integer")
+    if doc.get("mode") not in ("peer", "self"):
+        errs.append("mode: peer or self")
+    run = doc.get("run")
+    if not isinstance(run, dict) or run.get("state") not in RUN_STATES:
+        errs.append(f"run.state: one of {', '.join(RUN_STATES)}")
+    elif run["state"] == "failed" and not run.get("reason"):
+        errs.append("run.reason: required when the run failed")
+    if not isinstance(doc.get("findings"), list):
+        return errs + ["findings: required list"]
+    ids = set()
+    for i, f in enumerate(doc["findings"]):
+        errs += validate_finding(f, i)
+        if isinstance(f, dict):
+            if f.get("state") not in STATES:
+                errs.append(f"findings[{i}].state: one of {', '.join(STATES)}")
+            if not f.get("id") or f["id"] in ids:
+                errs.append(f"findings[{i}].id: required and unique")
+            ids.add(f.get("id"))
+    return errs
+
+
+def parse_output(text):
+    """The findings object in a run's final message: the whole text, the last ```json block, or the outer braces."""
+    text = (text or "").strip()
+    candidates = [text]
+    candidates += reversed(re.findall(r"```(?:json)?\s*\n(.*?)\n```", text, re.S))
+    if "{" in text:
+        candidates.append(text[text.index("{"):text.rindex("}") + 1])
+    for c in candidates:
+        try:
+            doc = json.loads(c)
+        except ValueError:
+            continue
+        if isinstance(doc, dict) and "findings" in doc:
+            return doc
+    return None
+
+
+def to_findings(doc):
+    """Run output findings, with an id, defaults and the pending decision state."""
+    out = []
+    for i, f in enumerate(doc["findings"], 1):
+        out.append({
+            "id": f"f{i}", "title": f["title"].strip(), "severity": f["severity"],
+            "path": f.get("path") or "", "line": f.get("line") or 0,
+            "body": f["body"].strip(), "comment": (f.get("comment") or "").strip(),
+            "fix": (f.get("fix") or "").strip(), "pattern": f.get("pattern") or "",
+            "seen": f.get("seen") if isinstance(f.get("seen"), int) else 0,
+            "state": "pending", "note": "",
+        })
+    return out
+
+
+# ---------- files ----------
+
+def load(path):
+    try:
+        return json.loads(Path(path).read_text())
+    except (FileNotFoundError, ValueError):
+        return None
+
+
+def save(path, doc):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n")
+    tmp.replace(path)
+
+
+def decided(doc):
+    return [f for f in (doc or {}).get("findings") or [] if isinstance(f, dict) and f.get("state", "pending") != "pending"]
+
+
+# ---------- start ----------
+
+def sh(*args, cwd=None):
+    r = subprocess.run(args, cwd=cwd, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def mr_detail(repo, number):
+    """Diff and threads from crow-mrs (GET requests only)."""
+    r = subprocess.run([str(BIN / "crow-mrs"), "show", repo, str(number)], capture_output=True, text=True, timeout=120)
+    if r.returncode:
+        raise RuntimeError((r.stderr or r.stdout).strip().splitlines()[-1] if (r.stderr or r.stdout).strip() else "crow-mrs failed")
+    return json.loads(r.stdout)
+
+
+def ledgers(project_path):
+    """The review ledgers that apply: common.md and the one named after the repo dir."""
+    d = HOME / "local" / "reviews"
+    out = []
+    for name in ("common.md", f"{Path(project_path).name}.md"):
+        f = d / name
+        if f.exists():
+            out.append((name, f.read_text()))
+    return out
+
+
+def bundle_text(repo, number, mode, detail, ledger_files):
+    parts = [f"# Review bundle: {repo} !{number} ({mode} review)\n"]
+    for name, text in ledger_files:
+        parts.append(f"## Ledger {name}\n\n{text.strip()}\n")
+    threads = detail.get("threads") or []
+    parts.append(f"## Existing threads ({len(threads)})\n")
+    for t in threads:
+        state = "resolved" if t.get("resolved") else "open"
+        parts.append(f"- [{state}] {t.get('author', '')} on {t.get('path') or '-'}:{t.get('line') or 0}: {(t.get('body') or '').strip()}")
+    files = detail.get("files") or []
+    parts.append(f"\n## Diff ({len(files)} files)\n")
+    for f in files:
+        parts.append(f"### {f['path']} (+{f.get('add', 0)} -{f.get('del', 0)})\n\n```diff\n{f.get('diff', '').rstrip()}\n```\n")
+    return "\n".join(parts)
+
+
+def bundle_path(project_path, number):
+    """Under the repo's git dir: inside the run's cwd, outside the work tree and git status."""
+    common = sh("git", "rev-parse", "--path-format=absolute", "--git-common-dir", cwd=project_path)
+    base = Path(common) if common else Path(project_path) / ".git"
+    return base / "crow-review" / f"{number}.md"
+
+
+def prompt_text(repo, number, mode, bundle):
+    return f"""Read-only review of {repo} !{number} ({mode} mode). You run in plan mode: do not edit, write or run anything that changes state.
+
+1. Read the bundle {bundle}: the review ledgers, the existing threads and the full diff.
+2. Follow the review skill checks: the repo's own review skill if it has one (.claude/skills/*review*), then every ledger row against the diff, then correctness, failure paths, tests.
+3. Read around the changes in this checkout for context (callers, siblings). The checkout may sit on another branch: the bundle diff is the source of truth. If a command is denied, carry on with the bundle.
+
+Your final message is ONE JSON object and nothing else:
+{{"summary": "Patterns: N checked, K hits, M n/a. <one-line verdict>",
+  "findings": [{{"title": "short title", "severity": "blocking|suggestion|nit|question",
+    "path": "file path from the diff, empty for a commit or MR-level finding", "line": 0,
+    "body": "the problem, one or two sentences",
+    "comment": "the review comment ready to post, in the repo's review language and style",
+    "fix": "the proposed fix: a short unified diff or exact replacement",
+    "pattern": "ledger row title when a ledger row hit, else empty", "seen": 0}}]}}
+line is the new-file line number in the diff. seen is the ledger row's hit count when known. No AI attribution in any text.
+"""
+
+
+def start(a):
+    p = project_of(a.repo)
+    path = findings_path(a.repo, a.number)
+    old = load(path)
+    if old and (old.get("run") or {}).get("state") == "running" and not a.force:
+        sys.exit(f"crow-review-run: a review of {a.repo} !{a.number} is already running; --force to restart")
+    if decided(old) and not a.force:
+        sys.exit(f"crow-review-run: {len(decided(old))} findings already have a decision; --force to start over")
+    detail = mr_detail(a.repo, a.number)
+    bundle = bundle_path(p["path"], a.number)
+    bundle.parent.mkdir(parents=True, exist_ok=True)
+    bundle.write_text(bundle_text(a.repo, a.number, a.mode, detail, ledgers(p["path"])))
+    prompt = path.with_suffix(".prompt.md")
+    prompt.parent.mkdir(parents=True, exist_ok=True)
+    prompt.write_text(prompt_text(a.repo, a.number, a.mode, bundle))
+    run_id = dispatch(p["name"], f"review-{a.number}", prompt, a.model, a.power)
+    doc = {"schema": SCHEMA, "repo": a.repo, "number": a.number, "project": p["name"], "mode": a.mode,
+           "run": {"id": run_id, "state": "running", "reason": "", "model": a.model,
+                   "started_at": now(), "ended_at": ""},
+           "summary": "", "findings": []}
+    save(path, doc)
+    print(f"review {run_id[:8]} started for {a.repo} !{a.number}; findings go to {path}")
+
+
+def dispatch(project, label, prompt, model, power):
+    """crow-runs dispatch in review permission; returns the full run id."""
+    r = subprocess.run([str(BIN / "crow-runs"), "dispatch", project, label, "--prompt-file", str(prompt),
+                        "--model", model, "--power", power, "--permission", "review"],
+                       capture_output=True, text=True)
+    m = re.search(r"^dispatched (\S+)", r.stdout, re.M)
+    if r.returncode or not m:
+        sys.exit((r.stderr or r.stdout).strip() or "crow-review-run: dispatch failed")
+    try:
+        rows = [json.loads(l) for l in (state_dir() / "runs.jsonl").read_text().splitlines() if l.strip()]
+    except FileNotFoundError:
+        rows = []
+    return next((x["run_id"] for x in reversed(rows) if x["run_id"].startswith(m.group(1))), m.group(1))
+
+
+# ---------- sync ----------
+
+def cdx_run(run_id):
+    """The cdx row of a run (None when cdx does not know it)."""
+    out = sh("cdx", "runs", "--since", "7d", "--limit", "200", "--json")
+    rows = json.loads(out).get("runs", []) if out else []
+    return next((r for r in rows if r.get("run_id", "").startswith(run_id)), None)
+
+
+def final_message(row):
+    rep = sh("cdx", "run-report", row["run_id"], "--json")
+    final = (json.loads(rep).get("report", {}) if rep else {}).get("final_message")
+    if final:
+        return final
+    sys.path.insert(0, str(BIN))
+    import crow_lib
+    f = Path((row.get("artifacts") or {}).get("stdout_path") or "/nonexistent")
+    return crow_lib.final_text(f.read_text(errors="replace"), row.get("provider") or "claude") if f.exists() else ""
+
+
+def fold(doc, row, text):
+    """Fold a finished cdx run row and its final message into the findings doc."""
+    run = doc["run"]
+    run["ended_at"] = row.get("ended_at") or now()
+    if row.get("exit_code") != 0:
+        tail = (text or "").strip().splitlines()
+        run.update(state="failed", reason=f"run exited {row.get('exit_code')}: {tail[-1][:200] if tail else 'no output'}")
+        return doc
+    out = parse_output(text)
+    if out is None:
+        run.update(state="failed", reason="no findings JSON in the run's final message")
+        return doc
+    errs = validate_output(out)
+    if errs:
+        run.update(state="failed", reason="invalid findings: " + "; ".join(errs[:3]))
+        return doc
+    run.update(state="done", reason="")
+    doc["summary"] = (out.get("summary") or "").strip()
+    doc["findings"] = to_findings(out)
+    return doc
+
+
+def sync(repo, number, lookup=cdx_run, message=final_message):
+    path = findings_path(repo, number)
+    doc = load(path)
+    if not doc or (doc.get("run") or {}).get("state") != "running":
+        return doc
+    row = lookup(doc["run"]["id"])
+    if row is None:
+        doc["run"].update(state="failed", reason="cdx does not know this run", ended_at=now())
+    elif not row.get("ended_at"):
+        return doc
+    else:
+        fold(doc, row, message(row))
+    save(path, doc)
+    return doc
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="crow-review-run")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("start")
+    s.add_argument("repo"); s.add_argument("number", type=lambda v: int(v.lstrip("!#")))
+    s.add_argument("--mode", choices=("peer", "self"), default="peer")
+    s.add_argument("--model", default=DEFAULT_MODEL)
+    s.add_argument("--power", default="medium")
+    s.add_argument("--force", action="store_true")
+    for name in ("sync", "show"):
+        x = sub.add_parser(name)
+        x.add_argument("repo"); x.add_argument("number", type=lambda v: int(v.lstrip("!#")))
+    sub.add_parser("check").add_argument("file")
+    a = ap.parse_args(argv)
+    if a.cmd == "start":
+        start(a)
+    elif a.cmd in ("sync", "show"):
+        doc = sync(a.repo, a.number)
+        if a.cmd == "show":
+            json.dump(doc, sys.stdout, indent=1, ensure_ascii=False); print()
+        else:
+            print((doc or {}).get("run", {}).get("state", "none"))
+    elif a.cmd == "check":
+        doc = load(a.file)
+        errs = validate_file(doc) if doc is not None else ["file: missing or not JSON"]
+        print("\n".join(errs) or "ok")
+        sys.exit(1 if errs else 0)
+
+
+if __name__ == "__main__":
+    main()

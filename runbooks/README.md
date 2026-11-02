@@ -11,6 +11,7 @@ want to trigger it by name.
 
 ## Index
 - [dispatch-background-runs](dispatch-background-runs.md): start, track and recover cdx background runs in project repos
+- [review-findings](review-findings.md): read-only review run of one MR, its findings JSON schema, resume for the apply phase
 - [cost-audit](cost-audit.md): measure token spend by context size, model, project and skill; re-measure after a change
 - [archeotech-crow-agents](archeotech-crow-agents.md): test the crow agents bar/panel module with fixtures and headless renders
 - [archeotech-crow-usage](archeotech-crow-usage.md): test the crow usage bar/panel module (fixtures, render script, sandbox gotchas)

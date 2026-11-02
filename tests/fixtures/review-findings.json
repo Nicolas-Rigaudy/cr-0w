@@ -1,0 +1,23 @@
+{
+ "schema": 1,
+ "repo": "grp/demo-service",
+ "number": 220,
+ "project": "demo-service",
+ "mode": "peer",
+ "run": {"id": "rv000001-0000-0000-0000-000000000000", "state": "done", "reason": "", "model": "opus",
+         "started_at": "2026-11-02T09:00:00+00:00", "ended_at": "2026-11-02T09:06:00+00:00"},
+ "summary": "Patterns: 12 checked, 2 hits, 3 n/a. Two fixes before merge.",
+ "findings": [
+  {"id": "f1", "title": "Missing pagination on list call", "severity": "blocking",
+   "path": "src/handlers/list.py", "line": 42,
+   "body": "The call returns the first page only. Accounts with more than 100 items lose data.",
+   "comment": "Il manque la pagination ici, au-delà de 100 éléments on perd des données.",
+   "fix": "-items = client.list()\n+items = list(paginate(client.list))",
+   "pattern": "Unpaginated AWS list calls", "seen": 3, "state": "pending", "note": ""},
+  {"id": "f2", "title": "Commit subject has no file scope", "severity": "nit",
+   "path": "", "line": 0,
+   "body": "The commit subject has no file scope.",
+   "comment": "Le sujet du commit n'a pas de scope.",
+   "fix": "", "pattern": "", "seen": 0, "state": "accepted", "note": ""}
+ ]
+}
