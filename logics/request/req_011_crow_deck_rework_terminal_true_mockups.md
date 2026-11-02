@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 90%
-> Confidence: 85%
+> Understanding: 95%
+> Confidence: 90%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -61,8 +61,23 @@
 - `local/state/research/crow-deck-design.md`
 - `tools/crow-deck/`, `tools/crow-watch/`
 
+# Owner picks (2026-11-02, canvas row 'Deck rework')
+- Home: A (triage table). Keep B's day timeline for another view (used for the Agents day graph).
+- Agents: B's day graph (who worked when) with A's details and the run details from Home A's Right now box. Round 2 board needed.
+- MRs: B (focused walkthrough) plus an easy way to see more code around the highlighted line. Round 2 board needed.
+- Projects: A for content (next actions, details) but too dense; needs an airier layout and a roadmap timeline showing when the owner worked on which project. Round 2 board needed.
+- Usage: A's ledger data, B's runway and daily spend, C's by model / by project / saved. Graph wherever possible. B's session lanes are redundant with Agents. Round 2 board needed.
+- MR badge: count of MRs where it's the owner's move, plus a colored dot only when there is a problem.
+- Themes: keep all four (lazytf, soft, cyber, hud). HUD accent: blue or magenta (default family), not amber.
+
 # Backlog
-- none
+- item_055_deck_round_2_mockups_hybrid_picks_for_agents_mrs_projects_usage_hud_accent (1)
+- item_056_deck_azerty_tab_keys (independent)
+- item_057_deck_home_a_build_triage_table_pulse_projects_done_today (2)
+- item_058_deck_theme_set_build_lazytf_soft_cyber_hud_per_the_theme_specs
+- item_059_deck_agents_build_from_the_round_2_pick
+- item_060_deck_projects_build_from_the_round_2_pick
+- item_061_deck_usage_build_from_the_round_2_pick
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

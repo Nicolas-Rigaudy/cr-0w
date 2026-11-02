@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -49,6 +49,7 @@
 - Rationale: Gate for item_051.
 
 # Notes
+- Pick 2026-11-02 (req_011 canvas, boards Rw_MRs_*): layout B focused walkthrough, plus a way to see more code around the highlighted line; round 2 board in item_055. Badge: count of MRs on the owner's move, colored dot only when there is a problem.
 - Depends on item_049. Execution order: 2 of 3. Real data: `local/state/shots/deck-threads/214.json` and the review file for !214.
 
 # Executions
