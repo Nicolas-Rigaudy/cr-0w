@@ -23,7 +23,7 @@
 - Old and current renders: `tools/crow-watch` and `tools/crow-deck` shot tests + `bin/ansi-shot`; live renders via a temporary test calling `goLive()` and every fetcher (see audit method).
 - Previous canvas: "Crow Deck designs" artifact (Nsdtzva5oHxcNosKGfQGF2), spec `local/state/research/crow-deck-design.md`.
 - MRs tab is rebuilt under req_010; mock it last, from that state.
-- Today box: Microsoft Graph through the owner's own Entra app "crow-deck" (registered 2026-11-02, no IT needed; ids in local/context.md). Device-code login once, refresh token in secret-tool, `bin/crow-today` writes the Today data (events, unread, flagged, drafts, shared support@ mailbox). Mail.ReadWrite lets crow write drafts; no Mail.Send, the owner sends.
+- Today box: Microsoft Graph through the owner's own Entra app "crow" (registered 2026-11-02, no IT needed; ids in local/context.md). Device-code login once, refresh token in secret-tool, `bin/crow-today` writes the Today data (events, unread, flagged, drafts, shared support@ mailbox). Mail.ReadWrite lets crow write drafts; no Mail.Send, the owner sends.
 - Next list depends on req_012 (to-do model); mock it with the actor column the audit asks for.
 
 # Scope
