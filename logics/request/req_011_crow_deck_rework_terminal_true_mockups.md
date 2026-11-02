@@ -24,6 +24,7 @@
 - Previous canvas: "Crow Deck designs" artifact (Nsdtzva5oHxcNosKGfQGF2), spec `local/state/research/crow-deck-design.md`.
 - MRs tab is rebuilt under req_010; mock it last, from that state.
 - Today box: Microsoft Graph through the owner's own Entra app "crow" (registered 2026-11-02, no IT needed; ids in local/context.md). Device-code login once, refresh token in secret-tool, `bin/crow-today` writes the Today data (events, unread, flagged, drafts, shared support@ mailbox). Mail.ReadWrite lets crow write drafts; no Mail.Send, the owner sends.
+- Jira: scoped read-only token in the keyring, tested 2026-11-02 (details in local/context.md). `bin/crow-jira json` reads it: sprint tickets assigned to the owner, flagged or blocked, waiting on the owner, age; feeds Blockers and project cards.
 - Next list depends on req_012 (to-do model); mock it with the actor column the audit asks for.
 
 # Scope
@@ -43,13 +44,13 @@
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
 - [x] Acceptance criteria are testable.
-- [x] Dependencies and known risks are listed: req_010 (MRs), req_012 (to-do model), IT answer for Graph, Atlassian API token from the owner.
+- [x] Dependencies and known risks are listed: req_010 (MRs), req_012 (to-do model), admin consent from Alex for the Graph app.
 
 # Execution order
 1. Mockup session (fresh, Opus): canvas with old / current / proposal per tab + theme boards. Owner picks.
 2. Quick fix, independent: AZERTY tab keys.
 3. Backlog items per tab from the picked boards (Usage first: data already there).
-4. Wiring: Jira token + `bin/crow-jira`, roadmap `target:` + lambda release, Graph after IT, actions slice.
+4. Wiring: `bin/crow-jira` (token ready), roadmap `target:` + lambda release, Graph after IT, actions slice.
 
 # Companion docs
 - Product brief(s): (none yet)
