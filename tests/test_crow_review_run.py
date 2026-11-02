@@ -497,3 +497,133 @@ def test_github_comments_use_the_pr_head(rr):
     cmd = rr.post_cmd("github", "me/demo-tool", 12, f, "Renomme.")
     assert cmd[:5] == ["gh", "api", "-X", "POST", "repos/me/demo-tool/pulls/12/comments"] and "commit_id={head_sha}" in cmd
     assert rr.post_cmd("github", "me/demo-tool", 12, {}, "Ok.") == ["gh", "pr", "comment", "12", "-R", "me/demo-tool", "--body", "Ok."]
+
+
+# ---------- threads mode (reviewers' threads on the owner's MR) ----------
+
+THREADS = [
+    {"id": "disc-1", "author": "rev", "at": "t", "path": "a.py", "line": 1, "body": "Pagine cet appel.", "resolved": False},
+    {"id": "disc-0", "author": "rev", "at": "t", "path": "b.py", "line": 3, "body": "Déjà réglé.", "resolved": True},
+    {"id": "disc-2", "author": "rev", "at": "t", "path": "", "line": 0, "body": "Pourquoi ce nom ?", "resolved": False},
+]
+
+
+def test_threads_start_lists_open_threads_and_keeps_their_ids(rr, monkeypatch):
+    calls = []
+    monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {"files": [], "threads": THREADS})
+    monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(a) or "rv000020-full")
+    rr.main(["start", REPO, "240", "--mode", "threads"])
+    doc = rr.load(rr.findings_path(REPO, 240))
+    assert doc["mode"] == "threads" and [t["key"] for t in doc["threads"]] == ["T1", "T2"]
+    assert [t["id"] for t in doc["threads"]] == ["disc-1", "disc-2"]
+    prompt = calls[0][2].read_text()
+    assert "review-threads skill" in prompt and "NO reply" in prompt and '"thread": "T1"' in prompt
+    bundle = next(rr.findings_path(REPO, 240).parent.parent.parent.parent.glob("**/crow-review/240.md"), None) \
+        or next((p for p in rr.HOME.parent.glob("**/240.md")), None)
+    text = bundle.read_text()
+    assert "### T1: rev on a.py:1" in text and "### T2: rev on the MR:0" in text and "Déjà réglé" not in text.split("## Existing")[0]
+
+
+def test_threads_start_refuses_an_mr_without_open_threads(rr, monkeypatch):
+    monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {"files": [], "threads": [THREADS[1]]})
+    with pytest.raises(SystemExit, match="no open thread"):
+        rr.main(["start", REPO, "241", "--mode", "threads"])
+
+
+def threads_done(rr, wt, decisions):
+    """A finished threads review: T1 has a fix, T2 is reply only, T3 the run disagrees with."""
+    threads = [{"key": f"T{i}", "id": f"disc-{i}", "comment_id": 0, "author": "rev", "body": b, "path": p, "line": l}
+               for i, (b, p, l) in enumerate((("Pagine.", "a.py", 1), ("Pourquoi ?", "", 0), ("Renomme.", "a.py", 1)), 1)]
+    doc = {"schema": 1, "repo": REPO, "number": 242, "project": "demo-service", "mode": "threads",
+           "branch": "feat", "worktree": str(wt), "threads": threads,
+           "run": {"id": "rv000030-full", "state": "running", "reason": "", "model": "opus", "started_at": "t", "ended_at": ""},
+           "summary": "", "findings": []}
+    rr.save(rr.findings_path(REPO, 242), doc)
+    out = {"summary": "Threads: 3 open", "findings": [
+        {"thread": "T1", "title": "Liste non paginée", "severity": "blocking", "agree": "yes", "path": "a.py", "line": 1,
+         "body": "list() sans pagination.", "comment": "", "fix": "-x = 2\n+x = 3", "test": "+assert x == 3",
+         "pattern": "Unpaginated AWS list calls", "pattern_kind": "repeat"},
+        {"thread": "T2", "title": "Nom", "severity": "question", "agree": "yes", "body": "Question sur le nom.",
+         "comment": "Le nom suit le module voisin.", "pattern": "", "pattern_kind": ""},
+        {"thread": "T3", "title": "Renommage", "severity": "nit", "agree": "no", "path": "a.py", "line": 1,
+         "body": "Le nom actuel suit la convention.", "comment": "Je garde ce nom, il suit les voisins.",
+         "pattern": "Rename request", "pattern_kind": "new", "how": "compare with siblings"},
+        {"thread": "T9", "title": "inconnu", "severity": "nit", "body": "pas un fil ouvert"}]}
+    rr.sync(REPO, 242, lookup=lambda rid: {"run_id": rid, "ended_at": "e", "exit_code": 0}, message=lambda row: json.dumps(out))
+    for fid, (state, note) in zip(("f1", "f2", "f3"), decisions):
+        rr.decide(REPO, 242, fid, state, note)
+    return rr.load(rr.findings_path(REPO, 242))
+
+
+def test_threads_fold_attaches_each_finding_to_its_thread(rr, tmp_path):
+    doc = threads_done(rr, tmp_path, (("pending", ""),) * 3)
+    assert doc["run"]["state"] == "done" and rr.validate_file(doc) == []
+    assert [(f["id"], f["thread"]["id"]) for f in doc["findings"]] == [("f1", "disc-1"), ("f2", "disc-2"), ("f3", "disc-3")]
+    assert doc["findings"][0]["test"] == "+assert x == 3" and doc["findings"][2]["agree"] == "no"
+
+
+def test_threads_apply_fixes_only_threads_with_a_fix(rr, tmp_path):
+    doc = threads_done(rr, tmp_path, (("edited", "Corrigé, merci."), ("accepted", ""), ("chat", "Et si on renommait quand même ?")))
+    assert [f["id"] for f in rr.todo(doc)] == ["f1", "f3"]
+    text = rr.apply_prompt(doc, rr.todo(doc))
+    assert "- f1 [edited]" in text and "only rewrote the reply" in text and "Corrigé, merci." not in text
+    assert "- f3 [chat]" in text and "Et si on renommait" in text and "- f2" not in text
+
+
+def test_threads_actions_wait_for_the_push_then_reply_and_resolve(rr, tmp_path, monkeypatch):
+    doc = threads_done(rr, tmp_path, (("accepted", ""), ("edited", "Le nom suit le module voisin, je le garde."), ("accepted", "")))
+    # Before the fix is applied and pushed, only the reply-only threads can go.
+    ids = [a["id"] for a in rr.actions(doc)]
+    assert ids == ["reply-f2", "resolve-f2", "reply-f3"]  # f3: the run disagrees, the thread stays open
+    reply = rr.actions(doc)[0]
+    assert reply["text"] == "Le nom suit le module voisin, je le garde."
+    assert reply["cmd"][:5] == ["glab", "api", "-X", "POST", "projects/grp%2Fdemo-service/merge_requests/242/discussions/disc-2/notes"]
+    doc["findings"][0]["apply"] = {"status": "fixed", "detail": "ok", "for": ["accepted", ""], "run": "ap1"}
+    doc["apply"] = {"id": "ap1", "state": "done", "reason": "", "commit": "c" * 40, "subject": "fix[PY]: x", "warnings": []}
+    rr.save(rr.findings_path(REPO, 242), doc)
+    assert [a["id"] for a in rr.actions(doc)][0] == "push" and "resolve-f1" not in [a["id"] for a in rr.actions(doc)]
+    doc["apply"]["pushed"] = {"commit": "c" * 40, "at": "t"}
+    rr.save(rr.findings_path(REPO, 242), doc)
+    acts = {a["id"]: a for a in rr.actions(doc)}
+    assert "reply-f1" not in acts  # fixed thread: resolved silently
+    assert acts["resolve-f1"]["cmd"] == ["glab", "api", "-X", "PUT", "projects/grp%2Fdemo-service/merge_requests/242/discussions/disc-1", "-f", "resolved=true"]
+    calls = []
+    rr.act(REPO, 242, "resolve-f1", acts["resolve-f1"]["hash"], call=lambda c: calls.append(c) or "{}")
+    rr.act(REPO, 242, "reply-f2", acts["reply-f2"]["hash"], call=lambda c: calls.append(c) or '{"id": 77}')
+    assert len(calls) == 2
+    doc = rr.load(rr.findings_path(REPO, 242))
+    assert doc["findings"][0]["resolved"] and doc["findings"][1]["posted"]["ref"] == "77"
+    assert [a["id"] for a in rr.actions(doc)] == ["resolve-f2", "reply-f3"]
+
+
+def test_resolving_a_thread_feeds_the_ledgers(rr, tmp_path, home):
+    (home / "local" / "reviews" / "common.md").write_text(
+        "| Pattern | Count | Seen in | How |\n|---|---|---|---|\n| Unpaginated AWS list calls | 2 | demo-service !1 | grep list( |\n")
+    doc = threads_done(rr, tmp_path, (("accepted", ""), ("accepted", ""), ("accepted", "")))
+    f1, f3 = doc["findings"][0], doc["findings"][2]
+    assert rr.feed_ledger(doc, f1) == "bumped in common.md"
+    assert "| Unpaginated AWS list calls | 3 | demo-service !1 demo-service !242 | grep list( |" in (home / "local" / "reviews" / "common.md").read_text()
+    assert rr.feed_ledger(doc, f1) == ""  # once per thread
+    assert rr.feed_ledger(doc, f3) == ""  # the run disagreed with the reviewer
+    f3["agree"] = "partly"
+    assert rr.feed_ledger(doc, f3) == "added to demo-service.md"
+    assert "| Rename request | 1 | !242 | compare with siblings |" in (home / "local" / "reviews" / "demo-service.md").read_text()
+
+
+def test_github_thread_reply_and_resolve(rr):
+    t = {"id": "PRRT_x", "comment_id": 991}
+    assert rr.thread_cmd("github", "me/tool", 5, t, "reply", "Ok.") == \
+        ["gh", "api", "-X", "POST", "repos/me/tool/pulls/5/comments/991/replies", "-f", "body=Ok."]
+    cmd = rr.thread_cmd("github", "me/tool", 5, t, "resolve")
+    assert "resolveReviewThread" in cmd[4] and cmd[-1] == "id=PRRT_x"
+
+
+def test_cdx_run_finds_a_running_run(home, monkeypatch):
+    """The --since list leaves running runs out; the lookup also asks --running."""
+    monkeypatch.setenv("CROW_HOME", str(home))
+    loader = importlib.machinery.SourceFileLoader("crow_review_run_raw", str(BIN / "crow-review-run"))
+    mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("crow_review_run_raw", loader))
+    loader.exec_module(mod)
+    lists = {"--since": [{"run_id": "old1"}], "--running": [{"run_id": "abc123full", "ended_at": None}]}
+    monkeypatch.setattr(mod, "sh", lambda *a: json.dumps({"runs": lists[a[2]]}))
+    assert mod.cdx_run("abc123")["run_id"] == "abc123full" and mod.cdx_run("zzz") is None

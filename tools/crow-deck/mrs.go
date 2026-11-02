@@ -76,13 +76,46 @@ func (mv mrsView) detail() *mrDetail {
 	return nil
 }
 
-// threadsMode: own MRs show their threads, reviews their findings; T flips it.
+// threadsMode: own MRs show their threads, reviews their findings; T flips it. Once a threads
+// review exists, its findings (one per thread, with fix and reply) replace the raw threads.
 func (mv mrsView) threadsMode() bool {
 	r := mv.cur()
 	if r == nil {
 		return false
 	}
+	if d := mv.detail(); d != nil && d.Review != nil && d.Review.Mode == "threads" {
+		return mv.toggle
+	}
 	return (r.Role == "AUTHOR") != mv.toggle
+}
+
+// mode2 is the mode of the saved review, else the one r would start (peer, self, threads).
+func (mv mrsView) mode2() string {
+	r := mv.cur()
+	if r == nil {
+		return ""
+	}
+	return detailMode(r, mv.detail())
+}
+
+// answering: the findings shown are the answers to the reviewers' threads.
+func (mv mrsView) answering() bool {
+	d := mv.detail()
+	return !mv.threadsMode() && d != nil && d.Review != nil && d.Review.Mode == "threads"
+}
+
+// detailMode: the saved review's mode (self or peer by role for a file older than modes),
+// else the mode r would start.
+func detailMode(r *mrRow, d *mrDetail) string {
+	switch {
+	case d == nil || d.Review == nil:
+		return reviewMode(r)
+	case d.Review.Mode != "":
+		return d.Review.Mode
+	case r.Role == "AUTHOR":
+		return "self"
+	}
+	return "peer"
 }
 
 // items counts the cards of the right box.
@@ -594,7 +627,7 @@ func (mv mrsView) curThread(d *mrDetail) *mrThread {
 
 func stateStyle(lk *look, state string) lipgloss.Style {
 	switch state {
-	case "accepted", "resolved", "edited", "posted":
+	case "accepted", "resolved", "edited", "posted", "replied":
 		return lk.ok
 	case "refused":
 		return lk.sub
@@ -678,7 +711,7 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 	}
 	threads := mv.threadsMode()
 	n := mv.items()
-	sp.title = ifs(threads, "Threads") + ifs(!threads, "Findings")
+	sp.title = ifs(threads || mv.answering(), "Threads") + ifs(!threads && !mv.answering(), "Findings")
 	if n > 0 {
 		sp.title += " " + strconv.Itoa(n)
 	}
@@ -727,7 +760,12 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 		} else {
 			f := d.Findings[i]
 			title, state = f.Title, f.State
-			if f.Posted {
+			switch {
+			case f.Resolved:
+				state = "resolved"
+			case f.Posted && mv.answering():
+				state = "replied"
+			case f.Posted:
 				state = "posted"
 			}
 		}
@@ -818,17 +856,24 @@ func (mv mrsView) cardRows(d *mrDetail, iw int) []line {
 		return nil
 	}
 	where := ifs(f.Path != "", f.Path+ifs(f.Line > 0, ":"+strconv.Itoa(f.Line))) + ifs(f.Path == "", "commit")
-	head := line{{fmt.Sprintf("Finding %d · ", mv.itemIdx(len(d.Findings))+1), lk.head}}
+	head := line{{fmt.Sprintf(ifs(mv.answering(), "Thread")+ifs(!mv.answering(), "Finding")+" %d · ", mv.itemIdx(len(d.Findings))+1), lk.head}}
 	if f.Severity != "" {
 		head = append(head, seg{f.Severity, severityStyle(lk, f.Severity)}, seg{" · ", lk.head})
 	}
 	rows = append(rows, append(head, seg{where, lk.head}))
-	for _, l := range wrapLines(f.Body, iw) {
-		rows = append(rows, line{{l, lk.sub}})
+	if mv.answering() {
+		rows = append(rows, mv.answerRows(f, iw)...)
+	} else {
+		for _, l := range wrapLines(f.Body, iw) {
+			rows = append(rows, line{{l, lk.sub}})
+		}
 	}
 	pattern(f.Pattern, f.Seen)
+	if mv.answering() && f.Comment == "" {
+		rows = append(rows, nil, line{{"no reply: the fix answers it, resolved after the push", lk.sub}})
+	}
 	if f.Comment != "" {
-		rows = append(rows, nil, line{{"comment (FR)", lk.sub}})
+		rows = append(rows, nil, line{{ifs(mv.answering(), "reply (FR)") + ifs(!mv.answering(), "comment (FR)"), lk.sub}})
 		rows = append(rows, mv.replyBlock(f.Comment, iw)...)
 	}
 	if f.Fix != "" {
@@ -844,8 +889,18 @@ func (mv mrsView) cardRows(d *mrDetail, iw int) []line {
 			rows = append(rows, line{{fit(l, iw), st}})
 		}
 	}
+	if f.Test != "" {
+		rows = append(rows, nil, line{{"test", lk.sub}})
+		for _, l := range strings.Split(strings.TrimRight(f.Test, "\n"), "\n") {
+			st := lk.plain
+			if strings.HasPrefix(l, "+") {
+				st = lk.ok
+			}
+			rows = append(rows, line{{fit(l, iw), st}})
+		}
+	}
 	if f.Note != "" && mv.typing == "" {
-		rows = append(rows, nil, line{{ifs(f.State == "chat", "chat note"), lk.cyan}, {ifs(f.State != "chat", "your edit"), lk.ok}})
+		rows = append(rows, nil, line{{ifs(f.State == "chat", "chat note"), lk.cyan}, {ifs(f.State != "chat", ifs(mv.answering(), "your reply")+ifs(!mv.answering(), "your edit")), lk.ok}})
 		rows = append(rows, mv.replyBlock(f.Note, iw)...)
 	}
 	if f.Applied != "" && mv.typing == "" {
@@ -910,9 +965,10 @@ func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
 			pend++
 		}
 	}
-	self, todo := reviewMode(r) == "self", 0
+	mode, todo := detailMode(r, d), 0
+	self := mode != "peer"
 	for _, f := range d.Findings {
-		if f.toApply(self) {
+		if f.toApply(mode) {
 			todo++
 		}
 	}
@@ -927,12 +983,17 @@ func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
 	case !self:
 	case todo == 0 && ap != nil && ap.Commit != "" && !ap.Pushed:
 		next = "push " + shortSHA(ap.Commit)
+	case todo == 0 && ap != nil && ap.Pushed && mode == "threads":
+		next = "pushed; P replies and resolves"
 	case todo == 0 && ap != nil && ap.Pushed:
 		next = "pushed; ask a reviewer"
+	case todo == 0 && mode == "threads":
+		next = "P replies and resolves the threads"
 	default:
 		next = "apply the decisions, then push"
 	}
-	end := lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {ifs(self, "push") + ifs(!self, "post") + ", after your OK", lk.sub}}, iw)
+	verb := map[string]string{"peer": "post", "self": "push", "threads": "push, reply, resolve"}[mode]
+	end := lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {verb + ", after your OK", lk.sub}}, iw)
 	if todo > 0 && (d.Apply == nil || d.Apply.State != "running") {
 		end = lr(nil, line{{"A", lk.key.Bold(true)}, spc(1), {fmt.Sprintf("apply %d %s, commit locally", todo, plural(todo, "decision", "decisions")), lk.sub}}, iw)
 	}
@@ -1033,6 +1094,30 @@ func wrapLine(l line, iw int) []line {
 		} else {
 			rows = append(rows, line{{t, tail.style}})
 		}
+	}
+	return rows
+}
+
+// answerRows: the reviewer's comment, then the run's assessment of it.
+func (mv mrsView) answerRows(f *mrFinding, iw int) []line {
+	lk := mv.lk
+	var rows []line
+	if f.ThreadBody != "" {
+		for _, l := range wrapLines(cmpOr(f.ThreadAuthor, "reviewer")+": "+f.ThreadBody, iw) {
+			rows = append(rows, line{{l, lk.plain}})
+		}
+		rows = append(rows, nil)
+	}
+	verdict := map[string]string{"yes": "agree", "no": "disagree", "partly": "partly agree"}[f.Agree]
+	st := lk.ok
+	if f.Agree == "no" {
+		st = lk.warn
+	}
+	if verdict != "" {
+		rows = append(rows, line{{verdict, st}, {ifs(f.Agree == "no", " · the thread stays open for the reviewer"), lk.sub}})
+	}
+	for _, l := range wrapLines(f.Body, iw) {
+		rows = append(rows, line{{l, lk.sub}})
 	}
 	return rows
 }

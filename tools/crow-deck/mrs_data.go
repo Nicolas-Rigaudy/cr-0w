@@ -94,13 +94,21 @@ type mrFinding struct {
 	Applied         string    // apply run result: fixed, answered, skipped, failed ("" before any)
 	AppliedDetail   string    // what changed, or the answer to the chat note
 	AppliedFor      [2]string // the decision and note the apply run acted on
-	Posted          bool      // the comment went to the forge (peer review)
+	Posted          bool      // the comment went to the forge (peer review) or the reply to the thread
+	// Threads review only: the reviewer's thread, the run's assessment, the test, and whether
+	// the thread is resolved on the forge.
+	ThreadAuthor, ThreadBody string
+	Agree                    string // yes, no, partly
+	Test                     string
+	Resolved                 bool
 }
 
 // toApply is true when the next apply run acts on this finding: a chat note in any mode,
-// an accepted or edited finding on the owner's own MR, not already handled for the same decision.
-func (f mrFinding) toApply(self bool) bool {
-	ok := f.State == "chat" || (self && (f.State == "accepted" || f.State == "edited"))
+// an accepted or edited finding on a self review, or on a threads review when it has a fix,
+// not already handled for the same decision.
+func (f mrFinding) toApply(mode string) bool {
+	acc := f.State == "accepted" || f.State == "edited"
+	ok := f.State == "chat" || (mode == "self" && acc) || (mode == "threads" && acc && f.Fix != "")
 	return ok && f.AppliedFor != [2]string{f.State, f.Note}
 }
 
@@ -114,6 +122,7 @@ type mrApply struct {
 // mrReview is the state of the review run behind the findings.
 type mrReview struct {
 	ID, State, Reason, Model, StartedAt string
+	Mode                                string // peer, self, threads
 }
 
 type mrDetail struct {
@@ -167,6 +176,15 @@ type rawDetail struct {
 		Posted *struct {
 			At string `json:"at"`
 		} `json:"posted"`
+		Thread *struct {
+			Author string `json:"author"`
+			Body   string `json:"body"`
+		} `json:"thread"`
+		Agree    string `json:"agree"`
+		Test     string `json:"test"`
+		Resolved *struct {
+			At string `json:"at"`
+		} `json:"resolved"`
 	} `json:"findings"`
 	Review *struct {
 		ID        string `json:"id"`
@@ -174,6 +192,7 @@ type rawDetail struct {
 		Reason    string `json:"reason"`
 		Model     string `json:"model"`
 		StartedAt string `json:"started_at"`
+		Mode      string `json:"mode"`
 	} `json:"review"`
 	Apply *struct {
 		ID       string   `json:"id"`
@@ -213,7 +232,11 @@ func mapDetail(raw rawDetail) *mrDetail {
 				mf.AppliedFor = [2]string{f.Apply.For[0], f.Apply.For[1]}
 			}
 		}
-		mf.Posted = f.Posted != nil
+		mf.Posted, mf.Resolved = f.Posted != nil, f.Resolved != nil
+		mf.Agree, mf.Test = f.Agree, f.Test
+		if f.Thread != nil {
+			mf.ThreadAuthor, mf.ThreadBody = f.Thread.Author, strings.TrimSpace(f.Thread.Body)
+		}
 		d.Findings = append(d.Findings, mf)
 	}
 	if ap := raw.Apply; ap != nil {
@@ -221,7 +244,7 @@ func mapDetail(raw rawDetail) *mrDetail {
 			Pushed: ap.Pushed != nil && ap.Pushed.Commit == ap.Commit && ap.Commit != ""}
 	}
 	if rv := raw.Review; rv != nil {
-		d.Review = &mrReview{ID: rv.ID, State: rv.State, Reason: rv.Reason, Model: rv.Model, StartedAt: rv.StartedAt}
+		d.Review = &mrReview{ID: rv.ID, State: rv.State, Reason: rv.Reason, Model: rv.Model, StartedAt: rv.StartedAt, Mode: rv.Mode}
 	}
 	return d
 }

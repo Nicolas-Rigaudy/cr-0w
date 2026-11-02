@@ -1,10 +1,10 @@
 ## item_048_threads_mode_answer_reviewer_threads_on_own_mr_from_the_deck - Threads mode: answer reviewers' threads on my own MR from the deck
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 80%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -62,3 +62,13 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Outcome (2026-11-02)
+- AC1: `reviewMode` is `threads` on an own MR with open threads; `crow-review-run start --mode threads` keys the open threads T1..Tn and the deck shows one card per thread (reviewer comment, verdict, reply or "no reply", fix, test). Proof: tests/test_crow_review_run.py threads start/fold, tools/crow-deck/threads_test.go TestThreadsReviewShowsEachAnswer.
+- AC2: a/x/e/c call `decide`; `e` prefills and rewrites the reply. Proof: TestThreadsDecisionsAndApply.
+- AC3: apply acts on accepted or edited threads that carry a fix, plus chat notes; one local commit. Proof: test_threads_apply_fixes_only_threads_with_a_fix.
+- AC4: `actions` lists the push first, then `reply-fN` and `resolve-fN`; a fixed thread waits for the push and resolves with no reply; `agree: no` stays open; `act` keeps the hash check. Proof: test_threads_actions_wait_for_the_push_then_reply_and_resolve, TestThreadsReplyAndResolveOverlays. Resolving feeds the ledgers once per thread (test_resolving_a_thread_feeds_the_ledgers).
+- AC5: simulated runs, faked forge calls. 168 pytest and the Go suite pass.
+- AC6: dry run on !214: read-only run a12e1ffa gave 4 findings (4 fixes, 0 replies, 4 ledger repeats); the deck renders them as `Threads 4`; nothing pushed, replied or resolved.
+- Found on the way: `cdx runs --since` leaves running runs out, so a sync during a run marked it failed. `cdx_run` now also checks `cdx runs --running`.
+

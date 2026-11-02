@@ -99,13 +99,13 @@ def test_findings_are_read_from_the_state_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "HOME", tmp_path)
     (tmp_path / "local" / "state" / "reviews").mkdir(parents=True)
     (tmp_path / "local" / "state" / "reviews" / "grp_demo-service-5.json").write_text('[{"title": "t", "path": "a.py", "line": 2}]')
-    assert mod.findings("grp/demo-service", "5") == ([{"title": "t", "path": "a.py", "line": 2}], None, None)
-    assert mod.findings("grp/demo-service", "6") == ([], None, None)
+    assert mod.findings("grp/demo-service", "5") == ([{"title": "t", "path": "a.py", "line": 2}], None, None, "")
+    assert mod.findings("grp/demo-service", "6") == ([], None, None, "")
     (tmp_path / "local" / "state" / "reviews" / "grp_demo-service-7.json").write_text(
         '{"schema": 1, "run": {"state": "running"}, "findings": []}')
     monkeypatch.setattr(mod, "sync_review", lambda repo, n: {"run": {"state": "done"}, "findings": [{"id": "f1"}]})
-    assert mod.findings("grp/demo-service", "7") == ([{"id": "f1"}], {"state": "done"}, None)
+    assert mod.findings("grp/demo-service", "7") == ([{"id": "f1"}], {"state": "done"}, None, "")
     (tmp_path / "local" / "state" / "reviews" / "grp_demo-service-8.json").write_text(
         '{"schema": 1, "run": {"state": "done"}, "apply": {"state": "running"}, "findings": []}')
     monkeypatch.setattr(mod, "sync_review", lambda repo, n: {"run": {"state": "done"}, "apply": {"state": "done"}, "findings": []})
-    assert mod.findings("grp/demo-service", "8") == ([], {"state": "done"}, {"state": "done"})
+    assert mod.findings("grp/demo-service", "8") == ([], {"state": "done"}, {"state": "done"}, "")

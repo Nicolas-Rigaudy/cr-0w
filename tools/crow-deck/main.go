@@ -371,8 +371,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.err != "":
 			m.flash = msg.err
 		case len(msg.acts) == 0:
-			m.flash = "nothing to push or post on " + r.Ref + ifs(reviewMode(r) == "self", ": A commits the decisions first") +
-				ifs(reviewMode(r) != "self", ": accept or edit a finding first")
+			m.flash = "nothing to push or post on " + r.Ref + ifs(m.mrsView().mode2() == "self", ": A commits the decisions first") +
+				ifs(m.mrsView().mode2() != "self", ": accept or edit a finding first")
 		default:
 			m.posts, m.postI, m.overlay = msg.acts, 0, ovPost
 		}
@@ -698,15 +698,18 @@ func (m *model) applyKey() {
 	case d.Apply != nil && d.Apply.State == "running":
 		m.flash = "an apply run on this MR is already running"
 	default:
-		n := 0
+		n, mode := 0, detailMode(r, d)
 		for _, f := range d.Findings {
-			if f.toApply(reviewMode(r) == "self") {
+			if f.toApply(mode) {
 				n++
 			}
 		}
 		if n == 0 {
-			m.flash = ifs(reviewMode(r) == "self", "nothing to apply: accept, edit or chat a finding first") +
-				ifs(reviewMode(r) != "self", "nothing to apply: on a peer review only chat notes get an answer; P posts the rest")
+			m.flash = map[string]string{
+				"self":    "nothing to apply: accept, edit or chat a finding first",
+				"peer":    "nothing to apply: on a peer review only chat notes get an answer; P posts the rest",
+				"threads": "nothing to apply: no accepted thread needs a code change; P replies and resolves",
+			}[mode]
 			return
 		}
 		m.overlay = ovApply
@@ -717,7 +720,7 @@ func (m *model) applyKey() {
 func (m model) decideKey(k string) (tea.Model, tea.Cmd) {
 	mv := m.mrsView()
 	if mv.threadsMode() {
-		m.flash = k + ": answering threads arrives with the apply slice"
+		m.flash = k + ": r prepares an answer for each thread first" + ifs(mv.mode2() == "threads", "; T shows them")
 		return m, nil
 	}
 	f := mv.curFinding(mv.detail())

@@ -161,7 +161,7 @@ func (lk *look) postOverlay(w, h int, acts []postAction, i int, running bool) []
 			warn = append(warn, line{{l, lk.warn}})
 		}
 	}
-	foot := line{{"enter", lk.key}, spc(1), {ifs(a.Kind == "push", "push") + ifs(a.Kind != "push", "post this comment"), lk.sub}, spc(2),
+	foot := line{{"enter", lk.key}, spc(1), {postVerb(a.Kind), lk.sub}, spc(2),
 		{"s", lk.key}, spc(1), {"skip", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"stop", lk.sub}}
 	if running {
 		foot = line{{"● running, wait for the answer", lk.warn}}
@@ -224,7 +224,7 @@ func (lk *look) applyOverlay(w, h int, r *mrRow, d *mrDetail) []string {
 	}
 	fix, chat := 0, 0
 	for _, f := range d.Findings {
-		if f.toApply(reviewMode(r) == "self") {
+		if f.toApply(detailMode(r, d)) {
 			if f.State == "chat" {
 				chat++
 			} else {
@@ -244,9 +244,13 @@ func (lk *look) applyOverlay(w, h int, r *mrRow, d *mrDetail) []string {
 	return lk.overlayBlock(sp, w, h)
 }
 
-// reviewMode is self on the owner's own MR, peer otherwise.
+// reviewMode is threads on the owner's own MR with open threads, self on another own MR,
+// peer otherwise.
 func reviewMode(r *mrRow) string {
-	if r.Role == "AUTHOR" {
+	switch {
+	case r.Role == "AUTHOR" && r.ThreadsOpen > 0:
+		return "threads"
+	case r.Role == "AUTHOR":
 		return "self"
 	}
 	return "peer"
@@ -279,4 +283,17 @@ func (lk *look) handoffOverlay(w, h int, r *mrRow) []string {
 	}
 	sp.rows = append(sp.rows, nil, line{{"enter", lk.key}, spc(1), {"open the session", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}})
 	return lk.overlayBlock(sp, w, h)
+}
+
+// postVerb is what enter does on one pending action.
+func postVerb(kind string) string {
+	switch kind {
+	case "push":
+		return "push"
+	case "reply":
+		return "post this reply"
+	case "resolve":
+		return "resolve this thread"
+	}
+	return "post this comment"
 }

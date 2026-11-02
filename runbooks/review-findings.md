@@ -3,7 +3,7 @@
 A read-only background run reviews one MR and its findings land in a JSON file the deck renders.
 
 ## Start, sync, check
-- `bin/crow-review-run start <group/name> <number> [--branch B] [--mode peer|self]`: writes the context bundle, dispatches the run, writes the file with `run.state: running`. Default model `opus`, power `medium`. Refuses while a run is going or when a finding already has a decision (`--force` starts over).
+- `bin/crow-review-run start <group/name> <number> [--branch B] [--mode peer|self|threads]`: writes the context bundle, dispatches the run, writes the file with `run.state: running`. Default model `opus`, power `medium`. Refuses while a run is going or when a finding already has a decision (`--force` starts over).
 - With `--branch` (the deck always passes the MR's source branch) the run works in `<repo path>.wt/review-<number>`, detached on `origin/<branch>` after a fetch. A second start moves that worktree to the branch tip; it refuses while the worktree holds changes or local commits not on the remote (apply output not pushed yet). `--force` drops them.
 - `bin/crow-review-run sync <group/name> <number>`: when cdx reports the run finished, parses the final message and writes the findings (`done`) or the reason (`failed`). A no-op otherwise. `show` syncs then prints the file.
 - `bin/crow-review-run check <file>`: validates a file against the schema below.
@@ -14,12 +14,22 @@ A read-only background run reviews one MR and its findings land in a JSON file t
 - `bin/crow-review-run actions <group/name> <number>` and `act <group/name> <number> <id> --hash H`: push and post, one action per call (below).
 
 ## Deck keys (MRs tab)
-- `r` asks, then starts a review of the selected MR (`peer` on a review, `self` on an own MR). Refused while one runs.
+- `r` asks, then starts a review of the selected MR: `peer` on a review, `threads` on an own MR with open threads, `self` on another own MR. Refused while one runs.
 - `a` accept, `x` refuse, `e` edit the comment (prefilled), `c` chat note. `enter` saves, `esc` drops. Each decision calls `decide`, so it survives a restart.
 - `A` asks (counts of fixes and chat notes), then starts the apply run. Refused before the review is done, while an apply runs, or when nothing is left to apply.
 - `P` lists the pending actions, then shows them one overlay at a time: title, exact text, exact command, warnings. `enter` runs that one action, `s` skips it, `esc` stops. Keys wait while it runs. A failure closes the overlay with the reason. The card shows `posted` per finding and `pushed` on the apply line.
 - A running review or apply refetches every 20 s. A failed one shows its reason; `r` runs the review again.
 - The mock deck keeps decisions in memory and starts no run.
+
+## Threads mode (answer reviewers on the owner's MR)
+- `start --mode threads` refuses an MR with no open thread. It keys the unresolved threads T1..Tn in the bundle ("## Open threads to answer") and stores them as `threads` (key, forge id, GitHub comment id, author, body, path, line).
+- The prompt follows the review-threads skill: one finding per thread, `agree` yes|no|partly, `fix` and `test` when code changes, `comment` the reply in the reviewer's language and empty when the fix answers it, `pattern` matched against the ledgers (`pattern_kind` repeat|new, `how` for a new row).
+- Sync drops findings whose key is not an open thread and attaches `thread` to each one.
+- The deck shows these findings in place of the raw threads (title `Threads N`, `T` flips back): reviewer comment, verdict, reply or "no reply", fix, test. `e` rewrites the reply; the fix stays.
+- `A` applies accepted or edited findings that have a fix, plus chat notes. Reply-only threads need no apply run.
+- `P`: the push first (when there is a commit), then per thread a `reply` (when the reply is not empty) and a `resolve` (unless `agree: no`, which stays open for the reviewer). A thread with a fix waits until its commit is pushed. Fixed threads are resolved with no reply.
+- GitLab: `glab api -X POST .../discussions/<id>/notes -f body=...`, `glab api -X PUT .../discussions/<id> -f resolved=true`. GitHub: `gh api -X POST repos/<r>/pulls/<n>/comments/<comment_id>/replies`, GraphQL `resolveReviewThread`.
+- `act` records `posted` on a reply and `resolved` on a resolve. Resolving feeds the ledgers once per thread (`ledger` on the finding): a matching row in `<repo-dir>.md` then `common.md` gets its count bumped and the MR appended, otherwise a new row goes to `<repo-dir>.md`. `agree: no` feeds nothing.
 
 ## Read only
 - The run is `crow-runs dispatch --permission review`, which is `cdx run --permission review`: Claude `--permission-mode plan`, Codex `-s read-only`. It cannot edit or write. It may share a folder with another run.
@@ -42,12 +52,12 @@ The only commands that leave the machine. Each one runs after the owner's enter 
 - Peer review: one `comment` per accepted or edited finding not posted yet. Text is `comment`, or the owner's `note` when edited (French on work repos, as the review wrote it). With path and line: GitLab `POST .../discussions` with a text position, GitHub `POST .../pulls/<n>/comments` on the RIGHT side. Without: a note (`.../notes`, `gh pr comment`). Recorded as the finding's `posted`.
 - `act` recomputes the list and refuses an id that is gone or whose hash changed (a decision changed after the overlay showed it). For a diff-line comment it fills `{base_sha}`, `{start_sha}`, `{head_sha}` from the MR and refuses when the MR head differs from the worktree's reviewed tip (line numbers would be off; `r` reviews again).
 - Forge CLIs and git run with the real HOME (cdx remaps it).
-- Replying to and resolving existing threads is item_020; it reuses the same overlay.
+- Threads mode adds `reply` and `resolve` actions (above).
 
 ## File: `<state>/reviews/<group>_<name>-<number>.json`
 ```json
 {
- "schema": 1, "repo": "group/name", "number": 214, "project": "registry name", "mode": "peer|self",
+ "schema": 1, "repo": "group/name", "number": 214, "project": "registry name", "mode": "peer|self|threads",
  "run": {"id": "cdx run id", "state": "running|done|failed", "reason": "why it failed",
          "model": "opus", "started_at": "ISO", "ended_at": "ISO"},
  "summary": "Patterns: N checked, K hits, M n/a. One-line verdict.",
@@ -59,7 +69,11 @@ The only commands that leave the machine. Each one runs after the owner's enter 
    "state": "pending|accepted|refused|edited|chat", "note": "owner's edit or chat note",
    "apply": {"status": "fixed|answered|skipped|failed", "detail": "what changed or the answer",
              "for": ["decision", "note it acted on"], "run": "apply run id"},
-   "posted": {"at": "ISO", "text": "what was posted", "ref": "forge note id or URL"}}],
+   "posted": {"at": "ISO", "text": "what was posted", "ref": "forge note id or URL"},
+   "thread": {"key": "T1", "id": "forge thread id", "comment_id": 0, "author": "", "body": "", "path": "", "line": 0},
+   "agree": "yes|no|partly", "test": "test diff", "pattern_kind": "repeat|new", "how": "ledger How",
+   "resolved": {"at": "ISO"}, "ledger": "bumped in common.md"}],
+ "threads": [{"key": "T1", "id": "...", "comment_id": 0, "author": "", "body": "", "path": "", "line": 0}],
  "branch": "MR source branch", "worktree": "<repo path>.wt/review-<number>",
  "apply": {"id": "cdx run id", "state": "running|done|failed", "reason": "", "parent": "resumed run id",
            "asked": {"f1": ["accepted", ""]}, "commit": "sha", "subject": "type[SCOPE]: ...",
@@ -71,4 +85,4 @@ The only commands that leave the machine. Each one runs after the owner's enter 
 - `line` is the new-file line in the diff, 0 when none.
 - The run prints only `summary` and `findings` without `id`, `state` or `note`; sync adds them (`state: pending`).
 - An older file holding a bare list of findings is still read by `crow-mrs show` (no run).
-- Fixture: `tests/fixtures/review-findings.json`. Tests: `tests/test_crow_review_run.py` (simulated runs, fake `cdx`, a local bare origin for the push, forge calls injected), `tools/crow-deck/apply_test.go`, `review_test.go` and `post_test.go` (`runBin` recorded, nothing runs).
+- Fixture: `tests/fixtures/review-findings.json`. Tests: `tests/test_crow_review_run.py` (simulated runs, fake `cdx`, a local bare origin for the push, forge calls injected), `tools/crow-deck/apply_test.go`, `review_test.go`, `post_test.go` and `threads_test.go` (`runBin` recorded, nothing runs).

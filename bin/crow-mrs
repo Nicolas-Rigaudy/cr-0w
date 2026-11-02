@@ -2,7 +2,7 @@
 """crow-mrs: open MRs and PRs of the registered projects, read only, as JSON for the deck.
 
   crow-mrs json              {forges, mrs: [...], branches: [...]}
-  crow-mrs show REPO REF     {files: [{path, add, del, diff}], threads: [{author, at, path, line, body, resolved}], findings: [...]}
+  crow-mrs show REPO REF     {files: [{path, add, del, diff}], threads: [{id, author, at, path, line, body, resolved}], findings: [...]}
 
 An MR or PR is listed when the owner is its author, an assignee or a requested reviewer. Both forges (glab,
 gh) are queried with GET requests only: nothing is posted, resolved or pushed. forges holds "ok" or the error per
@@ -75,7 +75,7 @@ def gitlab_threads(discussions):
             continue
         n = notes[0]
         pos = n.get("position") or {}
-        out.append({"author": n["author"]["username"], "at": n["created_at"], "path": pos.get("new_path") or "",
+        out.append({"id": d.get("id") or "", "author": n["author"]["username"], "at": n["created_at"], "path": pos.get("new_path") or "",
                     "line": pos.get("new_line") or pos.get("old_line") or 0, "body": n["body"],
                     "resolved": bool(n.get("resolved"))})
     return out
@@ -125,7 +125,7 @@ def gitlab_show(repo, number, call=api):
 # ----- GitHub -----
 
 THREADS_QUERY = """query($o:String!,$n:String!,$p:Int!){repository(owner:$o,name:$n){pullRequest(number:$p){
-reviewThreads(first:50){nodes{isResolved path line comments(first:1){nodes{author{login} body createdAt}}}}}}}"""
+reviewThreads(first:50){nodes{id isResolved path line comments(first:1){nodes{databaseId author{login} body createdAt}}}}}}}"""
 
 
 def github_threads(data):
@@ -135,7 +135,8 @@ def github_threads(data):
         c = (t.get("comments") or {}).get("nodes") or []
         if not c:
             continue
-        out.append({"author": (c[0].get("author") or {}).get("login", ""), "at": c[0]["createdAt"], "path": t.get("path") or "",
+        out.append({"id": t.get("id") or "", "comment_id": c[0].get("databaseId") or 0,
+                    "author": (c[0].get("author") or {}).get("login", ""), "at": c[0]["createdAt"], "path": t.get("path") or "",
                     "line": t.get("line") or 0, "body": c[0]["body"], "resolved": bool(t.get("isResolved"))})
     return out
 
@@ -237,7 +238,7 @@ def list_all(projs, gl=gitlab_rows, gh=github_rows):
 
 
 def findings(repo, number):
-    """(findings, review run, apply run) from <state>/reviews/<group>_<name>-<number>.json (runbooks/review-findings.md).
+    """(findings, review run, apply run, mode) from <state>/reviews/<group>_<name>-<number>.json (runbooks/review-findings.md).
     An older file is a bare list of findings with no run."""
     try:
         reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
@@ -247,12 +248,12 @@ def findings(repo, number):
     try:
         doc = json.load(open(state / "reviews" / f"{repo.replace('/', '_')}-{number}.json"))
     except (FileNotFoundError, json.JSONDecodeError):
-        return [], None, None
+        return [], None, None, ""
     if isinstance(doc, list):
-        return doc, None, None
+        return doc, None, None, ""
     if "running" in ((doc.get("run") or {}).get("state"), (doc.get("apply") or {}).get("state")):
         doc = sync_review(repo, number) or doc
-    return doc.get("findings") or [], doc.get("run"), doc.get("apply")
+    return doc.get("findings") or [], doc.get("run"), doc.get("apply"), doc.get("mode") or ""
 
 
 def sync_review(repo, number):
@@ -270,8 +271,8 @@ def show(projs, repo, number, gl=gitlab_show, gh=github_show):
     if not p:
         raise SystemExit(f"crow-mrs: {repo} is not a registered remote")
     out = (gl if p["forge"] == "gitlab" else gh)(repo, number)
-    found, run, applied = findings(repo, number)
-    return {**out, "findings": found, "review": run, "apply": applied}
+    found, run, applied, mode = findings(repo, number)
+    return {**out, "findings": found, "review": {**run, "mode": mode} if run else run, "apply": applied}
 
 
 def main(argv):

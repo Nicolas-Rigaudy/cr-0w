@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crow-review-run: review one MR in a read-only background run and keep its findings as JSON.
 
-  crow-review-run start REPO NUMBER [--branch B] [--mode peer|self] [--model M] [--power P] [--force]
+  crow-review-run start REPO NUMBER [--branch B] [--mode peer|self|threads] [--model M] [--power P] [--force]
   crow-review-run apply REPO NUMBER      resume the review session to apply the decisions (commit locally)
   crow-review-run sync REPO NUMBER       fold a finished run into the findings file (no-op otherwise)
   crow-review-run show REPO NUMBER       the findings file, synced first
@@ -24,7 +24,9 @@ it fixes accepted and edited findings (self mode), answers chat notes, commits l
 
 actions and act are the only commands that leave the machine. Self mode: one push of the apply commit
 to the MR branch (fast-forward only). Peer mode: one comment per accepted or edited finding, on its
-diff line when it has one. act runs exactly the command actions showed, one action per call.
+diff line when it has one. Threads mode (the owner's MR, reviewers' open threads): one finding per
+thread with a proposed fix and reply; actions push the fix, then reply to and resolve each accepted
+thread. act runs exactly the command actions showed, one action per call.
 """
 import argparse, hashlib, json, os, pwd, re, subprocess, sys
 from datetime import datetime, timezone
@@ -41,6 +43,8 @@ SEVERITIES = ("blocking", "suggestion", "nit", "question")
 STATES = ("pending", "accepted", "refused", "edited", "chat")
 RUN_STATES = ("running", "done", "failed")
 APPLY_STATUSES = ("fixed", "answered", "skipped", "failed")
+MODES = ("peer", "self", "threads")
+AGREE = ("yes", "no", "partly")
 DEFAULT_MODEL = "opus"
 
 
@@ -80,7 +84,7 @@ def validate_finding(f, i):
     for k in ("title", "body"):
         if not isinstance(f.get(k), str) or not f[k].strip():
             errs.append(f"{where}.{k}: required non-empty string")
-    for k in ("path", "comment", "fix", "pattern"):
+    for k in ("path", "comment", "fix", "pattern", "test", "how"):
         if k in f and f[k] is not None and not isinstance(f[k], str):
             errs.append(f"{where}.{k}: must be a string")
     if "line" in f and f["line"] is not None and (not isinstance(f["line"], int) or isinstance(f["line"], bool) or f["line"] < 0):
@@ -116,8 +120,8 @@ def validate_file(doc):
             errs.append(f"{k}: required string")
     if not isinstance(doc.get("number"), int):
         errs.append("number: required integer")
-    if doc.get("mode") not in ("peer", "self"):
-        errs.append("mode: peer or self")
+    if doc.get("mode") not in MODES:
+        errs.append(f"mode: one of {', '.join(MODES)}")
     run = doc.get("run")
     if not isinstance(run, dict) or run.get("state") not in RUN_STATES:
         errs.append(f"run.state: one of {', '.join(RUN_STATES)}")
@@ -143,6 +147,8 @@ def validate_file(doc):
             if not f.get("id") or f["id"] in ids:
                 errs.append(f"findings[{i}].id: required and unique")
             ids.add(f.get("id"))
+            if doc.get("mode") == "threads" and not (isinstance(f.get("thread"), dict) and f["thread"].get("id")):
+                errs.append(f"findings[{i}].thread.id: required in threads mode")
     return errs
 
 
@@ -163,18 +169,33 @@ def parse_output(text):
     return None
 
 
-def to_findings(doc):
-    """Run output findings, with an id, defaults and the pending decision state."""
+def to_findings(doc, threads=None):
+    """Run output findings, with an id, defaults and the pending decision state. In threads mode each
+    finding carries its forge thread (matched on the T<n> key the bundle gave it); one with an unknown
+    key is dropped."""
+    by_key = {t["key"]: t for t in threads or []}
     out = []
     for i, f in enumerate(doc["findings"], 1):
+        extra = {}
+        if threads is not None:
+            t = by_key.get(str(f.get("thread") or "").strip())
+            if t is None:
+                continue
+            extra = {"thread": {k: t.get(k) for k in ("key", "id", "comment_id", "author", "body", "path", "line")},
+                     "agree": f.get("agree") if f.get("agree") in AGREE else "yes",
+                     "test": (f.get("test") or "").strip(),
+                     "pattern_kind": f.get("pattern_kind") if f.get("pattern_kind") in ("repeat", "new") else "",
+                     "how": (f.get("how") or "").strip()}
         out.append({
             "id": f"f{i}", "title": f["title"].strip(), "severity": f["severity"],
             "path": f.get("path") or "", "line": f.get("line") or 0,
             "body": f["body"].strip(), "comment": (f.get("comment") or "").strip(),
             "fix": (f.get("fix") or "").strip(), "pattern": f.get("pattern") or "",
             "seen": f.get("seen") if isinstance(f.get("seen"), int) else 0,
-            "state": "pending", "note": "",
+            "state": "pending", "note": "", **extra,
         })
+    for i, f in enumerate(out, 1):
+        f["id"] = f"f{i}"
     return out
 
 
@@ -225,11 +246,22 @@ def ledgers(project_path):
     return out
 
 
+def open_threads(detail):
+    """The unresolved threads of an MR, keyed T1..Tn in the order the forge lists them."""
+    out = [t for t in detail.get("threads") or [] if not t.get("resolved") and t.get("id")]
+    return [{**t, "key": f"T{i}"} for i, t in enumerate(out, 1)]
+
+
 def bundle_text(repo, number, mode, detail, ledger_files):
     parts = [f"# Review bundle: {repo} !{number} ({mode} review)\n"]
     for name, text in ledger_files:
         parts.append(f"## Ledger {name}\n\n{text.strip()}\n")
     threads = detail.get("threads") or []
+    if mode == "threads":
+        todo = open_threads(detail)
+        parts.append(f"## Open threads to answer ({len(todo)})\n")
+        for t in todo:
+            parts.append(f"### {t['key']}: {t.get('author', '')} on {t.get('path') or 'the MR'}:{t.get('line') or 0}\n\n{(t.get('body') or '').strip()}\n")
     parts.append(f"## Existing threads ({len(threads)})\n")
     for t in threads:
         state = "resolved" if t.get("resolved") else "open"
@@ -256,7 +288,33 @@ def bundle_path(project_path, number, wt=None):
     return Path(wt) / ".crow-review" / f"{number}.md"
 
 
+def threads_prompt(repo, number, bundle):
+    return f"""Read-only pass over the reviewers' open threads on {repo} !{number}, the owner's own MR. You run in plan mode: do not edit, write or run anything that changes state.
+
+1. Read the bundle {bundle}: the review ledgers, the open threads (T1, T2, ...) and the full diff.
+2. Follow the review-threads skill for each open thread: check the claim in the code (neighbours too) before agreeing; search the repo for how it already handles the same case; disagree when the reviewer is wrong and say why. Match each thread against the ledgers: a known row is a repeat, else a new pattern. A fix covers every other occurrence of the same problem in the MR.
+3. Read around the changes in this checkout. The bundle diff is the source of truth. If a command is denied, carry on with the bundle.
+
+Reply rules (the skill's): a thread the fix fully answers gets NO reply (empty comment), it is resolved silently. Write a reply only when there is no change (disagreement, explanation, answer to a question) or it adds something the diff does not show. Reply in the reviewer's language, 1 to 3 short declarative sentences, never "done"/"fait". No AI attribution.
+
+Your final message is ONE JSON object and nothing else, one finding per open thread:
+{{"summary": "Threads: N open, K fixes, R replies. Patterns: X repeats, Y new.",
+  "findings": [{{"thread": "T1", "title": "short title of the problem",
+    "severity": "blocking|suggestion|nit|question (the kind of comment the reviewer left)",
+    "agree": "yes|no|partly", "path": "file path, empty when MR-level", "line": 0,
+    "body": "what is actually wrong (or why the reviewer is wrong), one or two sentences",
+    "comment": "the reply to post, empty when the fix speaks for itself",
+    "fix": "the proposed fix: a short unified diff, empty for reply only",
+    "test": "the test change that proves the fix, a short unified diff or empty",
+    "pattern": "the ledger row title for a repeat, or a short name for a new pattern, empty when none",
+    "pattern_kind": "repeat|new or empty", "how": "for a new pattern: how to catch it on the diff, one line",
+    "seen": 0}}]}}
+"""
+
+
 def prompt_text(repo, number, mode, bundle):
+    if mode == "threads":
+        return threads_prompt(repo, number, bundle)
     return f"""Read-only review of {repo} !{number} ({mode} mode). You run in plan mode: do not edit, write or run anything that changes state.
 
 1. Read the bundle {bundle}: the review ledgers, the existing threads and the full diff.
@@ -286,6 +344,9 @@ def start(a):
     if old and (old.get("apply") or {}).get("state") == "running":
         sys.exit(f"crow-review-run: an apply run on {a.repo} !{a.number} is still running")
     detail = mr_detail(a.repo, a.number)
+    threads = open_threads(detail) if a.mode == "threads" else None
+    if threads is not None and not threads:
+        sys.exit(f"crow-review-run: {a.repo} !{a.number} has no open thread to answer")
     wt = review_worktree(p["path"], a.number, a.branch, a.force) if a.branch else None
     bundle = bundle_path(p["path"], a.number, wt)
     bundle.parent.mkdir(parents=True, exist_ok=True)
@@ -299,6 +360,8 @@ def start(a):
            "run": {"id": run_id, "state": "running", "reason": "", "model": a.model,
                    "started_at": now(), "ended_at": ""},
            "summary": "", "findings": []}
+    if threads is not None:
+        doc["threads"] = [{k: t.get(k) for k in ("key", "id", "comment_id", "author", "body", "path", "line")} for t in threads]
     save(path, doc)
     print(f"review {run_id[:8]} started for {a.repo} !{a.number}; findings go to {path}")
 
@@ -352,9 +415,14 @@ def dispatch(project, label, prompt, model, power, cwd=None, continue_run=None, 
 
 def cdx_run(run_id):
     """The cdx row of a run (None when cdx does not know it)."""
-    out = sh("cdx", "runs", "--since", "7d", "--limit", "200", "--json")
-    rows = json.loads(out).get("runs", []) if out else []
-    return next((r for r in rows if r.get("run_id", "").startswith(run_id)), None)
+    # The --since list leaves running runs out; --running lists them.
+    for args in (("--since", "7d", "--limit", "200"), ("--running",)):
+        out = sh("cdx", "runs", *args, "--json")
+        rows = json.loads(out).get("runs", []) if out else []
+        row = next((r for r in rows if r.get("run_id", "").startswith(run_id)), None)
+        if row:
+            return row
+    return None
 
 
 def final_message(row):
@@ -386,7 +454,7 @@ def fold(doc, row, text):
         return doc
     run.update(state="done", reason="")
     doc["summary"] = (out.get("summary") or "").strip()
-    doc["findings"] = to_findings(out)
+    doc["findings"] = to_findings(out, doc.get("threads") if doc.get("mode") == "threads" else None)
     return doc
 
 
@@ -418,21 +486,31 @@ def sync(repo, number, lookup=None, message=None, checks=None):
 # ---------- apply ----------
 
 def todo(doc):
-    """Findings the apply run acts on: chat notes in any mode, accepted and edited ones in self mode.
-    A finding already handled for the same decision and note is left out."""
-    states = ("accepted", "edited", "chat") if doc.get("mode") == "self" else ("chat",)
+    """Findings the apply run acts on: chat notes in any mode, accepted and edited ones in self mode,
+    accepted and edited threads that carry a fix in threads mode (edited there means the reply was
+    rewritten). A finding already handled for the same decision and note is left out."""
+    mode = doc.get("mode")
+    def wanted(f):
+        if f.get("state") == "chat":
+            return True
+        if f.get("state") not in ("accepted", "edited"):
+            return False
+        return mode == "self" or (mode == "threads" and bool(f.get("fix")))
     return [f for f in doc.get("findings") or []
-            if f.get("state") in states and (f.get("apply") or {}).get("for") != [f["state"], f.get("note", "")]]
+            if wanted(f) and (f.get("apply") or {}).get("for") != [f["state"], f.get("note", "")]]
 
 
 def apply_prompt(doc, items):
     lines = []
+    threads = doc.get("mode") == "threads"
     for f in items:
         where = f"{f.get('path') or 'MR'}:{f.get('line') or 0}"
-        what = {"accepted": "apply your proposed fix",
-                "edited": "apply the fix the owner's note asks for",
+        what = {"accepted": "apply your proposed fix" + (" and its test" if threads else ""),
+                "edited": "apply your proposed fix and its test (the owner only rewrote the reply)" if threads
+                          else "apply the fix the owner's note asks for",
                 "chat": "answer the owner's note, change no code"}[f["state"]]
-        lines.append(f"- {f['id']} [{f['state']}] {f['title']} ({where}): {what}." + (f"\n  Owner's note: {f['note']}" if f.get("note") else ""))
+        note = f.get("note") if f["state"] == "chat" or not threads else ""
+        lines.append(f"- {f['id']} [{f['state']}] {f['title']} ({where}): {what}." + (f"\n  Owner's note: {note}" if note else ""))
     skipped = [f["id"] for f in doc.get("findings") or [] if f not in items]
     return f"""Apply phase of your review of {doc['repo']} !{doc['number']} ({doc['mode']} mode). This is the same conversation: your findings f1..f{len(doc.get('findings') or [])} are above.
 You now have write rights in this worktree ({doc.get('worktree') or 'the current folder'}) and nowhere else.
@@ -539,7 +617,8 @@ def apply(repo, number, run_dispatch=None):
         sys.exit("crow-review-run: this review ran in the main checkout; r runs it again in a worktree")
     items = todo(doc)
     if not items:
-        what = "accepted, edited or chat" if doc.get("mode") == "self" else "chat (a peer review posts accepted findings)"
+        what = {"self": "accepted, edited or chat", "threads": "accepted thread with a fix, or chat"}.get(
+            doc.get("mode"), "chat (a peer review posts accepted findings)")
         sys.exit(f"crow-review-run: no {what} finding left to apply")
     parent = prev["id"] if prev.get("state") == "done" and prev.get("id") else doc["run"]["id"]
     prompt = path.with_name(path.stem + ".apply.md")
@@ -619,14 +698,16 @@ def actions(doc):
     """What is left to push or post, each with its exact text and command. The hash pins both."""
     acts = []
     ap = doc.get("apply") or {}
-    if doc.get("mode") == "self":
+    if doc.get("mode") in ("self", "threads"):
         sha = ap.get("commit") or ""
         if ap.get("state") == "done" and sha and doc.get("branch") and doc.get("worktree") \
                 and (ap.get("pushed") or {}).get("commit") != sha:
             acts.append({"id": "push", "kind": "push", "title": f"Push {sha[:8]} to origin/{doc['branch']}",
                          "text": ap.get("subject") or "", "warnings": ap.get("warnings") or [],
                          "cmd": ["git", "-C", doc["worktree"], "push", "origin", f"{sha}:refs/heads/{doc['branch']}"]})
-    else:
+    if doc.get("mode") == "threads":
+        acts += thread_actions(doc, ap)
+    elif doc.get("mode") != "self":
         forge = project_of(doc["repo"]).get("forge") or "gitlab"
         for f in doc.get("findings") or []:
             text = comment_text(f)
@@ -638,6 +719,86 @@ def actions(doc):
     for a in acts:
         a["hash"] = hashlib.sha256(json.dumps([a["cmd"], a["text"]], ensure_ascii=False).encode()).hexdigest()[:12]
     return acts
+
+
+def thread_cmd(forge, repo, number, t, kind, text=""):
+    """Reply to or resolve one forge thread."""
+    if forge == "github":
+        if kind == "reply":
+            return ["gh", "api", "-X", "POST", f"repos/{repo}/pulls/{number}/comments/{t.get('comment_id')}/replies", "-f", f"body={text}"]
+        return ["gh", "api", "graphql", "-f", "query=mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}",
+                "-F", f"id={t['id']}"]
+    base = f"projects/{quote(repo, safe='')}/merge_requests/{number}/discussions/{t['id']}"
+    if kind == "reply":
+        return ["glab", "api", "-X", "POST", f"{base}/notes", "-f", f"body={text}"]
+    return ["glab", "api", "-X", "PUT", base, "-f", "resolved=true"]
+
+
+def thread_actions(doc, ap):
+    """Per accepted or edited thread: its reply (when it has text), then resolve. A thread whose fix is not
+    pushed yet waits; a thread the run disagreed with gets its reply but stays open for the reviewer."""
+    forge = project_of(doc["repo"]).get("forge") or "gitlab"
+    pushed = bool(ap.get("commit")) and (ap.get("pushed") or {}).get("commit") == ap.get("commit")
+    acts = []
+    for f in doc.get("findings") or []:
+        t = f.get("thread") or {}
+        if f.get("state") not in ("accepted", "edited") or not t.get("id"):
+            continue
+        if f.get("fix") and not ((f.get("apply") or {}).get("status") == "fixed" and pushed):
+            continue
+        who = f"{t.get('author') or 'reviewer'} on {t.get('path') or 'the MR'}" + (f":{t['line']}" if t.get("line") else "")
+        text = comment_text(f)
+        if text and not f.get("posted"):
+            acts.append({"id": f"reply-{f['id']}", "kind": "reply", "title": f"Reply to {who}", "text": text,
+                         "warnings": [], "cmd": thread_cmd(forge, doc["repo"], doc["number"], t, "reply", text)})
+        if not f.get("resolved") and f.get("agree") != "no":
+            acts.append({"id": f"resolve-{f['id']}", "kind": "resolve", "title": f"Resolve the thread of {who}",
+                         "text": (t.get("body") or "").strip(), "warnings": [],
+                         "cmd": thread_cmd(forge, doc["repo"], doc["number"], t, "resolve")})
+    return acts
+
+
+# ---------- ledgers ----------
+
+def table_cells(line):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def feed_ledger(doc, f):
+    """Count a resolved thread in the review ledgers, as the review-threads skill does: a repeat bumps
+    its row (project ledger, then common.md), a new pattern gets a row in the project ledger."""
+    name = (f.get("pattern") or "").strip()
+    if not name or f.get("agree") == "no" or f.get("ledger"):
+        return ""
+    p = project_of(doc["repo"])
+    short = (p.get("aliases") or [p["name"]])[0]
+    ref = f"!{doc['number']}"
+    d = HOME / "local" / "reviews"
+    own = d / f"{Path(p.get('path') or p['name']).name}.md"
+    for path, seen in ((own, ref), (d / "common.md", f"{short} {ref}")):
+        if not path.exists():
+            continue
+        lines = path.read_text().splitlines()
+        for i, l in enumerate(lines):
+            c = table_cells(l) if l.lstrip().startswith("|") else []
+            if len(c) >= 3 and c[0].lower() == name.lower() and c[1].isdigit():
+                c[1] = str(int(c[1]) + 1)
+                if ref not in c[2]:
+                    c[2] = (c[2] + (", " if path == own else " ") + seen).strip(", ")
+                lines[i] = "| " + " | ".join(c) + " |"
+                path.write_text("\n".join(lines) + "\n")
+                f["ledger"] = f"bumped in {path.name}"
+                return f["ledger"]
+    row = f"| {name} | 1 | {ref} | {(f.get('how') or '').strip() or 'to write'} |"
+    if not own.exists():
+        own.parent.mkdir(parents=True, exist_ok=True)
+        own.write_text(f"# Recurring review comments on {p['name']}\n\n| Pattern | Count | MRs | How to catch it |\n|---|---|---|---|\n")
+    lines = own.read_text().splitlines()
+    last = max((i for i, l in enumerate(lines) if l.lstrip().startswith("|")), default=len(lines) - 1)
+    lines.insert(last + 1, row)
+    own.write_text("\n".join(lines) + "\n")
+    f["ledger"] = f"added to {own.name}"
+    return f["ledger"]
 
 
 def diff_refs(forge, repo, number, call):
@@ -676,6 +837,19 @@ def act(repo, number, aid, expect, call=None):
     if a["kind"] == "push":
         doc["apply"]["pushed"] = {"commit": doc["apply"]["commit"], "at": now()}
         msg = f"pushed {doc['apply']['commit'][:8]} to origin/{doc['branch']}"
+    elif a["kind"] in ("reply", "resolve"):
+        f = next(f for f in doc["findings"] if f"{a['kind']}-{f['id']}" == aid)
+        if a["kind"] == "reply":
+            try:
+                ref = str((json.loads(out) or {}).get("id") or "")
+            except (ValueError, AttributeError):
+                ref = ""
+            f["posted"] = {"at": now(), "text": a["text"], "ref": ref}
+            msg = f"replied on {f['id']}"
+        else:
+            f["resolved"] = {"at": now()}
+            led = feed_ledger(doc, f)
+            msg = f"resolved {f['id']}" + (f"; pattern {led}" if led else "")
     else:
         f = next(f for f in doc["findings"] if f"post-{f['id']}" == aid)
         try:
@@ -694,7 +868,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start")
     s.add_argument("repo"); s.add_argument("number", type=lambda v: int(v.lstrip("!#")))
-    s.add_argument("--mode", choices=("peer", "self"), default="peer")
+    s.add_argument("--mode", choices=MODES, default="peer")
     s.add_argument("--branch", help="the MR's source branch: the run works in <repo>.wt/review-<number>")
     s.add_argument("--model", default=DEFAULT_MODEL)
     s.add_argument("--power", default="medium")
