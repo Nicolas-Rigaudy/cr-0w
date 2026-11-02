@@ -103,4 +103,5 @@ def test_findings_are_read_from_the_state_dir(tmp_path, monkeypatch):
     assert mod.findings("grp/demo-service", "6") == ([], None)
     (tmp_path / "local" / "state" / "reviews" / "grp_demo-service-7.json").write_text(
         '{"schema": 1, "run": {"state": "running"}, "findings": []}')
-    assert mod.findings("grp/demo-service", "7") == ([], {"state": "running"})
+    monkeypatch.setattr(mod, "sync_review", lambda repo, n: {"run": {"state": "done"}, "findings": [{"id": "f1"}]})
+    assert mod.findings("grp/demo-service", "7") == ([{"id": "f1"}], {"state": "done"})

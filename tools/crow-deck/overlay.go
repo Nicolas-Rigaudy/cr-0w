@@ -15,6 +15,7 @@ const (
 	ovConfirm
 	ovPost
 	ovHandoff
+	ovReview
 )
 
 type command struct{ name, desc string }
@@ -153,6 +154,29 @@ func (lk *look) postOverlay(w, h int, r *mrRow) []string {
 		{{"enter", lk.sub}, spc(1), {"post (not wired)", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"close", lk.sub}},
 	}
 	return lk.overlayBlock(sp, w, h)
+}
+
+// reviewOverlay confirms a read-only review run on the selected MR.
+func (lk *look) reviewOverlay(w, h int, r *mrRow) []string {
+	sp := boxSpec{title: "Review", sel: -1}
+	if r == nil {
+		sp.rows = []line{{{"No MR selected.", lk.sub}}}
+		return lk.overlayBlock(sp, w, h)
+	}
+	sp.rows = []line{{{"Start a read-only review of " + r.Ref + " " + r.Name + " (" + reviewMode(r) + ", opus)?", lk.plain}}, nil}
+	for _, l := range wrap("The run cannot edit the repo. Findings land here; nothing is posted.", overlayWidth(w)-6) {
+		sp.rows = append(sp.rows, line{{l, lk.sub}})
+	}
+	sp.rows = append(sp.rows, nil, line{{"enter", lk.key}, spc(1), {"start the run", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}})
+	return lk.overlayBlock(sp, w, h)
+}
+
+// reviewMode is self on the owner's own MR, peer otherwise.
+func reviewMode(r *mrRow) string {
+	if r.Role == "AUTHOR" {
+		return "self"
+	}
+	return "peer"
 }
 
 // handoffTask is the literal task and end state `crow handoff` receives for an MR.

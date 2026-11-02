@@ -131,6 +131,21 @@ func relaunchCmd(a agentRow) tea.Cmd {
 	}
 }
 
+// reviewStartedMsg ends a review start: the MR's detail is fetched again to show the run.
+type reviewStartedMsg struct {
+	key, text string
+}
+
+func reviewCmd(r mrRow) tea.Cmd {
+	return func() tea.Msg {
+		out, err := runBin("crow-review-run", "start", r.Repo, strconv.Itoa(r.Number), "--mode", reviewMode(&r))
+		if err != nil {
+			return reviewStartedMsg{r.key(), "review failed to start: " + firstLine(cmpOr(out, err.Error()))}
+		}
+		return reviewStartedMsg{r.key(), "review started on " + r.Ref + ", findings appear here when it ends"}
+	}
+}
+
 // detailMsg is the diff and threads of one MR.
 type detailMsg struct {
 	key string
@@ -149,3 +164,6 @@ func detailCmd(r mrRow) tea.Cmd {
 }
 
 const detailTTL = 2 * time.Minute
+
+// reviewTTL is the detail refresh while a review run is going.
+const reviewTTL = 20 * time.Second

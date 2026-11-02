@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,6 +42,8 @@ type model struct {
 	mrSel, mrPane, mrFile, mrItem int
 	mrKey                         string // key of the selected MR, keeps the cursor on it across refreshes
 	mrToggle                      bool
+	mrTyping                      string // "e" edit or "c" chat on the current finding, "" when not typing
+	mrInput                       string
 
 	prjSel, prjPane int
 	prjZoom         bool
@@ -141,7 +144,11 @@ func (m *model) wantDetail() tea.Cmd {
 	}
 	r := vis[m.mrSel]
 	e := m.live.details[r.key()]
-	if e != nil && (e.busy || m.now.Sub(e.at) < detailTTL) {
+	ttl := detailTTL
+	if e != nil && e.d != nil && e.d.Review != nil && e.d.Review.State == "running" {
+		ttl = reviewTTL
+	}
+	if e != nil && (e.busy || m.now.Sub(e.at) < ttl) {
 		return nil
 	}
 	if e == nil {
@@ -154,7 +161,7 @@ func (m *model) wantDetail() tea.Cmd {
 
 func (m model) mrsView() mrsView {
 	return mrsView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, mode: m.mode, sel: m.mrSel, pane: m.mrPane,
-		file: m.mrFile, item: m.mrItem, toggle: m.mrToggle}
+		file: m.mrFile, item: m.mrItem, toggle: m.mrToggle, typing: m.mrTyping, input: m.mrInput}
 }
 
 func (m model) projectsView() projectsView {
@@ -354,6 +361,13 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case actionMsg:
 		m.flash = msg.text
+	case reviewStartedMsg:
+		m.flash = msg.text
+		if m.live != nil {
+			if e := m.live.details[msg.key]; e != nil {
+				e.at = time.Time{}
+			}
+		}
 	}
 	return m, nil
 }
@@ -366,6 +380,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.overlay == ovNone && m.page == 1 && m.typing {
 		return m.typingKey(msg)
+	}
+	if m.overlay == ovNone && m.page == 2 && m.mrTyping != "" {
+		return m.mrTypingKey(msg)
 	}
 	if m.overlay == ovNone && m.page == 1 && m.hist {
 		if nm, ok := m.histKey(msg); ok {
@@ -393,6 +410,22 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				task, end := handoffTask(r)
 				m.flash = "opening a session on " + r.Name + "…"
 				return m, actionCmd("handoff", "crow", "handoff", r.Name, "--task", task, "--end-state", end)
+			}
+		case "esc", "n", "q":
+			m.overlay = ovNone
+		}
+		return m, nil
+	case ovReview:
+		switch k {
+		case "enter":
+			m.overlay = ovNone
+			if r := m.mrsView().cur(); r != nil {
+				if m.live == nil {
+					m.flash = "mock deck: no review run started"
+					return m, nil
+				}
+				m.flash = "starting a review of " + r.Ref + "…"
+				return m, reviewCmd(*r)
 			}
 		case "esc", "n", "q":
 			m.overlay = ovNone
@@ -548,7 +581,15 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 	case "enter":
 		m.mrPane = min(mpCard, m.mrPane+1)
 	case "a", "x", "e", "c":
-		m.flash = k + ": saving a decision on a finding arrives with the review slice"
+		return m.decideKey(k)
+	case "r":
+		if mv.cur() == nil {
+			m.flash = "no MR selected"
+		} else if d := mv.detail(); d != nil && d.Review != nil && d.Review.State == "running" {
+			m.flash = "a review of this MR is already running"
+		} else {
+			m.overlay = ovReview
+		}
 	case "P":
 		if mv.cur() == nil {
 			m.flash = "no MR selected"
@@ -563,12 +604,87 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 		} else {
 			m.overlay = ovHandoff
 		}
-	case "g", "r", "R", "s":
+	case "g", "R", "s":
 		if mv.cur() == nil {
 			m.flash = "no MR selected"
 		} else {
 			m.flash = k + ": not wired on the MRs page yet"
 		}
+	}
+	return m, nil
+}
+
+// decideKey records a/x on the current finding at once; e and c open the input line first.
+func (m model) decideKey(k string) (tea.Model, tea.Cmd) {
+	mv := m.mrsView()
+	if mv.threadsMode() {
+		m.flash = k + ": answering threads arrives with the apply slice"
+		return m, nil
+	}
+	f := mv.curFinding(mv.detail())
+	if f == nil {
+		m.flash = "no finding selected; r starts a review"
+		return m, nil
+	}
+	switch k {
+	case "a":
+		return m.decide("accepted", "")
+	case "x":
+		return m.decide("refused", "")
+	case "e":
+		m.mrTyping, m.mrInput = "e", cmpOr(f.Note, f.Comment)
+	case "c":
+		m.mrTyping, m.mrInput = "c", ""
+	}
+	m.mrPane = mpCard
+	return m, nil
+}
+
+// decide sets the state of the current finding and saves it in the findings JSON (live).
+func (m model) decide(state, note string) (tea.Model, tea.Cmd) {
+	mv := m.mrsView()
+	r, f := mv.cur(), mv.curFinding(mv.detail())
+	if r == nil || f == nil {
+		return m, nil
+	}
+	if m.live != nil && f.ID == "" {
+		m.flash = "this finding has no id (old file); r runs the review again"
+		return m, nil
+	}
+	f.State, f.Note = state, note
+	if m.live == nil {
+		m.flash = "mock deck: " + state + " kept in memory only"
+		return m, nil
+	}
+	args := []string{"decide", r.Repo, strconv.Itoa(r.Number), f.ID, state}
+	if note != "" {
+		args = append(args, "--note", note)
+	}
+	return m, actionCmd("finding "+f.ID, "crow-review-run", args...)
+}
+
+// mrTypingKey edits the edit or chat text of the current finding; enter saves it, esc drops it.
+func (m model) mrTypingKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		m.mrTyping, m.mrInput = "", ""
+	case tea.KeyEnter:
+		text := strings.TrimSpace(m.mrInput)
+		if text == "" {
+			m.flash = "empty text: esc cancels"
+			return m, nil
+		}
+		state := map[string]string{"e": "edited", "c": "chat"}[m.mrTyping]
+		m.mrTyping, m.mrInput = "", ""
+		return m.decide(state, text)
+	case tea.KeyBackspace:
+		if r := []rune(m.mrInput); len(r) > 0 {
+			m.mrInput = string(r[:len(r)-1])
+		}
+	case tea.KeyRunes:
+		m.mrInput += string(msg.Runes)
+	case tea.KeySpace:
+		m.mrInput += " "
 	}
 	return m, nil
 }
@@ -673,7 +789,10 @@ func (m model) context() []keyHint {
 		return []keyHint{{"j k", "agent"}, {"a x e c", "answer"}, {"enter", "send"}, {"g", "jump"}, {"/", "history"}, {"tab", "pane"}}
 	}
 	if m.page == 2 {
-		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"a x e c", "decide"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
+		if m.mrTyping != "" {
+			return []keyHint{{"enter", "save"}, {"esc", "cancel"}}
+		}
+		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"r", "review"}, {"a x e c", "decide"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 3 {
 		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o", "action"}, {"z", "zoom"}, {"/", "filter"}, {"m", "work / perso / all"}}
@@ -710,6 +829,8 @@ func (m model) View() string {
 		body = lk.confirmOverlay(m.w, bh, m.curAgent())
 	case m.overlay == ovHandoff:
 		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur())
+	case m.overlay == ovReview:
+		body = lk.reviewOverlay(m.w, bh, m.mrsView().cur())
 	case m.overlay == ovPost:
 		body = lk.postOverlay(m.w, bh, m.mrsView().cur())
 	case m.page == 0:

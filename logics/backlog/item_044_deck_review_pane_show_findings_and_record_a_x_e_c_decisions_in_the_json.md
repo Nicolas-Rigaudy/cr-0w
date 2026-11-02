@@ -1,10 +1,10 @@
 ## item_044_deck_review_pane_show_findings_and_record_a_x_e_c_decisions_in_the_json - Deck review pane: show findings and record a/x/e/c decisions in the JSON
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -48,6 +48,10 @@
 
 # Notes
 - Generated locally by logics-manager.
+- Shipped: `crow-review-run decide`, `crow-mrs show` syncs a running review, deck `r` (confirm overlay, then `crow-review-run start --mode peer|self`), `a/x/e/c` call `decide`, `e/c` open an input line (enter saves, esc drops), card shows severity, comment, proposed fix, note, run state.
+- Proofs: AC1 `TestReviewCardFitsEveryThemeAndSize` (three themes, 80x24, 170x46, 118x60, typing on and off). AC2 `TestDecisionsAreWrittenToTheFindingsJSON`, `TestSavedDecisionsShowAfterRestart`, `test_decide_persists_and_validates`. AC3 `TestReviewRunStateShows`, `TestRunningReviewRefetchesSooner`.
+- Simulated runs only. No real review run or deck action launched.
+- Threads mode `a/x/e/c` still flashes: answering threads is the apply slice.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

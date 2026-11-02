@@ -250,7 +250,19 @@ def findings(repo, number):
         return [], None
     if isinstance(doc, list):
         return doc, None
+    if (doc.get("run") or {}).get("state") == "running":
+        doc = sync_review(repo, number) or doc
     return doc.get("findings") or [], doc.get("run")
+
+
+def sync_review(repo, number):
+    """A running review folded in when its run has finished (crow-review-run show)."""
+    r = subprocess.run([str(Path(__file__).resolve().parent / "crow-review-run"), "show", repo, str(number)],
+                       capture_output=True, text=True, timeout=60, env={**os.environ, "CROW_HOME": str(HOME)})
+    try:
+        return json.loads(r.stdout) if r.returncode == 0 else None
+    except ValueError:
+        return None
 
 
 def show(projs, repo, number, gl=gitlab_show, gh=github_show):

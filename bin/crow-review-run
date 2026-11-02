@@ -4,6 +4,7 @@
   crow-review-run start REPO NUMBER [--mode peer|self] [--model M] [--power P] [--force]
   crow-review-run sync REPO NUMBER       fold a finished run into the findings file (no-op otherwise)
   crow-review-run show REPO NUMBER       the findings file, synced first
+  crow-review-run decide REPO NUMBER ID STATE [--note TEXT]   record the owner's decision on one finding
   crow-review-run check FILE             validate a findings file against the schema (exit 1 on errors)
 
 REPO is the registry remote (group/name), NUMBER the MR or PR number. The findings file is
@@ -341,6 +342,24 @@ def sync(repo, number, lookup=cdx_run, message=final_message):
     return doc
 
 
+def decide(repo, number, fid, state, note=""):
+    """Record a decision (accepted, refused, edited, chat, pending) and its note on one finding."""
+    if state not in STATES:
+        sys.exit(f"crow-review-run: state must be one of {', '.join(STATES)}")
+    path = findings_path(repo, number)
+    doc = load(path)
+    if not isinstance(doc, dict):
+        sys.exit(f"crow-review-run: no findings file for {repo} !{number}")
+    f = next((f for f in doc.get("findings") or [] if f.get("id") == fid), None)
+    if f is None:
+        sys.exit(f"crow-review-run: no finding {fid} in {repo} !{number}")
+    if state in ("edited", "chat") and not note.strip():
+        sys.exit(f"crow-review-run: {state} needs --note")
+    f["state"], f["note"] = state, note.strip()
+    save(path, doc)
+    return f
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="crow-review-run")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -354,6 +373,10 @@ def main(argv=None):
         x = sub.add_parser(name)
         x.add_argument("repo"); x.add_argument("number", type=lambda v: int(v.lstrip("!#")))
     sub.add_parser("check").add_argument("file")
+    dc = sub.add_parser("decide")
+    dc.add_argument("repo"); dc.add_argument("number", type=lambda v: int(v.lstrip("!#")))
+    dc.add_argument("id"); dc.add_argument("state", choices=STATES)
+    dc.add_argument("--note", default="")
     a = ap.parse_args(argv)
     if a.cmd == "start":
         start(a)
@@ -363,6 +386,9 @@ def main(argv=None):
             json.dump(doc, sys.stdout, indent=1, ensure_ascii=False); print()
         else:
             print((doc or {}).get("run", {}).get("state", "none"))
+    elif a.cmd == "decide":
+        f = decide(a.repo, a.number, a.id, a.state, a.note)
+        print(f"{f['id']} {f['state']}")
     elif a.cmd == "check":
         doc = load(a.file)
         errs = validate_file(doc) if doc is not None else ["file: missing or not JSON"]

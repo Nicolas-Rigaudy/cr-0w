@@ -205,3 +205,19 @@ def test_dispatch_asks_cdx_for_review_permission(tmp_path, monkeypatch):
     cdx = next(a for a in seen if a[:2] == ["cdx", "run"])
     assert cdx[cdx.index("--permission") + 1] == "review"
     assert cdx[cdx.index("--model") + 1] == "opus"
+
+
+# ---------- decide ----------
+
+def test_decide_persists_and_validates(rr):
+    doc = json.loads((FIXTURES / "review-findings.json").read_text())
+    rr.save(rr.findings_path(REPO, 220), {**doc, "repo": REPO})
+    rr.main(["decide", REPO, "220", "f1", "edited", "--note", "Il manque la pagination."])
+    rr.main(["decide", REPO, "220", "f2", "refused"])
+    on_disk = rr.load(rr.findings_path(REPO, 220))
+    assert [(f["state"], f["note"]) for f in on_disk["findings"]] == [("edited", "Il manque la pagination."), ("refused", "")]
+    assert rr.validate_file(on_disk) == []
+    with pytest.raises(SystemExit, match="needs --note"):
+        rr.main(["decide", REPO, "220", "f1", "chat"])
+    with pytest.raises(SystemExit, match="no finding f9"):
+        rr.main(["decide", REPO, "220", "f9", "accepted"])

@@ -79,21 +79,30 @@ type mrSection struct {
 	Lines []diffLine
 }
 
-// mrFinding is one finding of a review the owner does on someone's MR.
+// mrFinding is one finding of a review run (runbooks/review-findings.md).
 type mrFinding struct {
-	Title, Path string
-	Line        int
-	Body        string
-	Pattern     string
-	Seen        int
-	Comment     string
-	State       string // pending, accepted, refused
+	ID, Title, Path string
+	Line            int
+	Severity        string // blocking, suggestion, nit, question
+	Body            string
+	Pattern         string
+	Seen            int
+	Comment         string
+	Fix             string
+	State           string // pending, accepted, refused, edited, chat
+	Note            string // the owner's edited comment or chat note
+}
+
+// mrReview is the state of the review run behind the findings.
+type mrReview struct {
+	ID, State, Reason, Model, StartedAt string
 }
 
 type mrDetail struct {
 	Files    []mrFile
 	Threads  []mrThread
 	Findings []mrFinding
+	Review   *mrReview
 }
 
 // ----- fetching -----
@@ -119,15 +128,26 @@ type rawDetail struct {
 		Resolved bool   `json:"resolved"`
 	} `json:"threads"`
 	Findings []struct {
-		Title   string `json:"title"`
-		Path    string `json:"path"`
-		Line    int    `json:"line"`
-		Body    string `json:"body"`
-		Pattern string `json:"pattern"`
-		Seen    int    `json:"seen"`
-		Comment string `json:"comment"`
-		State   string `json:"state"`
+		ID       string `json:"id"`
+		Title    string `json:"title"`
+		Severity string `json:"severity"`
+		Path     string `json:"path"`
+		Line     int    `json:"line"`
+		Body     string `json:"body"`
+		Pattern  string `json:"pattern"`
+		Seen     int    `json:"seen"`
+		Comment  string `json:"comment"`
+		Fix      string `json:"fix"`
+		State    string `json:"state"`
+		Note     string `json:"note"`
 	} `json:"findings"`
+	Review *struct {
+		ID        string `json:"id"`
+		State     string `json:"state"`
+		Reason    string `json:"reason"`
+		Model     string `json:"model"`
+		StartedAt string `json:"started_at"`
+	} `json:"review"`
 }
 
 func fetchMRDetail(r mrRow) (*mrDetail, error) {
@@ -147,7 +167,11 @@ func mapDetail(raw rawDetail) *mrDetail {
 		d.Threads = append(d.Threads, mrThread{Author: t.Author, At: t.At, Path: t.Path, Line: t.Line, Body: strings.TrimSpace(t.Body), Resolved: t.Resolved})
 	}
 	for _, f := range raw.Findings {
-		d.Findings = append(d.Findings, mrFinding{Title: f.Title, Path: f.Path, Line: f.Line, Body: f.Body, Pattern: f.Pattern, Seen: f.Seen, Comment: f.Comment, State: cmpOr(f.State, "pending")})
+		d.Findings = append(d.Findings, mrFinding{ID: f.ID, Title: f.Title, Severity: f.Severity, Path: f.Path, Line: f.Line, Body: f.Body,
+			Pattern: f.Pattern, Seen: f.Seen, Comment: f.Comment, Fix: f.Fix, State: cmpOr(f.State, "pending"), Note: f.Note})
+	}
+	if rv := raw.Review; rv != nil {
+		d.Review = &mrReview{ID: rv.ID, State: rv.State, Reason: rv.Reason, Model: rv.Model, StartedAt: rv.StartedAt}
 	}
 	return d
 }

@@ -6,6 +6,14 @@ A read-only background run reviews one MR and its findings land in a JSON file t
 - `bin/crow-review-run start <group/name> <number> [--mode peer|self]`: writes the context bundle, dispatches the run, writes the file with `run.state: running`. Default model `opus`, power `medium`. Refuses while a run is going or when a finding already has a decision (`--force` starts over).
 - `bin/crow-review-run sync <group/name> <number>`: when cdx reports the run finished, parses the final message and writes the findings (`done`) or the reason (`failed`). A no-op otherwise. `show` syncs then prints the file.
 - `bin/crow-review-run check <file>`: validates a file against the schema below.
+- `bin/crow-review-run decide <group/name> <number> <fN> accepted|refused|edited|chat [--note TEXT]`: records the owner's decision on one finding. `edited` and `chat` need `--note`.
+- `crow-mrs show` syncs a running review, so the deck sees it end without a second call.
+
+## Deck keys (MRs tab)
+- `r` asks, then starts a review of the selected MR (`peer` on a review, `self` on an own MR). Refused while one runs.
+- `a` accept, `x` refuse, `e` edit the comment (prefilled), `c` chat note. `enter` saves, `esc` drops. Each decision calls `decide`, so it survives a restart.
+- A running review refetches every 20 s. A failed one shows its reason; `r` runs it again.
+- The mock deck keeps decisions in memory and starts no run.
 
 ## Read only
 - The run is `crow-runs dispatch --permission review`, which is `cdx run --permission review`: Claude `--permission-mode plan`, Codex `-s read-only`. It cannot edit or write. It may share a folder with another run.

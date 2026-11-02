@@ -43,10 +43,12 @@ func mockDetails() map[string]*mrDetail {
 		"grp/atlas!220": {
 			Files: []mrFile{retry, cfg, test},
 			Findings: []mrFinding{
-				{Title: "env var undocumented", Path: "retry.py", Line: 47, Body: "BACKOFF and MAX_RETRIES come from the environment and are not in the config doc.", Pattern: "env var undocumented", Seen: 3, Comment: "Pense à documenter RETRY_BACKOFF et MAX_RETRIES dans config.md.", State: "pending"},
-				{Title: "default value not tested", Path: "retry.py", Line: 48, Body: "No test covers the default MAX_RETRIES.", Pattern: "default not tested", Seen: 2, Comment: "Ajoute un test sur la valeur par défaut de MAX_RETRIES.", State: "accepted"},
-				{Title: "commit scope", Path: "", Line: 0, Body: "The commit subject has no file scope.", Pattern: "commit scope", Seen: 4, Comment: "Le sujet du commit n'a pas de scope.", State: "refused"},
+				{ID: "f1", Severity: "suggestion", Title: "env var undocumented", Path: "retry.py", Line: 47, Body: "BACKOFF and MAX_RETRIES come from the environment and are not in the config doc.", Pattern: "env var undocumented", Seen: 3, Comment: "Pense à documenter RETRY_BACKOFF et MAX_RETRIES dans config.md.", State: "pending",
+					Fix: "+RETRY_BACKOFF: base delay in seconds (0.5).\n+RETRY_MAX: attempts before giving up (5)."},
+				{ID: "f2", Severity: "blocking", Title: "default value not tested", Path: "retry.py", Line: 48, Body: "No test covers the default MAX_RETRIES.", Pattern: "default not tested", Seen: 2, Comment: "Ajoute un test sur la valeur par défaut de MAX_RETRIES.", State: "accepted"},
+				{ID: "f3", Severity: "nit", Title: "commit scope", Path: "", Line: 0, Body: "The commit subject has no file scope.", Pattern: "commit scope", Seen: 4, Comment: "Le sujet du commit n'a pas de scope.", State: "refused"},
 			},
+			Review: &mrReview{ID: "rv000220", State: "done", Model: "opus", StartedAt: "2026-10-29T13:00:00Z"},
 		},
 		"grp/atlas!213": {
 			Files: []mrFile{seed},

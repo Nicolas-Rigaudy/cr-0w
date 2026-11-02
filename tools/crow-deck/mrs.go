@@ -36,6 +36,8 @@ type mrsView struct {
 	file   int
 	item   int
 	toggle bool // T: the other kind of card (threads on a review, findings on an own MR)
+	typing string // "e" or "c" while the owner types on the current finding
+	input  string
 }
 
 func (mv mrsView) loading() bool {
@@ -592,12 +594,46 @@ func (mv mrsView) curThread(d *mrDetail) *mrThread {
 
 func stateStyle(lk *look, state string) lipgloss.Style {
 	switch state {
-	case "accepted", "resolved":
+	case "accepted", "resolved", "edited":
 		return lk.ok
 	case "refused":
 		return lk.sub
+	case "chat":
+		return lk.cyan
 	}
 	return lk.warn
+}
+
+// severityStyle colours a finding's severity: blocking stands out, nits fade.
+func severityStyle(lk *look, sev string) lipgloss.Style {
+	switch sev {
+	case "blocking":
+		return lk.bad.Bold(true)
+	case "nit":
+		return lk.dim
+	case "question":
+		return lk.cyan
+	}
+	return lk.warn
+}
+
+// reviewLine is the state of the review run, nil when there is none or it is done.
+func (mv mrsView) reviewLine(rv *mrReview) line {
+	lk := mv.lk
+	if rv == nil {
+		return nil
+	}
+	switch rv.State {
+	case "running":
+		since := ""
+		if t, err := time.Parse(time.RFC3339, rv.StartedAt); err == nil {
+			since = " · " + shortAge(mv.now.Sub(t))
+		}
+		return line{{"● review running", lk.warn}, {since + ifs(rv.Model != "", " · "+rv.Model), lk.sub}}
+	case "failed":
+		return line{{"✗ review failed: ", lk.bad}, {cmpOr(rv.Reason, "no reason given"), lk.sub}}
+	}
+	return nil
 }
 
 func (mv mrsView) cardSpec(iw, h int) boxSpec {
@@ -624,12 +660,28 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 	if hits := patternsHit(d, threads); hits > 0 {
 		sp.right = line{{fmt.Sprintf("patterns hit: %d", hits), lk.sub}}
 	}
+	var run line
+	if !threads {
+		run = mv.reviewLine(d.Review)
+	}
 	if n == 0 {
+		if run != nil {
+			sp.rows = []line{run}
+			if d.Review.State == "running" {
+				sp.rows = append(sp.rows, line{{"Read only. Findings appear here when the run ends.", lk.sub}})
+			} else {
+				sp.rows = append(sp.rows, line{{"r", lk.key}, spc(1), {"runs the review again", lk.sub}})
+			}
+			return sp
+		}
 		sp.rows = []line{{{ifs(threads, "No review thread on this MR.") + ifs(!threads, "No findings saved for this MR."), lk.sub}}}
 		if !threads {
-			sp.rows = append(sp.rows, line{{"s self-review writes them; h hands the MR to a repo session.", lk.sub}})
+			sp.rows = append(sp.rows, line{{"r", lk.key}, spc(1), {"starts a read-only review; h hands the MR to a repo session.", lk.sub}})
 		}
 		return sp
+	}
+	if run != nil {
+		sp.rows = append(sp.rows, run)
 	}
 	idx := mv.itemIdx(n)
 	var list []line
@@ -652,8 +704,9 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 	if len(list)+1+len(card)+len(foot) > slots && len(foot) > 1 {
 		foot = foot[len(foot)-1:]
 	}
+	off := len(sp.rows)
 	sp.rows = append(sp.rows, list...)
-	sp.sel = idx
+	sp.sel = off + idx
 	sp.rows = append(sp.rows, mv.divider(iw))
 	room := max(0, slots-len(sp.rows)-len(foot)-1)
 	if len(card) > room {
@@ -729,7 +782,11 @@ func (mv mrsView) cardRows(d *mrDetail, iw int) []line {
 		return nil
 	}
 	where := ifs(f.Path != "", f.Path+ifs(f.Line > 0, ":"+strconv.Itoa(f.Line))) + ifs(f.Path == "", "commit")
-	rows = append(rows, line{{fmt.Sprintf("Finding %d · %s", mv.itemIdx(len(d.Findings))+1, where), lk.head}})
+	head := line{{fmt.Sprintf("Finding %d · ", mv.itemIdx(len(d.Findings))+1), lk.head}}
+	if f.Severity != "" {
+		head = append(head, seg{f.Severity, severityStyle(lk, f.Severity)}, seg{" · ", lk.head})
+	}
+	rows = append(rows, append(head, seg{where, lk.head}))
 	for _, l := range wrapLines(f.Body, iw) {
 		rows = append(rows, line{{l, lk.sub}})
 	}
@@ -737,8 +794,34 @@ func (mv mrsView) cardRows(d *mrDetail, iw int) []line {
 	if f.Comment != "" {
 		rows = append(rows, nil, line{{"comment (FR)", lk.sub}})
 		rows = append(rows, mv.replyBlock(f.Comment, iw)...)
-		rows = append(rows, nil, mv.buttons(0, [2]string{"a", "accept"}, [2]string{"x", "refuse"}, [2]string{"e", "edit"}, [2]string{"c", "chat"}))
 	}
+	if f.Fix != "" {
+		rows = append(rows, nil, line{{"proposed fix", lk.sub}})
+		for _, l := range strings.Split(strings.TrimRight(f.Fix, "\n"), "\n") {
+			st := lk.plain
+			switch {
+			case strings.HasPrefix(l, "+"):
+				st = lk.ok
+			case strings.HasPrefix(l, "-"):
+				st = lk.bad
+			}
+			rows = append(rows, line{{fit(l, iw), st}})
+		}
+	}
+	if f.Note != "" && mv.typing == "" {
+		rows = append(rows, nil, line{{ifs(f.State == "chat", "chat note"), lk.cyan}, {ifs(f.State != "chat", "your edit"), lk.ok}})
+		rows = append(rows, mv.replyBlock(f.Note, iw)...)
+	}
+	if mv.typing != "" {
+		label := ifs(mv.typing == "e", "edit › ") + ifs(mv.typing == "c", "chat › ")
+		rows = append(rows, nil)
+		for i, l := range wrapLines(mv.input+"_", max(10, iw-len(label))) {
+			rows = append(rows, line{{ifs(i == 0, label) + ifs(i > 0, rep(" ", len(label))), lk.key}, {l, lk.plain}})
+		}
+		return rows
+	}
+	active := map[string]int{"accepted": 1, "refused": 2, "edited": 3, "chat": 4}[f.State] - 1
+	rows = append(rows, nil, mv.buttons(active, [2]string{"a", "accept"}, [2]string{"x", "refuse"}, [2]string{"e", "edit"}, [2]string{"c", "chat"}))
 	return rows
 }
 
@@ -769,7 +852,7 @@ func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
 	acc, pend, ref := 0, 0, 0
 	for _, f := range d.Findings {
 		switch f.State {
-		case "accepted":
+		case "accepted", "edited":
 			acc++
 		case "refused":
 			ref++
