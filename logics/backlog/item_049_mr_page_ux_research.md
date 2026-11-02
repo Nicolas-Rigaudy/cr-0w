@@ -1,10 +1,10 @@
 ## item_049_mr_page_ux_research - MR page UX research: review walkthrough patterns
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -31,9 +31,9 @@
 - AC3: It proposes the whose-move rule per MR (reviewer waiting on me, open threads, red pipeline, decisions pending, commit not pushed, draft, waiting for review/merge) and 2-3 badge options for item_050.
 
 # AC Traceability
-- request-AC1 -> stage display principles. Proof: research note.
-- request-AC2 -> whose-move rule. Proof: research note.
-- request-AC3 -> badge options. Proof: research note.
+- AC1 -> tool list with pattern and source link. Proof: `runbooks/tui-review-ux.md`, section "Tools" (9 tools).
+- AC2 -> 6-10 principles tied to req_013 pain points. Proof: `runbooks/tui-review-ux.md`, section "Principles for the deck MR page" (10 principles, P1-P7).
+- AC3 -> whose-move rule and badge options. Proof: `runbooks/tui-review-ux.md`, sections "Whose-move rule" and "Badge options for item_050" (3 options).
 
 # Decision framing
 - Product framing: Not needed
