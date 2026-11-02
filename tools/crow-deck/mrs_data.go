@@ -94,6 +94,7 @@ type mrFinding struct {
 	Applied         string    // apply run result: fixed, answered, skipped, failed ("" before any)
 	AppliedDetail   string    // what changed, or the answer to the chat note
 	AppliedFor      [2]string // the decision and note the apply run acted on
+	Posted          bool      // the comment went to the forge (peer review)
 }
 
 // toApply is true when the next apply run acts on this finding: a chat note in any mode,
@@ -107,6 +108,7 @@ func (f mrFinding) toApply(self bool) bool {
 type mrApply struct {
 	ID, State, Reason, Commit, Subject string
 	Warnings                           []string
+	Pushed                             bool // the commit went to the MR branch
 }
 
 // mrReview is the state of the review run behind the findings.
@@ -162,6 +164,9 @@ type rawDetail struct {
 			Detail string   `json:"detail"`
 			For    []string `json:"for"`
 		} `json:"apply"`
+		Posted *struct {
+			At string `json:"at"`
+		} `json:"posted"`
 	} `json:"findings"`
 	Review *struct {
 		ID        string `json:"id"`
@@ -177,6 +182,9 @@ type rawDetail struct {
 		Commit   string   `json:"commit"`
 		Subject  string   `json:"subject"`
 		Warnings []string `json:"warnings"`
+		Pushed   *struct {
+			Commit string `json:"commit"`
+		} `json:"pushed"`
 	} `json:"apply"`
 }
 
@@ -205,10 +213,12 @@ func mapDetail(raw rawDetail) *mrDetail {
 				mf.AppliedFor = [2]string{f.Apply.For[0], f.Apply.For[1]}
 			}
 		}
+		mf.Posted = f.Posted != nil
 		d.Findings = append(d.Findings, mf)
 	}
 	if ap := raw.Apply; ap != nil {
-		d.Apply = &mrApply{ID: ap.ID, State: ap.State, Reason: ap.Reason, Commit: ap.Commit, Subject: ap.Subject, Warnings: ap.Warnings}
+		d.Apply = &mrApply{ID: ap.ID, State: ap.State, Reason: ap.Reason, Commit: ap.Commit, Subject: ap.Subject, Warnings: ap.Warnings,
+			Pushed: ap.Pushed != nil && ap.Pushed.Commit == ap.Commit && ap.Commit != ""}
 	}
 	if rv := raw.Review; rv != nil {
 		d.Review = &mrReview{ID: rv.ID, State: rv.State, Reason: rv.Reason, Model: rv.Model, StartedAt: rv.StartedAt}

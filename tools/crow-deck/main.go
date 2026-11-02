@@ -44,6 +44,9 @@ type model struct {
 	mrToggle                      bool
 	mrTyping                      string // "e" edit or "c" chat on the current finding, "" when not typing
 	mrInput                       string
+	posts                         []postAction // pending push and post actions of the selected MR, one overlay each
+	postI                         int
+	posting                       bool // the shown action runs; keys wait for its answer
 
 	prjSel, prjPane int
 	prjZoom         bool
@@ -361,6 +364,31 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case actionMsg:
 		m.flash = msg.text
+	case postActionsMsg:
+		r := m.mrsView().cur()
+		switch {
+		case r == nil || r.key() != msg.key:
+		case msg.err != "":
+			m.flash = msg.err
+		case len(msg.acts) == 0:
+			m.flash = "nothing to push or post on " + r.Ref + ifs(reviewMode(r) == "self", ": A commits the decisions first") +
+				ifs(reviewMode(r) != "self", ": accept or edit a finding first")
+		default:
+			m.posts, m.postI, m.overlay = msg.acts, 0, ovPost
+		}
+	case postDoneMsg:
+		m.posting = false
+		m.flash = msg.text
+		if m.live != nil {
+			if e := m.live.details[msg.key]; e != nil {
+				e.at = time.Time{}
+			}
+		}
+		if msg.ok {
+			m.nextPost()
+		} else {
+			m.overlay, m.posts = ovNone, nil
+		}
 	case reviewStartedMsg:
 		m.flash = msg.text
 		if m.live != nil {
@@ -448,12 +476,22 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case ovPost:
+		if m.posting {
+			return m, nil
+		}
+		r := m.mrsView().cur()
 		switch k {
 		case "enter":
-			m.flash = "post is not wired: it stays behind the review skill and your OK"
-			m.overlay = ovNone
+			if r == nil || m.postI >= len(m.posts) {
+				m.overlay = ovNone
+				return m, nil
+			}
+			m.posting = true
+			return m, actCmd(*r, m.posts[m.postI])
+		case "s":
+			m.nextPost()
 		case "esc", "n", "q":
-			m.overlay = ovNone
+			m.overlay, m.posts = ovNone, nil
 		}
 		return m, nil
 	case ovPalette:
@@ -613,10 +651,14 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 	case "A":
 		m.applyKey()
 	case "P":
-		if mv.cur() == nil {
+		switch r := mv.cur(); {
+		case r == nil:
 			m.flash = "no MR selected"
-		} else {
-			m.overlay = ovPost
+		case m.live == nil:
+			m.flash = "mock deck: nothing is pushed or posted"
+		default:
+			m.flash = "listing what " + r.Ref + " has to push or post…"
+			return m, postActionsCmd(*r)
 		}
 	case "M":
 		m.flash = k + ": opening goes through the mr skill, not wired here"
@@ -634,6 +676,14 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// nextPost shows the next pending action, or closes the overlay after the last one.
+func (m *model) nextPost() {
+	m.postI++
+	if m.postI >= len(m.posts) {
+		m.overlay, m.posts = ovNone, nil
+	}
 }
 
 // applyKey opens the apply confirm when the review is done, nothing runs, and a decision waits.
@@ -883,7 +933,7 @@ func (m model) View() string {
 	case m.overlay == ovApply:
 		body = lk.applyOverlay(m.w, bh, m.mrsView().cur(), m.mrsView().detail())
 	case m.overlay == ovPost:
-		body = lk.postOverlay(m.w, bh, m.mrsView().cur())
+		body = lk.postOverlay(m.w, bh, m.posts, m.postI, m.posting)
 	case m.page == 0:
 		body = m.homeView().body(m.w, bh)
 	case m.page == 1 && m.hist:

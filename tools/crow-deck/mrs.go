@@ -594,7 +594,7 @@ func (mv mrsView) curThread(d *mrDetail) *mrThread {
 
 func stateStyle(lk *look, state string) lipgloss.Style {
 	switch state {
-	case "accepted", "resolved", "edited":
+	case "accepted", "resolved", "edited", "posted":
 		return lk.ok
 	case "refused":
 		return lk.sub
@@ -632,7 +632,7 @@ func (mv mrsView) applyLine(ap *mrApply) line {
 	if ap.Commit == "" {
 		return line{{"✓ applied", lk.ok}, {" · no code change", lk.sub}}
 	}
-	return line{{"✓ committed ", lk.ok}, {shortSHA(ap.Commit) + " " + ap.Subject + " · not pushed", lk.sub}}
+	return line{{"✓ committed ", lk.ok}, {shortSHA(ap.Commit) + " " + ap.Subject + ifs(ap.Pushed, " · pushed") + ifs(!ap.Pushed, " · not pushed"), lk.sub}}
 }
 
 func shortSHA(s string) string {
@@ -727,6 +727,9 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 		} else {
 			f := d.Findings[i]
 			title, state = f.Title, f.State
+			if f.Posted {
+				state = "posted"
+			}
 		}
 		g := seg{fmt.Sprintf("◆%d", i+1), stateStyle(lk, state)}
 		list = append(list, lr(line{g, spc(1), {title, lk.bold}}, line{{state, stateStyle(lk, state)}}, iw))
@@ -913,16 +916,34 @@ func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
 			todo++
 		}
 	}
-	next := fmt.Sprintf("post %d %s, mark reviewed", acc, plural(acc, "comment", "comments"))
-	if self {
+	unposted := 0
+	for _, f := range d.Findings {
+		if (f.State == "accepted" || f.State == "edited") && !f.Posted {
+			unposted++
+		}
+	}
+	next := fmt.Sprintf("post %d %s, mark reviewed", unposted, plural(unposted, "comment", "comments"))
+	switch ap := d.Apply; {
+	case !self:
+	case todo == 0 && ap != nil && ap.Commit != "" && !ap.Pushed:
+		next = "push " + shortSHA(ap.Commit)
+	case todo == 0 && ap != nil && ap.Pushed:
+		next = "pushed; ask a reviewer"
+	default:
 		next = "apply the decisions, then push"
 	}
 	end := lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {ifs(self, "push") + ifs(!self, "post") + ", after your OK", lk.sub}}, iw)
 	if todo > 0 && (d.Apply == nil || d.Apply.State != "running") {
 		end = lr(nil, line{{"A", lk.key.Bold(true)}, spc(1), {fmt.Sprintf("apply %d %s, commit locally", todo, plural(todo, "decision", "decisions")), lk.sub}}, iw)
 	}
+	sent := ifs(self, "nothing pushed yet") + ifs(!self, "nothing posted yet")
+	if self && d.Apply != nil && d.Apply.Pushed {
+		sent = "pushed"
+	} else if posted := acc - unposted; !self && posted > 0 {
+		sent = fmt.Sprintf("%d posted", posted)
+	}
 	return []line{
-		lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{ifs(self, "nothing pushed yet") + ifs(!self, "nothing posted yet"), lk.sub}}, iw),
+		lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{sent, lk.sub}}, iw),
 		line{{fmt.Sprintf("%d accepted", acc), lk.ok}, spc(2), {fmt.Sprintf("%d pending", pend), lk.warn}, spc(2), {fmt.Sprintf("%d refused", ref), lk.sub}, {ifs(chat > 0, fmt.Sprintf("  %d chat", chat)), lk.cyan}},
 		line{{"next", lk.sub}, spc(2), {next, lk.plain}},
 		end,

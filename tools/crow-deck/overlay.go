@@ -141,21 +141,63 @@ func (lk *look) confirmOverlay(w, h int, a *agentRow) []string {
 	return lk.overlayBlock(sp, w, h)
 }
 
-// postOverlay is the confirm drawn before a post or push. The deck never sends: enter is
-// shown disabled and the text says where it goes through.
-func (lk *look) postOverlay(w, h int, r *mrRow) []string {
-	sp := boxSpec{title: "Post", sel: -1}
-	ref := "this MR"
-	if r != nil {
-		ref = r.Ref + " " + r.Name
+// postOverlay shows one push or comment: its exact text and command. enter runs that one
+// action only, s skips it, esc stops. The text is never cut silently: a long one says so.
+func (lk *look) postOverlay(w, h int, acts []postAction, i int, running bool) []string {
+	sp := boxSpec{title: "Push and post", sel: -1}
+	if i >= len(acts) {
+		sp.rows = []line{{{"Nothing left to push or post.", lk.sub}}}
+		return lk.overlayBlock(sp, w, h)
 	}
-	sp.rows = []line{
-		{{"Post the accepted findings and replies on " + ref + "?", lk.plain}},
-		{{"Nothing leaves the deck yet.", lk.sub}},
-		nil,
-		{{"enter", lk.sub}, spc(1), {"post (not wired)", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"close", lk.sub}},
+	a, iw := acts[i], overlayWidth(w)-6
+	head := []line{{{fmt.Sprintf("%d/%d ", i+1, len(acts)), lk.sub}, {a.Title, lk.bold}}, nil}
+	cmd := []line{nil, {{"command", lk.sub}}}
+	for _, l := range wrapLines(shellLine(a.Cmd), iw) {
+		cmd = append(cmd, line{{l, lk.sub}})
 	}
+	var warn []line
+	for _, x := range a.Warnings {
+		for _, l := range wrapLines("! "+x, iw) {
+			warn = append(warn, line{{l, lk.warn}})
+		}
+	}
+	foot := line{{"enter", lk.key}, spc(1), {ifs(a.Kind == "push", "push") + ifs(a.Kind != "push", "post this comment"), lk.sub}, spc(2),
+		{"s", lk.key}, spc(1), {"skip", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"stop", lk.sub}}
+	if running {
+		foot = line{{"● running, wait for the answer", lk.warn}}
+	}
+	text := wrapLines(a.Text, iw)
+	room := max(1, h-2-len(head)-len(warn)-2) // box border, then the blank line and the footer
+	if len(text)+len(cmd) > room {
+		cmd = cmd[:min(len(cmd), max(2, room-len(text)))]
+	}
+	if keep := room - len(cmd); len(text) > keep {
+		text = append(text[:max(0, keep-1)], fmt.Sprintf("… %d more lines", len(text)-max(0, keep-1)))
+	}
+	sp.rows = head
+	for _, l := range text {
+		sp.rows = append(sp.rows, line{{l, lk.plain}})
+	}
+	sp.rows = append(append(append(sp.rows, cmd...), warn...), nil, foot)
 	return lk.overlayBlock(sp, w, h)
+}
+
+// shellLine prints a command the way a shell would read it; the body is the text shown above.
+func shellLine(cmd []string) string {
+	var out []string
+	for i, x := range cmd {
+		switch {
+		case strings.HasPrefix(x, "body="):
+			x = "body=<the text above>"
+		case i > 0 && cmd[i-1] == "--body":
+			x = "<the text above>"
+		}
+		if strings.ContainsAny(x, " '\"$[]{}<>") {
+			x = "'" + strings.ReplaceAll(x, "'", `'\''`) + "'"
+		}
+		out = append(out, x)
+	}
+	return strings.Join(out, " ")
 }
 
 // reviewOverlay confirms a read-only review run on the selected MR.

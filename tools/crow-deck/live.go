@@ -161,6 +161,54 @@ func applyCmd(r mrRow) tea.Cmd {
 	}
 }
 
+// postAction is one push or comment that leaves the machine, as crow-review-run actions lists it.
+type postAction struct {
+	ID       string   `json:"id"`
+	Kind     string   `json:"kind"`
+	Title    string   `json:"title"`
+	Text     string   `json:"text"`
+	Warnings []string `json:"warnings"`
+	Cmd      []string `json:"cmd"`
+	Hash     string   `json:"hash"`
+}
+
+// postActionsMsg carries the pending actions of one MR; postDoneMsg ends one of them.
+type postActionsMsg struct {
+	key  string
+	acts []postAction
+	err  string
+}
+
+type postDoneMsg struct {
+	key, text string
+	ok        bool
+}
+
+func postActionsCmd(r mrRow) tea.Cmd {
+	return func() tea.Msg {
+		out, err := runBin("crow-review-run", "actions", r.Repo, strconv.Itoa(r.Number))
+		if err != nil {
+			return postActionsMsg{key: r.key(), err: "cannot list the actions: " + firstLine(cmpOr(out, err.Error()))}
+		}
+		var acts []postAction
+		if err := json.Unmarshal([]byte(out), &acts); err != nil {
+			return postActionsMsg{key: r.key(), err: "cannot read the actions: " + err.Error()}
+		}
+		return postActionsMsg{key: r.key(), acts: acts}
+	}
+}
+
+// actCmd runs one action; the hash makes crow-review-run refuse it when it changed since shown.
+func actCmd(r mrRow, a postAction) tea.Cmd {
+	return func() tea.Msg {
+		out, err := runBin("crow-review-run", "act", r.Repo, strconv.Itoa(r.Number), a.ID, "--hash", a.Hash)
+		if err != nil {
+			return postDoneMsg{r.key(), a.ID + " failed: " + firstLine(cmpOr(out, err.Error())), false}
+		}
+		return postDoneMsg{r.key(), firstLine(cmpOr(out, a.ID+" done")), true}
+	}
+}
+
 // detailMsg is the diff and threads of one MR.
 type detailMsg struct {
 	key string

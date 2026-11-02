@@ -417,3 +417,83 @@ def test_dispatch_continue_run_pins_nothing_and_checks_the_worktree(tmp_path, mo
     monkeypatch.setattr(sys, "argv", ["crow-runs", "dispatch", "demo", "apply-1", "--prompt", "p", "--cwd", str(tmp_path)])
     with pytest.raises(SystemExit, match="worktree under"):
         cr.main()
+
+
+# ---------- push and post ----------
+
+def committed(rr, forge):
+    """A self review whose apply run committed in the worktree (simulated run)."""
+    def run(wt):
+        (wt / "a.py").write_text("x = 2  # paginated\n")
+        g(wt, "commit", "-qam", "fix[PY]: paginate the list call")
+        return "```json\n" + json.dumps({"context": "ok", "commit": g(wt, "rev-parse", "HEAD"), "subject": "fix[PY]: paginate the list call",
+                                          "results": [{"id": "f1", "status": "fixed", "detail": "ok"}]}) + "\n```"
+    return finish_apply(rr, forge, run)
+
+
+def test_self_push_shows_the_commit_and_runs_once(rr, forge):
+    doc = committed(rr, forge)
+    sha = doc["apply"]["commit"]
+    (a,) = rr.actions(doc)
+    assert a["id"] == "push" and a["text"] == "fix[PY]: paginate the list call"
+    assert a["cmd"] == ["git", "-C", doc["worktree"], "push", "origin", f"{sha}:refs/heads/feat"]
+    with pytest.raises(SystemExit, match="changed since it was shown"):
+        rr.act(REPO, 230, "push", "0" * 12)
+    assert g(forge.parent / "origin.git", "rev-parse", "feat") != sha
+    rr.act(REPO, 230, "push", a["hash"])  # the bare origin is a local folder: no network
+    assert g(forge.parent / "origin.git", "rev-parse", "feat") == sha
+    doc = rr.load(rr.findings_path(REPO, 230))
+    assert doc["apply"]["pushed"]["commit"] == sha and rr.actions(doc) == []
+    with pytest.raises(SystemExit, match="no longer pending"):
+        rr.act(REPO, 230, "push", a["hash"])
+
+
+def test_peer_post_one_comment_per_accepted_finding(rr, tmp_path):
+    doc = reviewed(rr, tmp_path, mode="peer", decisions=(("accepted", ""), ("edited", "Texte revu"), ("refused", ""), ("chat", "pourquoi")))
+    doc["findings"][1].pop("line")
+    rr.save(rr.findings_path(REPO, 230), doc)
+    acts = rr.actions(doc)
+    assert [a["id"] for a in acts] == ["post-f1", "post-f2"]
+    f1, f2 = acts
+    assert f1["text"] == doc["findings"][0]["comment"] and f2["text"] == "Texte revu"
+    assert f1["cmd"][4].endswith("/discussions") and "position[head_sha]={head_sha}" in f1["cmd"]
+    assert f2["cmd"][4].endswith("/notes") and f2["cmd"][-1] == "body=Texte revu"
+    calls = []
+
+    def call(cmd):
+        calls.append(cmd)
+        if cmd[:2] == ["glab", "api"] and "-X" not in cmd:
+            return json.dumps({"diff_refs": {"base_sha": "b" * 40, "start_sha": "s" * 40, "head_sha": "h" * 40}})
+        return json.dumps({"id": "d123"})
+    rr.act(REPO, 230, "post-f1", f1["hash"], call=call)
+    sent = calls[-1]
+    assert "position[head_sha]=" + "h" * 40 in sent and "body=" + f1["text"] in sent
+    assert len([c for c in calls if "-X" in c]) == 1
+    doc = rr.load(rr.findings_path(REPO, 230))
+    assert doc["findings"][0]["posted"]["ref"] == "d123"
+    assert [a["id"] for a in rr.actions(doc)] == ["post-f2"]
+
+
+def test_post_refuses_when_the_mr_moved_and_records_nothing_on_failure(rr, forge):
+    wt = rr.review_worktree(str(forge), 230, "feat")
+    reviewed(rr, wt, mode="peer", decisions=(("accepted", ""),))
+    (a,) = rr.actions(rr.load(rr.findings_path(REPO, 230)))
+    moved = lambda cmd: json.dumps({"diff_refs": {"base_sha": "b", "start_sha": "s", "head_sha": "f" * 40}})
+    with pytest.raises(SystemExit, match="MR moved since the review"):
+        rr.act(REPO, 230, a["id"], a["hash"], call=moved)
+    tip = g(wt, "rev-parse", "HEAD")
+
+    def broken(cmd):
+        if "-X" in cmd:
+            raise RuntimeError("403 Forbidden")
+        return json.dumps({"diff_refs": {"base_sha": "b", "start_sha": "s", "head_sha": tip}})
+    with pytest.raises(SystemExit, match="post-f1 failed: 403 Forbidden"):
+        rr.act(REPO, 230, a["id"], a["hash"], call=broken)
+    assert "posted" not in rr.load(rr.findings_path(REPO, 230))["findings"][0]
+
+
+def test_github_comments_use_the_pr_head(rr):
+    f = {"path": "b.go", "line": 4}
+    cmd = rr.post_cmd("github", "me/demo-tool", 12, f, "Renomme.")
+    assert cmd[:5] == ["gh", "api", "-X", "POST", "repos/me/demo-tool/pulls/12/comments"] and "commit_id={head_sha}" in cmd
+    assert rr.post_cmd("github", "me/demo-tool", 12, {}, "Ok.") == ["gh", "pr", "comment", "12", "-R", "me/demo-tool", "--body", "Ok."]

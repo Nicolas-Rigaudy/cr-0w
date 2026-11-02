@@ -6,6 +6,8 @@
   crow-review-run sync REPO NUMBER       fold a finished run into the findings file (no-op otherwise)
   crow-review-run show REPO NUMBER       the findings file, synced first
   crow-review-run decide REPO NUMBER ID STATE [--note TEXT]   record the owner's decision on one finding
+  crow-review-run actions REPO NUMBER    pending push and post actions, each with its exact text, command and hash
+  crow-review-run act REPO NUMBER ID --hash H   run that one action (refused when it changed since shown)
   crow-review-run check FILE             validate a findings file against the schema (exit 1 on errors)
 
 REPO is the registry remote (group/name), NUMBER the MR or PR number. The findings file is
@@ -19,10 +21,15 @@ the file. Nothing is posted, pushed or committed.
 With --branch, the run works in a worktree <repo path>.wt/review-<number> detached on the MR's source
 branch. apply resumes that conversation (cdx --continue-run) in the same worktree with write rights:
 it fixes accepted and edited findings (self mode), answers chat notes, commits locally and never pushes.
+
+actions and act are the only commands that leave the machine. Self mode: one push of the apply commit
+to the MR branch (fast-forward only). Peer mode: one comment per accepted or edited finding, on its
+diff line when it has one. act runs exactly the command actions showed, one action per call.
 """
-import argparse, json, os, re, subprocess, sys
+import argparse, hashlib, json, os, pwd, re, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import quote
 
 import yaml
 
@@ -574,6 +581,114 @@ def decide(repo, number, fid, state, note=""):
     return f
 
 
+# ---------- push and post ----------
+# cdx remaps HOME; git, glab and gh keep their login and keys in the real one.
+REAL_ENV = {**os.environ, "HOME": pwd.getpwuid(os.getuid()).pw_dir}
+REF = re.compile(r"=\{(base|start|head)_sha\}$")
+
+
+def forge_call(cmd):
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=REAL_ENV)
+    if r.returncode:
+        msg = (r.stderr or r.stdout).strip().splitlines()
+        raise RuntimeError(msg[-1] if msg else f"exit {r.returncode}")
+    return r.stdout
+
+
+def comment_text(f):
+    return str((f.get("note") if f.get("state") == "edited" else f.get("comment")) or "").strip()
+
+
+def post_cmd(forge, repo, number, f, text):
+    """The forge command for one finding: a diff-line comment when it has path and line, else a note."""
+    path, ln = f.get("path"), f.get("line")
+    if forge == "github":
+        if path and ln:
+            return ["gh", "api", "-X", "POST", f"repos/{repo}/pulls/{number}/comments", "-f", f"body={text}",
+                    "-f", "commit_id={head_sha}", "-f", f"path={path}", "-F", f"line={ln}", "-f", "side=RIGHT"]
+        return ["gh", "pr", "comment", str(number), "-R", repo, "--body", text]
+    base = f"projects/{quote(repo, safe='')}/merge_requests/{number}"
+    if path and ln:
+        return ["glab", "api", "-X", "POST", f"{base}/discussions", "-f", f"body={text}", "-f", "position[position_type]=text",
+                "-f", "position[base_sha]={base_sha}", "-f", "position[start_sha]={start_sha}", "-f", "position[head_sha]={head_sha}",
+                "-f", f"position[old_path]={path}", "-f", f"position[new_path]={path}", "-F", f"position[new_line]={ln}"]
+    return ["glab", "api", "-X", "POST", f"{base}/notes", "-f", f"body={text}"]
+
+
+def actions(doc):
+    """What is left to push or post, each with its exact text and command. The hash pins both."""
+    acts = []
+    ap = doc.get("apply") or {}
+    if doc.get("mode") == "self":
+        sha = ap.get("commit") or ""
+        if ap.get("state") == "done" and sha and doc.get("branch") and doc.get("worktree") \
+                and (ap.get("pushed") or {}).get("commit") != sha:
+            acts.append({"id": "push", "kind": "push", "title": f"Push {sha[:8]} to origin/{doc['branch']}",
+                         "text": ap.get("subject") or "", "warnings": ap.get("warnings") or [],
+                         "cmd": ["git", "-C", doc["worktree"], "push", "origin", f"{sha}:refs/heads/{doc['branch']}"]})
+    else:
+        forge = project_of(doc["repo"]).get("forge") or "gitlab"
+        for f in doc.get("findings") or []:
+            text = comment_text(f)
+            if f.get("state") not in ("accepted", "edited") or f.get("posted") or not text:
+                continue
+            where = f"{f['path']}:{f['line']}" if f.get("path") and f.get("line") else doc["repo"] + f" !{doc['number']}"
+            acts.append({"id": f"post-{f['id']}", "kind": "comment", "title": f"Comment {f['id']} on {where}",
+                         "text": text, "warnings": [], "cmd": post_cmd(forge, doc["repo"], doc["number"], f, text)})
+    for a in acts:
+        a["hash"] = hashlib.sha256(json.dumps([a["cmd"], a["text"]], ensure_ascii=False).encode()).hexdigest()[:12]
+    return acts
+
+
+def diff_refs(forge, repo, number, call):
+    if forge == "github":
+        return {"head": json.loads(call(["gh", "pr", "view", str(number), "-R", repo, "--json", "headRefOid"]))["headRefOid"]}
+    d = json.loads(call(["glab", "api", f"projects/{quote(repo, safe='')}/merge_requests/{number}"]))["diff_refs"]
+    return {"base": d["base_sha"], "start": d["start_sha"], "head": d["head_sha"]}
+
+
+def act(repo, number, aid, expect, call=None):
+    """Run one action from `actions`, only if it is unchanged since it was shown, and record it."""
+    call = call or forge_call
+    path = findings_path(repo, number)
+    doc = sync(repo, number)
+    if not isinstance(doc, dict):
+        sys.exit(f"crow-review-run: no findings file for {repo} !{number}")
+    a = next((a for a in actions(doc) if a["id"] == aid), None)
+    if a is None:
+        sys.exit(f"crow-review-run: {aid} is no longer pending on {repo} !{number}")
+    if a["hash"] != expect:
+        sys.exit(f"crow-review-run: {aid} changed since it was shown; P shows it again")
+    cmd = a["cmd"]
+    try:
+        if any(REF.search(x) for x in cmd):
+            refs = diff_refs(project_of(repo).get("forge") or "gitlab", repo, number, call)
+            wt = doc.get("worktree")
+            tip = sh("git", "rev-parse", "HEAD", cwd=wt) if wt and Path(wt).is_dir() else ""
+            if tip and refs["head"] != tip:
+                sys.exit(f"crow-review-run: the MR moved since the review ({refs['head'][:8]}, reviewed {tip[:8]}); "
+                         "r reviews it again before posting")
+            cmd = [x if x.startswith("body=") else REF.sub(lambda m: "=" + refs[m.group(1)], x) for x in cmd]
+        out = call(cmd)
+    except (RuntimeError, KeyError, ValueError) as e:
+        sys.exit(f"crow-review-run: {aid} failed: {e}")
+    doc = load(path)
+    if a["kind"] == "push":
+        doc["apply"]["pushed"] = {"commit": doc["apply"]["commit"], "at": now()}
+        msg = f"pushed {doc['apply']['commit'][:8]} to origin/{doc['branch']}"
+    else:
+        f = next(f for f in doc["findings"] if f"post-{f['id']}" == aid)
+        try:
+            ref = str((json.loads(out) or {}).get("id") or "")
+        except (ValueError, AttributeError):
+            ref = (out or "").strip().splitlines()[-1][:200] if (out or "").strip() else ""
+        f["posted"] = {"at": now(), "text": a["text"], "ref": ref}
+        msg = f"posted {f['id']} on {a['title'].split(' on ', 1)[-1]}"
+    save(path, doc)
+    print(msg)
+    return doc
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="crow-review-run")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -584,10 +699,13 @@ def main(argv=None):
     s.add_argument("--model", default=DEFAULT_MODEL)
     s.add_argument("--power", default="medium")
     s.add_argument("--force", action="store_true")
-    for name in ("sync", "show", "apply"):
+    for name in ("sync", "show", "apply", "actions"):
         x = sub.add_parser(name)
         x.add_argument("repo"); x.add_argument("number", type=lambda v: int(v.lstrip("!#")))
     sub.add_parser("check").add_argument("file")
+    ac = sub.add_parser("act")
+    ac.add_argument("repo"); ac.add_argument("number", type=lambda v: int(v.lstrip("!#")))
+    ac.add_argument("id"); ac.add_argument("--hash", required=True)
     dc = sub.add_parser("decide")
     dc.add_argument("repo"); dc.add_argument("number", type=lambda v: int(v.lstrip("!#")))
     dc.add_argument("id"); dc.add_argument("state", choices=STATES)
@@ -597,6 +715,11 @@ def main(argv=None):
         start(a)
     elif a.cmd == "apply":
         apply(a.repo, a.number)
+    elif a.cmd == "actions":
+        doc = sync(a.repo, a.number)
+        json.dump(actions(doc) if isinstance(doc, dict) else [], sys.stdout, indent=1, ensure_ascii=False); print()
+    elif a.cmd == "act":
+        act(a.repo, a.number, a.id, a.hash)
     elif a.cmd in ("sync", "show"):
         doc = sync(a.repo, a.number)
         if a.cmd == "show":
