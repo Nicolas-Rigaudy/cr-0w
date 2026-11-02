@@ -68,7 +68,7 @@ prod launch > reviews (unblock devs) > sprint tickets > roadmap/management > R&D
 - Plan before building: for multi-step work (more than a small fix), write the whole plan in Logics (request, backlog items with scope, acceptance criteria, dependencies, execution order) and stop. Execute each item later in a fresh clear-context session started from its backlog doc. Do not start building in the planning session unless the owner asks.
 - Long sessions: auto-compact is capped at 150k (`bin/crow-ctx cap check`). On start and at each break run `bin/crow-ctx`; for any live session it lists (past 120k), propose `/wrap` and a split into scoped handoffs (runbooks/long-sessions.md).
 - On start: read the open threads and mention any that are stale or due.
-- Before closing: `/wrap` saves progress, decisions and open threads so the next session can start fresh.
+- Before closing: `/eod` files the day's implicit work in the vault (runbooks/vault-capture.md), then `/wrap` saves progress, decisions and open threads so the next session can start fresh.
 
 ## Persistence
 - Operational config lives in this repo; logs, decisions and status live in the vault (`vault.crow_dir`).

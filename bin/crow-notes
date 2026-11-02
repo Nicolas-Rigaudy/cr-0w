@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Vault notes of the last days as compact JSON: the input for every recap.
+
+Usage: crow-notes [--since YYYY-MM-DD|yesterday|Nd]   (default 7d)
+
+Per day: Capture, Meetings & notes and End of day lines (template filler and
+habit buttons skipped). Plus notes added to 00 Inbox and notes modified under
+10 Work, each with its first lines. No model, read only.
+"""
+import argparse
+import datetime as dt
+import json
+import re
+import sys
+from pathlib import Path
+
+from crow_vault import (CAPTURE, DAILY_DIR, EOD, INBOX, MEETINGS, WORK,
+                        section_bounds, vault_path)
+
+EMPTY = re.compile(r"^\s*-\s*(\*\*[^*]+:\*\*)?\s*$")
+MAX_LINE = 240
+PEEK = 3
+
+
+def parse_since(value):
+    today = dt.date.today()
+    if value == "yesterday":
+        return today - dt.timedelta(days=3 if today.weekday() == 0 else 1)
+    if value.endswith("d") and value[:-1].isdigit():
+        return today - dt.timedelta(days=int(value[:-1]))
+    return dt.date.fromisoformat(value)
+
+
+def clip(line):
+    line = line.strip()
+    return line if len(line) <= MAX_LINE else line[:MAX_LINE - 1] + "…"
+
+
+def section_lines(lines, heading):
+    bounds = section_bounds(lines, heading)
+    if bounds is None:
+        return []
+    return [clip(l) for l in lines[bounds[0]:bounds[1]]
+            if l.strip() and not EMPTY.match(l) and not l.startswith("```")
+            and not l.lstrip().startswith(("await ", "> "))]
+
+
+def daily_notes(vault, since, today):
+    out = {}
+    folder = vault / DAILY_DIR
+    if not folder.is_dir():
+        return out
+    for path in sorted(folder.glob("*.md")):
+        try:
+            day = dt.date.fromisoformat(path.stem)
+        except ValueError:
+            continue
+        if not since <= day <= today:
+            continue
+        lines = path.read_text().split("\n")
+        entry = {k: v for k, v in (("capture", section_lines(lines, CAPTURE)),
+                                   ("meetings", section_lines(lines, MEETINGS)),
+                                   ("eod", section_lines(lines, EOD))) if v}
+        if entry:
+            out[day.isoformat()] = entry
+    return out
+
+
+def first_lines(path):
+    lines = [l for l in path.read_text().split("\n")]
+    if lines and lines[0].strip() == "---":
+        try:
+            lines = lines[lines.index("---", 1) + 1:]
+        except ValueError:
+            pass
+    body = [clip(l) for l in lines if l.strip() and not l.startswith("#")]
+    return body[:PEEK]
+
+
+def touched(vault, folder, since, recursive):
+    root = vault / folder
+    if not root.is_dir():
+        return []
+    cutoff = dt.datetime.combine(since, dt.time.min).timestamp()
+    files = root.rglob("*.md") if recursive else root.glob("*.md")
+    rows = []
+    for p in files:
+        if p.stat().st_mtime >= cutoff:
+            rows.append({"note": str(p.relative_to(vault)),
+                         "modified": dt.date.fromtimestamp(p.stat().st_mtime).isoformat(),
+                         "head": first_lines(p)})
+    return sorted(rows, key=lambda r: r["modified"], reverse=True)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--since", default="7d")
+    args = ap.parse_args()
+    vault = vault_path()
+    if vault is None or not vault.is_dir():
+        sys.exit("crow-notes: vault.path is not set or missing")
+    today = dt.date.today()
+    since = parse_since(args.since)
+    result = {"since": since.isoformat(),
+              "days": daily_notes(vault, since, today),
+              "inbox": touched(vault, INBOX, since, False),
+              "work": touched(vault, WORK, since, True)}
+    json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
+    print()
+
+
+if __name__ == "__main__":
+    main()

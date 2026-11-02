@@ -26,6 +26,8 @@
 # Data
 #   crow usage [--json]  token usage, cost and limits across cdx accounts (see crow-usage)
 #   crow activity [...]  raw activity (see crow-activity --help)
+#   crow note "text #tag"  one-line timestamped capture into today's daily note (no model)
+#   crow notes [--since 7d]  vault notes of the last days as compact JSON (recap input)
 #   crow projects [...]  release tracks: roadmap progress toward public releases
 #   crow doctor [--json] identity, accounts, stale worktrees (read only)
 #
@@ -141,6 +143,8 @@ for p in yaml.safe_load(open('$REGISTRY'))['projects']:
   relaunch) hint "crow relaunch" "crow runs relaunch"; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
   usage)    exec "$CROW_HOME/bin/crow-usage" "$@" ;;
   activity) exec "$CROW_HOME/bin/crow-activity" "$@" ;;
+note) exec "$CROW_HOME/bin/crow-note" "$@" ;;
+notes) exec "$CROW_HOME/bin/crow-notes" "$@" ;;
   projects) exec "$CROW_HOME/bin/crow-releases" "$@" ;;
   releases) hint "crow releases" "crow projects"; exec "$CROW_HOME/bin/crow-releases" "$@" ;;
   doctor)   exec "$CROW_HOME/bin/crow-doctor" "$@" ;;

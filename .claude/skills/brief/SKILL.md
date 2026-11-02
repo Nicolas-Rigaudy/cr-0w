@@ -5,7 +5,7 @@ context: fork
 model: sonnet
 effort: low
 background: false
-allowed-tools: Bash(bin/crow-activity:*) Bash(bin/crow-releases:*) Bash(bin/crow-tidy:*) Bash(bin/crow-ctx:*) Bash(bin/crow-retro:*) Bash(cdx runs:*) Bash(cdx status:*) Bash(logics-manager fleet:*)
+allowed-tools: Bash(bin/crow-activity:*) Bash(bin/crow-releases:*) Bash(bin/crow-tidy:*) Bash(bin/crow-ctx:*) Bash(bin/crow-notes:*) Bash(bin/crow-retro:*) Bash(cdx runs:*) Bash(cdx status:*) Bash(logics-manager fleet:*)
 ---
 
 # Brief
@@ -15,6 +15,9 @@ Runs in its own context (no conversation history): everything needed is gathered
 ## Pre-gathered
 Forge activity since yesterday:
 !`"${CLAUDE_PROJECT_DIR}/bin/crow-activity" --since yesterday 2>&1 | head -150 || true`
+
+Vault notes, last 3 days (owner's own captures; see `runbooks/vault-capture.md`):
+!`"${CLAUDE_PROJECT_DIR}/bin/crow-notes" --since 3d 2>&1 | head -80 || true`
 
 Release tracks:
 !`"${CLAUDE_PROJECT_DIR}/bin/crow-releases" 2>&1 | head -40 || true`
@@ -50,6 +53,7 @@ Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**
    **Logics next moves**: from the fleet list above, only moves that unblock work (blocked docs, a task at 100% in a repo in delivery); skip pure closeout chores unless nothing else is open.
 7. **Retros**: report files in `local/state/retros/` dated since the last brief (one line each: project, what was applied), unchecked `- [ ]` lines in `local/state/retros/proposals.md`, and `bin/crow-retro status` for failures.
 8. **Mail + calendar**: only if Microsoft 365 tools are available in this session. Today's meetings, and unread mail that needs a reply. If unavailable, print one line saying so and move on.
+9. **Owner notes**: from the vault notes above, mention anything that changes the day (a #blocage, a #decision, a note for tomorrow) in one line each. Then pick at most three live topics (open threads, sprint tickets, release tracks) with no trace in the notes or activity for 3 days and ask them in one `AskUserQuestion` call, only in the main session; file answers with `bin/crow-note ... --section capture`. Nothing stale, nothing asked.
 
 Skip any source that errors and note it in one line at the bottom.
 

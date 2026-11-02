@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Append one timestamped line to today's daily note, no model call.
+
+Usage: crow-note "text #tag" [--section capture|meetings|eod] [--date YYYY-MM-DD]
+
+Creates the daily from the vault's template when missing. Only the target
+section changes. An empty bullet ("- ") in the section is filled first.
+"""
+import argparse
+import datetime as dt
+import sys
+
+from crow_vault import SECTIONS, TEMPLATE, daily_path, render_template, section_bounds, vault_path
+
+
+def add_line(vault, day, entry, section):
+    path = daily_path(vault, day)
+    if path.exists():
+        text = path.read_text()
+    else:
+        tpl = vault / TEMPLATE
+        if not tpl.exists():
+            raise SystemExit(f"crow-note: no daily at {path} and no template at {tpl}")
+        text = render_template(tpl.read_text(), day)
+        path.parent.mkdir(parents=True, exist_ok=True)
+    lines = text.split("\n")
+    heading = SECTIONS[section]
+    bounds = section_bounds(lines, heading)
+    if bounds is None:
+        raise SystemExit(f"crow-note: no '## {heading}' section in {path}")
+    start, end = bounds
+    body = lines[start:end]
+    last = max((i for i, l in enumerate(body) if l.strip() and l.strip() != "-"), default=None)
+    new = f"- {entry}"
+    blanks = [i for i, l in enumerate(body) if l.strip() == "-"]
+    if blanks and (last is None or blanks[0] > last):
+        lines[start + blanks[0]] = new
+    else:
+        at = start + (last + 1 if last is not None else 0)
+        lines.insert(at, new)
+    path.write_text("\n".join(lines))
+    return path
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("text", nargs="+")
+    ap.add_argument("--section", choices=sorted(SECTIONS), default="capture")
+    ap.add_argument("--date", default=None)
+    args = ap.parse_args()
+    vault = vault_path()
+    if vault is None or not vault.is_dir():
+        sys.exit("crow-note: vault.path is not set or missing")
+    day = dt.date.fromisoformat(args.date) if args.date else dt.date.today()
+    stamp = dt.datetime.now().strftime("%H:%M")
+    path = add_line(vault, day, f"{stamp} {' '.join(args.text)}", args.section)
+    print(f"noted in {path}")
+
+
+if __name__ == "__main__":
+    main()
