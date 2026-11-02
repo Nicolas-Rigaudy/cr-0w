@@ -225,7 +225,7 @@ def main():
     log = (night / "log.md").read_text() if (night / "log.md").exists() else ""
     t0, t1 = ts(S["start"]), ts(S["end"])
 
-    cdx = {r["run_id"][:8]: r for r in (sh_json(["cdx", "runs", "--since", "3d", "--limit", "300", "--json"]) or {}).get("runs", [])}
+    cdx = {r["run_id"][:8]: r for r in (sh_json(["cdx", "runs", "--since", S["start"][:10], "--limit", "300", "--json"]) or {}).get("runs", [])}
     usage = sh_json([str(CROW / "bin/crow-usage"), "--json"], timeout=300) or {}  # main checkout copy: same data, its own environment
     cost_by_session = {s["id"]: s.get("cost_usd") or 0 for s in usage.get("sessions", [])}
     samples = []

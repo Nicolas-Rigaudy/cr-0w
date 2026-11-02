@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crow-runs: dispatch background runs and see what every agent is doing.
 
-  crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--power P]
+  crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--power P] [--model M]
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
   crow-runs json                                     same data as JSON (for widgets)
   crow-runs report <run_id>                          final report of a finished run
@@ -471,9 +471,9 @@ def dispatch(a):
         f = pre / f"{a.project}-{a.label}.md".replace("/", "_")
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
-    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", cwd, *src, "--power", a.power,
+    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", cwd, *src, "--power", a.power, *(["--model", a.model] if a.model else []),
              "--permission", crow_lib.permission(provider), "--detach", "--json",
-             "--label", f"{p['name']}/{a.label}", "--max-parallel", str(0 if a.force else MAX_PARALLEL)],
+             "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])],
              capture_output=True, text=True).stdout.strip()
     try:
         res = json.loads(out)
@@ -488,7 +488,7 @@ def dispatch(a):
         "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "start_sha": sh("git", "rev-parse", "HEAD", cwd=cwd),
         "branch": sh("git", "branch", "--show-current", cwd=cwd),
-        "prompt_file": a.prompt_file, "power": a.power,
+        "prompt_file": a.prompt_file, "power": a.power, "model": a.model,
     }
     if a.resumes:
         rec["resumes"] = next((r["run_id"] for r in ledger() if r["run_id"].startswith(a.resumes)), a.resumes)
@@ -576,6 +576,7 @@ def main():
     g = d.add_mutually_exclusive_group(required=True)
     g.add_argument("--prompt-file"); g.add_argument("--prompt")
     d.add_argument("--power", default="medium")
+    d.add_argument("--model", help="model for this run (opus, sonnet); default is the account model")
     d.add_argument("--force", action="store_true")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     sub.add_parser("report").add_argument("run_id")
