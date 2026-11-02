@@ -89,8 +89,24 @@ type mrFinding struct {
 	Seen            int
 	Comment         string
 	Fix             string
-	State           string // pending, accepted, refused, edited, chat
-	Note            string // the owner's edited comment or chat note
+	State           string    // pending, accepted, refused, edited, chat
+	Note            string    // the owner's edited comment or chat note
+	Applied         string    // apply run result: fixed, answered, skipped, failed ("" before any)
+	AppliedDetail   string    // what changed, or the answer to the chat note
+	AppliedFor      [2]string // the decision and note the apply run acted on
+}
+
+// toApply is true when the next apply run acts on this finding: a chat note in any mode,
+// an accepted or edited finding on the owner's own MR, not already handled for the same decision.
+func (f mrFinding) toApply(self bool) bool {
+	ok := f.State == "chat" || (self && (f.State == "accepted" || f.State == "edited"))
+	return ok && f.AppliedFor != [2]string{f.State, f.Note}
+}
+
+// mrApply is the apply run that resumes the review session (commit local, never pushed).
+type mrApply struct {
+	ID, State, Reason, Commit, Subject string
+	Warnings                           []string
 }
 
 // mrReview is the state of the review run behind the findings.
@@ -103,6 +119,7 @@ type mrDetail struct {
 	Threads  []mrThread
 	Findings []mrFinding
 	Review   *mrReview
+	Apply    *mrApply
 }
 
 // ----- fetching -----
@@ -140,6 +157,11 @@ type rawDetail struct {
 		Fix      string `json:"fix"`
 		State    string `json:"state"`
 		Note     string `json:"note"`
+		Apply    *struct {
+			Status string   `json:"status"`
+			Detail string   `json:"detail"`
+			For    []string `json:"for"`
+		} `json:"apply"`
 	} `json:"findings"`
 	Review *struct {
 		ID        string `json:"id"`
@@ -148,6 +170,14 @@ type rawDetail struct {
 		Model     string `json:"model"`
 		StartedAt string `json:"started_at"`
 	} `json:"review"`
+	Apply *struct {
+		ID       string   `json:"id"`
+		State    string   `json:"state"`
+		Reason   string   `json:"reason"`
+		Commit   string   `json:"commit"`
+		Subject  string   `json:"subject"`
+		Warnings []string `json:"warnings"`
+	} `json:"apply"`
 }
 
 func fetchMRDetail(r mrRow) (*mrDetail, error) {
@@ -167,8 +197,18 @@ func mapDetail(raw rawDetail) *mrDetail {
 		d.Threads = append(d.Threads, mrThread{Author: t.Author, At: t.At, Path: t.Path, Line: t.Line, Body: strings.TrimSpace(t.Body), Resolved: t.Resolved})
 	}
 	for _, f := range raw.Findings {
-		d.Findings = append(d.Findings, mrFinding{ID: f.ID, Title: f.Title, Severity: f.Severity, Path: f.Path, Line: f.Line, Body: f.Body,
-			Pattern: f.Pattern, Seen: f.Seen, Comment: f.Comment, Fix: f.Fix, State: cmpOr(f.State, "pending"), Note: f.Note})
+		mf := mrFinding{ID: f.ID, Title: f.Title, Severity: f.Severity, Path: f.Path, Line: f.Line, Body: f.Body,
+			Pattern: f.Pattern, Seen: f.Seen, Comment: f.Comment, Fix: f.Fix, State: cmpOr(f.State, "pending"), Note: f.Note}
+		if f.Apply != nil {
+			mf.Applied, mf.AppliedDetail = f.Apply.Status, f.Apply.Detail
+			if len(f.Apply.For) == 2 {
+				mf.AppliedFor = [2]string{f.Apply.For[0], f.Apply.For[1]}
+			}
+		}
+		d.Findings = append(d.Findings, mf)
+	}
+	if ap := raw.Apply; ap != nil {
+		d.Apply = &mrApply{ID: ap.ID, State: ap.State, Reason: ap.Reason, Commit: ap.Commit, Subject: ap.Subject, Warnings: ap.Warnings}
 	}
 	if rv := raw.Review; rv != nil {
 		d.Review = &mrReview{ID: rv.ID, State: rv.State, Reason: rv.Reason, Model: rv.Model, StartedAt: rv.StartedAt}

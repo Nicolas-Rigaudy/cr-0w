@@ -138,11 +138,26 @@ type reviewStartedMsg struct {
 
 func reviewCmd(r mrRow) tea.Cmd {
 	return func() tea.Msg {
-		out, err := runBin("crow-review-run", "start", r.Repo, strconv.Itoa(r.Number), "--mode", reviewMode(&r))
+		args := []string{"start", r.Repo, strconv.Itoa(r.Number), "--mode", reviewMode(&r)}
+		if r.Branch != "" {
+			args = append(args, "--branch", r.Branch)
+		}
+		out, err := runBin("crow-review-run", args...)
 		if err != nil {
 			return reviewStartedMsg{r.key(), "review failed to start: " + firstLine(cmpOr(out, err.Error()))}
 		}
 		return reviewStartedMsg{r.key(), "review started on " + r.Ref + ", findings appear here when it ends"}
+	}
+}
+
+// applyCmd resumes the review session to act on the decisions; the answer refetches the detail.
+func applyCmd(r mrRow) tea.Cmd {
+	return func() tea.Msg {
+		out, err := runBin("crow-review-run", "apply", r.Repo, strconv.Itoa(r.Number))
+		if err != nil {
+			return reviewStartedMsg{r.key(), "apply failed to start: " + firstLine(cmpOr(out, err.Error()))}
+		}
+		return reviewStartedMsg{r.key(), "apply started on " + r.Ref + ", it commits locally and pushes nothing"}
 	}
 }
 

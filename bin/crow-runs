@@ -459,6 +459,10 @@ def dispatch(a):
         sys.exit(1)
     p = project(a.project)
     cwd = p["path"]
+    if a.cwd:  # a worktree of the project (<path>.wt/...), never another folder
+        cwd = os.path.realpath(a.cwd)
+        if not cwd.startswith(os.path.realpath(p["path"]) + ".wt/") or not os.path.isdir(cwd):
+            sys.exit(f"crow: --cwd must be an existing worktree under {p['path']}.wt/")
     runs = running_runs()
     # A review run cannot write, so it may share the folder with another run.
     if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
@@ -472,7 +476,9 @@ def dispatch(a):
         f = pre / f"{a.project}-{a.label}.md".replace("/", "_")
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
-    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", cwd, *src, "--power", a.power, *(["--model", a.model] if a.model else []),
+    # --continue-run pins the parent's model and effort: cdx refuses any other value.
+    pins = ["--continue-run", a.continue_run] if a.continue_run else ["--power", a.power, *(["--model", a.model] if a.model else [])]
+    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", cwd, *src, *pins,
              "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
              "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])],
              capture_output=True, text=True).stdout.strip()
@@ -483,7 +489,9 @@ def dispatch(a):
     if not res.get("ok"):
         if "too_many_runs" in out:
             sys.exit(f"crow: {MAX_PARALLEL} runs already running; --force to override")
-        sys.exit(f"crow: dispatch failed: {res.get('error')}")
+        err = res.get("error")
+        sys.exit(f"crow: dispatch failed: {err.get('code', '') + ': ' if isinstance(err, dict) and err.get('code') else ''}"
+                 f"{err.get('message') if isinstance(err, dict) else err}")
     rec = {
         "run_id": res["run_id"], "project": p["name"], "label": a.label, "cwd": cwd,
         "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -491,6 +499,8 @@ def dispatch(a):
         "branch": sh("git", "branch", "--show-current", cwd=cwd),
         "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
     }
+    if a.continue_run:
+        rec["continues"] = a.continue_run
     if a.resumes:
         rec["resumes"] = next((r["run_id"] for r in ledger() if r["run_id"].startswith(a.resumes)), a.resumes)
     STATE.mkdir(parents=True, exist_ok=True)
@@ -581,6 +591,8 @@ def main():
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
+    d.add_argument("--cwd", help="run in this worktree of the project (<path>.wt/...) instead of the main checkout")
+    d.add_argument("--continue-run", metavar="RUN_ID", help="resume that finished run's conversation (cdx --continue-run; its model and effort)")
     sub.add_parser("report").add_argument("run_id")
     fp = sub.add_parser("final")
     fp.add_argument("stdout_path")

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """crow-review-run: review one MR in a read-only background run and keep its findings as JSON.
 
-  crow-review-run start REPO NUMBER [--mode peer|self] [--model M] [--power P] [--force]
+  crow-review-run start REPO NUMBER [--branch B] [--mode peer|self] [--model M] [--power P] [--force]
+  crow-review-run apply REPO NUMBER      resume the review session to apply the decisions (commit locally)
   crow-review-run sync REPO NUMBER       fold a finished run into the findings file (no-op otherwise)
   crow-review-run show REPO NUMBER       the findings file, synced first
   crow-review-run decide REPO NUMBER ID STATE [--note TEXT]   record the owner's decision on one finding
@@ -14,6 +15,10 @@ start writes a context bundle (MR threads, diff, review ledgers) under the repo'
 dispatches `crow-runs dispatch --permission review` (Claude plan mode: no edits, no writes). The run
 prints its findings as one JSON object in its final message; sync parses it, validates it and writes
 the file. Nothing is posted, pushed or committed.
+
+With --branch, the run works in a worktree <repo path>.wt/review-<number> detached on the MR's source
+branch. apply resumes that conversation (cdx --continue-run) in the same worktree with write rights:
+it fixes accepted and edited findings (self mode), answers chat notes, commits locally and never pushes.
 """
 import argparse, json, os, re, subprocess, sys
 from datetime import datetime, timezone
@@ -28,6 +33,7 @@ SCHEMA = 1
 SEVERITIES = ("blocking", "suggestion", "nit", "question")
 STATES = ("pending", "accepted", "refused", "edited", "chat")
 RUN_STATES = ("running", "done", "failed")
+APPLY_STATUSES = ("fixed", "answered", "skipped", "failed")
 DEFAULT_MODEL = "opus"
 
 
@@ -110,6 +116,12 @@ def validate_file(doc):
         errs.append(f"run.state: one of {', '.join(RUN_STATES)}")
     elif run["state"] == "failed" and not run.get("reason"):
         errs.append("run.reason: required when the run failed")
+    ap = doc.get("apply")
+    if ap is not None:
+        if not isinstance(ap, dict) or ap.get("state") not in RUN_STATES:
+            errs.append(f"apply.state: one of {', '.join(RUN_STATES)}")
+        elif ap["state"] == "failed" and not ap.get("reason"):
+            errs.append("apply.reason: required when the apply run failed")
     if not isinstance(doc.get("findings"), list):
         return errs + ["findings: required list"]
     ids = set()
@@ -118,6 +130,9 @@ def validate_file(doc):
         if isinstance(f, dict):
             if f.get("state") not in STATES:
                 errs.append(f"findings[{i}].state: one of {', '.join(STATES)}")
+            res = f.get("apply")
+            if res is not None and (not isinstance(res, dict) or res.get("status") not in APPLY_STATUSES):
+                errs.append(f"findings[{i}].apply.status: one of {', '.join(APPLY_STATUSES)}")
             if not f.get("id") or f["id"] in ids:
                 errs.append(f"findings[{i}].id: required and unique")
             ids.add(f.get("id"))
@@ -219,11 +234,19 @@ def bundle_text(repo, number, mode, detail, ledger_files):
     return "\n".join(parts)
 
 
-def bundle_path(project_path, number):
-    """Under the repo's git dir: inside the run's cwd, outside the work tree and git status."""
+def bundle_path(project_path, number, wt=None):
+    """Inside the run's cwd and outside git status: under the repo's git dir for a run in the main
+    checkout, under <worktree>/.crow-review/ (listed in info/exclude) for a run in a worktree."""
     common = sh("git", "rev-parse", "--path-format=absolute", "--git-common-dir", cwd=project_path)
     base = Path(common) if common else Path(project_path) / ".git"
-    return base / "crow-review" / f"{number}.md"
+    if not wt:
+        return base / "crow-review" / f"{number}.md"
+    exclude = base / "info" / "exclude"
+    lines = exclude.read_text().splitlines() if exclude.exists() else []
+    if "/.crow-review/" not in lines:
+        exclude.parent.mkdir(parents=True, exist_ok=True)
+        exclude.write_text("\n".join(lines + ["/.crow-review/"]) + "\n")
+    return Path(wt) / ".crow-review" / f"{number}.md"
 
 
 def prompt_text(repo, number, mode, bundle):
@@ -253,15 +276,19 @@ def start(a):
         sys.exit(f"crow-review-run: a review of {a.repo} !{a.number} is already running; --force to restart")
     if decided(old) and not a.force:
         sys.exit(f"crow-review-run: {len(decided(old))} findings already have a decision; --force to start over")
+    if old and (old.get("apply") or {}).get("state") == "running":
+        sys.exit(f"crow-review-run: an apply run on {a.repo} !{a.number} is still running")
     detail = mr_detail(a.repo, a.number)
-    bundle = bundle_path(p["path"], a.number)
+    wt = review_worktree(p["path"], a.number, a.branch, a.force) if a.branch else None
+    bundle = bundle_path(p["path"], a.number, wt)
     bundle.parent.mkdir(parents=True, exist_ok=True)
     bundle.write_text(bundle_text(a.repo, a.number, a.mode, detail, ledgers(p["path"])))
     prompt = path.with_suffix(".prompt.md")
     prompt.parent.mkdir(parents=True, exist_ok=True)
     prompt.write_text(prompt_text(a.repo, a.number, a.mode, bundle))
-    run_id = dispatch(p["name"], f"review-{a.number}", prompt, a.model, a.power)
+    run_id = dispatch(p["name"], f"review-{a.number}", prompt, a.model, a.power, cwd=wt)
     doc = {"schema": SCHEMA, "repo": a.repo, "number": a.number, "project": p["name"], "mode": a.mode,
+           "branch": a.branch or "", "worktree": str(wt or ""),
            "run": {"id": run_id, "state": "running", "reason": "", "model": a.model,
                    "started_at": now(), "ended_at": ""},
            "summary": "", "findings": []}
@@ -269,11 +296,41 @@ def start(a):
     print(f"review {run_id[:8]} started for {a.repo} !{a.number}; findings go to {path}")
 
 
-def dispatch(project, label, prompt, model, power):
-    """crow-runs dispatch in review permission; returns the full run id."""
-    r = subprocess.run([str(BIN / "crow-runs"), "dispatch", project, label, "--prompt-file", str(prompt),
-                        "--model", model, "--power", power, "--permission", "review"],
-                       capture_output=True, text=True)
+def git(*args, cwd):
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+
+
+def review_worktree(project_path, number, branch, force=False):
+    """<path>.wt/review-<number>, detached on origin/<branch> (fetched). An existing one is moved to the
+    branch's tip unless it holds changes or local commits (apply output not pushed yet)."""
+    wt = Path(f"{project_path}.wt") / f"review-{number}"
+    r = git("fetch", "origin", branch, cwd=project_path)
+    if r.returncode:
+        sys.exit(f"crow-review-run: git fetch origin {branch} failed: {(r.stderr.strip().splitlines() or ['?'])[-1]}")
+    tip = sh("git", "rev-parse", "FETCH_HEAD", cwd=project_path)
+    if wt.exists():
+        if not force:
+            if sh("git", "status", "--porcelain", cwd=wt):
+                sys.exit(f"crow-review-run: {wt} has uncommitted changes; --force to start over")
+            if sh("git", "log", "--oneline", f"origin/{branch}..HEAD", cwd=wt):
+                sys.exit(f"crow-review-run: {wt} holds local commits not on origin/{branch}; push them or --force")
+        r = git("checkout", "--force", "--detach", tip, cwd=wt)
+    else:
+        wt.parent.mkdir(parents=True, exist_ok=True)
+        r = git("worktree", "add", "--detach", str(wt), tip, cwd=project_path)
+    if r.returncode:
+        sys.exit(f"crow-review-run: worktree {wt}: {(r.stderr.strip().splitlines() or ['?'])[-1]}")
+    return wt
+
+
+def dispatch(project, label, prompt, model, power, cwd=None, continue_run=None, permission="review"):
+    """crow-runs dispatch (review permission unless told); returns the full run id.
+    With continue_run, cdx pins the parent's model and effort, so none are passed."""
+    args = [str(BIN / "crow-runs"), "dispatch", project, label, "--prompt-file", str(prompt)]
+    args += ["--continue-run", continue_run] if continue_run else ["--model", model, "--power", power]
+    args += ["--permission", permission] if permission else []
+    args += ["--cwd", str(cwd)] if cwd else []
+    r = subprocess.run(args, capture_output=True, text=True)
     m = re.search(r"^dispatched (\S+)", r.stdout, re.M)
     if r.returncode or not m:
         sys.exit((r.stderr or r.stdout).strip() or "crow-review-run: dispatch failed")
@@ -326,19 +383,176 @@ def fold(doc, row, text):
     return doc
 
 
-def sync(repo, number, lookup=cdx_run, message=final_message):
+def sync(repo, number, lookup=None, message=None, checks=None):
+    """Fold the review run, then the apply run, when cdx reports them finished."""
+    lookup, message = lookup or cdx_run, message or final_message
     path = findings_path(repo, number)
     doc = load(path)
-    if not doc or (doc.get("run") or {}).get("state") != "running":
+    if not isinstance(doc, dict):
         return doc
-    row = lookup(doc["run"]["id"])
-    if row is None:
-        doc["run"].update(state="failed", reason="cdx does not know this run", ended_at=now())
-    elif not row.get("ended_at"):
+    changed = False
+    for key, folder in (("run", fold), ("apply", lambda d, row, text: fold_apply(d, row, text, checks or apply_checks))):
+        run = doc.get(key) or {}
+        if run.get("state") != "running":
+            continue
+        row = lookup(run["id"])
+        if row is None:
+            run.update(state="failed", reason="cdx does not know this run", ended_at=now())
+        elif not row.get("ended_at"):
+            continue
+        else:
+            folder(doc, row, message(row))
+        changed = True
+    if changed:
+        save(path, doc)
+    return doc
+
+
+# ---------- apply ----------
+
+def todo(doc):
+    """Findings the apply run acts on: chat notes in any mode, accepted and edited ones in self mode.
+    A finding already handled for the same decision and note is left out."""
+    states = ("accepted", "edited", "chat") if doc.get("mode") == "self" else ("chat",)
+    return [f for f in doc.get("findings") or []
+            if f.get("state") in states and (f.get("apply") or {}).get("for") != [f["state"], f.get("note", "")]]
+
+
+def apply_prompt(doc, items):
+    lines = []
+    for f in items:
+        where = f"{f.get('path') or 'MR'}:{f.get('line') or 0}"
+        what = {"accepted": "apply your proposed fix",
+                "edited": "apply the fix the owner's note asks for",
+                "chat": "answer the owner's note, change no code"}[f["state"]]
+        lines.append(f"- {f['id']} [{f['state']}] {f['title']} ({where}): {what}." + (f"\n  Owner's note: {f['note']}" if f.get("note") else ""))
+    skipped = [f["id"] for f in doc.get("findings") or [] if f not in items]
+    return f"""Apply phase of your review of {doc['repo']} !{doc['number']} ({doc['mode']} mode). This is the same conversation: your findings f1..f{len(doc.get('findings') or [])} are above.
+You now have write rights in this worktree ({doc.get('worktree') or 'the current folder'}) and nowhere else.
+
+First check that this conversation holds your review (the bundle and your findings). If it does not, change nothing and answer {{"context": "lost"}}.
+
+The owner's decisions:
+{chr(10).join(lines)}
+Leave every other finding alone ({', '.join(skipped) or 'none'}).
+
+Rules:
+- Change only what these findings need, plus their tests. Run the tests that cover the change when the repo has them.
+- One local commit for all code changes. Subject `type[SCOPE]: message`: type new|chg|fix, SCOPE the file kinds touched, uppercase, '/'-separated (e.g. `fix[PY/MD]: paginate the list call`). English. No trailers, no AI attribution.
+- Never push, never post to the forge, never touch another folder.
+- Answer chat notes in the note's language, short and declarative. Chat findings get no code change.
+
+Your final message is ONE JSON object and nothing else:
+{{"context": "ok", "commit": "full sha or empty when no code changed", "subject": "the commit subject or empty",
+  "results": [{{"id": "f1", "status": "fixed|answered|skipped|failed", "detail": "what changed, or the answer to the note, or why not"}}]}}
+One result per finding listed above.
+"""
+
+
+def parse_apply(text):
+    text = (text or "").strip()
+    candidates = [text, *reversed(re.findall(r"```(?:json)?\s*\n(.*?)\n```", text, re.S))]
+    if "{" in text:
+        candidates.append(text[text.index("{"):text.rindex("}") + 1])
+    for c in candidates:
+        try:
+            doc = json.loads(c)
+        except ValueError:
+            continue
+        if isinstance(doc, dict) and "context" in doc:
+            return doc
+    return None
+
+
+def apply_checks(doc, commit):
+    """Warnings on the apply commit, read from the worktree: format, files outside the findings, pushed."""
+    wt = doc.get("worktree")
+    if not commit or not wt or not Path(wt).is_dir():
+        return [], ""
+    subject = sh("git", "log", "-1", "--format=%s", commit, cwd=wt)
+    if not subject:
+        return [f"commit {commit[:8]} is not in {wt}"], ""
+    warn = []
+    chk = subprocess.run([str(BIN / "crow-commit-msg-check"), "-"], input=subject, capture_output=True, text=True)
+    if chk.returncode:
+        warn.append(f"subject is not type[SCOPE]: {subject}")
+    allowed = {f.get("path") for f in doc.get("findings") or [] if f.get("state") in ("accepted", "edited") and f.get("path")}
+    files = sh("git", "diff-tree", "--no-commit-id", "--name-only", "-r", commit, cwd=wt).splitlines()
+    extra = [x for x in files if x not in allowed and not re.search(r"(^|/)(tests?|spec)(/|_)|_test\.|\.test\.|test_", x)]
+    if extra:
+        warn.append("files outside the accepted findings: " + ", ".join(extra))
+    if doc.get("branch") and sh("git", "branch", "-r", "--contains", commit, cwd=wt):
+        warn.append(f"commit {commit[:8]} is already on a remote branch")
+    return warn, subject
+
+
+def fold_apply(doc, row, text, checks=apply_checks):
+    """Fold a finished apply run: results onto the findings, the commit and its warnings on doc.apply."""
+    ap = doc["apply"]
+    ap["ended_at"] = row.get("ended_at") or now()
+    if row.get("exit_code") != 0:
+        tail = (text or "").strip().splitlines()
+        ap.update(state="failed", reason=f"apply run exited {row.get('exit_code')}: {tail[-1][:200] if tail else 'no output'}")
         return doc
-    else:
-        fold(doc, row, message(row))
+    out = parse_apply(text)
+    if out is None:
+        ap.update(state="failed", reason="no result JSON in the apply run's final message")
+        return doc
+    if out.get("context") != "ok":
+        ap.update(state="failed", reason="the resumed session lost the review context; nothing was applied. r runs the review again")
+        return doc
+    asked = {i: d for i, d in (ap.get("asked") or {}).items()}
+    by_id = {f["id"]: f for f in doc["findings"]}
+    for res in out.get("results") or []:
+        f = by_id.get(res.get("id")) if isinstance(res, dict) else None
+        if f is None or res.get("status") not in APPLY_STATUSES:
+            continue
+        f["apply"] = {"status": res["status"], "detail": str(res.get("detail") or "").strip(),
+                      "for": asked.get(f["id"], [f["state"], f.get("note", "")]), "run": ap["id"]}
+    missing = [i for i in asked if (by_id.get(i, {}).get("apply") or {}).get("run") != ap["id"]]
+    commit = str(out.get("commit") or "").strip()
+    warn, subject = checks(doc, commit)
+    warn += [f"no result for {', '.join(missing)}"] if missing else []
+    ap.update(state="done", reason="", commit=commit, subject=subject or str(out.get("subject") or ""), warnings=warn)
+    return doc
+
+
+def apply(repo, number, run_dispatch=None):
+    """Resume the last finished run of this review to act on the owner's decisions."""
+    path = findings_path(repo, number)
+    doc = sync(repo, number)
+    if not isinstance(doc, dict):
+        sys.exit(f"crow-review-run: no findings file for {repo} !{number}")
+    if (doc.get("run") or {}).get("state") != "done":
+        sys.exit(f"crow-review-run: the review of {repo} !{number} has not finished")
+    prev = doc.get("apply") or {}
+    if prev.get("state") == "running":
+        sys.exit(f"crow-review-run: an apply run on {repo} !{number} is already running")
+    if doc.get("findings") and not doc.get("worktree"):
+        sys.exit("crow-review-run: this review ran in the main checkout; r runs it again in a worktree")
+    items = todo(doc)
+    if not items:
+        what = "accepted, edited or chat" if doc.get("mode") == "self" else "chat (a peer review posts accepted findings)"
+        sys.exit(f"crow-review-run: no {what} finding left to apply")
+    parent = prev["id"] if prev.get("state") == "done" and prev.get("id") else doc["run"]["id"]
+    prompt = path.with_name(path.stem + ".apply.md")
+    prompt.write_text(apply_prompt(doc, items))
+    asked = {f["id"]: [f["state"], f.get("note", "")] for f in items}
+    try:
+        run_id = (run_dispatch or dispatch)(doc["project"], f"apply-{number}", prompt, None, None,
+                                            cwd=doc.get("worktree") or None, continue_run=parent, permission=None)
+    except SystemExit as e:
+        reason = str(e.code or "dispatch failed")
+        if "continue_run" in reason:
+            reason = "cannot resume the review session (" + reason.split("dispatch failed: ", 1)[-1] + "); r runs the review again"
+        doc["apply"] = {"id": "", "state": "failed", "reason": reason, "parent": parent, "asked": asked,
+                        "started_at": now(), "ended_at": now()}
+        save(path, doc)
+        sys.exit(f"crow-review-run: {reason}")
+    doc["apply"] = {"id": run_id, "state": "running", "reason": "", "parent": parent, "asked": asked,
+                    "started_at": now(), "ended_at": "", "commit": "", "subject": "", "warnings": []}
     save(path, doc)
+    print(f"apply {run_id[:8]} started for {repo} !{number}: {len(items)} {'finding' if len(items) == 1 else 'findings'}, commits locally in {doc.get('worktree')}")
     return doc
 
 
@@ -366,10 +580,11 @@ def main(argv=None):
     s = sub.add_parser("start")
     s.add_argument("repo"); s.add_argument("number", type=lambda v: int(v.lstrip("!#")))
     s.add_argument("--mode", choices=("peer", "self"), default="peer")
+    s.add_argument("--branch", help="the MR's source branch: the run works in <repo>.wt/review-<number>")
     s.add_argument("--model", default=DEFAULT_MODEL)
     s.add_argument("--power", default="medium")
     s.add_argument("--force", action="store_true")
-    for name in ("sync", "show"):
+    for name in ("sync", "show", "apply"):
         x = sub.add_parser(name)
         x.add_argument("repo"); x.add_argument("number", type=lambda v: int(v.lstrip("!#")))
     sub.add_parser("check").add_argument("file")
@@ -380,6 +595,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == "start":
         start(a)
+    elif a.cmd == "apply":
+        apply(a.repo, a.number)
     elif a.cmd in ("sync", "show"):
         doc = sync(a.repo, a.number)
         if a.cmd == "show":

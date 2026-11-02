@@ -35,7 +35,7 @@ type mrsView struct {
 	pane   int
 	file   int
 	item   int
-	toggle bool // T: the other kind of card (threads on a review, findings on an own MR)
+	toggle bool   // T: the other kind of card (threads on a review, findings on an own MR)
 	typing string // "e" or "c" while the owner types on the current finding
 	input  string
 }
@@ -617,6 +617,31 @@ func severityStyle(lk *look, sev string) lipgloss.Style {
 	return lk.warn
 }
 
+// applyLine is the state of the apply run, nil when there is none.
+func (mv mrsView) applyLine(ap *mrApply) line {
+	lk := mv.lk
+	if ap == nil {
+		return nil
+	}
+	switch ap.State {
+	case "running":
+		return line{{"● apply running", lk.warn}, {" · commits locally, pushes nothing", lk.sub}}
+	case "failed":
+		return line{{"✗ apply failed: ", lk.bad}, {cmpOr(ap.Reason, "no reason given"), lk.sub}}
+	}
+	if ap.Commit == "" {
+		return line{{"✓ applied", lk.ok}, {" · no code change", lk.sub}}
+	}
+	return line{{"✓ committed ", lk.ok}, {shortSHA(ap.Commit) + " " + ap.Subject + " · not pushed", lk.sub}}
+}
+
+func shortSHA(s string) string {
+	if len(s) > 8 {
+		return s[:8]
+	}
+	return s
+}
+
 // reviewLine is the state of the review run, nil when there is none or it is done.
 func (mv mrsView) reviewLine(rv *mrReview) line {
 	lk := mv.lk
@@ -682,6 +707,14 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 	}
 	if run != nil {
 		sp.rows = append(sp.rows, run)
+	}
+	if ap := mv.applyLine(d.Apply); ap != nil && !threads {
+		sp.rows = append(sp.rows, wrapLine(ap, iw)...)
+		for _, w := range d.Apply.Warnings {
+			for _, l := range wrapLines("! "+w, iw) {
+				sp.rows = append(sp.rows, line{{l, lk.warn}})
+			}
+		}
 	}
 	idx := mv.itemIdx(n)
 	var list []line
@@ -812,6 +845,18 @@ func (mv mrsView) cardRows(d *mrDetail, iw int) []line {
 		rows = append(rows, nil, line{{ifs(f.State == "chat", "chat note"), lk.cyan}, {ifs(f.State != "chat", "your edit"), lk.ok}})
 		rows = append(rows, mv.replyBlock(f.Note, iw)...)
 	}
+	if f.Applied != "" && mv.typing == "" {
+		label, st := "apply: "+f.Applied, lk.ok
+		switch f.Applied {
+		case "answered":
+			label, st = "answer", lk.cyan
+		case "skipped", "failed":
+			st = lk.bad
+		}
+		stale := f.AppliedFor != [2]string{f.State, f.Note}
+		rows = append(rows, nil, line{{label, st}, {ifs(stale, " · before your last decision"), lk.sub}})
+		rows = append(rows, mv.replyBlock(f.AppliedDetail, iw)...)
+	}
 	if mv.typing != "" {
 		label := ifs(mv.typing == "e", "edit › ") + ifs(mv.typing == "c", "chat › ")
 		rows = append(rows, nil)
@@ -849,22 +894,38 @@ func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
 			lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {"push, after your OK", lk.sub}}, iw),
 		}
 	}
-	acc, pend, ref := 0, 0, 0
+	acc, pend, ref, chat := 0, 0, 0, 0
 	for _, f := range d.Findings {
 		switch f.State {
 		case "accepted", "edited":
 			acc++
 		case "refused":
 			ref++
+		case "chat":
+			chat++
 		default:
 			pend++
 		}
 	}
+	self, todo := reviewMode(r) == "self", 0
+	for _, f := range d.Findings {
+		if f.toApply(self) {
+			todo++
+		}
+	}
+	next := fmt.Sprintf("post %d %s, mark reviewed", acc, plural(acc, "comment", "comments"))
+	if self {
+		next = "apply the decisions, then push"
+	}
+	end := lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {ifs(self, "push") + ifs(!self, "post") + ", after your OK", lk.sub}}, iw)
+	if todo > 0 && (d.Apply == nil || d.Apply.State != "running") {
+		end = lr(nil, line{{"A", lk.key.Bold(true)}, spc(1), {fmt.Sprintf("apply %d %s, commit locally", todo, plural(todo, "decision", "decisions")), lk.sub}}, iw)
+	}
 	return []line{
-		lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{"nothing posted yet", lk.sub}}, iw),
-		line{{fmt.Sprintf("%d accepted", acc), lk.ok}, spc(2), {fmt.Sprintf("%d pending", pend), lk.warn}, spc(2), {fmt.Sprintf("%d refused", ref), lk.sub}},
-		line{{"next", lk.sub}, spc(2), {fmt.Sprintf("post %d %s, mark reviewed", acc, plural(acc, "comment", "comments")), lk.plain}},
-		lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {"post, after your OK", lk.sub}}, iw),
+		lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{ifs(self, "nothing pushed yet") + ifs(!self, "nothing posted yet"), lk.sub}}, iw),
+		line{{fmt.Sprintf("%d accepted", acc), lk.ok}, spc(2), {fmt.Sprintf("%d pending", pend), lk.warn}, spc(2), {fmt.Sprintf("%d refused", ref), lk.sub}, {ifs(chat > 0, fmt.Sprintf("  %d chat", chat)), lk.cyan}},
+		line{{"next", lk.sub}, spc(2), {next, lk.plain}},
+		end,
 	}
 }
 
@@ -935,4 +996,22 @@ func nonEmpty(s ...string) []string {
 		}
 	}
 	return out
+}
+
+// wrapLine wraps a head segment and its tail over the width: the head keeps its style on the
+// first row, the tail style carries over.
+func wrapLine(l line, iw int) []line {
+	if len(l) < 2 {
+		return []line{l}
+	}
+	head, tail := l[0], l[1]
+	var rows []line
+	for i, t := range wrapLines(head.text+tail.text, iw) {
+		if i == 0 && strings.HasPrefix(t, head.text) {
+			rows = append(rows, line{head, {t[len(head.text):], tail.style}})
+		} else {
+			rows = append(rows, line{{t, tail.style}})
+		}
+	}
+	return rows
 }

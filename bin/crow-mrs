@@ -237,7 +237,7 @@ def list_all(projs, gl=gitlab_rows, gh=github_rows):
 
 
 def findings(repo, number):
-    """(findings, review run) from <state>/reviews/<group>_<name>-<number>.json (runbooks/review-findings.md).
+    """(findings, review run, apply run) from <state>/reviews/<group>_<name>-<number>.json (runbooks/review-findings.md).
     An older file is a bare list of findings with no run."""
     try:
         reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
@@ -247,16 +247,16 @@ def findings(repo, number):
     try:
         doc = json.load(open(state / "reviews" / f"{repo.replace('/', '_')}-{number}.json"))
     except (FileNotFoundError, json.JSONDecodeError):
-        return [], None
+        return [], None, None
     if isinstance(doc, list):
-        return doc, None
-    if (doc.get("run") or {}).get("state") == "running":
+        return doc, None, None
+    if "running" in ((doc.get("run") or {}).get("state"), (doc.get("apply") or {}).get("state")):
         doc = sync_review(repo, number) or doc
-    return doc.get("findings") or [], doc.get("run")
+    return doc.get("findings") or [], doc.get("run"), doc.get("apply")
 
 
 def sync_review(repo, number):
-    """A running review folded in when its run has finished (crow-review-run show)."""
+    """A running review or apply run folded in when it has finished (crow-review-run show)."""
     r = subprocess.run([str(Path(__file__).resolve().parent / "crow-review-run"), "show", repo, str(number)],
                        capture_output=True, text=True, timeout=60, env={**os.environ, "CROW_HOME": str(HOME)})
     try:
@@ -270,8 +270,8 @@ def show(projs, repo, number, gl=gitlab_show, gh=github_show):
     if not p:
         raise SystemExit(f"crow-mrs: {repo} is not a registered remote")
     out = (gl if p["forge"] == "gitlab" else gh)(repo, number)
-    found, run = findings(repo, number)
-    return {**out, "findings": found, "review": run}
+    found, run, applied = findings(repo, number)
+    return {**out, "findings": found, "review": run, "apply": applied}
 
 
 def main(argv):

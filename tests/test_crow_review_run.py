@@ -33,6 +33,8 @@ def rr(home, monkeypatch):
     spec = importlib.util.spec_from_loader("crow_review_run", loader)
     mod = importlib.util.module_from_spec(spec)
     loader.exec_module(mod)
+    # Simulated runs only: a run nobody simulated is still running, cdx is never called.
+    monkeypatch.setattr(mod, "cdx_run", lambda rid: {"run_id": rid, "ended_at": None})
     return mod
 
 
@@ -151,7 +153,7 @@ def test_start_writes_bundle_prompt_and_running_file(rr, monkeypatch):
     monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {
         "files": [{"path": "a.py", "add": 1, "del": 0, "diff": "@@ -0,0 +1 @@\n+x = 1"}],
         "threads": [{"author": "sam", "path": "a.py", "line": 1, "body": "why?", "resolved": False}]})
-    monkeypatch.setattr(rr, "dispatch", lambda *a: calls.append(a) or "rv000002-full")
+    monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(a) or "rv000002-full")
     rr.main(["start", REPO, "221"])
     project, label, prompt, model, power = calls[0]
     assert (project, label, model) == ("demo-service", "review-221", "opus")
@@ -221,3 +223,197 @@ def test_decide_persists_and_validates(rr):
         rr.main(["decide", REPO, "220", "f1", "chat"])
     with pytest.raises(SystemExit, match="no finding f9"):
         rr.main(["decide", REPO, "220", "f9", "accepted"])
+
+
+# ---------- worktree and apply (simulated runs, local git only) ----------
+
+def g(cwd, *args):
+    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=cwd, check=True,
+                          capture_output=True, text=True).stdout.strip()
+
+
+@pytest.fixture
+def forge(home, tmp_path):
+    """A bare origin with branch feat, cloned as the registered checkout (no network)."""
+    origin = tmp_path / "origin.git"
+    g(tmp_path, "init", "-q", "--bare", str(origin))
+    seed = tmp_path / "seed"
+    g(tmp_path, "init", "-q", "-b", "main", str(seed))
+    (seed / "a.py").write_text("x = 1\n")
+    g(seed, "add", "."); g(seed, "commit", "-qm", "new[PY]: a")
+    g(seed, "checkout", "-qb", "feat")
+    (seed / "a.py").write_text("x = 2\n")
+    g(seed, "commit", "-qam", "chg[PY]: two")
+    g(seed, "push", "-q", str(origin), "main", "feat")
+    checkout = tmp_path / "demo-service"
+    import shutil
+    shutil.rmtree(checkout)
+    g(tmp_path, "clone", "-q", str(origin), str(checkout))
+    return checkout
+
+
+def reviewed(rr, wt, mode="self", decisions=(("accepted", ""), ("chat", "Pourquoi pas un itérateur ?"), ("refused", ""))):
+    doc = json.loads((FIXTURES / "review-findings.json").read_text())
+    base = doc["findings"][0]
+    doc.update(repo=REPO, number=230, mode=mode, branch="feat", worktree=str(wt),
+               run={"id": "rv000010-full", "state": "done", "reason": "", "model": "opus", "started_at": "t", "ended_at": "e"})
+    doc["findings"] = [{**base, "id": f"f{i}", "path": "a.py", "state": s, "note": n} for i, (s, n) in enumerate(decisions, 1)]
+    rr.save(rr.findings_path(REPO, 230), doc)
+    return doc
+
+
+def test_start_with_branch_reviews_in_a_detached_worktree(rr, forge, monkeypatch):
+    calls = []
+    monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {"files": [], "threads": []})
+    monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(k) or "rv000011-full")
+    rr.main(["start", REPO, "231", "--branch", "feat", "--mode", "self"])
+    wt = forge.parent / "demo-service.wt" / "review-231"
+    assert calls[0]["cwd"] == wt
+    assert (wt / "a.py").read_text() == "x = 2\n" and g(wt, "branch", "--show-current") == ""
+    doc = rr.load(rr.findings_path(REPO, 231))
+    assert doc["worktree"] == str(wt) and doc["branch"] == "feat"
+    # The bundle sits in the run's cwd and stays out of git status (and of the apply commit).
+    assert (wt / ".crow-review" / "231.md").exists() and g(wt, "status", "--porcelain") == ""
+    # A local commit in the worktree (apply output not pushed) blocks a new review.
+    rr.save(rr.findings_path(REPO, 231), {**doc, "run": {**doc["run"], "state": "done"}})
+    (wt / "a.py").write_text("x = 3\n")
+    g(wt, "commit", "-qam", "fix[PY]: three")
+    with pytest.raises(SystemExit, match="local commits"):
+        rr.main(["start", REPO, "231", "--branch", "feat", "--mode", "self"])
+
+
+def test_apply_resumes_the_review_with_the_decisions(rr, forge, monkeypatch):
+    wt = forge.parent / "demo-service.wt" / "review-230"
+    reviewed(rr, wt)
+    calls = []
+
+    def fake(project, label, prompt, model, power, **k):
+        calls.append({"label": label, "prompt": prompt.read_text(), **k})
+        return "ap000001-full"
+    doc = rr.apply(REPO, 230, run_dispatch=fake)
+    c = calls[0]
+    assert c["continue_run"] == "rv000010-full" and c["cwd"] == str(wt) and c["permission"] is None
+    assert "- f1 [accepted]" in c["prompt"] and "- f2 [chat]" in c["prompt"] and "Pourquoi pas" in c["prompt"]
+    assert "- f3" not in c["prompt"] and "Leave every other finding alone (f3)" in c["prompt"]
+    assert "Never push" in c["prompt"] and "type[SCOPE]" in c["prompt"]
+    assert doc["apply"]["state"] == "running" and doc["apply"]["asked"] == {"f1": ["accepted", ""], "f2": ["chat", "Pourquoi pas un itérateur ?"]}
+    assert rr.validate_file(rr.load(rr.findings_path(REPO, 230))) == []
+    with pytest.raises(SystemExit, match="already running"):
+        rr.apply(REPO, 230, run_dispatch=fake)
+
+
+def test_peer_apply_only_answers_chat_notes(rr, tmp_path):
+    reviewed(rr, tmp_path, mode="peer", decisions=(("accepted", ""), ("edited", "Texte revu")))
+    with pytest.raises(SystemExit, match="no chat"):
+        rr.apply(REPO, 230, run_dispatch=lambda *a, **k: pytest.fail("must not dispatch"))
+
+
+def finish_apply(rr, forge, text_of, exit_code=0):
+    """Run apply with a fake dispatch, let text_of(wt) act as the run, then sync the result."""
+    wt = rr.review_worktree(str(forge), 230, "feat")
+    reviewed(rr, wt)
+    rr.apply(REPO, 230, run_dispatch=lambda *a, **k: "ap000002-full")
+    text = text_of(wt)
+    return rr.sync(REPO, 230, lookup=lambda rid: {"run_id": rid, "ended_at": "e", "exit_code": exit_code},
+                   message=lambda row: text)
+
+
+def test_apply_result_lands_on_the_findings(rr, forge):
+    def run(wt):
+        (wt / "a.py").write_text("x = 2  # paginated\n")
+        g(wt, "commit", "-qam", "fix[PY]: paginate the list call")
+        sha = g(wt, "rev-parse", "HEAD")
+        return "Done.\n```json\n" + json.dumps({"context": "ok", "commit": sha, "subject": "fix[PY]: paginate the list call", "results": [
+            {"id": "f1", "status": "fixed", "detail": "a.py paginates"},
+            {"id": "f2", "status": "answered", "detail": "Un itérateur masque le coût des appels."}]}) + "\n```"
+    doc = finish_apply(rr, forge, run)
+    ap = doc["apply"]
+    assert ap["state"] == "done" and ap["subject"] == "fix[PY]: paginate the list call" and ap["warnings"] == []
+    f1, f2, f3 = doc["findings"]
+    assert f1["apply"]["status"] == "fixed" and f1["apply"]["for"] == ["accepted", ""]
+    assert f2["apply"]["detail"].startswith("Un itérateur") and f2["state"] == "chat"
+    assert "apply" not in f3
+    assert rr.validate_file(doc) == []
+    # Nothing left: f1 and f2 are handled for the same decision. A new decision on f2 is picked up.
+    assert rr.todo(doc) == []
+    rr.decide(REPO, 230, "f2", "accepted")
+    assert [f["id"] for f in rr.todo(rr.load(rr.findings_path(REPO, 230)))] == ["f2"]
+    calls = []
+    rr.apply(REPO, 230, run_dispatch=lambda *a, **k: calls.append(k) or "ap000003-full")
+    assert calls[0]["continue_run"] == "ap000002-full"
+
+
+def test_apply_warns_on_bad_subject_extra_files_and_pushed_commit(rr, forge):
+    def run(wt):
+        (wt / "a.py").write_text("x = 9\n")
+        (wt / "other.py").write_text("y = 1\n")
+        g(wt, "add", ".")
+        g(wt, "commit", "-qm", "Fix things")
+        g(wt, "push", "-q", "origin", "HEAD:refs/heads/feat")
+        g(wt, "fetch", "-q", "origin")
+        return json.dumps({"context": "ok", "commit": g(wt, "rev-parse", "HEAD"), "results": [{"id": "f1", "status": "fixed", "detail": "d"}]})
+    w = finish_apply(rr, forge, run)["apply"]["warnings"]
+    assert any("type[SCOPE]" in x for x in w)
+    assert any("other.py" in x and "a.py" not in x for x in w)
+    assert any("remote branch" in x for x in w)
+    assert any("no result for f2" in x for x in w)
+
+
+@pytest.mark.parametrize("text,code,reason", [
+    ('{"context": "lost"}', 0, "lost the review context"),
+    ("I fixed it.", 0, "no result JSON"),
+    ("boom", 1, "apply run exited 1"),
+])
+def test_apply_failures_say_why(rr, forge, text, code, reason):
+    doc = finish_apply(rr, forge, lambda wt: text, exit_code=code)
+    assert doc["apply"]["state"] == "failed" and reason in doc["apply"]["reason"]
+    assert all("apply" not in f for f in doc["findings"])
+    assert rr.validate_file(doc) == []
+
+
+def test_apply_records_a_resume_cdx_refuses(rr, tmp_path):
+    reviewed(rr, tmp_path)
+
+    def refused(*a, **k):
+        sys.exit("crow: dispatch failed: continue_run_unavailable: The previous run's provider session expired")
+    with pytest.raises(SystemExit, match="cannot resume the review session"):
+        rr.apply(REPO, 230, run_dispatch=refused)
+    ap = rr.load(rr.findings_path(REPO, 230))["apply"]
+    assert ap["state"] == "failed" and "r runs the review again" in ap["reason"]
+
+
+def test_dispatch_continue_run_pins_nothing_and_checks_the_worktree(tmp_path, monkeypatch):
+    """--continue-run reaches cdx without --model/--power; --cwd must sit under <path>.wt/."""
+    proj = tmp_path / "demo"
+    (proj / ".." / "demo.wt" / "review-1").resolve().mkdir(parents=True)
+    (tmp_path / "local").mkdir()
+    (tmp_path / "local" / "projects.yaml").write_text(f"projects:\n  - {{name: demo, path: {proj}}}\n")
+    proj.mkdir()
+    (tmp_path / "bin").mkdir()
+    monkeypatch.setenv("CROW_HOME", str(tmp_path))
+    monkeypatch.setenv("CROW_ACCOUNT", "main")
+    loader = importlib.machinery.SourceFileLoader("crow_runs_ap", str(BIN / "crow-runs"))
+    spec = importlib.util.spec_from_loader("crow_runs_ap", loader)
+    cr = importlib.util.module_from_spec(spec)
+    loader.exec_module(cr)
+    seen = []
+
+    class R:
+        returncode = 0
+        stdout = '{"ok": true, "run_id": "ap000009-full"}'
+    monkeypatch.setattr(cr.subprocess, "run", lambda argv, **k: seen.append(argv) or R())
+    monkeypatch.setattr(cr.subprocess, "Popen", lambda *a, **k: None)
+    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(cr.crow_lib, "provider_of", lambda acct: "claude")
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
+    wt = tmp_path / "demo.wt" / "review-1"
+    monkeypatch.setattr(sys, "argv", ["crow-runs", "dispatch", "demo", "apply-1", "--prompt", "p",
+                                      "--continue-run", "rv000010-full", "--cwd", str(wt)])
+    cr.main()
+    cdx = next(a for a in seen if a[:2] == ["cdx", "run"])
+    assert cdx[cdx.index("--continue-run") + 1] == "rv000010-full"
+    assert "--model" not in cdx and "--power" not in cdx
+    assert cdx[cdx.index("--cwd") + 1] == str(wt.resolve())
+    monkeypatch.setattr(sys, "argv", ["crow-runs", "dispatch", "demo", "apply-1", "--prompt", "p", "--cwd", str(tmp_path)])
+    with pytest.raises(SystemExit, match="worktree under"):
+        cr.main()

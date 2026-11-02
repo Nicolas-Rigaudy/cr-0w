@@ -3,6 +3,7 @@ package main
 // Overlays: ? help, : palette, t theme. They replace the page body.
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,7 @@ const (
 	ovPost
 	ovHandoff
 	ovReview
+	ovApply
 )
 
 type command struct{ name, desc string }
@@ -168,6 +170,35 @@ func (lk *look) reviewOverlay(w, h int, r *mrRow) []string {
 		sp.rows = append(sp.rows, line{{l, lk.sub}})
 	}
 	sp.rows = append(sp.rows, nil, line{{"enter", lk.key}, spc(1), {"start the run", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}})
+	return lk.overlayBlock(sp, w, h)
+}
+
+// applyOverlay confirms an apply run: what it will do, where, and that nothing leaves the machine.
+func (lk *look) applyOverlay(w, h int, r *mrRow, d *mrDetail) []string {
+	sp := boxSpec{title: "Apply", sel: -1}
+	if r == nil || d == nil {
+		sp.rows = []line{{{"No review loaded.", lk.sub}}}
+		return lk.overlayBlock(sp, w, h)
+	}
+	fix, chat := 0, 0
+	for _, f := range d.Findings {
+		if f.toApply(reviewMode(r) == "self") {
+			if f.State == "chat" {
+				chat++
+			} else {
+				fix++
+			}
+		}
+	}
+	q := fmt.Sprintf("Resume the review of %s to fix %d %s and answer %d chat %s?", r.Ref, fix, plural(fix, "finding", "findings"), chat, plural(chat, "note", "notes"))
+	for _, l := range wrap(q, overlayWidth(w)-6) {
+		sp.rows = append(sp.rows, line{{l, lk.plain}})
+	}
+	sp.rows = append(sp.rows, nil)
+	for _, l := range wrap("Write rights in the review worktree only. One local commit, nothing pushed or posted.", overlayWidth(w)-6) {
+		sp.rows = append(sp.rows, line{{l, lk.sub}})
+	}
+	sp.rows = append(sp.rows, nil, line{{"enter", lk.key}, spc(1), {"start the apply run", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}})
 	return lk.overlayBlock(sp, w, h)
 }
 

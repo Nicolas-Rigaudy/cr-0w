@@ -145,7 +145,7 @@ func (m *model) wantDetail() tea.Cmd {
 	r := vis[m.mrSel]
 	e := m.live.details[r.key()]
 	ttl := detailTTL
-	if e != nil && e.d != nil && e.d.Review != nil && e.d.Review.State == "running" {
+	if e != nil && e.d != nil && ((e.d.Review != nil && e.d.Review.State == "running") || (e.d.Apply != nil && e.d.Apply.State == "running")) {
 		ttl = reviewTTL
 	}
 	if e != nil && (e.busy || m.now.Sub(e.at) < ttl) {
@@ -431,6 +431,22 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.overlay = ovNone
 		}
 		return m, nil
+	case ovApply:
+		switch k {
+		case "enter":
+			m.overlay = ovNone
+			if r := m.mrsView().cur(); r != nil {
+				if m.live == nil {
+					m.flash = "mock deck: no apply run started"
+					return m, nil
+				}
+				m.flash = "starting the apply run on " + r.Ref + "…"
+				return m, applyCmd(*r)
+			}
+		case "esc", "n", "q":
+			m.overlay = ovNone
+		}
+		return m, nil
 	case ovPost:
 		switch k {
 		case "enter":
@@ -507,6 +523,10 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.hist, m.histTyping, m.histPane = true, true, hpList
 		} else {
 			m.flash = "/ filters the Projects cards with the actions slice"
+		}
+	case "A":
+		if m.page == 2 {
+			return m.mrKeyPress(k)
 		}
 	case "enter", "h", "r", "x", "R", "a", "e", "c", "g", "T", "M", "P", "s":
 		if m.page == 1 {
@@ -590,6 +610,8 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 		} else {
 			m.overlay = ovReview
 		}
+	case "A":
+		m.applyKey()
 	case "P":
 		if mv.cur() == nil {
 			m.flash = "no MR selected"
@@ -612,6 +634,33 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// applyKey opens the apply confirm when the review is done, nothing runs, and a decision waits.
+func (m *model) applyKey() {
+	mv := m.mrsView()
+	r, d := mv.cur(), mv.detail()
+	switch {
+	case r == nil:
+		m.flash = "no MR selected"
+	case d == nil || d.Review == nil || d.Review.State != "done":
+		m.flash = "A applies a finished review; r starts one"
+	case d.Apply != nil && d.Apply.State == "running":
+		m.flash = "an apply run on this MR is already running"
+	default:
+		n := 0
+		for _, f := range d.Findings {
+			if f.toApply(reviewMode(r) == "self") {
+				n++
+			}
+		}
+		if n == 0 {
+			m.flash = ifs(reviewMode(r) == "self", "nothing to apply: accept, edit or chat a finding first") +
+				ifs(reviewMode(r) != "self", "nothing to apply: on a peer review only chat notes get an answer; P posts the rest")
+			return
+		}
+		m.overlay = ovApply
+	}
 }
 
 // decideKey records a/x on the current finding at once; e and c open the input line first.
@@ -792,7 +841,7 @@ func (m model) context() []keyHint {
 		if m.mrTyping != "" {
 			return []keyHint{{"enter", "save"}, {"esc", "cancel"}}
 		}
-		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"r", "review"}, {"a x e c", "decide"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
+		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"r", "review"}, {"a x e c", "decide"}, {"A", "apply"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 3 {
 		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o", "action"}, {"z", "zoom"}, {"/", "filter"}, {"m", "work / perso / all"}}
@@ -831,6 +880,8 @@ func (m model) View() string {
 		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur())
 	case m.overlay == ovReview:
 		body = lk.reviewOverlay(m.w, bh, m.mrsView().cur())
+	case m.overlay == ovApply:
+		body = lk.applyOverlay(m.w, bh, m.mrsView().cur(), m.mrsView().detail())
 	case m.overlay == ovPost:
 		body = lk.postOverlay(m.w, bh, m.mrsView().cur())
 	case m.page == 0:

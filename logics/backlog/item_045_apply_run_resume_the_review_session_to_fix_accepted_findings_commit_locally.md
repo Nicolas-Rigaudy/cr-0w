@@ -1,10 +1,10 @@
 ## item_045_apply_run_resume_the_review_session_to_fix_accepted_findings_commit_locally - Apply run: resume the review session to fix accepted findings, commit locally
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
+> Status: Done
+> Understanding: 95%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -52,6 +52,10 @@
 
 # Notes
 - Generated locally by logics-manager.
+- Shipped: `crow-review-run start --branch` reviews in `<repo>.wt/review-<n>` (detached on the fetched branch, bundle in `.crow-review/` excluded from git). `crow-review-run apply` resumes the last finished run with `crow-runs dispatch --continue-run --cwd` (new flags; cdx pins model and effort). Sync folds the result onto each finding (`apply.status/detail/for`) and checks the commit in the worktree. Deck `A`: confirm overlay with counts, then `crow-review-run apply`; card shows the commit (not pushed), warnings, the answer to a chat note, and flags an answer older than the current decision.
+- Peer reviews: apply only answers chat notes; accepted findings are posted by item_046.
+- Proofs: AC1 `apply_prompt` lists only the to-do findings (`test_apply_resumes_the_review_with_the_decisions`) and sync warns on files outside them (`test_apply_warns_on_bad_subject_extra_files_and_pushed_commit`). AC2 prompt rule plus the `crow-commit-msg-check` warning (same test). AC3 prompt rule, no push in the code path, warning when the commit is on a remote. AC4 `test_apply_failures_say_why` (context lost), `test_apply_records_a_resume_cdx_refuses`, `TestApplyFailureSaysWhy`. AC5 `test_apply_result_lands_on_the_findings`, `TestApplyResultShows`. AC6 all tests use fake dispatch, a local bare origin and recorded `runBin`; no real run, deck action or forge call.
+- Open risk from req_010: whether `--continue-run` keeps enough context on a large diff (!214) is only checkable with a real run; the run answers `context: lost` when it cannot see its review.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
