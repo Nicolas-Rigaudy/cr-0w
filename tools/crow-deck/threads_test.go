@@ -187,3 +187,25 @@ func TestThreadsDiffOpensAtTheReviewerLine(t *testing.T) {
 		t.Errorf("the diff opened %q", mv.detail().Files[mv.fileIdx(mv.detail())].Path)
 	}
 }
+
+func TestThreadsShowPushedAtTheTop(t *testing.T) {
+	withANSI(t)
+	d := threadsDetail()
+	d.Apply = &mrApply{State: "done", Commit: "abc1234def", Pushed: true}
+	d.Findings[0].Applied, d.Findings[0].AppliedFor = "fixed", [2]string{"accepted", ""}
+	d.Findings[0].State = "accepted"
+	d.Findings[1].Resolved = true
+	out := threadsModel(t, d).View()
+	for _, want := range []string{"✓ pushed abc1234", "1 thread to resolve", "P resolves", "pushed", "resolved"} {
+		if !hasText(out, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	d.Apply.Pushed = false
+	out = threadsModel(t, d).View()
+	for _, want := range []string{"● committed abc1234", "not pushed", "P pushes it", "fixed"} {
+		if !hasText(out, want) {
+			t.Errorf("unpushed: missing %q", want)
+		}
+	}
+}

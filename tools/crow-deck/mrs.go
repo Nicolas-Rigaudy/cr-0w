@@ -635,7 +635,7 @@ func stateStyle(lk *look, state string) lipgloss.Style {
 	switch state {
 	case "accepted", "resolved", "edited", "posted", "replied", "fixed":
 		return lk.ok
-	case "answered":
+	case "answered", "pushed":
 		return lk.cyan
 	case "failed", "skipped":
 		return lk.bad
@@ -785,6 +785,8 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 				state = "replied"
 			case f.Posted:
 				state = "posted"
+			case f.Applied == "fixed" && d.Apply != nil && d.Apply.Pushed:
+				state = "pushed"
 			case f.Applied != "" && f.AppliedFor == [2]string{f.State, f.Note}:
 				state = f.Applied
 			}
@@ -810,6 +812,9 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 		foot = foot[len(foot)-1:]
 	}
 	pinned := bottom()
+	if pl := mv.progressLine(d, iw); pl != nil {
+		sp.rows = append(sp.rows, pl)
+	}
 	off := len(sp.rows)
 	sp.rows = append(sp.rows, list...)
 	sp.sel = off + idx
@@ -826,6 +831,40 @@ func (mv mrsView) cardSpec(iw, h int) boxSpec {
 	sp.rows = append(sp.rows, pinned...)
 	sp.bottom = fmt.Sprintf("%d of %d", idx+1, n)
 	return sp
+}
+
+func (mv mrsView) pushed() bool {
+	d := mv.detail()
+	return d != nil && d.Apply != nil && d.Apply.Pushed
+}
+
+// progressLine sits above the list: where the MR stands once the apply run committed
+// (committed, pushed, threads resolved), so the push is visible without scrolling the card.
+func (mv mrsView) progressLine(d *mrDetail, iw int) line {
+	lk := mv.lk
+	ap := d.Apply
+	if ap == nil || ap.Commit == "" || mv.threadsMode() || detailMode(mv.cur(), d) == "peer" {
+		return nil
+	}
+	sha := shortSHA(ap.Commit)
+	if !ap.Pushed {
+		return lr(line{{"● committed " + sha, lk.warn}, {" · not pushed", lk.sub}}, line{{"P", lk.key.Bold(true)}, {" pushes it", lk.sub}}, iw)
+	}
+	l := line{{"✓ pushed " + sha, lk.ok}}
+	if !mv.answering() {
+		return l
+	}
+	open := 0
+	for _, f := range d.Findings {
+		if !f.Resolved && f.Agree != "no" {
+			open++
+		}
+	}
+	if open == 0 {
+		return append(l, seg{" · all threads resolved", lk.ok})
+	}
+	return lr(append(l, seg{fmt.Sprintf(" · %d %s to resolve", open, plural(open, "thread", "threads")), lk.warn}),
+		line{{"P", lk.key.Bold(true)}, {" resolves", lk.sub}}, iw)
 }
 
 func firstWords(s string, n int) string {
@@ -984,7 +1023,7 @@ func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
 			return []line{line{{"h", lk.key}, spc(1), {"hand this MR to a repo session", lk.sub}}}
 		}
 		return []line{
-			lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{"nothing pushed yet", lk.sub}}, iw),
+			lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{ifs(d.Apply != nil && d.Apply.Pushed, "pushed") + ifs(d.Apply == nil || !d.Apply.Pushed, "nothing pushed yet"), lk.sub}}, iw),
 			line{{fmt.Sprintf("%d fix + reply", fixes), lk.plain}, spc(2), {fmt.Sprintf("%d resolved", resolved), lk.ok}},
 			line{{"next", lk.sub}, spc(2), {"push, reply, resolve the thread", lk.plain}},
 			lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {"push, after your OK", lk.sub}}, iw),
@@ -1172,7 +1211,8 @@ func (mv mrsView) answerTail(f *mrFinding, iw int) []line {
 	var rows []line
 	reply := cmpOr(ifs(f.State == "edited", f.Note), f.Comment)
 	if reply == "" {
-		rows = append(rows, line{{"no reply: the fix answers it, resolved after the push", lk.sub}})
+		end := ifs(f.Resolved, "resolved") + ifs(!f.Resolved && mv.pushed(), "P resolves it") + ifs(!f.Resolved && !mv.pushed(), "resolved after the push")
+		rows = append(rows, line{{"no reply: the fix answers it, " + end, lk.sub}})
 	} else {
 		rows = append(rows, line{{ifs(f.State == "edited", "your reply (FR)") + ifs(f.State != "edited", "reply (FR)"), lk.sub}})
 		rows = append(rows, mv.replyBlock(reply, iw)...)
