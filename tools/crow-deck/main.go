@@ -385,6 +385,19 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.overlay = ovNone
 		}
 		return m, nil
+	case ovHandoff:
+		switch k {
+		case "enter":
+			m.overlay = ovNone
+			if r := m.mrsView().cur(); r != nil {
+				task, end := handoffTask(r)
+				m.flash = "opening a session on " + r.Project + "…"
+				return m, actionCmd("handoff", "crow", "handoff", r.Project, "--task", task, "--end-state", end)
+			}
+		case "esc", "n", "q":
+			m.overlay = ovNone
+		}
+		return m, nil
 	case ovPost:
 		switch k {
 		case "enter":
@@ -544,7 +557,13 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 		}
 	case "M":
 		m.flash = k + ": opening goes through the mr skill, not wired here"
-	case "g", "h", "r", "R", "s":
+	case "h":
+		if mv.cur() == nil {
+			m.flash = "no MR selected"
+		} else {
+			m.overlay = ovHandoff
+		}
+	case "g", "r", "R", "s":
 		if mv.cur() == nil {
 			m.flash = "no MR selected"
 		} else {
@@ -689,6 +708,8 @@ func (m model) View() string {
 		body = lk.themeOverlay(m.w, bh, m.th)
 	case m.overlay == ovConfirm:
 		body = lk.confirmOverlay(m.w, bh, m.curAgent())
+	case m.overlay == ovHandoff:
+		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur())
 	case m.overlay == ovPost:
 		body = lk.postOverlay(m.w, bh, m.mrsView().cur())
 	case m.page == 0:

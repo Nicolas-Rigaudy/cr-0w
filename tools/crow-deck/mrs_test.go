@@ -237,3 +237,24 @@ func TestHomeBlockersComeFromMRs(t *testing.T) {
 		t.Error("an MR list with nothing to do should say so")
 	}
 }
+
+func TestHandoffOverlayThenRun(t *testing.T) {
+	calls := recordRuns(t, "ok", nil)
+	m := newModel(defaultConfig())
+	m.page = 2
+	m = send(m, keyMsg("h"))
+	if m.overlay != ovHandoff || !hasText(m.View(), "Open a repo session") {
+		t.Fatalf("h must open the handoff overlay, overlay %d", m.overlay)
+	}
+	if len(*calls) != 0 {
+		t.Fatal("nothing may run before enter")
+	}
+	m2, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if m2.(model).overlay != ovNone || cmd == nil {
+		t.Fatal("enter must close the overlay and return the command")
+	}
+	cmd()
+	if len(*calls) != 1 || (*calls)[0].args[0] != "handoff" {
+		t.Errorf("want one crow handoff call, got %v", *calls)
+	}
+}

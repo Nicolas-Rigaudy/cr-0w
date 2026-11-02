@@ -14,6 +14,7 @@ const (
 	ovTheme
 	ovConfirm
 	ovPost
+	ovHandoff
 )
 
 type command struct{ name, desc string }
@@ -151,5 +152,34 @@ func (lk *look) postOverlay(w, h int, r *mrRow) []string {
 		nil,
 		{{"enter", lk.sub}, spc(1), {"post (not wired)", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"close", lk.sub}},
 	}
+	return lk.overlayBlock(sp, w, h)
+}
+
+// handoffTask is the literal task and end state `crow handoff` receives for an MR.
+func handoffTask(r *mrRow) (task, end string) {
+	if r.Role == "reviewer" {
+		return "Review " + r.Ref + " (" + r.Title + ") with the review skill and write the comments to post.",
+			"Comments drafted and shown to me, nothing posted without my OK."
+	}
+	return "Address the " + strconv.Itoa(r.ThreadsOpen) + " open review threads on " + r.Ref + " (" + r.Title + ") with the review-threads skill.",
+		"Fixes committed locally with the decision table shown to me. No push, no reply, no resolve without my OK."
+}
+
+// handoffOverlay shows the exact text before the repo session opens.
+func (lk *look) handoffOverlay(w, h int, r *mrRow) []string {
+	sp := boxSpec{title: "Handoff", sel: -1}
+	if r == nil {
+		sp.rows = []line{{{"No MR selected.", lk.sub}}}
+		return lk.overlayBlock(sp, w, h)
+	}
+	task, end := handoffTask(r)
+	sp.rows = []line{{{"Open a repo session on " + r.Project + " for " + r.Ref + ".", lk.plain}}, nil}
+	for _, l := range wrap("task: "+task, overlayWidth(w)-6) {
+		sp.rows = append(sp.rows, line{{l, lk.plain}})
+	}
+	for _, l := range wrap("end: "+end, overlayWidth(w)-6) {
+		sp.rows = append(sp.rows, line{{l, lk.sub}})
+	}
+	sp.rows = append(sp.rows, nil, line{{"enter", lk.key}, spc(1), {"open the session", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}})
 	return lk.overlayBlock(sp, w, h)
 }
