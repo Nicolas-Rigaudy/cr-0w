@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-02 18:23:56
 
 # AI Context
 - Summary: Rework the deck MRs tab so a review walkthrough (review, decide, apply, push, reply, resolve) reads as one clear sequence: where the MR stands, whose move it is, what the next key does, and when it is done.
@@ -65,3 +66,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Notes
+- 2026-11-02 owner pick (canvas boards Rw_MRs_*): layout B focused walkthrough plus more code context around the highlighted line, merged board in req_011 item_055. Badge: count of MRs on the owner's move, colored dot only when there is a problem.

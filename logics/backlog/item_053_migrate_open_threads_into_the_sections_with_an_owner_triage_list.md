@@ -1,10 +1,10 @@
 ## item_053_migrate_open_threads_into_the_sections_with_an_owner_triage_list - Migrate open-threads into the sections with an owner triage list
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Small
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -51,6 +51,7 @@
 
 # Notes
 - Execution order: 2 of 3, after item_052. Needs the owner for the triage pass.
+- Migration applied 2026-11-02: open-threads.md now has Me 18, Crow 33, Waiting 4 (55 open lines). 50 ticked lines moved to activity/, notes to status.md (5 rows) and decisions.md (5 entries).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
