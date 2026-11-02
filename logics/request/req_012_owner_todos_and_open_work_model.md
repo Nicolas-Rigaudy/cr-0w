@@ -1,9 +1,9 @@
 ## req_012_owner_todos_and_open_work_model - Rework how crow tracks the owner's to-dos and unfinished work (open threads)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
-> Understanding: 90%
-> Confidence: 85%
+> Status: Ready
+> Understanding: 95%
+> Confidence: 90%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -36,7 +36,7 @@
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
 - [x] Acceptance criteria are testable.
-- [ ] Dependencies and known risks are listed: owner choice of model (AC1).
+- [x] Dependencies and known risks are listed: owner chose option A (AC1).
 
 # Companion docs
 - Product brief(s): (none yet)
@@ -47,8 +47,13 @@
 - `.claude/skills/brief`, `.claude/skills/eod`, `skills/wrap`
 - `tools/crow-deck/data.go` (openThreads)
 
+# Decision
+- 2026-11-02 owner: option A (one file, ## Me / ## Crow / ## Waiting sections). Stale items: owner triages one keep/drop list. Options in `local/state/research/owner-todo-model.md`.
+
 # Backlog
-- none
+- item_052_open_threads_in_three_sections_me_crow_waiting (first)
+- item_053_migrate_open_threads_into_the_sections_with_an_owner_triage_list (after 052)
+- item_054_deck_and_brief_read_the_sections_actor_and_age_in_next (after 053 and the req_011 Home pick)
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
