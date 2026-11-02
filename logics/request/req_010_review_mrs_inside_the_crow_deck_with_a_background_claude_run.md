@@ -48,7 +48,7 @@
 - `tests/python/test_logics_manager_cli.py`
 
 # Backlog
-- item_043, item_044, item_045, item_046, item_047
+- item_043, item_044, item_045, item_046, item_047, item_048
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
