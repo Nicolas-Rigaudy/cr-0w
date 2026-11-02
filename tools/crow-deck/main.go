@@ -391,8 +391,8 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.overlay = ovNone
 			if r := m.mrsView().cur(); r != nil {
 				task, end := handoffTask(r)
-				m.flash = "opening a session on " + r.Project + "…"
-				return m, actionCmd("handoff", "crow", "handoff", r.Project, "--task", task, "--end-state", end)
+				m.flash = "opening a session on " + r.Name + "…"
+				return m, actionCmd("handoff", "crow", "handoff", r.Name, "--task", task, "--end-state", end)
 			}
 		case "esc", "n", "q":
 			m.overlay = ovNone
