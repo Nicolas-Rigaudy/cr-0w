@@ -32,4 +32,9 @@ want to trigger it by name.
 - [long-sessions](long-sessions.md): context cap at 150k, warning at 120k, when to wrap and how to split one session into scoped handoffs
 - [vault-capture](vault-capture.md): `crow note`, `crow notes` JSON, the `eod` skill and the capture tags that feed every recap
 - [tui-review-ux](tui-review-ux.md): review-tool UX research for the deck MR page: stage rail, whose-move rule, badge options, TUI constraints
+- [tui-home-ux](tui-home-ux.md): home dashboard UX research: triage table, day timeline, project cards
+- [tui-agents-ux](tui-agents-ux.md): agent monitor UX research: process table, day lanes, inbox-first
+- [tui-projects-ux](tui-projects-ux.md): project portfolio UX research: ledger, runway gantt, who-acts lanes
+- [tui-usage-ux](tui-usage-ux.md): token and cost usage UX research: ledger, runway timeline, account cards
+- [tui-themes-ux](tui-themes-ux.md): TUI theme research: axes a theme can change, four skeleton-level theme specs
 - [open-threads](open-threads.md): the three-section format (me, crow, waiting) of `open-threads.md`, the done and stale rules, who reads and writes it
