@@ -148,7 +148,7 @@ func (m *model) wantDetail() tea.Cmd {
 	r := vis[m.mrSel]
 	e := m.live.details[r.key()]
 	ttl := detailTTL
-	if e != nil && e.d != nil && ((e.d.Review != nil && e.d.Review.State == "running") || (e.d.Apply != nil && e.d.Apply.State == "running")) {
+	if e != nil && e.d != nil && ((e.d.Review != nil && e.d.Review.State == "running") || (e.d.Apply != nil && (e.d.Apply.State == "running" || e.d.Apply.State == "starting"))) {
 		ttl = reviewTTL
 	}
 	if e != nil && (e.busy || m.now.Sub(e.at) < ttl) {
@@ -359,8 +359,13 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case detailMsg:
 		if m.live != nil {
+			first := m.live.details[msg.key] == nil || m.live.details[msg.key].d == nil
 			m.live.applyDetail(msg)
 			m.rebuild()
+			// The first load of the selected MR opens the diff at its first card.
+			if r := m.mrsView().cur(); first && r != nil && r.key() == msg.key {
+				m.followItem()
+			}
 		}
 	case actionMsg:
 		m.flash = msg.text
@@ -391,6 +396,9 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case reviewStartedMsg:
 		m.flash = msg.text
+		if d := m.fx.MRDetails[msg.key]; d != nil && msg.apply && msg.failed {
+			d.Apply = &mrApply{State: "failed", Reason: msg.text}
+		}
 		if m.live != nil {
 			if e := m.live.details[msg.key]; e != nil {
 				e.at = time.Time{}
@@ -469,6 +477,10 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.flash = "starting the apply run on " + r.Ref + "…"
+				// Shown at once on the card; the refetch replaces it with the run's state.
+				if d := m.mrsView().detail(); d != nil {
+					d.Apply = &mrApply{State: "starting", StartedAt: m.now.UTC().Format(time.RFC3339)}
+				}
 				return m, applyCmd(*r)
 			}
 		case "esc", "n", "q":
@@ -617,7 +629,7 @@ func (m *model) followItem() {
 	}
 	path := ""
 	if f := mv.curFinding(d); f != nil {
-		path = f.Path
+		path, _ = f.at()
 	} else if t := mv.curThread(d); t != nil && mv.threadsMode() {
 		path = t.Path
 	}
@@ -695,7 +707,7 @@ func (m *model) applyKey() {
 		m.flash = "no MR selected"
 	case d == nil || d.Review == nil || d.Review.State != "done":
 		m.flash = "A applies a finished review; r starts one"
-	case d.Apply != nil && d.Apply.State == "running":
+	case d.Apply != nil && (d.Apply.State == "running" || d.Apply.State == "starting"):
 		m.flash = "an apply run on this MR is already running"
 	default:
 		n, mode := 0, detailMode(r, d)

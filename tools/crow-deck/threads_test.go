@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -136,5 +137,53 @@ func TestThreadsStatesInTheList(t *testing.T) {
 	out := threadsModel(t, d).View()
 	if !hasText(out, "resolved") || !hasText(out, "replied") {
 		t.Error("the list must show resolved and replied threads")
+	}
+}
+
+func TestThreadsCardKeepsButtonsAndStatusInSight(t *testing.T) {
+	withANSI(t)
+	d := threadsDetail()
+	d.Findings[0].Body = strings.Repeat("A long assessment of the thread. ", 40)
+	d.Apply = &mrApply{ID: "ap1", State: "running", StartedAt: "2026-10-29T13:59:00Z"}
+	m := threadsModel(t, d)
+	m.w, m.h = 170, 30
+	out := m.View()
+	for _, want := range []string{"a accept", "c chat", "apply running", "more lines"} {
+		if !hasText(out, want) {
+			t.Errorf("a short window must still show %q", want)
+		}
+	}
+}
+
+func TestApplyStartShowsAtOnceAndResultsInTheList(t *testing.T) {
+	withANSI(t)
+	recordRuns(t, "apply ap1 started", nil)
+	d := threadsDetail()
+	d.Findings[0].State = "accepted"
+	m := threadsModel(t, d)
+	m = send(m, keyMsg("A"), tea.KeyMsg{Type: tea.KeyEnter})
+	if !hasText(m.View(), "apply starting") {
+		t.Error("enter on the apply confirm must show the run at once")
+	}
+	m = send(m, reviewStartedMsg{key: "grp/atlas!6", text: "apply failed to start: no slot", apply: true, failed: true})
+	m.mrPane = mpCard
+	m = send(m, keyMsg("j"))
+	if !hasText(m.View(), "apply failed: apply failed to start: no slot") {
+		t.Error("a failed start must stay on the card after the next key")
+	}
+	d.Findings[0].Applied, d.Findings[0].AppliedFor = "fixed", [2]string{"accepted", ""}
+	if !hasText(threadsModel(t, d).View(), "fixed") {
+		t.Error("the list must show the apply result")
+	}
+}
+
+func TestThreadsDiffOpensAtTheReviewerLine(t *testing.T) {
+	d := threadsDetail()
+	d.Files = append(d.Files, mrFile{Path: "b.py", Lines: parseDiff("@@ -1,1 +1,2 @@\n x\n+y\n")})
+	d.Files[0], d.Files[1] = d.Files[1], d.Files[0] // b.py first: the diff must still open a.py
+	d.Findings[0].ThreadPath, d.Findings[0].ThreadLine = "a.py", 11
+	m := threadsModel(t, d)
+	if mv := m.mrsView(); mv.detail().Files[mv.fileIdx(mv.detail())].Path != "a.py" {
+		t.Errorf("the diff opened %q", mv.detail().Files[mv.fileIdx(mv.detail())].Path)
 	}
 }

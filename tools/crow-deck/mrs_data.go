@@ -98,9 +98,19 @@ type mrFinding struct {
 	// Threads review only: the reviewer's thread, the run's assessment, the test, and whether
 	// the thread is resolved on the forge.
 	ThreadAuthor, ThreadBody string
+	ThreadPath               string // where the reviewer commented
+	ThreadLine               int
 	Agree                    string // yes, no, partly
 	Test                     string
 	Resolved                 bool
+}
+
+// at is where the card points in the diff: the reviewer's line for a thread, else the finding's.
+func (f mrFinding) at() (string, int) {
+	if f.ThreadPath != "" {
+		return f.ThreadPath, f.ThreadLine
+	}
+	return f.Path, f.Line
 }
 
 // toApply is true when the next apply run acts on this finding: a chat note in any mode,
@@ -115,6 +125,7 @@ func (f mrFinding) toApply(mode string) bool {
 // mrApply is the apply run that resumes the review session (commit local, never pushed).
 type mrApply struct {
 	ID, State, Reason, Commit, Subject string
+	StartedAt                          string
 	Warnings                           []string
 	Pushed                             bool // the commit went to the MR branch
 }
@@ -179,6 +190,8 @@ type rawDetail struct {
 		Thread *struct {
 			Author string `json:"author"`
 			Body   string `json:"body"`
+			Path   string `json:"path"`
+			Line   int    `json:"line"`
 		} `json:"thread"`
 		Agree    string `json:"agree"`
 		Test     string `json:"test"`
@@ -201,6 +214,7 @@ type rawDetail struct {
 		Commit   string   `json:"commit"`
 		Subject  string   `json:"subject"`
 		Warnings []string `json:"warnings"`
+		Started  string   `json:"started_at"`
 		Pushed   *struct {
 			Commit string `json:"commit"`
 		} `json:"pushed"`
@@ -236,11 +250,12 @@ func mapDetail(raw rawDetail) *mrDetail {
 		mf.Agree, mf.Test = f.Agree, f.Test
 		if f.Thread != nil {
 			mf.ThreadAuthor, mf.ThreadBody = f.Thread.Author, strings.TrimSpace(f.Thread.Body)
+			mf.ThreadPath, mf.ThreadLine = f.Thread.Path, f.Thread.Line
 		}
 		d.Findings = append(d.Findings, mf)
 	}
 	if ap := raw.Apply; ap != nil {
-		d.Apply = &mrApply{ID: ap.ID, State: ap.State, Reason: ap.Reason, Commit: ap.Commit, Subject: ap.Subject, Warnings: ap.Warnings,
+		d.Apply = &mrApply{ID: ap.ID, State: ap.State, Reason: ap.Reason, Commit: ap.Commit, Subject: ap.Subject, Warnings: ap.Warnings, StartedAt: ap.Started,
 			Pushed: ap.Pushed != nil && ap.Pushed.Commit == ap.Commit && ap.Commit != ""}
 	}
 	if rv := raw.Review; rv != nil {

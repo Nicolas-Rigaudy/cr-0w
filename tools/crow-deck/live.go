@@ -134,6 +134,8 @@ func relaunchCmd(a agentRow) tea.Cmd {
 // reviewStartedMsg ends a review start: the MR's detail is fetched again to show the run.
 type reviewStartedMsg struct {
 	key, text string
+	apply     bool // the message ends an apply start
+	failed    bool
 }
 
 func reviewCmd(r mrRow) tea.Cmd {
@@ -144,9 +146,9 @@ func reviewCmd(r mrRow) tea.Cmd {
 		}
 		out, err := runBin("crow-review-run", args...)
 		if err != nil {
-			return reviewStartedMsg{r.key(), "review failed to start: " + firstLine(cmpOr(out, err.Error()))}
+			return reviewStartedMsg{r.key(), "review failed to start: " + firstLine(cmpOr(out, err.Error())), false, true}
 		}
-		return reviewStartedMsg{r.key(), "review started on " + r.Ref + ", findings appear here when it ends"}
+		return reviewStartedMsg{r.key(), "review started on " + r.Ref + ", findings appear here when it ends", false, false}
 	}
 }
 
@@ -155,9 +157,9 @@ func applyCmd(r mrRow) tea.Cmd {
 	return func() tea.Msg {
 		out, err := runBin("crow-review-run", "apply", r.Repo, strconv.Itoa(r.Number))
 		if err != nil {
-			return reviewStartedMsg{r.key(), "apply failed to start: " + firstLine(cmpOr(out, err.Error()))}
+			return reviewStartedMsg{r.key(), "apply failed to start: " + firstLine(cmpOr(out, err.Error())), true, true}
 		}
-		return reviewStartedMsg{r.key(), "apply started on " + r.Ref + ", it commits locally and pushes nothing"}
+		return reviewStartedMsg{r.key(), "apply started on " + r.Ref + ", it commits locally and pushes nothing", true, false}
 	}
 }
 

@@ -92,7 +92,7 @@ func TestApplyResultShows(t *testing.T) {
 	m := selfReviewModel(t, d)
 	m.mrItem = 2
 	out := m.View()
-	for _, want := range []string{"committed", "01234567 fix[PY]: paginate", "not pushed", "! files outside", "answer", "Le nom suit le module voisin."} {
+	for _, want := range []string{"committed", "01234567 fix[PY]: paginate", "local only", "! files outside", "answer", "Le nom suit le module voisin."} {
 		if !hasText(out, want) {
 			t.Errorf("view lacks %q", want)
 		}
