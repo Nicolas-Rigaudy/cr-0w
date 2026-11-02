@@ -63,7 +63,7 @@ prod launch > reviews (unblock devs) > sprint tickets > roadmap/management > R&D
 - `bin/crow-hub-guard` asks before any commit, push, rebase or MR in a registered repo and before a worktree in /tmp. Prefer handing off over approving it; an OK covers that one command only.
 
 ## Session hygiene
-- Pick the model at session start (hub default Sonnet; Opus for design, reviews, hard debugging) and never switch mid-session: a switch re-reads the whole context uncached.
+- Pick the model at session start (hub default Opus; Sonnet only for cheap scripted tasks) and never switch mid-session: a switch re-reads the whole context uncached.
 - At a natural break (a topic closed, before a long idle), suggest `/wrap` then `/clear`. Don't resume a large session after an hour idle; start fresh from the open threads.
 - Plan before building: for multi-step work (more than a small fix), write the whole plan in Logics (request, backlog items with scope, acceptance criteria, dependencies, execution order) and stop. Execute each item later in a fresh clear-context session started from its backlog doc. Do not start building in the planning session unless the owner asks.
 - Long sessions: auto-compact is capped at 150k (`bin/crow-ctx cap check`). On start and at each break run `bin/crow-ctx`; for any live session it lists (past 120k), propose `/wrap` and a split into scoped handoffs (runbooks/long-sessions.md).

@@ -13,6 +13,9 @@ allowed-tools: Bash(bin/crow-activity:*) Bash(bin/crow-releases:*) Bash(bin/crow
 Runs in its own context (no conversation history): everything needed is gathered below. Return only the brief.
 
 ## Pre-gathered
+Owner's priorities for today (local/state/today.md, only if dated today):
+!`head -30 "${CLAUDE_PROJECT_DIR}/local/state/today.md" 2>&1 || true`
+
 Forge activity since yesterday:
 !`"${CLAUDE_PROJECT_DIR}/bin/crow-activity" --since yesterday 2>&1 | head -150 || true`
 
@@ -60,6 +63,9 @@ Skip any source that errors and note it in one line at the bottom.
 ## Output (exactly this shape, skip empty sections)
 ```
 # Brief: <weekday DD/MM>
+
+## 🎯 Your priorities today
+- each line of today.md with its state (done / open), then what blocks it; skip if the file is not dated today
 
 ## 🔴 Needs you
 - review feedback on my MRs (unresolved threads, always first: fixing it gets them merged), reviews waiting on me (they unblock devs), approvals pending, failed runs, overdue tasks
