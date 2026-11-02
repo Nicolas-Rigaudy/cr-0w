@@ -20,13 +20,16 @@
 
 # Scope
 - In:
-  - From a finding, c opens a window (crow term) resuming the review session so the owner can discuss it with Claude, then returns to the deck.
+  - Owner decision 2026-11-02: `c` stays a note answered by the apply run (item_045). The interactive escape hatch is the existing `h` handoff, no new key.
+  - `h` on an MR with a findings file adds its path to the handoff task, so the repo session starts from the review, the decisions and the notes.
+  - Fix handoffTask: it checks `r.Role == "reviewer"` while roles are `REVIEWER`, so reviews get the author task.
 - Out:
-  - Escape hatch only; the normal path stays inside the deck.
+  - Resuming the review conversation in an interactive window (dropped).
 
 # Acceptance criteria
-- AC1: c opens a session with the review context.
-- AC2: Nothing runs without the confirm overlay showing the command.
+- AC1: `h` on a reviewed MR shows the findings file path in the task, and the overlay shows it before enter.
+- AC2: A reviewer MR gets the review task text, an own MR the threads text.
+- AC3: Nothing runs without the confirm overlay showing the command.
 
 # AC Traceability
 - req_010 AC1-AC5 -> this slice. Proof: its own acceptance criteria.

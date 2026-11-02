@@ -21,6 +21,7 @@
 # Scope
 - In:
   - A second dispatch with --resumes on the review run applies accepted and edited findings, commits locally as type[SCOPE] and reports a decision table. No push.
+  - Findings in state `chat`: the apply run reads the owner's note, answers it in the decision table and changes no code for them. The answer is stored on the finding so the deck shows it; the owner then decides with a/x/e.
 - Out:
   - Write rights only in this phase and only on a worktree under <repo>.wt/.
 
@@ -29,6 +30,8 @@
 - AC2: Commit subject follows type[SCOPE].
 - AC3: Nothing is pushed.
 - AC4: If the resume loses context the deck says so.
+- AC5: Each chat note gets an answer shown on its finding card, with no code change.
+- AC6: Tested with simulated runs only (owner decision 2026-11-02).
 
 # AC Traceability
 - req_010 AC1-AC5 -> this slice. Proof: its own acceptance criteria.
