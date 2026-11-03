@@ -82,3 +82,23 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Owner picks, round 2 (2026-11-02, page local/state/shots/deck-rework/r2-compare.html)
+- Agents: R2 approved. Asked where the "Accounts today" overview lives (B had it, R2 dropped it): add a compact accounts strip back.
+- MRs: neither variant. Actions (a x e c) must be far more visible, with an obvious way to advance to the next step. Keeping 3 columns is fine. No mode switch wanted; a way to scroll the code in place instead. Round 3 board needed.
+- Projects: R2 approved. "who" column only earns its place when it is not the owner (waiting on someone, management items); hide "you".
+- Usage: R2 approved with a fix: move By model next to By project to fill the empty space.
+- Themes: the accent comes from the user's terminal theme accent, and the palette from the user's terminal theme. Each theme must feel different in monochrome, by shape alone (frames, titles, gauges, selection, chrome). HUD amber is dropped; HUD uses the shared accent slot.
+
+# Owner picks, round 3 (2026-11-02)
+- MRs: R3 approved (3 columns, code scrolls in place, Your move panel with big keys and Then). Spec for item_051.
+- Projects: R2 approved (who prefix only when not the owner). Spec for item_060.
+- Usage: R2 approved with a fix: accounts whose policy is never (unused) are hidden from Usage, or kept as a single small line. Home Pulse keeps the quick overview of current usage per account. Spec for item_061.
+- Agents: R2 approved with a fix: Right now goes back to the top as the first thing to see; the day lanes come below it. Spec for item_059.
+- Themes: Soft gauges become dots (●●●○○), HUD gauges segments (▮▮▯▯; ▰▱ are not in FiraCode), so the four themes differ in monochrome. lazytf ━─ and Cyber [///...] stay.
+
+# Owner picks, round 4 (2026-11-03)
+- Agents: R2 approved, but the accounts strip is too small and hidden between the details. It must be visible at a glance (top area, next to or under Right now).
+- Accounts come in two tiers. Mine (the owner's main account, the one shared with the team, a future personal one): full detail. Team (teammates' accounts, policy never for crow): compact one-liner each (5h and week gauges, nothing more). Not hidden. Applies to Agents, Usage and Home Pulse. Needs a tier field in local/accounts.yaml (e.g. `tier: mine|team`) so a new account only needs one line.
+- Themes: ok for now (lazytf lines, Soft dots, Cyber slashes, HUD segments).
+- Redrawn 2026-11-03: Accounts box at the top of Agents beside Right now (under it in portrait); Usage Runway has a Team group; Home Pulse has one compact team row.

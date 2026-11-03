@@ -1,10 +1,10 @@
 ## item_055_deck_round_2_mockups_hybrid_picks_for_agents_mrs_projects_usage_hud_accent - Deck round 2 mockups: hybrid picks for Agents, MRs, Projects, Usage, HUD accent
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -58,4 +58,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
