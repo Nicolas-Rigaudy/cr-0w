@@ -57,7 +57,13 @@ type model struct {
 	prjZoom         bool
 
 	usePane, useSel int
-	useFortnight    bool
+	usePeriod       int            // p cycles today, week, month
+	useLed, usePrj  int            // Ledger and By project rows
+	useFold         map[string]int // ledger groups folded by hand
+	useFlat         bool           // g: ledger as one list
+	useFilter       string         // ledger limited to one project
+	useTok          bool           // c: daily chart in tokens
+	useShift        int            // h l: runway pan, hours
 
 	hist       bool // Agents shows the session history instead of the live view
 	histF      histFilter
@@ -203,7 +209,8 @@ func (m model) histView() histView {
 }
 
 func (m model) usageView() usageViewState {
-	return usageViewState{lk: m.look(), fx: m.fx, sync: m.sync, sel: m.useSel, pane: m.usePane, fortnight: m.useFortnight, now: m.now}
+	return usageViewState{lk: m.look(), fx: m.fx, sync: m.sync, now: m.now, pane: m.usePane, sel: m.useSel, period: m.usePeriod,
+		led: m.useLed, prj: m.usePrj, fold: m.useFold, flat: m.useFlat, filter: m.useFilter, tokens: m.useTok, shift: m.useShift}
 }
 
 func (m *model) selectAgent(i int) {
@@ -298,9 +305,7 @@ func (m *model) moveSel(d int) {
 		return
 	}
 	if m.page == 4 {
-		if m.usePane == upAccounts {
-			m.useSel = max(0, min(len(m.fx.Gauges)-1, m.useSel+d))
-		}
+		m.usageMove(d)
 		return
 	}
 	if m.page != 0 {
@@ -593,6 +598,11 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+	if m.page == 4 {
+		if mm, cmd, ok := m.usageKey(k); ok {
+			return mm, cmd
+		}
+	}
 	switch k {
 	case "q":
 		return m, tea.Quit
@@ -630,9 +640,6 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.todayKey(k)
 		}
 	case "d":
-		if m.page == 4 {
-			m.useFortnight = !m.useFortnight
-		}
 		if m.page == 1 {
 			m.agentZoom = !m.agentZoom
 		}
@@ -654,9 +661,6 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.agentFull = false
 			return m, nil
 		}
-		if m.page == 4 {
-			m.flash = k + ": editing the account policy arrives with the actions slice"
-		}
 	case "n", "p", "J", "K":
 		if m.page == 2 {
 			switch k {
@@ -667,13 +671,6 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.codeHunk(map[string]int{"J": 1, "K": -1}[k])
 			}
 			return m, nil
-		}
-		if m.page == 4 && k == "p" {
-			m.flash = k + ": editing the account policy arrives with the actions slice"
-		}
-	case "l":
-		if m.page == 4 {
-			m.flash = k + ": editing the account policy arrives with the actions slice"
 		}
 	case "/":
 		if m.page == 1 {
@@ -698,10 +695,6 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.page == 3 {
 			m.flash = m.projectKey(k)
 			return m, nil
-		}
-		if m.page == 4 && k == "r" {
-			m.flash = "refreshing usage…"
-			return m, fetchCmd(srcUsage)
 		}
 		m.flash = k + ": actions are not wired yet"
 	}
@@ -1103,7 +1096,7 @@ func (m model) context() []keyHint {
 		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o h", "action"}, {"z", "zoom"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 4 {
-		return []keyHint{{"j k", "account"}, {"tab", "pane"}, {"d", "7 / 14 days"}, {"r", "refresh"}, {"p l < >", "policy"}}
+		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"p", "period: " + periodNames[m.usePeriod]}, {"enter", "fold / filter"}, {"g", "group"}, {"o", "open in history"}, {"h l", "pan"}, {"c", "cost / tokens"}, {"r", "refresh"}}
 	}
 	if m.page != 0 {
 		return []keyHint{{"1-5 & é\" ' (", "tab"}, {"j k", "move"}}

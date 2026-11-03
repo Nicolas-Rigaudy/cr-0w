@@ -49,7 +49,7 @@ New sources needed:
 1. Gauges first, always on screen. Left share, reset time, burn and empty time on one row per account. Word "left" printed.
 2. A number that is a guess says so. Empty time and forecast carry "est". Costs carry "API-equivalent" once.
 3. One table schema. Session, project, model and account rows use the same columns, so grouping changes the rows and not the layout.
-4. Group-by and period are one key each. Period `d w m`, group `g` (project, model, account, day). Sort flips on a second press.
+4. Group-by and period are one key each. Period `p` cycles today, week, month (never `m`, the global mode key), group `g` (project, model, account, day). Sort flips on a second press.
 5. Drill down by size. `enter` on a project opens its sessions, `enter` on a session opens it in Agents history. `esc` goes back.
 6. Full titles and project names. The title column takes all free width, the numeric columns are fixed and right aligned.
 7. Warnings name the action. `ctx 182k over: wrap or compact`, `empty 16:26: move runs to account X`. Color marks the flag, text says the action.

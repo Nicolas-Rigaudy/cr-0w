@@ -131,7 +131,7 @@ func TestGaugeRowsSkipsNever(t *testing.T) {
 		{Account: "nodata"},
 		{Account: "mate", Remaining5hPct: &five, RemainingWeekPct: &week},
 	}}
-	g, team := gaugeRows(testRuns(), usage, []acctPolicy{{"main", "use", "mine"}, {"locked", "never", "mine"}, {"mate", "never", "team"}})
+	g, team := gaugeRows(testRuns(), usage, []acctPolicy{{"main", "use", "mine"}, {"locked", "never", "mine"}, {"mate", "never", "team"}}, testNow())
 	if len(g) != 1 || g[0].Account != "main" || g[0].Reset != "21:10" || g[0].Burn != "burn 12%/h" || g[0].RunsMax != 2 || g[0].Week != 70 {
 		t.Fatalf("gauges %+v", g)
 	}

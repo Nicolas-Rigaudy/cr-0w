@@ -94,6 +94,7 @@ type limitRow struct {
 	ResetWeekAt      string   `json:"reset_week_at"`
 	Burn5h           *float64 `json:"burn_5h_pct_per_h"`
 	EmptyAt          string   `json:"empty_at"`
+	Active           bool     `json:"active"`
 }
 
 type usageSession struct {
@@ -117,11 +118,37 @@ type usageSession struct {
 	Compactions    int                       `json:"compactions"`
 	ActivityTokens map[string]map[string]int `json:"activity_tokens"`
 	FilesEdited    map[string]int            `json:"files_edited"`
+	Active         bool                      `json:"active"`
+	InputTokens    int                       `json:"input_tokens"`
+	OutputTokens   int                       `json:"output_tokens"`
+	ContextTokens  int                       `json:"context_tokens"`
+	ContextLevel   string                    `json:"context_level"` // ok, warn, over
+	ByDay          map[string]dayUse         `json:"by_day"`
+	LimitShare     struct {
+		FiveH *float64 `json:"five_hour_pct"`
+		Week  *float64 `json:"week_pct"`
+	} `json:"limit_share"`
+}
+
+// dayUse is one session's or one day's share of tokens and cost.
+type dayUse struct {
+	Date       string  `json:"date"`
+	CostUSD    float64 `json:"cost_usd"`
+	Tokens     int     `json:"tokens"`
+	CacheRead  int     `json:"cache_read_tokens"`
+	CacheWrite int     `json:"cache_write_tokens"`
 }
 
 type usageName struct {
-	Name    string  `json:"name"`
-	CostUSD float64 `json:"cost_usd"`
+	Name     string  `json:"name"`
+	CostUSD  float64 `json:"cost_usd"`
+	Tokens   int     `json:"tokens"`
+	Sessions int     `json:"sessions"`
+}
+
+type usageTool struct {
+	Name  string `json:"name"`
+	Calls int    `json:"calls"`
 }
 
 type usageTotals struct {
@@ -131,6 +158,11 @@ type usageTotals struct {
 	CachePct        int         `json:"cache_pct"`
 	ByProject       []usageName `json:"by_project"`
 	ByModel         []usageName `json:"by_model"`
+	Tokens          int         `json:"tokens"`
+	Runs            int         `json:"runs"`
+	RoutedRuns      int         `json:"routed_runs"`
+	Compactions     int         `json:"compactions"`
+	Tools           []usageTool `json:"tools"`
 }
 
 type usageSnap struct {
@@ -139,20 +171,20 @@ type usageSnap struct {
 	Sessions    []usageSession `json:"sessions"`
 	Today       usageTotals    `json:"today"`
 	Week        usageTotals    `json:"week"`
-	Days        []struct {
-		Date    string  `json:"date"`
-		CostUSD float64 `json:"cost_usd"`
-	} `json:"days"`
-	History []struct {
-		Date    string  `json:"date"`
-		CostUSD float64 `json:"cost_usd"`
-	} `json:"history"`
-	RTK struct {
+	Month       usageTotals    `json:"month"`
+	History     []dayUse       `json:"history"`
+	RTK         struct {
 		TodaySavedTokens int     `json:"today_saved_tokens"`
 		TodaySavedPct    float64 `json:"today_saved_pct"`
+		TodayCommands    int     `json:"today_commands"`
 		SavedTokens      int     `json:"saved_tokens"`
 		SavedPct         float64 `json:"saved_pct"`
+		Commands         int     `json:"commands"`
 	} `json:"rtk"`
+	Retros struct {
+		Today int `json:"today"`
+		Week  int `json:"week"`
+	} `json:"retros"`
 }
 
 type acctPolicy struct {
@@ -595,7 +627,7 @@ func sameDay(a, b time.Time) bool {
 // policy never are left out (crow does not use them).
 // gaugeRows returns the accounts crow may use, then the tier team accounts (any policy)
 // for the compact Pulse line.
-func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) (mine, team []gauge) {
+func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy, now time.Time) (mine, team []gauge) {
 	if usage == nil {
 		return nil, nil
 	}
@@ -620,6 +652,7 @@ func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) (mine, team 
 		}
 		g := gauge{Account: l.Account, FiveH: *l.Remaining5hPct, Week: -1, Policy: pol, RunsUsed: used[l.Account], RunsMax: slots}
 		g.Reset, g.WeekReset = resetTime(l.Reset5hAt), l.ResetWeekAt
+		g.ResetAt, g.WeekAt, g.Active = resetAt(l.Reset5hAt, now), resetAt(l.ResetWeekAt, now), l.Active
 		g.Empty = emptyClock(l.EmptyAt)
 		if l.RemainingWeekPct != nil {
 			g.Week = *l.RemainingWeekPct
@@ -634,6 +667,18 @@ func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) (mine, team 
 		}
 	}
 	return mine, team
+}
+
+// resetAt reads a cdx reset such as "Nov 2 17:50" in the year of now; zero when unreadable.
+func resetAt(s string, now time.Time) time.Time {
+	t, err := time.ParseInLocation("2006 Jan 2 15:04", fmt.Sprintf("%d %s", now.Year(), s), time.Local)
+	if err != nil {
+		return time.Time{}
+	}
+	if t.Sub(now) < -180*24*time.Hour { // a January reset seen in December
+		t = t.AddDate(1, 0, 0)
+	}
+	return t
 }
 
 // resetTime keeps the clock of a "Oct 29 21:10" reset, whatever the day.
@@ -798,7 +843,7 @@ func buildFixtures(in liveInput) *fixtures {
 	if ls.runs != nil {
 		fx.Slots = [2]int{ls.runs.Slots.Busy, ls.runs.Slots.Max}
 	}
-	fx.Gauges, fx.Team = gaugeRows(ls.runs, ls.usage, ls.acct)
+	fx.Gauges, fx.Team = gaugeRows(ls.runs, ls.usage, ls.acct, now)
 	fx.Usage = usageViewOf(ls.usage, ls.reg, now)
 	var sessions []usageSession
 	if ls.usage != nil {

@@ -18,6 +18,9 @@ type gauge struct {
 	WeekReset string // "Nov 2 17:00" or "Mon"
 	Empty     string // clock the 5h window runs empty at the current burn
 	BurnPct   float64
+	ResetAt   time.Time // 5h window end, zero when unknown
+	WeekAt    time.Time // week reset, zero when unknown
+	Active    bool      // the account cdx uses now
 }
 
 // Agent groups on the Agents tab, in display order.
@@ -209,11 +212,18 @@ func mockFixtures() *fixtures {
 			{"10:05", "web", "0.40 tokens merged into the deck pill"},
 		},
 		Repos: 7, Dirty: 3, Ahead: 2,
-		Usage: mockUsage(),
+		Usage: mockUsage(mockNow()),
 		MRs:   mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
 	f.Cards = mockCards(mockNow())
 	mockLaneSetup(f, mockNow())
+	n := mockNow()
+	clockAt := func(back, h, m int) time.Time {
+		d := n.AddDate(0, 0, back)
+		return time.Date(d.Year(), d.Month(), d.Day(), h, m, 0, 0, n.Location())
+	}
+	f.Gauges[0].ResetAt, f.Gauges[0].WeekAt, f.Gauges[0].Active = clockAt(0, 16, 10), clockAt(0, 17, 0), true
+	f.Gauges[1].ResetAt, f.Gauges[1].WeekAt = clockAt(0, 19, 30), clockAt(1, 7, 0)
 	for i := range f.Next {
 		f.Next[i].Age = threadAge(f.Next[i].Since, time.Date(2026, 10, 29, 14, 2, 0, 0, time.Local))
 	}
