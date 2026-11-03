@@ -87,7 +87,7 @@ STATE = os.path.join(CROW_HOME, "local", "state")
 CACHE = os.path.join(STATE, "usage-cache.json")
 TITLES = os.path.join(STATE, "session-titles.json")
 TITLE_LOCK = os.path.join(STATE, ".titles.lock")
-CACHE_VERSION = 10
+CACHE_VERSION = 11
 TITLES_PER_RUN = 12
 TITLES_PER_DAY = int(os.environ.get("CROW_TITLES_PER_DAY") or 40)  # model calls; ~0.001 USD each on Haiku
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
@@ -283,6 +283,7 @@ def scan_transcript(path, registry=None):
     tools = {}     # label → [calls, text tokens, images]
     names = {}     # tool_use id → label
     active = {}    # date → set of 10-minute buckets
+    active_tok = {}  # date → 10-minute bucket → tokens
     compactions = 0
     context = 0    # context size of the session's last own turn (subagents excluded)
     meta = {"title": None, "entrypoint": None, "start": None, "end": None, "cwd": None, "user_messages": 0,
@@ -348,7 +349,11 @@ def scan_transcript(path, registry=None):
                     continue
                 seen.add(msg.get("id"))
                 day, hour = _local_hour(ts[:13])
-                active.setdefault(day, set()).add(hour * 6 + int(ts[14:16]) // 10)
+                bucket = hour * 6 + int(ts[14:16]) // 10
+                active.setdefault(day, set()).add(bucket)
+                per_bucket = active_tok.setdefault(day, {})
+                per_bucket[bucket] = per_bucket.get(bucket, 0) + sum(usage.get(k) or 0 for k in (
+                    "input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
                 add_usage(per_day.setdefault(day, {}), msg.get("model"), usage)
                 add_usage(per_hour.setdefault(ts[:13], {}), msg.get("model"), usage)
                 if fpath == path:
@@ -375,7 +380,8 @@ def scan_transcript(path, registry=None):
                 tot[k] += v
     return {"v": CACHE_VERSION, "meta": meta, "per_model": per_model, "per_day": per_day, "per_proj": per_proj, "per_hour": per_hour,
             "reg": registry_sig(registry), "tools": tools,
-            "compactions": compactions, "context_tokens": context, "active": {d: sorted(b) for d, b in active.items()}}
+            "compactions": compactions, "context_tokens": context, "active": {d: sorted(b) for d, b in active.items()},
+            "active_tok": {d: {str(k): v for k, v in sorted(b.items())} for d, b in active_tok.items()}}
 
 
 # ---------- session titles ----------
@@ -733,6 +739,8 @@ def collect_sessions(days):
             "multi_project": len(projects) > 1,
             "by_day_project": by_day_project,
             "activity": {d: b for d, b in (data.get("active") or {}).items() if d >= RECENT_DAY},
+            "activity_tokens": {d: b for d, b in (data.get("active_tok") or {}).items() if d >= RECENT_DAY},
+            "files_edited": meta.get("files") or {},
             "hours": {h: figures(models)["cost_usd"] for h, models in (data.get("per_hour") or {}).items() if h >= HOUR_CUTOFF},
         })
     os.makedirs(STATE, exist_ok=True)

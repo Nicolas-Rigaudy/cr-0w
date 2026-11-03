@@ -123,3 +123,14 @@ def test_plain_table_in_text_output(hub):
     setup(hub, "s10", [turn("a", 0, [("Read", {"file_path": "/w/lazytf/f"})], out=5)])
     r = run(hub, "crow-usage", env={"CROW_TITLES_OFF": "1", "PATH": "/usr/bin:/bin"})
     assert "by project today" in r.stdout and "lazytf" in r.stdout
+
+
+def test_activity_tokens_per_bucket_and_edited_files(hub):
+    setup(hub, "s3", [
+        turn("a", 0, out=100),
+        turn("b", 0, [("Edit", {"file_path": "/w/hub/a.py"})], out=40),
+    ])
+    s = usage(hub)["sessions"][0]
+    bucket = str(s["activity"][day(0)][0])
+    assert s["activity_tokens"][day(0)] == {bucket: 140}
+    assert s["files_edited"] == {"a.py": 1}

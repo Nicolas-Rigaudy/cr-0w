@@ -113,6 +113,10 @@ type usageSession struct {
 	Today    struct {
 		CostUSD float64 `json:"cost_usd"`
 	} `json:"today"`
+	CachePct       int                       `json:"cache_pct"`
+	Compactions    int                       `json:"compactions"`
+	ActivityTokens map[string]map[string]int `json:"activity_tokens"`
+	FilesEdited    map[string]int            `json:"files_edited"`
 }
 
 type usageName struct {
@@ -265,6 +269,8 @@ type liveState struct {
 	err   map[string]string
 	// MR diffs and threads, fetched when an MR is selected.
 	details map[string]*detailEntry
+	// git state of the selected lane's checkout, by path.
+	git map[string]*laneGit
 }
 
 type detailEntry struct {
@@ -275,7 +281,7 @@ type detailEntry struct {
 }
 
 func newLiveState() *liveState {
-	return &liveState{at: map[string]time.Time{}, err: map[string]string{}, details: map[string]*detailEntry{}}
+	return &liveState{at: map[string]time.Time{}, err: map[string]string{}, details: map[string]*detailEntry{}, git: map[string]*laneGit{}}
 }
 
 // srcMsg is one source's result.
@@ -484,6 +490,7 @@ func agentRows(now time.Time, runs *runsSnap, intr []intrSession, reg *registry)
 		if !started.IsZero() {
 			r.Started = started
 		}
+		r.Quiet = now.Add(-idle)
 		for _, e := range a.Recent {
 			if t, ok := parseTime(e.TS); ok {
 				r.Tail = append(r.Tail, tailLine{At: clock(t), Text: e.Action})
@@ -623,44 +630,6 @@ func resetTime(s string) string {
 		return s[i+1:]
 	}
 	return s
-}
-
-// whoWorked builds the timeline rows from today's 10-minute activity buckets.
-func whoWorked(now time.Time, usage *usageSnap, intr []intrSession, reg *registry) []whoRow {
-	if usage == nil {
-		return nil
-	}
-	day := now.Local().Format("2006-01-02")
-	paused := map[string]intrSession{}
-	for _, s := range intr {
-		if s.Relaunched == nil {
-			paused[s.ID] = s
-		}
-	}
-	var rows []whoRow
-	for _, s := range usage.Sessions {
-		b := s.Activity[day]
-		if len(b) == 0 {
-			continue
-		}
-		row := whoRow{Name: whoName(s, reg), Account: s.Account}
-		sort.Ints(b)
-		from, prev := b[0], b[0]
-		for _, x := range append(b[1:], 1<<30) {
-			if x > prev+1 {
-				row.On = append(row.On, hspan{float64(from) / 6, float64(prev+1) / 6})
-				from = x
-			}
-			prev = x
-		}
-		if p, ok := paused[s.ID]; ok && p.ResetsAt > 0 {
-			end := time.Unix(p.ResetsAt, 0).Local()
-			row.Off = append(row.Off, hspan{float64(b[len(b)-1]+1) / 6, float64(end.Hour()) + float64(end.Minute())/60})
-		}
-		rows = append(rows, row)
-	}
-	sort.SliceStable(rows, func(i, j int) bool { return rows[i].On[0].From < rows[j].On[0].From })
-	return rows
 }
 
 // whoName is the session title without its "project: " prefix; a title that is only a slash
@@ -819,7 +788,12 @@ func buildFixtures(in liveInput) *fixtures {
 	}
 	fx.Gauges, fx.Team = gaugeRows(ls.runs, ls.usage, ls.acct)
 	fx.Usage = usageViewOf(ls.usage, ls.reg, now)
-	fx.Who = whoWorked(now, ls.usage, ls.intr, ls.reg)
+	var sessions []usageSession
+	if ls.usage != nil {
+		sessions = ls.usage.Sessions
+	}
+	fx.Lanes = lanesOf(now, sessions, fx.Agents, fx.Slots, ls.reg)
+	fx.LaneGit = ls.git
 	fx.Today, fx.Mail = todayRows(ls.today, now.Local())
 	fx.Hist = histOf(ls.usage, ls.reg, now)
 	if ls.reg != nil {

@@ -15,7 +15,7 @@ Colours and font come from your kitty theme. See `runbooks/tui-render.md`.
 
 ## Deck live shots
 
-`TestLiveShots` renders the deck Home from the real sources (registry, open threads, accounts, runs) at 235x62 and 118x60, in all and work modes. Output contains private data: keep it under `local/`.
+`TestLiveShots` renders the deck Home (all and work modes) and the Agents page from the real sources (registry, open threads, accounts, runs, usage) at 235x62 and 118x60. Output contains private data: keep it under `local/`.
 
 ```sh
 D=local/state/shots/deck/live

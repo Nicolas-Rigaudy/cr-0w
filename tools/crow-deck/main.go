@@ -33,11 +33,14 @@ type model struct {
 	now   time.Time
 	ticks int
 
-	agentSel  int
-	agentKey  string // session or run id of the selected agent, keeps the cursor on it across refreshes
-	agentPane int
-	input     string
-	typing    bool
+	agentSel   int    // position in the lane display order
+	agentKey   string // key of the selected lane, keeps the cursor on it across refreshes
+	agentPane  int
+	agentShift int  // [ ]: hours the lane window moved back
+	agentFull  bool // w: the whole day
+	agentZoom  bool // d: Detail full screen
+	input      string
+	typing     bool
 
 	mrSel, mrPane, mrFile, mrItem int
 	mrKey                         string // key of the selected MR, keeps the cursor on it across refreshes
@@ -63,7 +66,9 @@ type model struct {
 
 func newModel(cfg config) model {
 	th := max(0, themeIndex(cfg.Theme))
-	return model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pNext, w: 160, h: 45, now: mockNow(), histF: newHistFilter()}
+	m := model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pNext, w: 160, h: 45, now: mockNow(), histF: newHistFilter()}
+	m.selectDefaultLane()
+	return m
 }
 
 // mockNow is a fixed time of day (14:07) so mock renders are stable.
@@ -76,6 +81,7 @@ func mockNow() time.Time {
 func (m *model) goLive() {
 	m.now = time.Now()
 	m.live = newLiveState()
+	m.agentSel, m.agentKey = 0, ""
 	m.sync = stLoading
 	m.fx = buildFixtures(liveInput{Now: m.now, LS: m.live})
 }
@@ -102,13 +108,28 @@ func (m *model) rebuild() {
 		return
 	}
 	m.keepMR()
-	for i, a := range m.fx.Agents {
-		if a.Session != "" && a.Session == m.agentKey {
+	for i, li := range laneOrder(m.fx.Lanes) {
+		if k := m.fx.Lanes[li].Key; k != "" && k == m.agentKey {
 			m.agentSel = i
 			return
 		}
 	}
+	if m.agentKey == "" {
+		m.selectDefaultLane()
+		return
+	}
 	m.selectAgent(m.agentSel)
+}
+
+// selectDefaultLane puts the cursor on the first lane that waits for an answer.
+func (m *model) selectDefaultLane() {
+	for i, li := range laneOrder(m.fx.Lanes) {
+		if m.fx.Lanes[li].State == lsNeeds {
+			m.selectAgent(i)
+			return
+		}
+	}
+	m.selectAgent(0)
 }
 
 // keepMR keeps the MR cursor on its MR when the list changes.
@@ -180,15 +201,38 @@ func (m model) usageView() usageViewState {
 }
 
 func (m *model) selectAgent(i int) {
-	m.agentSel = max(0, min(len(m.fx.Agents)-1, i))
-	if m.agentSel < len(m.fx.Agents) {
-		m.agentKey = m.fx.Agents[m.agentSel].Session
+	o := laneOrder(m.fx.Lanes)
+	m.agentSel = max(0, min(len(o)-1, i))
+	if m.agentSel < len(o) {
+		m.agentKey = m.fx.Lanes[o[m.agentSel]].Key
 	}
 }
 
 func (m model) agentsView() agentsView {
 	return agentsView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, pane: m.agentPane, sel: m.agentSel,
-		input: m.input, typing: m.typing, accents: agentAccounts(m.fx)}
+		input: m.input, typing: m.typing, shift: m.agentShift, full: m.agentFull, zoom: m.agentZoom}
+}
+
+// wantLaneGit reads the selected lane's working tree when it is older than the TTL.
+func (m *model) wantLaneGit() tea.Cmd {
+	if m.live == nil || m.page != 1 || m.hist {
+		return nil
+	}
+	l := m.agentsView().cur()
+	if l == nil || l.Cwd == "" {
+		return nil
+	}
+	g := m.live.git[l.Cwd]
+	if g != nil && (g.Busy || m.now.Sub(g.At) < laneGitTTL) {
+		return nil
+	}
+	if g == nil {
+		g = &laneGit{}
+		m.live.git[l.Cwd] = g
+	}
+	g.Busy = true
+	cwd := l.Cwd
+	return func() tea.Msg { return laneGitMsg{cwd: cwd, g: fetchLaneGit(cwd)} }
 }
 
 func (m model) look() *look { return newLook(themes[m.th], m.accent) }
@@ -203,6 +247,8 @@ func (m *model) setSync(s string) {
 	}
 	m.sel = [homePanes]int{}
 	m.agentSel, m.agentKey, m.input, m.typing = 0, "", "", false
+	m.agentShift, m.agentFull, m.agentZoom = 0, false, false
+	m.selectDefaultLane()
 	m.histSel = 0
 }
 
@@ -334,7 +380,7 @@ func (m *model) exec(c string) tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	nm, cmd := m.update(msg)
 	mm := nm.(model)
-	return mm, tea.Batch(cmd, mm.wantDetail())
+	return mm, tea.Batch(cmd, mm.wantDetail(), mm.wantLaneGit())
 }
 
 func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -354,6 +400,12 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case srcMsg:
 		if m.live != nil {
 			m.live.apply(msg)
+			m.rebuild()
+		}
+	case laneGitMsg:
+		if m.live != nil {
+			g := msg.g
+			m.live.git[msg.cwd] = &g
 			m.rebuild()
 		}
 	case detailMsg:
@@ -563,7 +615,27 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.page == 4 {
 			m.useFortnight = !m.useFortnight
 		}
-	case "p", "l", "[", "]":
+		if m.page == 1 {
+			m.agentZoom = !m.agentZoom
+		}
+	case "w":
+		if m.page == 1 {
+			m.agentFull, m.agentShift = !m.agentFull, 0
+		}
+	case "[", "]":
+		if m.page == 1 {
+			if k == "[" {
+				m.agentShift = min(m.agentShift+1, max(0, m.now.Hour()-3))
+			} else {
+				m.agentShift = max(0, m.agentShift-1)
+			}
+			m.agentFull = false
+			return m, nil
+		}
+		if m.page == 4 {
+			m.flash = k + ": editing the account policy arrives with the actions slice"
+		}
+	case "p", "l":
 		if m.page == 4 {
 			m.flash = k + ": editing the account policy arrives with the actions slice"
 		}
@@ -612,11 +684,18 @@ func (m model) projectKey(k string) string {
 	return k + ": not wired"
 }
 
+// curAgent is the selected lane's agent. A lane that ended today gets a stand-in row
+// so enter can resume it.
 func (m model) curAgent() *agentRow {
-	if m.agentSel >= 0 && m.agentSel < len(m.fx.Agents) {
-		return &m.fx.Agents[m.agentSel]
+	av := m.agentsView()
+	l := av.cur()
+	if l == nil {
+		return nil
 	}
-	return nil
+	if a := av.agent(l); a != nil {
+		return a
+	}
+	return &agentRow{Name: l.Project, Project: l.Project, Title: l.Title, Account: l.Account, Cwd: l.Cwd, Session: l.Key, Group: gDone}
 }
 
 // followItem moves the diff to the file of the card the cursor is on.
@@ -817,17 +896,14 @@ func (m model) agentKeyPress(k string) (tea.Model, tea.Cmd) {
 		m.input = map[string]string{"a": "yes", "x": "no", "e": "yes, but ", "c": ""}[k]
 		m.typing = true
 		m.agentPane = apTail
-	case "g":
+	case "enter", "g":
 		return m, attachCmd(*a)
-	case "R":
+	case "r", "R":
 		if !a.Interrupted {
-			m.flash = "R relaunches a session paused on a limit"
+			m.flash = "r relaunches a session paused on a limit"
 			return m, nil
 		}
 		m.overlay = ovConfirm
-	case "enter":
-		m.typing = true
-		m.agentPane = apTail
 	default:
 		m.flash = k + ": not an Agents action"
 	}
@@ -899,7 +975,7 @@ func (m model) context() []keyHint {
 		if m.typing {
 			return []keyHint{{"enter", "send"}, {"esc", "cancel"}}
 		}
-		return []keyHint{{"j k", "agent"}, {"a x e c", "answer"}, {"enter", "send"}, {"g", "jump"}, {"/", "history"}, {"tab", "pane"}}
+		return []keyHint{{"enter", "open"}, {"j k", "lane"}, {"a x e c", "answer"}, {"r", "relaunch"}, {"[ ]", "hour range"}, {"w", "full day"}, {"d", "detail"}, {"tab", "pane"}, {"/", "history"}}
 	}
 	if m.page == 2 {
 		if m.mrTyping != "" {

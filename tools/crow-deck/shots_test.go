@@ -16,7 +16,7 @@ import (
 //	SHOTS=/abs/dir go test -run TestShots .
 //
 // Files: <theme>-<page>-<size>[-<state>].ans. Sizes: wide 170x46, laptop 160x45,
-// portrait 118x60, narrow 120x40, small 90x30.
+// portrait 118x60, narrow 120x40, small 90x30, board 235x62 (the round 2 landscape boards).
 func TestShots(t *testing.T) {
 	dir := os.Getenv("SHOTS")
 	if dir == "" {
@@ -27,7 +27,7 @@ func TestShots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	sizes := map[string][2]int{"wide": {170, 46}, "portrait": {118, 60}, "narrow": {120, 40}, "small": {90, 30}}
+	sizes := map[string][2]int{"wide": {170, 46}, "portrait": {118, 60}, "narrow": {120, 40}, "small": {90, 30}, "board": {235, 62}}
 	write := func(name string, m model) {
 		f := filepath.Join(dir, name+".ans")
 		if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
@@ -72,7 +72,7 @@ func TestShots(t *testing.T) {
 		m.page, m.overlay = 2, ovPost
 		write(fmt.Sprintf("%s-overlay-post", th.name), m)
 		m.page, m.overlay = 1, ovConfirm
-		m.selectAgent(4)
+		selectLane(&m, func(l laneRow) bool { return l.State == lsPaused })
 		write(fmt.Sprintf("%s-overlay-relaunch", th.name), m)
 	}
 }
@@ -86,15 +86,27 @@ func agentShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m.th, m.page, m.w, m.h = ti, 1, sizes[sn][0], sizes[sn][1]
 		return m
 	}
-	m := base("wide")
-	m.selectAgent(2)
-	write(name+"-Agents-wide-running", m)
-	m.selectAgent(4)
-	write(name+"-Agents-wide-paused", m)
-	m = base("wide")
+	for _, sn := range []string{"board", "portrait"} {
+		m := base(sn)
+		write(name+"-Agents-"+sn, m)
+		selectLane(&m, func(l laneRow) bool { return l.State == lsWorking })
+		write(name+"-Agents-"+sn+"-running", m)
+		selectLane(&m, func(l laneRow) bool { return l.State == lsPaused })
+		write(name+"-Agents-"+sn+"-paused", m)
+		selectLane(&m, func(l laneRow) bool { return l.State == lsDone })
+		write(name+"-Agents-"+sn+"-done", m)
+		m = base(sn)
+		m.agentPane = apDiff
+		write(name+"-Agents-"+sn+"-diff", m)
+		m.agentPane, m.agentFull = apDetail, true
+		write(name+"-Agents-"+sn+"-detail-fullday", m)
+		m.agentZoom = true
+		write(name+"-Agents-"+sn+"-zoom", m)
+	}
+	m := base("board")
 	m.input, m.typing = "yes, but keep the scope", true
-	write(name+"-Agents-wide-typing", m)
-	for pane, pn := range []string{"list", "tail", "who"} {
+	write(name+"-Agents-board-typing", m)
+	for pane, pn := range agentPaneNames {
 		m = base("small")
 		m.agentPane = pane
 		write(fmt.Sprintf("%s-Agents-small-%s", name, pn), m)
@@ -270,11 +282,16 @@ func TestLiveShots(t *testing.T) {
 	}
 	for _, sz := range [][2]int{{235, 62}, {118, 60}} {
 		for _, mode := range []string{"all", "work"} {
-			m.w, m.h, m.mode = sz[0], sz[1], mode
+			m.w, m.h, m.mode, m.page = sz[0], sz[1], mode, 0
 			f := filepath.Join(dir, fmt.Sprintf("home-live-%dx%d-%s.ans", sz[0], sz[1], mode))
 			if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
 				t.Fatal(err)
 			}
+		}
+		m.page, m.mode = 1, "all"
+		f := filepath.Join(dir, fmt.Sprintf("agents-live-%dx%d.ans", sz[0], sz[1]))
+		if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

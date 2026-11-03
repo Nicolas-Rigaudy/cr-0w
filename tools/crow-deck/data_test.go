@@ -152,22 +152,48 @@ func TestDoneToday(t *testing.T) {
 	}
 }
 
-func TestWhoWorkedSpansAndPause(t *testing.T) {
-	resets := time.Date(2026, 10, 29, 16, 0, 0, 0, time.Local).Unix()
-	usage := &usageSnap{Sessions: []usageSession{
-		{ID: "s1", Account: "main", Project: "atlas", Title: "design", Activity: map[string][]int{"2026-10-29": {54, 55, 56, 60}}},
-		{ID: "s2", Account: "spare", Project: "orbit", Activity: map[string][]int{"2026-10-29": {40, 41}}},
-		{ID: "s3", Account: "main", Project: "orbit", Activity: map[string][]int{"2026-10-28": {10}}},
-	}}
-	rows := whoWorked(testNow(), usage, []intrSession{{ID: "s2", ResetsAt: resets}}, testReg())
-	if len(rows) != 2 || rows[0].Name != "orb" || rows[1].Name != "design" {
-		t.Fatalf("rows %+v", rows)
+func TestLanesJoinAgentsAndMergeRuns(t *testing.T) {
+	agents := agentRows(testNow(), testRuns(), nil, testReg())
+	day := "2026-10-29"
+	act := func(bs ...int) map[string][]int { return map[string][]int{day: bs} }
+	sessions := []usageSession{
+		{ID: "s-wait", Account: "main", Project: "atlas", Title: "atlas: review !1", Activity: act(82, 83),
+			ActivityTokens: map[string]map[string]int{day: {"82": 900, "83": 100}}, Models: []string{"claude-sonnet-5-5", "claude-opus-5-5[1m]"}},
+		{ID: "s-done", Account: "main", Project: "orbit", Title: "notes pass", Activity: act(54, 55)},
+		{ID: "r1", Kind: "run", Project: "atlas", Title: "lint", Activity: act(40), Today: struct {
+			CostUSD float64 `json:"cost_usd"`
+		}{0.5}},
+		{ID: "r2", Kind: "run", Project: "atlas", Title: "lint", Activity: act(60), Today: struct {
+			CostUSD float64 `json:"cost_usd"`
+		}{0.25}},
+		{ID: "s-old", Project: "orbit", Activity: map[string][]int{"2026-10-28": {10}}},
 	}
-	if len(rows[1].On) != 2 || rows[1].On[0] != (hspan{9, 9.5}) || rows[1].On[1] != (hspan{10, 10 + 1.0/6}) {
-		t.Errorf("spans %+v", rows[1].On)
+	lanes := lanesOf(testNow(), sessions, agents, [2]int{1, 2}, testReg())
+	by := map[string]laneRow{}
+	for _, l := range lanes {
+		by[l.Key] = l
 	}
-	if len(rows[0].Off) != 1 || rows[0].Off[0].To != 16 {
-		t.Errorf("paused span %+v", rows[0].Off)
+	if _, ok := by["s-old"]; ok {
+		t.Error("yesterday's session got a lane")
+	}
+	w := by["s-wait"]
+	if w.State != lsNeeds || !w.NextYou || w.Model != "opus-5-5" || w.Tok[82] != 900 || w.Ctx != 31000 || w.Cwd != "/w/atlas" {
+		t.Errorf("waiting lane %+v", w)
+	}
+	if !w.WaitFrom.Equal(testNow().Add(-time.Minute)) {
+		t.Errorf("wait from %v", w.WaitFrom)
+	}
+	if d := by["s-done"]; d.State != lsDone || d.Agent != -1 || d.mins() != 20 {
+		t.Errorf("done lane %+v", d)
+	}
+	if r := by["r1"]; r.Runs != 2 || len(r.Cells) != 2 || r.Cost != 0.75 {
+		t.Errorf("merged runs %+v", r)
+	}
+	if i := by["s-idle"]; i.State != lsIdle || i.Next != "next prompt" {
+		t.Errorf("live agent without activity %+v", i)
+	}
+	if o := laneOrder(lanes); lanes[o[0]].Key != "r1" && lanes[o[0]].Key != "s-wait" {
+		t.Errorf("the project that needs the owner comes first: %v", o)
 	}
 	if n := whoName(usageSession{Project: "atlas", Title: "atlas: fix retry"}, testReg()); n != "fix retry" {
 		t.Errorf("name %q", n)
@@ -175,8 +201,23 @@ func TestWhoWorkedSpansAndPause(t *testing.T) {
 	if n := whoName(usageSession{Project: "atlas", Title: "atlas: /retro run"}, testReg()); n != "atl" {
 		t.Errorf("slash title %q", n)
 	}
-	if u := unionHours([]hspan{{9, 11}, {10, 12}, {13, 14}}); u != 4 {
-		t.Errorf("union %v", u)
+}
+
+func TestLaneGitParsesNumstat(t *testing.T) {
+	old := gitRunner
+	defer func() { gitRunner = old }()
+	gitRunner = func(dir string, args ...string) (string, error) {
+		switch {
+		case args[1] == "--numstat":
+			return "3\t1\tsrc/a.go\n-\t-\tlogo.png\n", nil
+		case args[0] == "diff":
+			return "diff --git a/src/a.go b/src/a.go\n+x\n", nil
+		}
+		return "abc123 fix[GO]: thing\n", nil
+	}
+	g := fetchLaneGit("/w")
+	if len(g.Files) != 2 || g.Files[0] != (gitFile{Path: "src/a.go", Add: 3, Del: 1}) || !g.Files[1].Binary || len(g.Diff) != 2 || g.Last != "abc123 fix[GO]: thing" {
+		t.Fatalf("git %+v", g)
 	}
 }
 
@@ -318,16 +359,17 @@ func TestLiveModelLoadsAndKeepsCursor(t *testing.T) {
 	if m.sync != stFresh || len(m.fx.Agents) != 5 {
 		t.Fatalf("sync %s agents %d", m.sync, len(m.fx.Agents))
 	}
+	want := m.fx.Lanes[laneOrder(m.fx.Lanes)[2]].Key
 	m = send(m, keyMsg("j"), keyMsg("j"))
-	if m.agentKey != "s-idle" {
-		t.Fatalf("cursor on %q", m.agentKey)
+	if m.agentKey != want {
+		t.Fatalf("cursor on %q, want %q", m.agentKey, want)
 	}
 	// A refresh that adds a row above must not move the cursor off its agent.
 	r := testRuns()
 	r.Agents = append([]liveAgent{{PID: 99, Account: "main", Project: "atlas", SessionID: "s-new", State: "waiting", StartedAt: iso(14, 6)}}, r.Agents...)
 	m = send(m, srcMsg{src: srcRuns, val: r, at: testNow()})
-	if m.fx.Agents[m.agentSel].Session != "s-idle" {
-		t.Errorf("cursor moved to %q", m.fx.Agents[m.agentSel].Session)
+	if k := m.fx.Lanes[laneOrder(m.fx.Lanes)[m.agentSel]].Key; k != want {
+		t.Errorf("cursor moved to %q", k)
 	}
 }
 
@@ -387,11 +429,7 @@ func TestRelaunchNeedsConfirm(t *testing.T) {
 	if m.overlay == ovConfirm {
 		t.Fatal("R on a running agent must not open the confirm")
 	}
-	for i, a := range m.fx.Agents {
-		if a.Interrupted {
-			m.selectAgent(i)
-		}
-	}
+	selectLane(&m, func(l laneRow) bool { return l.State == lsPaused })
 	calls := recordRuns(t, "", nil)
 	old := relaunchTarget
 	relaunchTarget = func() (string, error) { return "spare", nil }
@@ -471,5 +509,15 @@ func TestRegistryFindByFolder(t *testing.T) {
 	}
 	if got := r.fullName("unknown"); got != "unknown" {
 		t.Fatalf("unknown = %q", got)
+	}
+}
+
+// selectLane puts the Agents cursor on the first lane that matches.
+func selectLane(m *model, ok func(laneRow) bool) {
+	for i, li := range laneOrder(m.fx.Lanes) {
+		if ok(m.fx.Lanes[li]) {
+			m.selectAgent(i)
+			return
+		}
 	}
 }

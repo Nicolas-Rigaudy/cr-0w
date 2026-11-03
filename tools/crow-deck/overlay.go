@@ -77,8 +77,9 @@ func (lk *look) helpOverlay(w, h int, page int) []string {
 		{"m", "mode: work, perso, all"}, {"t", "switch theme"}, {":", "palette"}, {"?", "this help"},
 		{"/", "Agents: history and search; esc back to live"},
 		{"p a d M s x", "History: filter project, account, date, model, status; clear"}, {"a x e c", "Agents: answer yes, no, edit, chat"},
-		{"enter", "Agents: send the typed answer"}, {"g", "Agents: jump to the agent's window"},
-		{"R", "Agents: relaunch a paused run"}, {"h r x", "handoff, review, snooze (later slices)"}, {"q", "quit"},
+		{"enter", "Agents: open the lane's session; send a typed answer"},
+		{"r", "Agents: relaunch a paused run"}, {"[ ] w", "Agents: move the hour range; full day"},
+		{"d", "Agents: Detail full screen"}, {"q", "quit"},
 	}
 	sp := boxSpec{title: "Keys", sel: -1}
 	for _, k := range keys {

@@ -52,15 +52,8 @@ type agentRow struct {
 	Cwd         string
 	Interrupted bool
 	Started     time.Time
-}
-
-// hspan is a stretch of the day in hours (8.5 = 08:30).
-type hspan struct{ From, To float64 }
-
-// whoRow is one line of "Who worked when": active stretches, then paused ones.
-type whoRow struct {
-	Name, Account string
-	On, Off       []hspan
+	Quiet       time.Time // last activity
+	Model       string    // short model name, from the usage session
 }
 
 type blocker struct {
@@ -123,13 +116,14 @@ type fixtures struct {
 	Cards               []projCard // Projects tab
 	Quiet               []string   // projects without a roadmap or activity
 	Repos, Dirty, Ahead int
-	Slots               [2]int // background runs busy, cap
-	Who                 []whoRow
-	Hist                []histSession // History, newest first
-	HistTotal           int           // sessions in the archive, 0: len(Hist)
-	Live                bool          // from the scripts, not invented
-	Sync                string        // sync state of live data
-	SyncNote            string        // stale age or failing source for the header dot
+	Slots               [2]int              // background runs busy, cap
+	Lanes               []laneRow           // Agents day lanes
+	LaneGit             map[string]*laneGit // git state by checkout, fetched for the selected lane
+	Hist                []histSession       // History, newest first
+	HistTotal           int                 // sessions in the archive, 0: len(Hist)
+	Live                bool                // from the scripts, not invented
+	Sync                string              // sync state of live data
+	SyncNote            string              // stale age or failing source for the header dot
 	// Counts behind the tab badges and the Blockers title.
 	MRsAwaiting, MRsMine, MRsThreads int
 	// MRs tab.
@@ -153,7 +147,6 @@ func mockFixtures() *fixtures {
 		},
 		Agents: mockAgents(),
 		Slots:  [2]int{1, 2},
-		Who:    mockWho(),
 		Hist:   mockHist(mockNow()), HistTotal: 212,
 		Sync: stFresh,
 		Blockers: []blocker{
@@ -219,6 +212,7 @@ func mockFixtures() *fixtures {
 		MRs:   mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
 	f.Cards, f.Quiet = mockCards(mockNow())
+	mockLaneSetup(f, mockNow())
 	for i := range f.Next {
 		f.Next[i].Age = threadAge(f.Next[i].Since, time.Date(2026, 10, 29, 14, 2, 0, 0, time.Local))
 	}
@@ -255,20 +249,11 @@ func mockAgents() []agentRow {
 	return rows
 }
 
-func mockWho() []whoRow {
-	return []whoRow{
-		{Name: "crow designs", Account: "main", On: []hspan{{9.5, 14.1}}},
-		{Name: "atlas session", Account: "main", On: []hspan{{10, 11.4}, {13.2, 14.1}}},
-		{Name: "vault", Account: "main", On: []hspan{{10.8, 12}, {13.6, 14.1}}},
-		{Name: "notes", Account: "main", On: []hspan{{12, 12.5}}},
-		{Name: "run 99a8", Account: "spare", On: []hspan{{11.4, 13.4}}, Off: []hspan{{13.4, 16.2}}},
-	}
-}
-
 // emptyFixtures: no agent, no MR, no blocker.
 func emptyFixtures() *fixtures {
 	f := mockFixtures()
 	f.Agents, f.Blockers, f.Today, f.Mail, f.Next, f.Projects = nil, nil, nil, nil, nil, nil
+	f.Lanes, f.LaneGit = nil, nil
 	f.Decide, f.Done = nil, nil
 	f.Hist, f.HistTotal = nil, 0
 	f.MRs, f.Branches, f.MRDetails = nil, nil, nil

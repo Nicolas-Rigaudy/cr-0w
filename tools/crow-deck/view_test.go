@@ -63,7 +63,7 @@ func checkFit(t *testing.T, label, out string, w, h int) {
 	}
 }
 
-var sizes = [][2]int{{170, 46}, {160, 45}, {150, 40}, {149, 40}, {118, 60}, {120, 40}, {100, 30}, {99, 30}, {90, 30}, {60, 20}}
+var sizes = [][2]int{{235, 62}, {170, 46}, {160, 45}, {150, 40}, {149, 40}, {118, 60}, {120, 40}, {100, 30}, {99, 30}, {90, 30}, {60, 20}}
 
 // Every page, theme, state and size must fill the terminal and never overflow a line.
 func TestViewsFitTerminal(t *testing.T) {
