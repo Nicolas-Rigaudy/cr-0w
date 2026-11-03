@@ -181,17 +181,29 @@ type regProject struct {
 		Target  string `json:"target"`
 		State   string `json:"state"`
 		Roadmap string `json:"roadmap"`
+		Date    string `json:"date"`  // YYYY-MM-DD, a dated release without a roadmap doc
+		Label   string `json:"label"` // its name, "Prod launch"
 	} `json:"release"`
-	Road *regRoad `json:"road"`
-	Git  regGit   `json:"git"`
+	Road *regRoad       `json:"road"`
+	Git  regGit         `json:"git"`
+	Work map[string]int `json:"work"` // owner commits per day, YYYY-MM-DD
 }
 
 // regRoad is the milestone progress crow-registry reads from the roadmap doc.
 type regRoad struct {
-	Done    int    `json:"done"`
-	Total   int    `json:"total"`
-	Current string `json:"current"`
-	Exit    string `json:"exit"`
+	Done    int       `json:"done"`
+	Total   int       `json:"total"`
+	Current string    `json:"current"`
+	Exit    string    `json:"exit"`
+	Start   string    `json:"start"`  // the roadmap doc date
+	Target  string    `json:"target"` // the current milestone's date
+	Miles   []regMile `json:"miles"`
+}
+
+type regMile struct {
+	Title string `json:"title"`
+	Done  bool   `json:"done"`
+	Date  string `json:"date"`
 }
 
 type registry struct {
@@ -823,7 +835,7 @@ func buildFixtures(in liveInput) *fixtures {
 			}
 		}
 	}
-	fx.Cards, fx.Quiet = projectCardsOf(now, ls.reg, fx.Agents, fx.Next, fx.MRs)
+	fx.Cards = projectCardsOf(now, ls.reg, fx.Agents, fx.Next, fx.MRs)
 	fx.Projects = homeProjects(now, ls.reg, fx.Cards)
 	fx.MRDetails, fx.MRErrs = map[string]*mrDetail{}, map[string]string{}
 	for k, e := range ls.details {

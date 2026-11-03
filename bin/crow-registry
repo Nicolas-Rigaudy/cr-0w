@@ -2,16 +2,22 @@
 """crow-registry: the project registry (local/projects.yaml) plus cheap git state, as JSON for the deck.
 
   crow-registry json   {identities, state_dir, projects: [{name, short, scope, forge, remote, path, release, status,
-                        logics, road, git: {email, dirty, ahead, stale_trees}}]}
+                        logics, road, git: {email, dirty, ahead, stale_trees}, work: {YYYY-MM-DD: commits}}]}
 
 road is read from release.roadmap (a Logics roadmap doc, path relative to the project or absolute): {done, total,
-current, exit} with the milestones under "# Milestones" as "## version - title" headings. A milestone is done when its
-heading says "(delivered)" or its exit signal starts with "Met". current and exit describe the first milestone not done.
-road is null without a readable roadmap. The doc carries no target dates, so none are reported.
+current, exit, start, target, miles} with the milestones under "# Milestones" as "## version - title" headings. A
+milestone is done when its heading says "(delivered)" or its exit signal starts with "Met". current and exit describe
+the first milestone not done. start is the doc's "> Date:" line. A milestone dates itself with a "- Target: YYYY-MM-DD"
+line; target is the current milestone's date. road is null without a readable roadmap.
+
+release passes through as written in projects.yaml; release.date (YYYY-MM-DD) and release.label name a dated release
+for projects without a roadmap doc. work counts the scope identity's commits per day over the last WORK_DAYS days, on
+every branch (the subdir only, when the project has one).
 
 state_dir is vault.crow_dir, else local/state. short is the first alias, else the name. stale_trees counts <path>.wt/* worktrees already merged into
 the default branch. Read only.
 """
+import datetime as dt
 import json, os, re, subprocess, sys
 from pathlib import Path
 
@@ -54,6 +60,23 @@ def git_state(path):
             "ahead": int(ahead) if ahead and ahead.isdigit() else 0, "stale_trees": stale_trees(path)}
 
 
+WORK_DAYS = 120
+
+
+def work_days(path, email, subdir=""):
+    """Commits per day by email over the last WORK_DAYS days, on every branch."""
+    if not path or not email or not (Path(path) / ".git").exists():
+        return {}
+    since = (dt.date.today() - dt.timedelta(days=WORK_DAYS)).isoformat()
+    args = ["log", "--all", "--since", since, "--author", email, "--date=short", "--format=%ad"]
+    if subdir:
+        args += ["--", subdir]
+    out = {}
+    for day in (git(path, *args) or "").split():
+        out[day] = out.get(day, 0) + 1
+    return dict(sorted(out.items()))
+
+
 def road_info(path, roadmap):
     """Milestone progress of a Logics roadmap doc, or None when there is none to read."""
     if not roadmap:
@@ -65,6 +88,7 @@ def road_info(path, roadmap):
         return None
     if "# Milestones" not in text:
         return None
+    start = re.search(r"^> Date: (\d{4}-\d{2}-\d{2})", text, re.M)
     body = text.split("# Milestones", 1)[1]
     body = re.split(r"\n# (?!#)", body, maxsplit=1)[0]
     miles = []
@@ -75,13 +99,15 @@ def road_info(path, roadmap):
         title = head.group(1).strip()
         sig = re.search(r"^- Exit signal: (.+)$", chunk, re.M)
         sig = sig.group(1).strip() if sig else ""
+        date = re.search(r"^- Target: (\d{4}-\d{2}-\d{2})", chunk, re.M)
         miles.append({"title": re.sub(r"\s*\(delivered\)\s*$", "", title), "exit": sig,
-                      "done": "(delivered)" in title or sig.startswith("Met")})
+                      "done": "(delivered)" in title or sig.startswith("Met"), "date": date.group(1) if date else ""})
     if not miles:
         return None
     nxt = next((m for m in miles if not m["done"]), None)
     return {"done": sum(m["done"] for m in miles), "total": len(miles), "current": nxt["title"] if nxt else "",
-            "exit": nxt["exit"] if nxt else ""}
+            "exit": nxt["exit"] if nxt else "", "start": start.group(1) if start else "",
+            "target": nxt["date"] if nxt else "", "miles": miles}
 
 
 def load():
@@ -90,6 +116,7 @@ def load():
     except FileNotFoundError:
         reg = {}
     out = []
+    ids = reg.get("identities") or {}
     for p in reg.get("projects") or []:
         aliases = p.get("aliases") or []
         out.append({
@@ -98,6 +125,7 @@ def load():
             "path": p.get("path", ""), "release": p.get("release") or {}, "status": p.get("status", ""),
             "logics": bool(p.get("logics")),
             "road": road_info(p.get("path", ""), (p.get("release") or {}).get("roadmap")), "git": git_state(p.get("path", "")),
+            "work": work_days(p.get("path", ""), ids.get(p.get("scope", ""), ""), p.get("subdir", "")),
         })
     state = (reg.get("vault") or {}).get("crow_dir") or os.path.join(HOME, "local", "state")
     return {"identities": reg.get("identities") or {}, "state_dir": state, "projects": out}

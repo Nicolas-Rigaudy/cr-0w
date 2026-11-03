@@ -1,13 +1,15 @@
 ## item_060_deck_projects_build_from_the_round_2_pick - Deck Projects build from the round 2 pick
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-03 13:55:24
 
 # AI Context
 - Summary: Build the Projects tab from the board the owner picks in item_055.
@@ -59,4 +61,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

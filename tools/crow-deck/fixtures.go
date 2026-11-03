@@ -115,8 +115,7 @@ type fixtures struct {
 	Done                []doneRow // today's activity log, newest first
 	Team                []gauge   // tier team accounts, one compact Pulse line
 	Projects            []projRow
-	Cards               []projCard // Projects tab
-	Quiet               []string   // projects without a roadmap or activity
+	Cards               []projCard // Projects tab, every active project
 	Repos, Dirty, Ahead int
 	Slots               [2]int              // background runs busy, cap
 	Lanes               []laneRow           // Agents day lanes
@@ -213,7 +212,7 @@ func mockFixtures() *fixtures {
 		Usage: mockUsage(),
 		MRs:   mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
-	f.Cards, f.Quiet = mockCards(mockNow())
+	f.Cards = mockCards(mockNow())
 	mockLaneSetup(f, mockNow())
 	for i := range f.Next {
 		f.Next[i].Age = threadAge(f.Next[i].Since, time.Date(2026, 10, 29, 14, 2, 0, 0, time.Local))
@@ -261,7 +260,7 @@ func emptyFixtures() *fixtures {
 	f.MRs, f.Branches, f.MRDetails = nil, nil, nil
 	f.MRsAwaiting, f.MRsMine, f.MRsThreads = 0, 0, 0
 	f.Usage = nil
-	f.Cards, f.Quiet = nil, nil
+	f.Cards = nil
 	f.Gauges[1].RunsUsed = 0
 	return f
 }
