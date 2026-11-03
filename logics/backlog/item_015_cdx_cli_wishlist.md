@@ -8,6 +8,7 @@
 > Complexity: Small
 > Theme: Hub portability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-03 17:24:37
 
 # AI Context
 - Summary: Write the list of what crow still needs from the cdx CLI as the reply text for #6 (already drafted in the review note).
@@ -54,3 +55,6 @@ Delivered by the maintainer (PR #51): `runs --running --json`, `sessions [--all]
 Adopted: running runs, final_message.
 Not adopted yet: profile_dir/transcripts_dir (about 20 direct reads of the profile layout, tests use temp profiles), `--conversation` in crow-relaunch, `cdx sessions` instead of the /proc scan (non-cdx sessions need /proc).
 Issue #6 stays open until the owner closes it.
+
+## cdx 0.25 follow-up (2026-11-03)
+Wanted: a per-run way to pass Claude CLI args (`--extra-args` on `cdx run`, or a `--strict-mcp` switch) so headless runs skip a repo's own .mcp.json servers. `cdx set --extra-args` is per account and also hits interactive sessions. Handed off to cdx-manager (owner fork); any upstream text needs the owner's OK.
