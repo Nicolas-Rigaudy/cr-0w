@@ -7,6 +7,11 @@ Measure where hub tokens and money go, and re-measure after a change with the sa
 - `cdx stats --by project`, `cdx runs --since 30d`: headless runs and their cost.
 - Claude transcripts in every cdx profile: `<profiles>/*/claude-home/.claude/projects/*/*.jsonl`.
 
+## Cost split (quick)
+- `bin/crow-usage --split`: one line, last 14 days, cost by part: reload (cache writes), reread (cache reads), output, input, plus the runs' reload share.
+- `bin/crow-usage --json`: `cost_split.by_kind` (all, interactive, run) for the same window; `sessions[].cost_split` and each `by_day` entry carry the parts too.
+- The parts sum to the session cost. They use the same price table as the totals.
+
 ## Method
 1. Read assistant events from the transcripts of the window. Deduplicate on `(message.id, requestId)`: one API call is written as several lines and counting every line inflates cost about 2x.
 2. Context size of a turn = `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`.

@@ -4,6 +4,7 @@
   crow-usage            short text summary
   crow-usage --json     full payload (schema below)
   crow-usage --days N   history window (default 7)
+  crow-usage --split    one line: cost split of the last 14 days (reload, reread, output, input), for the brief
   crow-usage --titles   generate missing session titles now (normally a detached worker does it)
   crow-usage --backfill-projects [--days N]   one-off: re-split the frozen days by project (see below)
 
@@ -28,7 +29,9 @@ grew (4+ prompts and x1.5) or moved project. Dispatch labels and /rename win and
 Without a model the title is "project: most edited files" (else the first prompt).
 Bounded to CROW_TITLES_PER_DAY model calls (default 40, ~0.001 USD each on Haiku).
 
-JSON: {generated_at, limits[], today{}, week{}, days[], sessions[], rtk{}, retros{}}
+JSON: {generated_at, limits[], today{}, week{}, days[], sessions[], rtk{}, cost_split{}, retros{}}
+cost_split {days, since, by_kind{all, interactive, run}{cost_usd, usd{}, pct{}}}: USD by part, reload = cache
+writes, reread = cache reads (runbooks/cost-audit.md). sessions[] and their by_day carry cost_split{} too.
 sessions[] also carry projects[] {name, cost_usd, tokens, share_pct} and multi_project; by_project entries carry shared_sessions.
 sessions[].limit_share {five_hour_pct, week_pct}: points of its account's current windows the session used (see limit_shares).
 """
@@ -616,6 +619,50 @@ RECENT_DAY = (dt.date.today() - dt.timedelta(days=1)).isoformat()  # activity bu
 HOUR_CUTOFF = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=8)).strftime("%Y-%m-%dT%H")  # covers a weekly window
 
 
+SPLIT_DAYS = 14
+# Cost parts (runbooks/cost-audit.md): reload = cache writes (5m and 1h), reread = cache reads.
+SPLIT_PARTS = {"reload": ("cache_creation_tokens", "cache_1h_tokens"), "reread": ("cache_read_tokens",),
+               "output": ("output_tokens",), "input": ("input_tokens",)}
+
+
+def cost_split(usage, model):
+    """USD of one model's usage per part; the parts sum to price(usage, model)."""
+    out = {}
+    for part, keys in SPLIT_PARTS.items():
+        u = _zero_usage()
+        for k in keys:
+            u[k] = usage.get(k, 0)
+        out[part] = price(u, model) or 0.0
+    return out
+
+
+def split_summary(sessions, days=SPLIT_DAYS, today=None):
+    """Cost split of the last `days` days, all sessions and per kind (interactive, run)."""
+    today = today or dt.date.today()
+    since = (today - dt.timedelta(days=days - 1)).isoformat()
+    acc = {k: dict.fromkeys(SPLIT_PARTS, 0.0) for k in ("all", "interactive", "run")}
+    for s in sessions:
+        for d, x in (s.get("by_day") or {}).items():
+            if d < since:
+                continue
+            for part, v in (x.get("cost_split") or {}).items():
+                acc["all"][part] += v
+                acc[s["kind"]][part] += v
+    out = {}
+    for kind, parts in acc.items():
+        tot = sum(parts.values())
+        out[kind] = {"cost_usd": round(tot, 2), "usd": {k: round(v, 2) for k, v in parts.items()},
+                     "pct": {k: round(100 * v / tot) if tot else 0 for k, v in parts.items()}}
+    return {"days": days, "since": since, "by_kind": out}
+
+
+def split_line(split):
+    a, r = split["by_kind"]["all"], split["by_kind"]["run"]
+    parts = " · ".join(f"{k} {a['pct'][k]}%" for k in SPLIT_PARTS)
+    runs = f" (runs ${r['cost_usd']:.0f}: reload {r['pct']['reload']}%)" if r["cost_usd"] else ""
+    return f"split {split['days']}d ${a['cost_usd']:.0f}: {parts}{runs}"
+
+
 def cache_read_price(prices, model):
     p = prices.get(model) or {}
     return p.get("cache_read", (p.get("input") or 0) * 0.1)
@@ -625,6 +672,7 @@ def figures(per_model):
     """Totals, cost and what caching / cheaper models saved, for {model: usage}."""
     totals = {"input_tokens": 0, "cache_read_tokens": 0, "cache_creation_tokens": 0, "output_tokens": 0}
     cost, priced, cache_saved, routing_saved = 0.0, True, 0.0, 0.0
+    split = dict.fromkeys(SPLIT_PARTS, 0.0)
     prices = all_prices()
     for model, usage in per_model.items():
         for k in totals:
@@ -634,6 +682,8 @@ def figures(per_model):
             priced = False
             continue
         cost += c
+        for part, v in cost_split(usage, model).items():
+            split[part] += v
         if pseudo_model(model) or model not in prices:
             continue
         # Cache reads billed at the cache price instead of full input price.
@@ -643,7 +693,7 @@ def figures(per_model):
             if top is not None:
                 routing_saved += max(0.0, top - c)
     return {"totals": totals, "cost_usd": cost, "priced": priced, "cache_saved_usd": cache_saved,
-            "routing_saved_usd": routing_saved}
+            "routing_saved_usd": routing_saved, "split": split}
 
 
 def slim(f):
@@ -651,7 +701,8 @@ def slim(f):
     return {"cost_usd": round(f["cost_usd"], 4) if f["priced"] else None, "tokens": sum(t.values()),
             "input_tokens": t["input_tokens"], "output_tokens": t["output_tokens"],
             "cache_write_tokens": t["cache_creation_tokens"], "cache_read_tokens": t["cache_read_tokens"],
-            "cache_saved_usd": round(f["cache_saved_usd"], 4), "routing_saved_usd": round(f["routing_saved_usd"], 4)}
+            "cache_saved_usd": round(f["cache_saved_usd"], 4), "routing_saved_usd": round(f["routing_saved_usd"], 4),
+            "cost_split": {k: round(v, 4) for k, v in f["split"].items()}}
 
 
 def context_level(tokens):
@@ -711,6 +762,7 @@ def collect_sessions(days):
             due = True
         sessions.append({
             "id": sid,
+            "_mtime": st.st_mtime,
             "account": account,
             "project": os.path.basename(meta["cwd"] or "") or "?",
             "title": session_title(sid, meta, account, titles),
@@ -728,6 +780,7 @@ def collect_sessions(days):
             "cache_read_tokens": totals["cache_read_tokens"],
             "cache_pct": round(100 * totals["cache_read_tokens"] / tokens) if tokens else 0,
             "cost_usd": round(cost, 4) if priced else None,
+            "cost_split": {k: round(v, 4) for k, v in f["split"].items()},
             "cache_saved_usd": round(f["cache_saved_usd"], 4),
             "routing_saved_usd": round(f["routing_saved_usd"], 4),
             "compactions": data.get("compactions") or 0,
@@ -1053,7 +1106,10 @@ def write_project_view(data):
 
 
 def build(days):
-    sessions = collect_sessions(max(days, 7))
+    scanned = collect_sessions(max(days, 7, SPLIT_DAYS))
+    split = split_summary(scanned)
+    cutoff = dt.datetime.now().timestamp() - max(days, 7) * 86400
+    sessions = [s for s in scanned if s.pop("_mtime") >= cutoff]
     today = dt.date.today().isoformat()
     window = [(dt.date.today() - dt.timedelta(days=i)).isoformat() for i in reversed(range(max(days, 7)))]
     live = live_rollups(sessions, window)
@@ -1100,6 +1156,7 @@ def build(days):
         "history": [{"date": h["date"], **strip(h)} for h in history],
         "sessions": sessions,
         "rtk": rtk,
+        "cost_split": split,
         "retros": {"today": len(glob.glob(os.path.join(retro_dir, f"{today}-*.md"))), "pending_proposals": pending,
                    "week": sum(len(glob.glob(os.path.join(retro_dir, f"{d}-*.md"))) for d in window[-7:])},
     }
@@ -1128,6 +1185,9 @@ def main():
         if skipped:
             print(f"left as they were (transcripts no longer cover them): {', '.join(skipped)}")
         return 0
+    if "--split" in args:
+        print(split_line(split_summary(collect_sessions(max(days, SPLIT_DAYS)), max(days, SPLIT_DAYS))))
+        return 0
     data = build(days)
     if "--json" in args:
         json.dump(data, sys.stdout)
@@ -1142,6 +1202,7 @@ def main():
     peak = max((d["cost_usd"] for d in data["days"]), default=0) or 1
     print("7 days   " + "".join(spark[min(7, int(d["cost_usd"] / peak * 7))] for d in data["days"])
           + "  " + " ".join(f"${d['cost_usd']:.0f}" for d in data["days"]))
+    print(split_line(data["cost_split"]))
     bp = data["today"]["by_project"]
     if bp:
         print("by project today (turns that worked there; * = sessions shared with another project)")

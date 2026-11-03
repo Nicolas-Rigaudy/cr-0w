@@ -37,6 +37,9 @@ Live sessions past 120k of context (see `runbooks/long-sessions.md`):
 Account headroom:
 !`cdx status --small --cached 2>&1 | grep -v '^Resolv' | head -10 || true`
 
+Token cost split, last 14 days (reload = cache writes; baseline in `local/state/research/token-baseline-2026-11.md`):
+!`"${CLAUDE_PROJECT_DIR}/bin/crow-usage" --split 2>&1 | head -1 || true`
+
 Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**. Gather cheaply, in this order.
 
 ## Gather
