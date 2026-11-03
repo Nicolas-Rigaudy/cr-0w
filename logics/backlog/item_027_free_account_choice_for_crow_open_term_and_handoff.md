@@ -1,10 +1,10 @@
 ## item_027_free_account_choice_for_crow_open_term_and_handoff - Free-account choice for crow open, term and handoff
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
-> Progress: 90%
+> Progress: 100%
 > Complexity: Low
 > Theme: Hub orchestration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -40,6 +40,11 @@
 # AC Traceability
 - request-AC4 -> This backlog slice. Proof: AC1: with the default account busy, crow handoff proposes the next allowed free account.
 - request-AC4 -> This backlog slice. Proof: AC3: with the default account at 0% 5h, crow term/open/handoff use the allowed account with the most room, or refuse when none has room.
+
+# Validation
+- Implemented in f85ab46: `crow-accounts pick` skips accounts with a live session or no quota left; crow open, term and handoff use it; handoff passes `--task/--end-state` to cdx.
+- `python3 -m pytest -q`: 227 passed. `tests/test_crow_launch_pick.py` covers busy, ask-first, none-free, default at 0% 5h, explicit and inherited `CROW_ACCOUNT`.
+- Live check: `bin/crow-accounts pick --on-busy fail` with the default at 0% 5h and the other allowed account busy refuses with both reasons.
 
 # Decision framing
 - Product framing: Not needed

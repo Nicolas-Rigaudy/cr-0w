@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 15%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -20,7 +20,7 @@
 - Orchestrate the scaffolded request chain and keep sibling implementation slices linked.
 
 # Plan
-- [ ] 1. 1. Free-account choice (unblocks parallel sessions).
+- [x] 1. 1. Free-account choice (unblocks parallel sessions).
 - [ ] 2. 2. Context cap and long-session warning.
 - [ ] 3. 3. Failover, fallback model and kind on headless runs (optional budget).
 - [ ] 4. 4. Weekday retro batch, then remove the SessionEnd hook.
