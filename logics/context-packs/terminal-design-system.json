@@ -1,0 +1,572 @@
+{
+  "budgets": {
+    "max_docs": 40,
+    "max_docs_per_ref": 4
+  },
+  "changed_paths": [],
+  "command": "logics-manager sync context-pack req_020_terminal_design_system_and_design_review_workflow item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook item_079_shared_terminal_kit_repo_tokens_and_gallery item_080_kit_components_extracted_from_crow_deck_and_lazytf item_081_customization_model_study_deck_config_vs_archeotech_shell_config item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets item_083_lazytf_adopts_the_shared_kit item_084_archeotech_themes_mapped_to_kit_token_roles item_085_in_deck_design_decisions_widget task_010_orchestrate_terminal_design_system --mode summary-only --profile normal --handoff",
+  "companion_docs": [
+    {
+      "kind": "product",
+      "linked_refs": {
+        "item": [
+          "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+          "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+          "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+          "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+          "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+          "item_083_lazytf_adopts_the_shared_kit",
+          "item_084_archeotech_themes_mapped_to_kit_token_roles",
+          "item_085_in_deck_design_decisions_widget"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/product/prod_004_terminal_design_system.md",
+      "ref": "prod_004_terminal_design_system",
+      "status": "Proposed",
+      "title": "Terminal design system"
+    }
+  ],
+  "docs": [
+    {
+      "ai_context": {
+        "keywords": "terminal, design, system, review, workflow",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "request",
+      "linked_refs": {
+        "item": [
+          "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+          "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+          "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+          "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+          "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+          "item_083_lazytf_adopts_the_shared_kit",
+          "item_084_archeotech_themes_mapped_to_kit_token_roles",
+          "item_085_in_deck_design_decisions_widget"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map",
+          "req_011_crow_deck_rework_terminal_true_mockups",
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ]
+      },
+      "path": "logics/request/req_020_terminal_design_system_and_design_review_workflow.md",
+      "ref": "req_020_terminal_design_system_and_design_review_workflow",
+      "schema_version": "1.0",
+      "status": "Draft",
+      "title": "Terminal design system and design review workflow"
+    },
+    {
+      "ai_context": {
+        "keywords": "crow, deck, tui, themes, mrs, projects, usage, commands",
+        "skip when": "the change is to the cost audit or batched retros (separate audit request).",
+        "summary": "Build crow deck, the tabbed TUI hub (Home, Agents, MRs, Projects, Usage) with 4 themes and a regrouped crow command map, from the approved designs.",
+        "use when": "working on the crow deck UI, its data layer or the crow CLI naming."
+      },
+      "execution_table": "",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "request",
+      "linked_refs": {
+        "item": [
+          "item_016_0_1_deck_skeleton_chrome_tabs_theme_engine_config_mock_home",
+          "item_017_0_2_real_data_on_home_and_agents",
+          "item_018_0_3_mrs_tab_both_forges_read_only",
+          "item_019_0_4_projects_and_usage_tabs",
+          "item_020_0_5_actions_and_history",
+          "item_021_0_6_remaining_pages_in_all_themes",
+          "item_022_0_7_crow_command_map_and_doctor"
+        ],
+        "req": [
+          "req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map"
+        ]
+      },
+      "path": "logics/request/req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map.md",
+      "ref": "req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map",
+      "schema_version": "1.0",
+      "status": "Draft",
+      "title": "crow deck: interface redesign (tabbed TUI, 4 themes, command map)"
+    },
+    {
+      "ai_context": {
+        "keywords": "crow deck, TUI, mockups, themes, usage, projects, who worked when, azerty, data wiring",
+        "skip when": "MRs tab review flow (req_010).",
+        "summary": "Rework the crow deck after the owner's first real use: terminal-true mockups of every tab (old crow-watch, current deck, new proposal side by side), a theme rework that holds on a translucent terminal, then the view and data fixes.",
+        "use when": "mocking, rebuilding or wiring any crow deck tab or theme."
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "request",
+      "linked_refs": {
+        "item": [
+          "item_055_deck_round_2_mockups_hybrid_picks_for_agents_mrs_projects_usage_hud_accent",
+          "item_056_deck_azerty_tab_keys",
+          "item_057_deck_home_a_build_triage_table_pulse_projects_done_today",
+          "item_058_deck_theme_set_build_lazytf_soft_cyber_hud_per_the_theme_specs",
+          "item_059_deck_agents_build_from_the_round_2_pick",
+          "item_060_deck_projects_build_from_the_round_2_pick",
+          "item_061_deck_usage_build_from_the_round_2_pick"
+        ],
+        "req": [
+          "req_011_crow_deck_rework_terminal_true_mockups"
+        ]
+      },
+      "path": "logics/request/req_011_crow_deck_rework_terminal_true_mockups.md",
+      "ref": "req_011_crow_deck_rework_terminal_true_mockups",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Crow deck rework: terminal-true mockups of every tab, themes, data wiring"
+    },
+    {
+      "ai_context": {
+        "keywords": "design, review, workflow, crow, compare, decisions, ledger, runbook",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook.md",
+      "ref": "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Design review workflow: crow-compare v2, decisions ledger, runbook"
+    },
+    {
+      "ai_context": {
+        "keywords": "orchestrate, terminal, design, system",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "task",
+      "linked_refs": {
+        "item": [
+          "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+          "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+          "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+          "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+          "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+          "item_083_lazytf_adopts_the_shared_kit",
+          "item_084_archeotech_themes_mapped_to_kit_token_roles",
+          "item_085_in_deck_design_decisions_widget"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/tasks/task_010_orchestrate_terminal_design_system.md",
+      "ref": "task_010_orchestrate_terminal_design_system",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Orchestrate terminal design system"
+    },
+    {
+      "ai_context": {},
+      "execution_table": "",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "product",
+      "linked_refs": {
+        "item": [
+          "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+          "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+          "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+          "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+          "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+          "item_083_lazytf_adopts_the_shared_kit",
+          "item_084_archeotech_themes_mapped_to_kit_token_roles",
+          "item_085_in_deck_design_decisions_widget"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/product/prod_004_terminal_design_system.md",
+      "ref": "prod_004_terminal_design_system",
+      "schema_version": "1.0",
+      "status": "Proposed",
+      "title": "Terminal design system"
+    },
+    {
+      "ai_context": {
+        "keywords": "shared, terminal, kit, repo, tokens, gallery",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_079_shared_terminal_kit_repo_tokens_and_gallery"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_079_shared_terminal_kit_repo_tokens_and_gallery.md",
+      "ref": "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Shared terminal kit repo: tokens and gallery"
+    },
+    {
+      "ai_context": {
+        "keywords": "kit, components, extracted, crow, deck, lazytf",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_080_kit_components_extracted_from_crow_deck_and_lazytf"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_080_kit_components_extracted_from_crow_deck_and_lazytf.md",
+      "ref": "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Kit components extracted from crow deck and lazytf"
+    },
+    {
+      "ai_context": {
+        "keywords": "customization, model, study, deck, config, archeotech, shell",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_081_customization_model_study_deck_config_vs_archeotech_shell_config"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_081_customization_model_study_deck_config_vs_archeotech_shell_config.md",
+      "ref": "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Customization model study: deck config vs archeotech shell-config"
+    },
+    {
+      "ai_context": {
+        "keywords": "crow, deck, widget, contract, user, config, tabs, rebuilt, widgets",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets.md",
+      "ref": "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Crow deck: widget contract, user deck config, tabs rebuilt from widgets"
+    },
+    {
+      "ai_context": {
+        "keywords": "lazytf, adopts, shared, kit",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_083_lazytf_adopts_the_shared_kit"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_083_lazytf_adopts_the_shared_kit.md",
+      "ref": "item_083_lazytf_adopts_the_shared_kit",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "lazytf adopts the shared kit"
+    },
+    {
+      "ai_context": {
+        "keywords": "archeotech, themes, mapped, kit, token, roles",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_084_archeotech_themes_mapped_to_kit_token_roles"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_084_archeotech_themes_mapped_to_kit_token_roles.md",
+      "ref": "item_084_archeotech_themes_mapped_to_kit_token_roles",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "Archeotech themes mapped to kit token roles"
+    },
+    {
+      "ai_context": {
+        "keywords": "deck, design, decisions, widget",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_085_in_deck_design_decisions_widget"
+        ],
+        "prod": [
+          "prod_004_terminal_design_system"
+        ],
+        "req": [
+          "req_020_terminal_design_system_and_design_review_workflow"
+        ],
+        "task": [
+          "task_010_orchestrate_terminal_design_system"
+        ]
+      },
+      "path": "logics/backlog/item_085_in_deck_design_decisions_widget.md",
+      "ref": "item_085_in_deck_design_decisions_widget",
+      "schema_version": "1.0",
+      "status": "Ready",
+      "title": "In-deck design decisions widget"
+    }
+  ],
+  "estimates": {
+    "char_count": 15296,
+    "companion_doc_count": 1,
+    "doc_count": 13
+  },
+  "generated_at": "2026-11-03T17:39:41Z",
+  "handoff": {
+    "companion_doc_count": 1,
+    "enabled": true,
+    "source_refs": [
+      "req_020_terminal_design_system_and_design_review_workflow",
+      "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+      "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+      "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+      "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+      "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+      "item_083_lazytf_adopts_the_shared_kit",
+      "item_084_archeotech_themes_mapped_to_kit_token_roles",
+      "item_085_in_deck_design_decisions_widget",
+      "task_010_orchestrate_terminal_design_system"
+    ],
+    "validation_summary_count": 1
+  },
+  "i18n": {
+    "actions": [
+      "Choose the source locale for app-owned user-facing copy.",
+      "Run logics-manager i18n init --source-locale <locale>.",
+      "Route new UI copy through stable semantic keys."
+    ],
+    "applicable": null,
+    "configured": false,
+    "contract_path": "logics/i18n/contract.json",
+    "findings": [],
+    "next_action": "Run logics-manager i18n init --source-locale <locale> for a project that owns user-facing copy.",
+    "ok": true,
+    "state": "absent"
+  },
+  "mode": "summary-only",
+  "profile": "normal",
+  "ref": "req_020_terminal_design_system_and_design_review_workflow,item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook,item_079_shared_terminal_kit_repo_tokens_and_gallery,item_080_kit_components_extracted_from_crow_deck_and_lazytf,item_081_customization_model_study_deck_config_vs_archeotech_shell_config,item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets,item_083_lazytf_adopts_the_shared_kit,item_084_archeotech_themes_mapped_to_kit_token_roles,item_085_in_deck_design_decisions_widget,task_010_orchestrate_terminal_design_system",
+  "refs": [
+    "req_020_terminal_design_system_and_design_review_workflow",
+    "item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook",
+    "item_079_shared_terminal_kit_repo_tokens_and_gallery",
+    "item_080_kit_components_extracted_from_crow_deck_and_lazytf",
+    "item_081_customization_model_study_deck_config_vs_archeotech_shell_config",
+    "item_082_crow_deck_widget_contract_user_deck_config_tabs_rebuilt_from_widgets",
+    "item_083_lazytf_adopts_the_shared_kit",
+    "item_084_archeotech_themes_mapped_to_kit_token_roles",
+    "item_085_in_deck_design_decisions_widget",
+    "task_010_orchestrate_terminal_design_system"
+  ],
+  "release": {
+    "blocking_reasons": [
+      "Missing logics/release/contract.json."
+    ],
+    "configured": false,
+    "contract_path": "logics/release/contract.json",
+    "guidance": [
+      "Release readiness must come from project-owned evidence, not conversational memory.",
+      "Use release status or validate before preparing or claiming release readiness.",
+      "Publication-oriented actions are explicit operator actions and are separate from safe read/validate actions."
+    ],
+    "next_action": "Run logics-manager release discover --write, then review and promote logics/release/contract.draft.json to logics/release/contract.json.",
+    "publication_actions": [
+      "GitHub release publication",
+      "external publication"
+    ],
+    "required_gates": [],
+    "safe_actions": [
+      "logics-manager release status",
+      "logics-manager release plan <version>",
+      "logics-manager release validate <version>"
+    ],
+    "state": "not_configured",
+    "target_id": null,
+    "target_version": null,
+    "targets": []
+  },
+  "validation_summary": [
+    {
+      "items": [
+        "- (no validation recorded yet)"
+      ],
+      "path": "logics/tasks/task_010_orchestrate_terminal_design_system.md",
+      "ref": "task_010_orchestrate_terminal_design_system"
+    }
+  ]
+}
