@@ -79,6 +79,9 @@ type nextRow struct {
 	Project string
 	What    string
 	Perso   bool
+	Actor   string // me, crow, or the person a Waiting line names
+	Since   string // YYYY-MM-DD the thread was opened
+	Why     string // first ref in the line (item_047, !214, CD-580), else the next step
 }
 
 type projRow struct {
@@ -158,22 +161,18 @@ func mockFixtures() *fixtures {
 		},
 		Mail: []string{"mail 3 unread", "1 flagged"},
 		Next: []nextRow{
-			{"atlas", "review !214, merge 214 then 213", false},
-			{"atlas", "review !220 for Sam", false},
-			{"atlas", "purge job for retention", false},
-			{"vault", "design doc review, export PDF", false},
-			{"vault", "terms reply, draft ready", false},
-			{"crow", "audit: retros out of sessions", false},
-			{"crow", "deck: real data on Home", false},
-			{"atlas", "retention policy tests", false},
-			{"vault", "weekly slides draft", false},
-			{"crow", "command map and doctor", false},
-			{"atlas", "alarm review after launch", false},
-			{"vault", "decision log cleanup", false},
-			{"lint", "panel layout", true},
-			{"tools", "AC1 to AC4", true},
-			{"web", "0.40 deck pill", true},
-			{"lint", "release notes", true},
+			{Project: "atlas", What: "review !214, merge 214 then 213", Perso: false, Actor: "me", Since: "2026-10-29", Why: "!214"},
+			{Project: "atlas", What: "purge job for retention", Perso: false, Actor: "me", Since: "2026-10-27", Why: "decide"},
+			{Project: "vault", What: "design doc review, export PDF", Perso: false, Actor: "me", Since: "2026-10-29", Why: "doc"},
+			{Project: "vault", What: "terms reply, draft ready", Perso: false, Actor: "me", Since: "2026-10-28", Why: "draft"},
+			{Project: "lint", What: "release notes", Perso: true, Actor: "me", Since: "2026-10-20", Why: "release"},
+			{Project: "tools", What: "AC1 to AC4", Perso: true, Actor: "me", Since: "2026-10-22", Why: "manual"},
+			{Project: "crow", What: "audit: retros out of sessions", Perso: true, Actor: "crow", Since: "2026-10-29", Why: "item_047"},
+			{Project: "crow", What: "deck: real data on Home", Perso: true, Actor: "crow", Since: "2026-10-28", Why: "req_011"},
+			{Project: "atlas", What: "retention policy tests", Perso: false, Actor: "crow", Since: "2026-10-26", Why: "session"},
+			{Project: "web", What: "0.40 deck pill", Perso: true, Actor: "crow", Since: "2026-10-19", Why: "item"},
+			{Project: "atlas", What: "review !220 after the rebase", Perso: false, Actor: "Sam", Since: "2026-10-29", Why: "!220"},
+			{Project: "vault", What: "answers on legal notices", Perso: false, Actor: "Lee", Since: "2026-10-18", Why: "mail"},
 		},
 		Projects: []projRow{
 			{"atlas", 6, 8, "Dec 1", true},

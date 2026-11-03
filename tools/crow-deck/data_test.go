@@ -166,23 +166,39 @@ func TestWhoWorkedSpansAndPause(t *testing.T) {
 
 func TestOpenThreads(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "open-threads.md")
-	body := "# Open threads\n- [ ] 2026-10-28 [hub] write the runbook → next\n- [x] 2026-10-27 [atlas] done thing\n" +
-		"- [ ] 2026-10-29 [atlas] fix retry\n- [ ] 2026-10-29 [orbit] polish\nnot a thread\n"
+	body := "# Open threads\n- [ ] 2026-10-20 [orbit] before any section\n" +
+		"## Me\n- [ ] 2026-10-28 [hub] write the runbook → decide\n- [x] 2026-10-27 [atlas] done thing\n" +
+		"## Crow\n- [ ] 2026-10-29 [atlas] fix retry for CD-580 and !214 → session\nnot a thread\n" +
+		"## Waiting\n- [ ] 2026-10-21 [atlas] Sam: review item_047 → wait\n" +
+		"- [ ] 2026-10-22 [orbit] legal answer, no person → mail\n- [ ] bad-date [orbit] polish\n"
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got := openThreads(path, testReg())
-	want := []nextRow{{"crow", "write the runbook", true}, {"atl", "fix retry", false}, {"orb", "polish", true}}
+	want := []nextRow{
+		{"orb", "before any section", true, "me", "2026-10-20", ""},
+		{"crow", "write the runbook", true, "me", "2026-10-28", "decide"},
+		{"atl", "fix retry for CD-580 and !214", false, "crow", "2026-10-29", "CD-580"},
+		{"atl", "review item_047", false, "Sam", "2026-10-21", "item_047"},
+		{"orb", "legal answer, no person", true, "others", "2026-10-22", "mail"},
+		{"orb", "polish", true, "others", "", ""},
+	}
 	if len(got) != len(want) {
 		t.Fatalf("rows %+v", got)
 	}
 	for i := range want {
-		if got[i].Project != want[i].Project || got[i].What != want[i].What || got[i].Perso != want[i].Perso {
+		if got[i] != want[i] {
 			t.Errorf("row %d: %+v, want %+v", i, got[i], want[i])
 		}
 	}
 	if openThreads(filepath.Join(t.TempDir(), "none.md"), testReg()) != nil {
 		t.Error("missing file should give no rows")
+	}
+	now := time.Date(2026, 10, 29, 15, 0, 0, 0, time.Local)
+	for in, out := range map[string]string{"2026-10-29": "today", "2026-10-22": "7d", "": "", "x": ""} {
+		if a := threadAge(in, now); a != out {
+			t.Errorf("age %q = %q, want %q", in, a, out)
+		}
 	}
 }
 

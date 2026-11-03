@@ -1,10 +1,10 @@
 ## item_054_deck_and_brief_read_the_sections_actor_and_age_in_next - Deck and brief read the sections: actor and age in Next
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Small
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -32,7 +32,7 @@
 - AC3: Rendered as picked in req_011.
 
 # AC Traceability
-- request-AC4 -> AC1-AC3. Proof: Go test + deck shot.
+- request-AC4 -> AC1-AC3. Proof: AC1-AC2 `tools/crow-deck/data.go` openThreads (Actor, Since, Why) and `TestOpenThreads`; AC3 lands with the Home A build (item_057).
 
 # Decision framing
 - Product framing: Not needed

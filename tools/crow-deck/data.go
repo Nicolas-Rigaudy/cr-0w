@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -653,8 +654,9 @@ func whoName(s usageSession, reg *registry) string {
 	return title
 }
 
-// openThreads reads the unchecked "- [ ] date [tag] text" lines of open-threads.md as
-// the Next list: project column from the tag, text up to the first arrow.
+// openThreads reads the unchecked "- [ ] date [tag] text → next" lines of open-threads.md
+// as the Next list. The "## Me / Crow / Waiting" section sets the actor; a Waiting line
+// names its person before a colon. Lines outside a section count as the owner's.
 func openThreads(path string, reg *registry) []nextRow {
 	f, err := os.Open(path)
 	if err != nil {
@@ -662,10 +664,22 @@ func openThreads(path string, reg *registry) []nextRow {
 	}
 	defer f.Close()
 	var out []nextRow
+	section := "me"
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 1<<20), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
+		if h, ok := strings.CutPrefix(line, "## "); ok {
+			switch strings.ToLower(strings.TrimSpace(h)) {
+			case "me":
+				section = "me"
+			case "crow":
+				section = "crow"
+			case "waiting":
+				section = "waiting"
+			}
+			continue
+		}
 		rest, ok := strings.CutPrefix(line, "- [ ] ")
 		if !ok {
 			continue
@@ -675,7 +689,15 @@ func openThreads(path string, reg *registry) []nextRow {
 			continue
 		}
 		tag := strings.Trim(fields[1], "[]")
-		what, _, _ := strings.Cut(fields[2], " → ")
+		what, next, _ := strings.Cut(fields[2], " → ")
+		what = strings.TrimSpace(what)
+		actor := section
+		if section == "waiting" {
+			actor = "others"
+			if who, tail, ok := strings.Cut(what, ": "); ok && who != "" && len(who) <= 20 && !strings.ContainsAny(who, " []") {
+				actor, what = who, strings.TrimSpace(tail)
+			}
+		}
 		name := "crow"
 		if tag != "hub" {
 			name = reg.shortName(tag)
@@ -684,9 +706,35 @@ func openThreads(path string, reg *registry) []nextRow {
 		if tag == "hub" {
 			scope = "personal"
 		}
-		out = append(out, nextRow{Project: name, What: strings.TrimSpace(what), Perso: scope == "personal"})
+		since := ""
+		if _, err := time.Parse("2006-01-02", fields[0]); err == nil {
+			since = fields[0]
+		}
+		why := threadRef.FindString(what)
+		if why == "" {
+			why = strings.TrimSpace(next)
+		}
+		out = append(out, nextRow{Project: name, What: what, Perso: scope == "personal",
+			Actor: actor, Since: since, Why: why})
 	}
 	return out
+}
+
+// threadRef finds the first Logics item, MR/PR or ticket key in a thread line.
+var threadRef = regexp.MustCompile(`\b(?:item|req|task)_\d{3}\b|![0-9]+\b|#[0-9]+\b|\b[A-Z][A-Z0-9]+-[0-9]+\b`)
+
+// threadAge is "today" or "Nd" from a YYYY-MM-DD date; "" when the date is unknown.
+func threadAge(since string, now time.Time) string {
+	t, err := time.ParseInLocation("2006-01-02", since, now.Location())
+	if err != nil {
+		return ""
+	}
+	y, m, d := now.Date()
+	days := int(time.Date(y, m, d, 0, 0, 0, 0, now.Location()).Sub(t).Hours() / 24)
+	if days <= 0 {
+		return "today"
+	}
+	return fmt.Sprintf("%dd", days)
 }
 
 // health: identity matches the registry for every repo, cdx answers, worktrees merged.
