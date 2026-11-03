@@ -1,10 +1,10 @@
 ## item_059_deck_agents_build_from_the_round_2_pick - Deck Agents build from the round 2 pick
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -33,6 +33,9 @@
 
 # AC Traceability
 - request-AC3 -> owner pick before Go code. Proof: req_011 § Owner picks.
+- AC1 -> live renders at 235x62 and 118x60. Proof: `LIVESHOTS=<dir> go test -run TestLiveShots ./tools/crow-deck` (agents-live-*.ans); PNGs in local/state/shots/deck-agents/png/ compared with prop-agents-R2-land/port (commit ae415f9).
+- AC2 -> every box shows real data or a one-line empty state; footer keys are all wired (enter, j k, a x e c, r, [ ], w, d, tab, /). Proof: `tools/crow-deck/agents.go`, `TestLiveAgentsFitEverySize`.
+- AC3 -> `go test ./...` passes; `TestShots` writes Agents board (235x62) and portrait (118x60) mock shots; `TestLanesJoinAgentsAndMergeRuns`, `TestLaneGitParsesNumstat`; crow-usage `test_activity_tokens_per_bucket_and_edited_files`.
 
 # Decision framing
 - Product framing: Not needed
@@ -50,6 +53,7 @@
 
 # Notes
 - Depends on item_055. Execution order: after item_057, Usage first (data already there).
+- Build notes 2026-11-03: crow-usage (cache v11) adds per-bucket tokens and edited files per session. Lanes join usage sessions to live agents by session id; same-titled runs share one lane. Detail reads the lane checkout with git (numstat, diff, last commit, 30 s TTL). Not built (no data source yet): the plan checklist in Detail, `s sort` and `/ filter` on the lanes title (/ stays History), `h handoff`. The cursor opens on the first lane that waits for an answer.
 
 # Final spec (owner approved 2026-11-03)
 - Board: local/state/shots/deck-rework/png/prop-agents-R2-land.png and -port.png (script agents_r2.py).
@@ -60,4 +64,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
