@@ -209,7 +209,10 @@ func (pv projectsView) listSpec(iw int, port bool) boxSpec {
 		hd = at(hd, c.left).join(line{{lk.cap("left"), lk.head}})
 		hd = at(hd, c.sig).join(line{{lk.cap("signals"), lk.head}})
 	}
-	sp.rows = append(sp.rows, hd, nil)
+	sp.rows = append(sp.rows, hd)
+	if !port {
+		sp.rows = append(sp.rows, nil)
+	}
 	group := -1
 	for i, cd := range cards {
 		if cd.Group != group {
@@ -340,7 +343,25 @@ func (pv projectsView) secHead(title string, right string, iw int) line {
 	return l.join(line{{rep("╌", iw-l.width()-r.width()), lk.dim}}).join(r)
 }
 
+// detailSpec fits the detail into n rows: every next action when they fit, else as many as the
+// room allows (6 in landscape, 2 in portrait at least) and a "+N more" line.
 func (pv projectsView) detailSpec(iw, n int, port bool) boxSpec {
+	base := 6
+	if port {
+		base = 2
+	}
+	all := 0
+	if cd := pv.cur(); cd != nil {
+		all = len(cd.Next)
+	}
+	keep := all
+	if over := pv.detailNeedK(iw, port, all) - n; over > 0 {
+		keep = max(base, all-over-1)
+	}
+	return pv.detailWith(iw, n, port, keep)
+}
+
+func (pv projectsView) detailWith(iw, n int, port bool, keep int) boxSpec {
 	lk := pv.lk
 	cd := pv.cur()
 	sp := boxSpec{title: "Detail", index: 2, sel: -1, focused: pv.pane == jpDetail}
@@ -374,10 +395,7 @@ func (pv projectsView) detailSpec(iw, n int, port bool) boxSpec {
 	}
 	gap()
 	rows = append(rows, pv.secHead("Next action", "who acts", iw))
-	next, keep := cd.Next, 6
-	if port {
-		keep = 2
-	}
+	next := cd.Next
 	if l := cd.lead(); l != nil && len(next) > 0 && next[0] != *l {
 		next = append([]nextRow{*l}, next...)
 		for i := 1; i < len(next); i++ {
@@ -476,6 +494,33 @@ func (pv projectsView) detailSpec(iw, n int, port bool) boxSpec {
 	return sp
 }
 
+// timelineMax is the timeline's height in rows with 4-row commit bars and a gap per project.
+func (pv projectsView) timelineMax() int {
+	active := 0
+	for _, cd := range pv.visible() {
+		active += btoi(cd.Group != pgQuiet)
+	}
+	return 4 + active*6
+}
+
+// detailNeed is the detail pane's natural height in rows: its content, a blank, the actions.
+func (pv projectsView) detailNeed(iw int, port bool) int {
+	base := 6
+	if port {
+		base = 2
+	}
+	return pv.detailNeedK(iw, port, base)
+}
+
+func (pv projectsView) detailNeedK(iw int, port bool, keep int) int {
+	rows := pv.detailWith(iw, 200, port, keep).rows
+	n := len(rows) - 1
+	for n > 0 && len(rows[n-1]) == 0 {
+		n--
+	}
+	return n + 2
+}
+
 // ----- timeline -----
 
 // heatGlyph: commits in a day as a bar height.
@@ -546,7 +591,45 @@ func (g *grid) line() line {
 	return out
 }
 
-func (pv projectsView) timelineSpec(iw int, port bool) boxSpec {
+// heatEighths draws one day of commits as a bar of hh rows, in eighths of a cell, 16 commits
+// filling it; one row keeps the four-step glyphs of the legend.
+func heatCells(n, hh int) []string {
+	if hh <= 1 {
+		return []string{heatGlyph(n)}
+	}
+	e := max(1, (min(n, 16)*hh*8+8)/16)
+	out := make([]string, hh)
+	for r := range out {
+		fill := e - (hh-1-r)*8
+		switch {
+		case fill >= 8:
+			out[r] = "█"
+		case fill <= 0:
+			out[r] = " "
+		default:
+			out[r] = string([]rune("▁▂▃▄▅▆▇")[fill-1])
+		}
+	}
+	return out
+}
+
+// heatRows: the tallest commit bars, and a gap between projects, that fit avail inner rows
+// (0 keeps one row each, no gap).
+func heatRows(projects, avail int) (hh, gap int) {
+	for hh = 4; hh > 1; hh-- {
+		for gap = 1; gap >= 0; gap-- {
+			if 4+projects*(1+hh+gap) <= avail {
+				return hh, gap
+			}
+		}
+	}
+	if avail > 0 && 4+projects*3 <= avail {
+		return 1, 1
+	}
+	return 1, 0
+}
+
+func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 	lk := pv.lk
 	sp := boxSpec{title: "Roadmap and work", index: 3, sel: -1, focused: pv.pane == jpTime,
 		right: line{{"█ done  ░ left  ◆ milestone  │ today  ┊ target   ▃▅▇█ your commits per day", lk.sub}}}
@@ -608,10 +691,22 @@ func (pv projectsView) timelineSpec(iw int, port bool) boxSpec {
 		}
 	}
 	tot := map[string]int{}
+	active := 0
+	for _, cd := range pv.visible() {
+		active += btoi(cd.Group != pgQuiet)
+	}
+	hh, gapRows := heatRows(active, avail)
+	first := true
 	for _, cd := range pv.visible() {
 		if cd.Group == pgQuiet {
 			continue
 		}
+		if !first {
+			for i := 0; i < gapRows; i++ {
+				sp.rows = append(sp.rows, nil)
+			}
+		}
+		first = false
 		bar := newGrid(mw, lk.plain)
 		bs := pv.barStyle(cd.Health)
 		switch {
@@ -654,7 +749,10 @@ func (pv projectsView) timelineSpec(iw int, port bool) boxSpec {
 		}
 		guides(bar)
 		sp.rows = append(sp.rows, line{pv.glyph(cd.Glyph), spc(1), {fit(cd.Name, gut-2), lk.bold}}.join(bar.line()))
-		heat := newGrid(mw, lk.cyan)
+		heat := make([]*grid, hh)
+		for i := range heat {
+			heat[i] = newGrid(mw, lk.cyan)
+		}
 		worked, last := 0, ""
 		for ds, n := range cd.Work {
 			d := parseDay(ds, pv.now.Location())
@@ -670,9 +768,15 @@ func (pv projectsView) timelineSpec(iw int, port bool) boxSpec {
 			worked++
 			tot[cd.Name] += n
 			x0, x1 := col(d), max(col(d)+1, col(d.AddDate(0, 0, 1)))
-			heat.put(x0, rep(heatGlyph(n), x1-x0), lk.cyan)
+			for r, g := range heatCells(n, hh) {
+				if g != " " {
+					heat[r].put(x0, rep(g, x1-x0), lk.cyan)
+				}
+			}
 		}
-		guides(heat)
+		for _, g := range heat {
+			guides(g)
+		}
 		note := " not touched"
 		if last != "" {
 			if d := parseDay(last, pv.now.Location()); d.Equal(day(pv.now)) {
@@ -681,12 +785,18 @@ func (pv projectsView) timelineSpec(iw int, port bool) boxSpec {
 				note = " last " + dateLabel(d)
 			}
 		}
-		heat.put(today+2, note, lk.dim)
+		heat[hh-1].put(today+2, note, lk.dim)
 		ws := lk.cyan
 		if worked == 0 {
 			ws = lk.dim
 		}
-		sp.rows = append(sp.rows, line{{"  worked ", lk.dim}, {fit(fmt.Sprintf("%2dd", worked), gut-9), ws}}.join(heat.line()))
+		for r, g := range heat {
+			lbl := line{{fit("", gut), lk.dim}}
+			if r == hh-1 {
+				lbl = line{{"  worked ", lk.dim}, {fit(fmt.Sprintf("%2dd", worked), gut-9), ws}}
+			}
+			sp.rows = append(sp.rows, lbl.join(g.line()))
+		}
 	}
 	sp.rows = append(sp.rows, pv.timeSplit(tot, port))
 	return sp
@@ -759,13 +869,18 @@ func (pv projectsView) landscape(w, h int) block {
 	if lk.th.frame == frameSoft {
 		gh = 3
 	}
-	tl := pv.timelineSpec(lk.innerW(w), false)
-	minTop := lk.boxH(14)
-	th := min(lk.boxH(len(tl.rows)), h-minTop-gv)
-	topH := h - th - gv
 	lw := w * 128 / 235
 	dw := w - lw - gh
-	list := lk.box(pv.listSpec(lk.innerW(lw), false), lw, topH)
+	ls := pv.listSpec(lk.innerW(lw), false)
+	// the list shows every row, the timeline then takes up to 4-row commit bars, and the
+	// top boxes keep whatever is left
+	need := max(len(ls.rows), pv.detailNeed(lk.innerW(dw), false), 14)
+	natural := lk.boxH(len(pv.timelineSpec(lk.innerW(w), false, 0).rows))
+	topH := max(lk.boxH(need), h-gv-lk.boxH(pv.timelineMax()))
+	topH = max(min(topH, h-gv-natural), lk.boxH(14))
+	th := h - topH - gv
+	tl := pv.timelineSpec(lk.innerW(w), false, th-lk.boxH(0))
+	list := lk.box(ls, lw, topH)
 	det := lk.box(pv.detailSpec(lk.innerW(dw), topH-lk.boxH(0), false), dw, topH)
 	return vcat(hcat([]int{lw, dw}, gh, list, det), blankLines(w, gv), lk.box(tl, w, th))
 }
@@ -775,10 +890,12 @@ func (pv projectsView) portrait(w, h int) block {
 	gv := pv.gapV()
 	iw := lk.innerW(w)
 	ls := pv.listSpec(iw, true)
-	tl := pv.timelineSpec(iw, true)
 	lh := min(lk.boxH(len(ls.rows)), h/3)
-	th := min(lk.boxH(len(tl.rows)), h-lh-lk.boxH(8)-2*gv)
+	natural := lk.boxH(len(pv.timelineSpec(iw, true, 0).rows))
+	th := max(min(lk.boxH(pv.timelineMax()), h-lh-2*gv-lk.boxH(pv.detailNeed(iw, true))), natural)
+	th = min(th, h-lh-2*gv-lk.boxH(8))
 	dh := h - lh - th - 2*gv
+	tl := pv.timelineSpec(iw, true, th-lk.boxH(0))
 	return vcat(lk.box(ls, w, lh), blankLines(w, gv), lk.box(pv.detailSpec(iw, dh-lk.boxH(0), true), w, dh),
 		blankLines(w, gv), lk.box(tl, w, th))
 }
@@ -791,7 +908,7 @@ func (pv projectsView) single(w, h int) []string {
 	case jpDetail:
 		sp = pv.detailSpec(iw, h-lk.boxH(0), true)
 	case jpTime:
-		sp = pv.timelineSpec(iw, true)
+		sp = pv.timelineSpec(iw, true, h-lk.boxH(0))
 	default:
 		sp = pv.listSpec(iw, true)
 	}

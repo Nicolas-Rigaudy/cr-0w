@@ -306,9 +306,13 @@ func TestLiveShots(t *testing.T) {
 			t.Fatal(err)
 		}
 		m.page = 3
-		f = filepath.Join(dir, fmt.Sprintf("projects-live-%dx%d.ans", sz[0], sz[1]))
-		if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
-			t.Fatal(err)
+		for _, mode := range []string{"all", "work"} {
+			m.mode = mode
+			f = filepath.Join(dir, fmt.Sprintf("projects-live-%dx%d-%s.ans", sz[0], sz[1], mode))
+			if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
+				t.Fatal(err)
+			}
 		}
+		m.mode = "all"
 	}
 }

@@ -184,3 +184,25 @@ func TestRegistryRoadDecodes(t *testing.T) {
 		t.Errorf("road %+v", reg.Projects)
 	}
 }
+
+func TestProjectsTimelineUsesSpareRows(t *testing.T) {
+	if got := heatCells(16, 2); got[0] != "█" || got[1] != "█" {
+		t.Errorf("16 commits on 2 rows: %q", got)
+	}
+	if got := heatCells(1, 3); got[0] != " " || got[2] == " " {
+		t.Errorf("1 commit on 3 rows: %q", got)
+	}
+	if hh, _ := heatRows(1, 20); hh != 4 {
+		t.Errorf("one project, 20 rows: %d-row bars", hh)
+	}
+	if hh, gap := heatRows(6, 0); hh != 1 || gap != 0 {
+		t.Errorf("no room: %d %d", hh, gap)
+	}
+	// work mode has one active project: the timeline stays compact and the detail lists
+	// every next action instead of "+N more"
+	m := projModel(235, 62)
+	m.mode = "work"
+	if out := m.View(); strings.Contains(out, "more in the open threads") {
+		t.Error("work mode still truncates the next actions")
+	}
+}
