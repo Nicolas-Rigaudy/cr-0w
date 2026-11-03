@@ -1,10 +1,10 @@
 ## item_056_deck_azerty_tab_keys - Deck AZERTY tab keys
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -33,6 +33,7 @@
 
 # AC Traceability
 - request-AC3 -> owner pick before Go code. Proof: req_011 § Owner picks.
+- AC1, AC2, AC3 -> Implemented in 21c6fbe; validated with go test ./... (TestAzertyTabKeys, TestHourRangeKeysWithoutAltGr).
 
 # Decision framing
 - Product framing: Not needed
@@ -50,8 +51,8 @@
 
 # Notes
 - Execution order: independent, any time.
+- Done 2026-11-03 in 21c6fbe (branch deck-azerty): `& é " ' (` switch tabs 1-5; `< >` replace the AltGr-only `[ ]` for the Agents hour range and Usage priority (`[ ]` kept); footer, ? help and runbooks/tui-usage-ux.md updated. Validated with `go vet ./... && go test ./...` in tools/crow-deck (keys_test.go covers AC1 and the `< >` keys).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
