@@ -24,6 +24,7 @@ type todaySnap struct {
 	Flagged  []struct {
 		Subject string `json:"subject"`
 		From    string `json:"from"`
+		Crow    bool   `json:"crow"`
 	} `json:"flagged"`
 	Drafts    int `json:"drafts"`
 	Important []struct {
@@ -70,7 +71,17 @@ func todayRows(s *todaySnap, now time.Time) (rows []todayRow, mail []string) {
 		}
 		rows = append(rows, r)
 	}
-	if len(s.Important) > 0 {
+	if len(s.Flagged) > 0 {
+		// The owner and crow share Outlook flags; crow's carry the crow category.
+		rows = append(rows, todayRow{Kind: "gap"}, todayRow{Kind: "head", What: "Flagged"})
+		for _, f := range s.Flagged {
+			st := "warn"
+			if f.Crow {
+				st = "crow"
+			}
+			rows = append(rows, todayRow{Kind: "flag", What: strings.Join(strings.Fields(f.Subject), " "), Tag: f.From, TagState: st})
+		}
+	} else if len(s.Important) > 0 {
 		rows = append(rows, todayRow{Kind: "gap"}, todayRow{Kind: "head", What: "Mail to look at"})
 		for _, m := range s.Important {
 			st := ""
@@ -93,7 +104,9 @@ func todayRows(s *todaySnap, now time.Time) (rows []todayRow, mail []string) {
 		}
 	}
 	mail = append(mail, fmt.Sprintf("mail %d unread", s.Unread))
-	if n := len(s.Important); n > 0 {
+	if n := len(s.Flagged); n > 0 {
+		mail = append(mail, fmt.Sprintf("%d flagged", n))
+	} else if n := len(s.Important); n > 0 {
 		mail = append(mail, fmt.Sprintf("%d to look at", n))
 	}
 	if s.Drafts > 0 {

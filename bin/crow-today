@@ -5,9 +5,11 @@
   crow-today json      today's data as JSON (cached for 5 minutes in local/state/today.json)
   crow-today json -f   skip the cache
 
-Config: local/graph.yaml (tenant, client_id, user, timezone). Keyring: service crow-graph, user <user>.
+Config: local/graph.yaml (tenant, client_id, user, timezone, mark_important).
+With mark_important: true, crow flags the mail it picks (category "crow"), once per mail, and
+clears its own flag when you answered; Today then lists every flagged mail. Keyring: service crow-graph, user <user>.
 JSON: {"at", "events": [{"start","end","subject","all_day","next"}], "tomorrow": [...],
-       "unread", "flagged": [{"subject","from"}], "drafts",
+       "unread", "flagged": [{"subject","from","crow"}], "drafts",
        "important": [{"subject","from","at","unread","high"}]}. Exit 2 when not signed in.
 """
 import datetime as dt, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
@@ -130,7 +132,7 @@ def important(tok, me, days=3, limit=5):
         cid = m.get("conversationId")
         answered[cid] = max(answered.get(cid, ""), m.get("sentDateTime", ""))
     iq = urllib.parse.urlencode({"$filter": f"receivedDateTime ge {iso(now - dt.timedelta(days=days))}",
-                                 "$select": "subject,from,toRecipients,isRead,importance,receivedDateTime,conversationId",
+                                 "$select": "id,subject,from,toRecipients,isRead,importance,receivedDateTime,conversationId,categories",
                                  "$orderby": "receivedDateTime desc", "$top": "100"})
     out, seen = [], set()
     for m in get(tok, "/me/mailFolders/inbox/messages?" + iq)["value"]:
@@ -144,10 +146,51 @@ def important(tok, me, days=3, limit=5):
                 or answered.get(cid, "") > m["receivedDateTime"]):
             continue
         seen.add(cid)
-        out.append({"subject": m.get("subject") or "", "from": a.get("name") or addr,
-                    "at": m["receivedDateTime"], "unread": not m.get("isRead"), "high": m.get("importance") == "high"})
+        out.append({"id": m["id"], "subject": m.get("subject") or "", "from": a.get("name") or addr,
+                    "at": m["receivedDateTime"], "unread": not m.get("isRead"), "high": m.get("importance") == "high",
+                    "categories": m.get("categories") or []})
     out.sort(key=lambda m: (not m["high"], not m["unread"]))
-    return out[:limit]
+    return out[:limit], answered
+
+
+MARKED = os.path.join(HOME, "local", "state", "today-marked.json")
+CATEGORY = "crow"
+
+
+def patch(tok, mid, body):
+    req = urllib.request.Request(GRAPH + "/me/messages/" + mid, json.dumps(body).encode(), method="PATCH",
+                                 headers={"Authorization": "Bearer " + tok, "Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=20).close()
+
+
+def mark(tok, picked, answered):
+    """Flag each picked mail once, with the crow category. A flag the owner clears stays
+    cleared. Crow clears its own flag once the owner answered the thread."""
+    try:
+        done = json.load(open(MARKED))
+    except (OSError, ValueError):
+        done = {}
+    for m in picked:
+        if m["id"] in done:
+            m.pop("categories", None)
+        else:
+            patch(tok, m["id"], {"flag": {"flagStatus": "flagged"},
+                                 "categories": sorted(set(m.pop("categories", [])) | {CATEGORY})})
+            done[m["id"]] = m["at"]
+    old = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with open(MARKED, "w") as f:
+        json.dump({k: v for k, v in done.items() if v >= old}, f)  # the picker only looks back 3 days
+    fq = urllib.parse.urlencode({"$filter": "flag/flagStatus eq 'flagged'",
+                                 "$select": "id,subject,from,categories,conversationId,receivedDateTime", "$top": "25"})
+    out = []
+    for m in get(tok, "/me/messages?" + fq)["value"]:
+        crow = CATEGORY in (m.get("categories") or [])
+        if crow and answered.get(m.get("conversationId"), "") > m["receivedDateTime"]:
+            patch(tok, m["id"], {"flag": {"flagStatus": "complete"}})
+            continue
+        out.append({"subject": m.get("subject") or "", "crow": crow,
+                    "from": ((m.get("from") or {}).get("emailAddress") or {}).get("name", "")})
+    return out
 
 
 def fetch(c):
@@ -160,12 +203,11 @@ def fetch(c):
         nxt["next"] = True
     inbox = get(tok, "/me/mailFolders/inbox?$select=unreadItemCount")
     drafts = get(tok, "/me/mailFolders/drafts?$select=totalItemCount")
-    fq = urllib.parse.urlencode({"$filter": "flag/flagStatus eq 'flagged'", "$select": "subject,from", "$top": "5"})
-    flagged = [{"subject": m.get("subject") or "", "from": ((m.get("from") or {}).get("emailAddress") or {}).get("name", "")}
-               for m in get(tok, "/me/messages?" + fq)["value"]]
+    picked, answered = important(tok, c["user"])
+    flagged = mark(tok, picked, answered) if c.get("mark_important") else []
     return {"at": now.isoformat(timespec="seconds"), "events": today, "tomorrow": events(tok, day + dt.timedelta(days=1)),
             "unread": inbox.get("unreadItemCount", 0), "flagged": flagged, "drafts": drafts.get("totalItemCount", 0),
-            "important": important(tok, c["user"])}
+            "important": picked}
 
 
 def main():

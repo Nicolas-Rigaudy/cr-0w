@@ -15,7 +15,9 @@
 - The token request asks for `.default`, so it gets exactly the scopes the admin consented.
 
 ## Mail to look at
-Inbox mail from the last 3 days, kept when all hold: you are in To, the sender is a colleague (your domain) or someone you wrote to in the last 90 days (Sent Items), it is not a meeting reply or a robot address, and you have not answered the thread since. High importance first, then unread. Flags are ignored: most people never flag.
+Inbox mail from the last 3 days, kept when all hold: you are in To, the sender is a colleague (your domain) or someone you wrote to in the last 90 days (Sent Items), it is not a meeting reply or a robot address, and you have not answered the thread since. High importance first, then unread.
+
+With `mark_important: true` in local/graph.yaml the Outlook flag becomes the shared marker: crow flags each picked mail once and adds the category `crow` (existing categories kept), and Today lists every flagged mail (◆ crow's, ● yours). A flag the owner clears stays cleared (`local/state/today-marked.json` remembers what crow flagged). Crow marks its own flag complete once the owner answered the thread; it never touches the owner's flags.
 
 ## Gotchas
 - `calendarView` returns events that only touch the window edge (an all-day event ending at midnight shows on the next day). The script drops them and duplicates with the same start and subject.

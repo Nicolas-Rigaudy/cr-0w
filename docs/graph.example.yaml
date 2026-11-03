@@ -5,3 +5,4 @@ tenant: 00000000-0000-0000-0000-000000000000
 client_id: 00000000-0000-0000-0000-000000000000
 user: you@example.com        # keyring entry: secret-tool lookup service crow-graph user <user>
 timezone: Europe/Paris       # IANA zone the event times come in (default UTC)
+mark_important: false      # true: crow flags the mail it picks (category crow) and Today lists flagged mail

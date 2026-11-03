@@ -26,6 +26,17 @@ func TestTodayRows(t *testing.T) {
 		High    bool   `json:"high"`
 	}{"Tr :  Terms   v3", "Jo", true, false})
 	rows, mail := todayRows(s, now)
+	defer func() {
+		s.Flagged = append(s.Flagged, struct {
+			Subject string `json:"subject"`
+			From    string `json:"from"`
+			Crow    bool   `json:"crow"`
+		}{"Budget", "Al", true})
+		rows, mail := todayRows(s, now)
+		if rows[5].What != "Flagged" || rows[6].TagState != "crow" || mail[1] != "1 flagged" {
+			t.Fatalf("flagged wins over the picker: %+v %v", rows[5:7], mail)
+		}
+	}()
 	if rows[0].When != "all day" || rows[1].TagState != "past" {
 		t.Fatalf("head rows: %+v", rows[:2])
 	}
