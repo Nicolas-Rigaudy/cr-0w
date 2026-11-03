@@ -57,6 +57,11 @@
 # Notes
 - Depends on item_050. Execution order: 3 of 3. Personal repo, commit on main allowed.
 
+# Final spec (owner approved 2026-11-03)
+- Board: MRs R3 approved 2026-11-02 (req_011 round 3), supersedes the item_050 pick: local/state/shots/deck-rework/png/prop-mrs-R3-land.png and -port.png (scripts mrs_r3.py, mrs_r2.py, mrs_lib.py).
+- 3 columns: MR list | code scrolling in place (j k, J K by hunk, [ ] file, scrollbar + line position) | Your move panel (steps with current marked, finding, fix, big keycaps a x e c, Then: n next, A apply, P push). Commented line reversed with markers. Badge = count of MRs on the owner's move, dot only on a real problem.
+- Comparison page: local/state/shots/deck-rework/r2-compare.html
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |

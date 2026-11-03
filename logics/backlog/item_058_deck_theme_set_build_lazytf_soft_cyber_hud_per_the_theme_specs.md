@@ -24,7 +24,7 @@
   - lazytf: round boxes, blue focus, reverse selection, thin gauges.
   - soft: top rule + left spine per panel, chunky gauges, sentence case.
   - cyber: square, double magenta on focus, // TITLE //, [////....] gauges, caps.
-  - hud: corner brackets, ◢ TITLE ◣, numbered panels, ruler gauges; accent from item_055 (blue or magenta, not amber).
+  - hud: corner brackets, ◢ TITLE ◣, numbered panels, segment gauges; accent from the terminal theme (see Final spec).
   - Fix the deviations the mock layer left: HUD gauge tick fixed at 80%, table header rules missing in soft/cyber/hud, group headers sentence case in cyber/hud.
 - Out:
   - Tab layouts.
@@ -54,6 +54,11 @@
 # Notes
 - Depends on item_055 for the HUD accent. Execution order: after item_057.
 - Mock layer: local/state/shots/deck-rework/themes.py, renders png/theme-*.png.
+
+# Final spec (owner approved 2026-11-03)
+- Superseded accent note: no per-theme accent. Colors come from the user's terminal theme (accent slot + ANSI 16). Themes must differ in monochrome by shape: lazytf ━─ lines, Soft ●○ dots, Cyber [///...] slashes, HUD ▮▯ segments with ▕ start and │ 80% tick (▰▱ not in FiraCode).
+- Reference: local/state/shots/deck-rework/themes.py, mono.py (strip colors to check), png/theme-*-*.png, png/mono-grid.png.
+- Comparison page: local/state/shots/deck-rework/r2-compare.html
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

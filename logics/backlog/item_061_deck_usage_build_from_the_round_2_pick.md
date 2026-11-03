@@ -13,7 +13,7 @@
 - Summary: Build the Usage tab from the board the owner picks in item_055.
 - Keywords: deck, usage, build, round, pick
 - Use when: building the Usage tab.
-- Skip when: before item_055 is picked.
+- Skip when: never; item_055 is done.
 
 # Problem
 - The current Usage tab fails the req_011 audit; the owner asked for a merged design (see item_055).
@@ -50,6 +50,12 @@
 
 # Notes
 - Depends on item_055. Execution order: after item_057, Usage first (data already there).
+
+# Final spec (owner approved 2026-11-03)
+- Board: local/state/shots/deck-rework/png/prop-usage-R2-land.png and -port.png (scripts usage_r2.py, usage_r2_ledger.py).
+- Runway (mine accounts full lanes, Team group compact), daily spend + Saved, ledger beside By project and By model. No per-session lanes.
+- Account tiers (req_011 round 4): add `tier: mine|team` per account in the accounts config; mine = full rows (5h + week gauges, %, reset, empty-at / week-spent warning), team = one compact line (small 5h + week gauges, %). Not hidden. Mock helpers in local/state/shots/deck-rework/real.py (TIER, row drawers).
+- Comparison page: local/state/shots/deck-rework/r2-compare.html
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

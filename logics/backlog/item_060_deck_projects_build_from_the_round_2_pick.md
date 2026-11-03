@@ -13,7 +13,7 @@
 - Summary: Build the Projects tab from the board the owner picks in item_055.
 - Keywords: deck, projects, build, round, pick
 - Use when: building the Projects tab.
-- Skip when: before item_055 is picked.
+- Skip when: never; item_055 is done.
 
 # Problem
 - The current Projects tab fails the req_011 audit; the owner asked for a merged design (see item_055).
@@ -50,6 +50,11 @@
 
 # Notes
 - Depends on item_055. Execution order: after item_057, Usage first (data already there).
+
+# Final spec (owner approved 2026-11-03)
+- Board: local/state/shots/deck-rework/png/prop-projects-R2-land.png and -port.png (script projects_r2.py, data data/workdays.json from git log).
+- Two rows per project, no who column: next action prefixed only when someone else acts ("waiting on X:", "crow:"). Roadmap and work timeline at the bottom.
+- Comparison page: local/state/shots/deck-rework/r2-compare.html
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -54,6 +54,11 @@
 - Depends on item_054 for the actor column. Execution order: 2.
 - Owner picks 2026-11-02 recorded in req_011 § Owner picks.
 
+# Final spec (owner approved 2026-11-03)
+- Board: local/state/shots/deck-rework/png/prop-home-A-land.png, prop-home-A-port.png, prop-home-A-land-work.png (script home_a.py).
+- Pulse: Account tiers (req_011 round 4): add `tier: mine|team` per account in the accounts config; mine = full rows (5h + week gauges, %, reset, empty-at / week-spent warning), team = one compact line (small 5h + week gauges, %). Not hidden. Mock helpers in local/state/shots/deck-rework/real.py (TIER, row drawers). Team accounts share one compact row.
+- Comparison page: local/state/shots/deck-rework/r2-compare.html
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
