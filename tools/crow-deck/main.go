@@ -420,6 +420,11 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case actionMsg:
 		m.flash = msg.text
+	case mailActMsg:
+		m.flash = msg.text
+		if m.live != nil {
+			return m, fetchCmd(srcToday)
+		}
 	case postActionsMsg:
 		r := m.mrsView().cur()
 		switch {
@@ -611,6 +616,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.page == 3 {
 			m.flash = m.projectKey(k)
 		}
+		if m.page == 0 && m.focus == pToday {
+			return m.todayKey(k)
+		}
 	case "d":
 		if m.page == 4 {
 			m.useFortnight = !m.useFortnight
@@ -650,6 +658,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.mrKeyPress(k)
 		}
 	case "enter", "h", "r", "x", "R", "a", "e", "c", "g", "T", "M", "P", "s":
+		if m.page == 0 && m.focus == pToday {
+			return m.todayKey(k)
+		}
 		if m.page == 1 {
 			return m.agentKeyPress(k)
 		}
@@ -991,6 +1002,9 @@ func (m model) context() []keyHint {
 	}
 	if m.page != 0 {
 		return []keyHint{{"1-5", "tab"}, {"j k", "move"}}
+	}
+	if m.focus == pToday {
+		return []keyHint{{"j k", "mail"}, {"o", "open in Outlook"}, {"enter", "crow session"}, {"x", "done"}, {"s", "snooze"}, {"tab", "pane"}}
 	}
 	ctx := []keyHint{{"1-5", "tab"}}
 	if layoutFor(m.w) == laySingle {

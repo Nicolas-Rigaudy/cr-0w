@@ -288,6 +288,14 @@ func TestLiveShots(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+		if sz[0] >= 150 {
+			m.mode, m.focus, m.sel[pToday] = "all", pToday, 1
+			f := filepath.Join(dir, fmt.Sprintf("home-today-%dx%d.ans", sz[0], sz[1]))
+			if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			m.focus = pNext
+		}
 		m.page, m.mode = 1, "all"
 		f := filepath.Join(dir, fmt.Sprintf("agents-live-%dx%d.ans", sz[0], sz[1]))
 		if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {

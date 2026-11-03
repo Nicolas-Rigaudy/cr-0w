@@ -19,6 +19,12 @@ Inbox mail from the last 3 days, kept when all hold: you are in To, the sender i
 
 With `mark_important: true` in local/graph.yaml the Outlook flag becomes the shared marker: crow flags each picked mail once and adds the category `crow` (existing categories kept), and Today lists every flagged mail (◆ crow's, ● yours). A flag the owner clears stays cleared (`local/state/today-marked.json` remembers what crow flagged). Crow marks its own flag complete once the owner answered the thread; it never touches the owner's flags.
 
+## Mail actions (deck Today pane, and from any session)
+- `bin/crow-today done <id>` marks the flag complete; `snooze <id>` flags it due tomorrow 08:00 and Today hides it until then (`until` in the JSON).
+- `bin/crow-today thread <id>` prints the thread newest first, plain text, so a session reads mail without the claude.ai connector.
+- `bin/crow-today draft <id> [--all] < text` saves a reply draft (text above the native quote) in Outlook Drafts. It never sends.
+- Deck: focus Today with `tab`, `j k` walks the mail rows, `o` opens it in Outlook (real browser), `x` done, `s` snooze, `enter` hands off to a hub session that reads the thread and leaves a French draft.
+
 ## Gotchas
 - `calendarView` returns events that only touch the window edge (an all-day event ending at midnight shows on the next day). The script drops them and duplicates with the same start and subject.
 - Times come in the `timezone` of local/graph.yaml (default UTC); it must match the machine zone for the "in N min" countdown.

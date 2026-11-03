@@ -1,10 +1,10 @@
 ## item_062_deck_today_mail_actions_open_session_done_snooze - Deck Today mail actions: open, crow session, done, snooze
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -37,7 +37,10 @@
 - AC4: Unit tests cover the cursor on mail rows only, the key to command mapping, and the snooze filter; `go test ./...` passes.
 
 # AC Traceability
-- AC1-AC4 -> this item. Proof: to fill at build.
+- AC1 -> `todayKey` "o" runs `crow-open <webLink>`; webLink comes from Graph (`bin/crow-today json`). Proof: TestTodayKeysRunTheirCommands.
+- AC2 -> `crow-today done|snooze` + `awake()` filter. Proof: live snooze 2026-11-03 (mail left the picker, came back with until Wed 08:00, flag cleared after), TestSnoozedFlagsHideUntilTheyReturn.
+- AC3 -> enter runs `crow handoff cr-0w` with the thread/draft task; `crow-today thread` checked live, `draft` uses createReply/createReplyAll. Proof: TestTodayKeysRunTheirCommands; first live run by the owner.
+- AC4 -> today_test.go (cursor on mail rows, key mapping, snooze filter, mock rows run nothing); `go test ./...` passes.
 
 # Decision framing
 - Product framing: Not needed

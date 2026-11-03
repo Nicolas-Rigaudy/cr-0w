@@ -136,7 +136,7 @@ func (hv homeView) items(i int) int {
 	case pNow:
 		return len(hv.fx.Agents)
 	case pToday:
-		return len(hv.fx.Today)
+		return len(hv.mails())
 	}
 	return 0
 }
@@ -251,13 +251,38 @@ func (hv homeView) display(i, iw int) (sp boxSpec, at []int) {
 		}
 	case pToday:
 		for _, t := range fx.Today {
-			add(hv.todayLine(t, iw))
+			if t.Kind == "flag" {
+				add(hv.todayLine(t, iw)) // the cursor walks the mail rows only
+			} else {
+				sp.rows = append(sp.rows, hv.todayLine(t, iw))
+			}
 		}
 		if len(fx.Mail) > 0 {
 			sp.right = line{{strings.Join(fx.Mail, " · "), lk.sub}}
 		}
 	}
 	return sp, at
+}
+
+// mails are the Today rows the cursor walks.
+func (hv homeView) mails() []todayRow {
+	var out []todayRow
+	for _, t := range hv.fx.Today {
+		if t.Kind == "flag" {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// curMail is the selected mail when the Today pane has focus.
+func (hv homeView) curMail() *todayRow {
+	ms := hv.mails()
+	if hv.focus != pToday || len(ms) == 0 {
+		return nil
+	}
+	r := ms[max(0, min(len(ms)-1, hv.sel[pToday]))]
+	return &r
 }
 
 // todayLine draws one rail row: an event, a section heading, a flagged mail or a gap.

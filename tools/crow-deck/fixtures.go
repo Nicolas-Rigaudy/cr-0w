@@ -67,6 +67,8 @@ type todayRow struct {
 	When, What, Tag string
 	TagState        string // ok, warn, next, past, ""
 	Kind            string // "" event, head, flag, gap
+	ID, Link        string // flag rows: the Graph message id and its Outlook web link
+	Subject         string // flag rows: the subject as sent
 }
 
 type nextRow struct {
