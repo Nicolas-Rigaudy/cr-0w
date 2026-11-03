@@ -269,7 +269,14 @@ func (hv homeView) todayLine(t todayRow, iw int) line {
 	case "head":
 		return line{{t.What, lk.label}}
 	case "flag":
-		return line{{"! ", lk.warn}, {t.What, lk.plain}, spc(2), {t.Tag, lk.sub}}
+		mark, what := lk.cyan, lk.bold
+		switch t.TagState {
+		case "warn":
+			mark = lk.bad
+		case "past":
+			mark, what = lk.sub, lk.plain
+		}
+		return lr(line{{"● ", mark}, {t.What, what}}, line{{t.Tag, lk.sub}}, iw)
 	}
 	when, what, tag := lk.cyan, lk.plain, lk.ok
 	switch t.TagState {

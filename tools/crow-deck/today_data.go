@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -24,7 +25,13 @@ type todaySnap struct {
 		Subject string `json:"subject"`
 		From    string `json:"from"`
 	} `json:"flagged"`
-	Drafts int `json:"drafts"`
+	Drafts    int `json:"drafts"`
+	Important []struct {
+		Subject string `json:"subject"`
+		From    string `json:"from"`
+		Unread  bool   `json:"unread"`
+		High    bool   `json:"high"`
+	} `json:"important"`
 }
 
 func fetchToday() (*todaySnap, error) {
@@ -33,7 +40,7 @@ func fetchToday() (*todaySnap, error) {
 }
 
 // todayRows lays out the rail: today's events (the next one marked with its countdown),
-// then flagged mail, then tomorrow. mail is the pane's right label.
+// then the mail crow picked as worth a look, then tomorrow. mail is the pane's right label.
 func todayRows(s *todaySnap, now time.Time) (rows []todayRow, mail []string) {
 	if s == nil {
 		return nil, nil
@@ -63,10 +70,16 @@ func todayRows(s *todaySnap, now time.Time) (rows []todayRow, mail []string) {
 		}
 		rows = append(rows, r)
 	}
-	if len(s.Flagged) > 0 {
-		rows = append(rows, todayRow{Kind: "gap"}, todayRow{Kind: "head", What: "Flagged"})
-		for _, f := range s.Flagged {
-			rows = append(rows, todayRow{Kind: "flag", What: f.Subject, Tag: f.From})
+	if len(s.Important) > 0 {
+		rows = append(rows, todayRow{Kind: "gap"}, todayRow{Kind: "head", What: "Mail to look at"})
+		for _, m := range s.Important {
+			st := ""
+			if m.High {
+				st = "warn"
+			} else if !m.Unread {
+				st = "past"
+			}
+			rows = append(rows, todayRow{Kind: "flag", What: strings.Join(strings.Fields(m.Subject), " "), Tag: m.From, TagState: st})
 		}
 	}
 	if len(s.Tomorrow) > 0 {
@@ -80,8 +93,8 @@ func todayRows(s *todaySnap, now time.Time) (rows []todayRow, mail []string) {
 		}
 	}
 	mail = append(mail, fmt.Sprintf("mail %d unread", s.Unread))
-	if n := len(s.Flagged); n > 0 {
-		mail = append(mail, fmt.Sprintf("%d flagged", n))
+	if n := len(s.Important); n > 0 {
+		mail = append(mail, fmt.Sprintf("%d to look at", n))
 	}
 	if s.Drafts > 0 {
 		mail = append(mail, fmt.Sprintf("%d drafts", s.Drafts))

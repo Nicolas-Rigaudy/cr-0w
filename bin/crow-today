@@ -7,9 +7,11 @@
 
 Config: local/graph.yaml (tenant, client_id, user, timezone). Keyring: service crow-graph, user <user>.
 JSON: {"at", "events": [{"start","end","subject","all_day","next"}], "tomorrow": [...],
-       "unread", "flagged": [{"subject","from"}], "drafts"}. Exit 2 when not signed in.
+       "unread", "flagged": [{"subject","from"}], "drafts",
+       "important": [{"subject","from","at","unread","high"}]}. Exit 2 when not signed in.
 """
 import datetime as dt, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
+import re
 import yaml
 
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -108,6 +110,46 @@ def events(tok, day):
     return out
 
 
+BOT = re.compile(r"no-?reply|notification|mailer|bounce|newsletter|marketing|^info@|^news|^contact@|^support@|^salle_|alert", re.I)
+RSVP = re.compile(r"^(accepted|accepté|declined|refusé|tentative|provisoire)\s*:", re.I)
+
+
+def important(tok, me, days=3, limit=5):
+    """Mail worth a look: from a colleague or someone you wrote to in 90 days, sent to you
+    directly, in the last few days, not a meeting reply, and not answered yet."""
+    me = me.lower()
+    domain = me.split("@")[-1]
+    now = dt.datetime.now(dt.timezone.utc)
+    iso = lambda d: d.strftime("%Y-%m-%dT%H:%M:%SZ")
+    sq = urllib.parse.urlencode({"$filter": f"sentDateTime ge {iso(now - dt.timedelta(days=90))}",
+                                 "$select": "toRecipients,ccRecipients,conversationId,sentDateTime", "$top": "300"})
+    known, answered = set(), {}
+    for m in get(tok, "/me/mailFolders/sentitems/messages?" + sq)["value"]:
+        for r in m.get("toRecipients", []) + m.get("ccRecipients", []):
+            known.add(r["emailAddress"]["address"].lower())
+        cid = m.get("conversationId")
+        answered[cid] = max(answered.get(cid, ""), m.get("sentDateTime", ""))
+    iq = urllib.parse.urlencode({"$filter": f"receivedDateTime ge {iso(now - dt.timedelta(days=days))}",
+                                 "$select": "subject,from,toRecipients,isRead,importance,receivedDateTime,conversationId",
+                                 "$orderby": "receivedDateTime desc", "$top": "100"})
+    out, seen = [], set()
+    for m in get(tok, "/me/mailFolders/inbox/messages?" + iq)["value"]:
+        a = (m.get("from") or {}).get("emailAddress") or {}
+        addr = a.get("address", "").lower()
+        to = [r["emailAddress"]["address"].lower() for r in m.get("toRecipients", [])]
+        cid = m.get("conversationId")
+        if (m.get("@odata.type", "").endswith("eventMessage") or RSVP.match(m.get("subject") or "")
+                or BOT.search(addr) or addr == me or me not in to or cid in seen
+                or not (addr.endswith("@" + domain) or addr in known)
+                or answered.get(cid, "") > m["receivedDateTime"]):
+            continue
+        seen.add(cid)
+        out.append({"subject": m.get("subject") or "", "from": a.get("name") or addr,
+                    "at": m["receivedDateTime"], "unread": not m.get("isRead"), "high": m.get("importance") == "high"})
+    out.sort(key=lambda m: (not m["high"], not m["unread"]))
+    return out[:limit]
+
+
 def fetch(c):
     tok = access(c)
     now = dt.datetime.now().astimezone()
@@ -122,7 +164,8 @@ def fetch(c):
     flagged = [{"subject": m.get("subject") or "", "from": ((m.get("from") or {}).get("emailAddress") or {}).get("name", "")}
                for m in get(tok, "/me/messages?" + fq)["value"]]
     return {"at": now.isoformat(timespec="seconds"), "events": today, "tomorrow": events(tok, day + dt.timedelta(days=1)),
-            "unread": inbox.get("unreadItemCount", 0), "flagged": flagged, "drafts": drafts.get("totalItemCount", 0)}
+            "unread": inbox.get("unreadItemCount", 0), "flagged": flagged, "drafts": drafts.get("totalItemCount", 0),
+            "important": important(tok, c["user"])}
 
 
 def main():

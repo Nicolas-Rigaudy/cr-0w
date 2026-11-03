@@ -19,10 +19,12 @@ func TestTodayRows(t *testing.T) {
 		Unread:   4,
 		Drafts:   1,
 	}
-	s.Flagged = append(s.Flagged, struct {
+	s.Important = append(s.Important, struct {
 		Subject string `json:"subject"`
 		From    string `json:"from"`
-	}{"Terms v3", "legal"})
+		Unread  bool   `json:"unread"`
+		High    bool   `json:"high"`
+	}{"Tr :  Terms   v3", "Jo", true, false})
 	rows, mail := todayRows(s, now)
 	if rows[0].When != "all day" || rows[1].TagState != "past" {
 		t.Fatalf("head rows: %+v", rows[:2])
@@ -34,10 +36,10 @@ func TestTodayRows(t *testing.T) {
 	for _, r := range rows[4:] {
 		kinds = append(kinds, r.Kind+":"+r.What)
 	}
-	if got := strings.Join(kinds, ","); got != "gap:,head:Flagged,flag:Terms v3,gap:,head:Tomorrow,:Travel" {
+	if got := strings.Join(kinds, ","); got != "gap:,head:Mail to look at,flag:Tr : Terms v3,gap:,head:Tomorrow,:Travel" {
 		t.Fatalf("sections: %s", got)
 	}
-	if strings.Join(mail, " · ") != "mail 4 unread · 1 flagged · 1 drafts" {
+	if strings.Join(mail, " · ") != "mail 4 unread · 1 to look at · 1 drafts" {
 		t.Fatalf("mail: %v", mail)
 	}
 	if r, m := todayRows(nil, now); r != nil || m != nil {
