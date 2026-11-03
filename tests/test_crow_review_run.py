@@ -524,6 +524,16 @@ def test_threads_start_lists_open_threads_and_keeps_their_ids(rr, monkeypatch):
     assert "### T1: rev on a.py:1" in text and "### T2: rev on the MR:0" in text and "Déjà réglé" not in text.split("## Existing")[0]
 
 
+def test_self_start_switches_to_threads_when_the_mr_has_open_threads(rr, monkeypatch):
+    calls = []
+    monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {"files": [], "threads": THREADS})
+    monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(a) or "rv000021-full")
+    rr.main(["start", REPO, "243", "--mode", "self"])
+    doc = rr.load(rr.findings_path(REPO, 243))
+    assert doc["mode"] == "threads" and [t["id"] for t in doc["threads"]] == ["disc-1", "disc-2"]
+    assert "NO reply" in calls[0][2].read_text()
+
+
 def test_threads_start_refuses_an_mr_without_open_threads(rr, monkeypatch):
     monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {"files": [], "threads": [THREADS[1]]})
     with pytest.raises(SystemExit, match="no open thread"):

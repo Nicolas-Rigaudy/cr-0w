@@ -344,6 +344,10 @@ def start(a):
     if old and (old.get("apply") or {}).get("state") == "running":
         sys.exit(f"crow-review-run: an apply run on {a.repo} !{a.number} is still running")
     detail = mr_detail(a.repo, a.number)
+    # The deck picks the mode from an MR list fetched earlier: threads posted since then must not get a self review.
+    if a.mode == "self" and open_threads(detail):
+        print(f"crow-review-run: {a.repo} !{a.number} has {len(open_threads(detail))} open threads, answering them (threads mode)")
+        a.mode = "threads"
     threads = open_threads(detail) if a.mode == "threads" else None
     if threads is not None and not threads:
         sys.exit(f"crow-review-run: {a.repo} !{a.number} has no open thread to answer")

@@ -22,6 +22,7 @@ A read-only background run reviews one MR and its findings land in a JSON file t
 - The mock deck keeps decisions in memory and starts no run.
 
 ## Threads mode (answer reviewers on the owner's MR)
+- `start --mode self` on an MR with open threads runs in threads mode: the deck picks the mode from a list that can predate the threads (!213, 2026-11-03).
 - `start --mode threads` refuses an MR with no open thread. It keys the unresolved threads T1..Tn in the bundle ("## Open threads to answer") and stores them as `threads` (key, forge id, GitHub comment id, author, body, path, line).
 - The prompt follows the review-threads skill: one finding per thread, `agree` yes|no|partly, `fix` and `test` when code changes, `comment` the reply in the reviewer's language and empty when the fix answers it, `pattern` matched against the ledgers (`pattern_kind` repeat|new, `how` for a new row).
 - Sync drops findings whose key is not an open thread and attaches `thread` to each one.
