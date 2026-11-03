@@ -81,7 +81,7 @@ func (uv usageViewState) accountsSpec(iw int) boxSpec {
 		l = append(l, seg{fmt.Sprintf("%s · %d/%d", strings.TrimPrefix(cmpOr(g.Burn, "no burn"), "burn "), g.RunsUsed, g.RunsMax), lk.sub})
 		sp.rows = append(sp.rows, l)
 	}
-	sp.rows = append(sp.rows, nil, line{{"p mode  l cap  [ ] priority", lk.key}, spc(2), {"editing the policy arrives with the actions slice", lk.sub}})
+	sp.rows = append(sp.rows, nil, line{{"p mode  l cap  < > priority", lk.key}, spc(2), {"editing the policy arrives with the actions slice", lk.sub}})
 	sp.sel = 1 + max(0, min(uv.sel, len(fx.Gauges)-1))
 	if fx.Usage != nil {
 		sp.right = line{{"r refresh · " + fx.Usage.Updated, lk.sub}}

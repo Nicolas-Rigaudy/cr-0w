@@ -36,7 +36,7 @@ type model struct {
 	agentSel   int    // position in the lane display order
 	agentKey   string // key of the selected lane, keeps the cursor on it across refreshes
 	agentPane  int
-	agentShift int  // [ ]: hours the lane window moved back
+	agentShift int  // < > (or [ ]): hours the lane window moved back
 	agentFull  bool // w: the whole day
 	agentZoom  bool // d: Detail full screen
 	input      string
@@ -590,6 +590,8 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "1", "2", "3", "4", "5":
 		m.page = int(k[0] - '1')
+	case "&", "é", "\"", "'", "(":
+		m.page = azertyTabs[k]
 	case "t":
 		m.cycleTheme(1)
 		m.overlay = ovTheme
@@ -630,9 +632,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.page == 1 {
 			m.agentFull, m.agentShift = !m.agentFull, 0
 		}
-	case "[", "]":
+	case "[", "]", "<", ">":
 		if m.page == 1 {
-			if k == "[" {
+			if k == "[" || k == "<" {
 				m.agentShift = min(m.agentShift+1, max(0, m.now.Hour()-3))
 			} else {
 				m.agentShift = max(0, m.agentShift-1)
@@ -679,6 +681,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	return m, nil
 }
+
+// azertyTabs maps the unshifted AZERTY digit row to tabs 1-5.
+var azertyTabs = map[string]int{"&": 0, "é": 1, "\"": 2, "'": 3, "(": 4}
 
 // projectKey explains an action key on the Projects page: it needs a selected project, and
 // the actions themselves arrive with the actions slice.
@@ -986,7 +991,7 @@ func (m model) context() []keyHint {
 		if m.typing {
 			return []keyHint{{"enter", "send"}, {"esc", "cancel"}}
 		}
-		return []keyHint{{"enter", "open"}, {"j k", "lane"}, {"a x e c", "answer"}, {"r", "relaunch"}, {"[ ]", "hour range"}, {"w", "full day"}, {"d", "detail"}, {"tab", "pane"}, {"/", "history"}}
+		return []keyHint{{"enter", "open"}, {"j k", "lane"}, {"a x e c", "answer"}, {"r", "relaunch"}, {"< >", "hour range"}, {"w", "full day"}, {"d", "detail"}, {"tab", "pane"}, {"/", "history"}}
 	}
 	if m.page == 2 {
 		if m.mrTyping != "" {
@@ -998,15 +1003,15 @@ func (m model) context() []keyHint {
 		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o h", "action"}, {"z", "zoom"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 4 {
-		return []keyHint{{"j k", "account"}, {"tab", "pane"}, {"d", "7 / 14 days"}, {"r", "refresh"}, {"p l [ ]", "policy"}}
+		return []keyHint{{"j k", "account"}, {"tab", "pane"}, {"d", "7 / 14 days"}, {"r", "refresh"}, {"p l < >", "policy"}}
 	}
 	if m.page != 0 {
-		return []keyHint{{"1-5", "tab"}, {"j k", "move"}}
+		return []keyHint{{"1-5 & é\" ' (", "tab"}, {"j k", "move"}}
 	}
 	if m.focus == pToday {
 		return []keyHint{{"j k", "mail"}, {"o", "open in Outlook"}, {"enter", "crow session"}, {"x", "done"}, {"s", "snooze"}, {"tab", "pane"}}
 	}
-	ctx := []keyHint{{"1-5", "tab"}}
+	ctx := []keyHint{{"1-5 & é\" ' (", "tab"}}
 	if layoutFor(m.w) == laySingle {
 		ctx = append(ctx, keyHint{"tab", "pane"})
 	}

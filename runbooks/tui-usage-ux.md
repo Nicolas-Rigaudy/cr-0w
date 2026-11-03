@@ -104,7 +104,7 @@ Layout at 235x62:
 - Region 1, "Total" strip, 3 rows, full width: cost today, week, month with `API-equivalent`, tokens, cache percent, savings sum, rtk percent, and the routing chain (`A use > B ask-first > C never > D never`) with the reason an account is skipped (`limited until 20:30`).
 - Region 2, four cards in a row at 58 cols each, rows 4 to 36 (33 rows). Card content: title line (account, policy chip, active dot), 5h gauge with left percent, reset, burn and empty time; week gauge likewise; "used so far, projected at reset" line (Vercel style); cost today, week; sparkline of 7 days; runs tonight with job names; flag line with the action. Below, "top sessions on this account", 12 rows, full title wrapped to two lines when long, cost and context flag. A card for an account that is `never` stays visible and says `not used by crow`.
 - Region 3, rows 37 to 60: left 120 cols "By project" drill list (ncdu bars with percent), right 110 cols "By model" and "Savings" boxes with the same bar style. `enter` on a project opens its sessions inline.
-- Keys: `h l` card, `p` cycle policy on the card, `[ ]` priority, `enter` drill in the card's list.
+- Keys: `h l` card, `p` cycle policy on the card, `< >` priority (no AltGr on AZERTY), `enter` drill in the card's list.
 
 At 118x60: cards become a vertical stack of 4 compact blocks of 8 rows (two gauge rows, a projection line, a sessions line count, one flag line), a single "Sessions" ledger replaces per-card session lists, project and model bars share a row at 59 cols each.
 
