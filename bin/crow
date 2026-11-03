@@ -3,9 +3,12 @@
 #
 # Start
 #   crow                 open the hub session
-#   crow open [--model M] <project> [prompt]  open a session in a registered project, optionally on a first message (model: opus, sonnet)
-#   crow term [--model M] <project> [prompt]  same, in a new kitty window (safe to call from inside a Claude session)
+#   crow open [--model M] [--on-busy fail] <project> [prompt | --task T --end-state E]
+#                        open a session in a registered project, optionally on a first message (model: opus, sonnet)
+#   crow term [--model M] [--on-busy fail] <project> [...]   same, in a new kitty window (safe to call from inside a Claude session)
 #   crow handoff <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
+#   open, term and handoff pick a free allowed account with quota left (crow-accounts pick);
+#   CROW_ACCOUNT=<name> forces one. --on-busy fail never asks (scripts).
 #   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
 # See
 #   crow deck [--theme t] control room: 5 tabs, 4 themes (? for keys)
@@ -37,6 +40,9 @@
 set -euo pipefail
 
 CROW_HOME="${CROW_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+# Inside a cdx session CROW_ACCOUNT is inherited and names that busy session's own account: not a choice.
+CROW_ACCOUNT_GIVEN="${CROW_ACCOUNT:-}"
+[[ -n "${CDX_SESSION_NAME:-}" && "$CROW_ACCOUNT_GIVEN" == "$CDX_SESSION_NAME" ]] && CROW_ACCOUNT_GIVEN=""
 CROW_ACCOUNT="${CROW_ACCOUNT:-$("$CROW_HOME/bin/crow-accounts" default)}"
 REGISTRY="$CROW_HOME/local/projects.yaml"
 export CROW_HOME
@@ -66,6 +72,28 @@ launch() {
   else
     exec cdx "$CROW_ACCOUNT" --dir "$dir" "$@"
   fi
+}
+
+# pick_account: a free allowed account with quota left, unless CROW_ACCOUNT names one.
+pick_account() {
+  [[ -n "$CROW_ACCOUNT_GIVEN" ]] && return 0
+  CROW_ACCOUNT="$("$CROW_HOME/bin/crow-accounts" pick --on-busy "$on_busy")" || exit 1
+  CROW_ACCOUNT_GIVEN="$CROW_ACCOUNT"
+}
+
+# launch_opts: leading --model M / --on-busy B of open and term.
+on_busy=ask
+model=()
+launch_opts() {
+  n=0
+  while :; do
+    case "${1:-}" in
+      --model)   model=(--model "${2:?usage: crow open|term [--model M] [--on-busy fail] <project> ...}"); shift 2; n=$((n+2)) ;;
+      --on-busy) on_busy="${2:?usage: --on-busy ask|fail}"; [[ "$on_busy" == ask || "$on_busy" == fail ]] \
+                   || { echo "crow: --on-busy must be ask or fail" >&2; exit 1; }; shift 2; n=$((n+2)) ;;
+      *) break ;;
+    esac
+  done
 }
 
 # oneshot <skill> [args]: run a hub skill on the account's provider.
@@ -110,19 +138,28 @@ case "$cmd" in
   brief)    oneshot brief ;;
   daily)    oneshot daily "Draft only: write the draft where the skill says and print it. Do not post anything." ;;
   weekly)   oneshot weekly ;;
-  open)     [[ "${1:-}" == --model ]] && { export ANTHROPIC_MODEL="${2:?usage: crow open [--model M] <project> [prompt]}"; shift 2; }
-            dir="$(project_path "${1:?usage: crow open [--model M] <project> [prompt]}")"
-            launch "$dir" ${2:+--prompt "$2"} ;;
+  open)     launch_opts "$@"; shift "$n"
+            [[ ${#model[@]} -gt 0 ]] && export ANTHROPIC_MODEL="${model[1]}"
+            dir="$(project_path "${1:?usage: crow open [--model M] <project> [prompt | --task T --end-state E]}")"
+            pick_account
+            if [[ "${2:-}" == --task ]]; then launch "$dir" --on-busy "$on_busy" "${@:2}"
+            else launch "$dir" --on-busy "$on_busy" ${2:+--prompt "$2"}; fi ;;
   term)     # Detach from the calling session: real HOME (kitty config) and no inherited
             # Claude/cdx variables (session markers, ANTHROPIC_PROFILE, CDX_SESSION_NAME).
-            model=(); [[ "${1:-}" == --model ]] && { model=(--model "${2:?usage: crow term [--model M] <project> [prompt]}"); shift 2; }
-            dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt]}")"
+            # The account is picked here, where the caller sees a refusal, and passed down.
+            launch_opts "$@"; shift "$n"
+            dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt | --task T --end-state E]}")"
+            pick_account
             strip=(); for v in $(compgen -e | grep -E '^(CLAUDE|CLAUDECODE|ANTHROPIC_|CDX_)'); do strip+=(-u "$v"); done
-            env "${strip[@]}" HOME="$(getent passwd "$(id -un)" | cut -d: -f6)" \
-              setsid -f kitty --title "crow · $1" "$CROW_HOME/bin/crow" open "${model[@]}" "$@" >/dev/null 2>&1 ;;
+            env "${strip[@]}" HOME="$(getent passwd "$(id -un)" | cut -d: -f6)" CROW_ACCOUNT="$CROW_ACCOUNT" \
+              setsid -f kitty --title "crow · $1 · $CROW_ACCOUNT" "$CROW_HOME/bin/crow" open "${model[@]}" --on-busy "$on_busy" "$@" >/dev/null 2>&1
+            echo "crow: $1 opened on $CROW_ACCOUNT" >&2 ;;
   work)     exec "$CROW_HOME/bin/crow-project" work "$@" ;;
-  handoff)  prompt="$("$CROW_HOME/bin/crow-project" handoff "$@")"
-            exec "$CROW_HOME/bin/crow" term "$1" "$prompt" ;;
+  handoff)  # Pick before writing the note: a refusal leaves no orphan note.
+            pick_account
+            task="$("$CROW_HOME/bin/crow-project" handoff --for-cdx "$@")"
+            end=""; prev=""; for a in "$@"; do [[ "$prev" == --end-state ]] && end="$a"; [[ "$a" == --end-state=* ]] && end="${a#--end-state=}"; prev="$a"; done
+            CROW_ACCOUNT="$CROW_ACCOUNT" exec "$CROW_HOME/bin/crow" term "$1" --task "$task" --end-state "$end" ;;
   ls)       python3 -c "
 import yaml
 for p in yaml.safe_load(open('$REGISTRY'))['projects']:

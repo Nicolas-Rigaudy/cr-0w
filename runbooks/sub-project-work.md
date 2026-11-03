@@ -17,6 +17,9 @@ crow handoff <project> --task "<what>" --end-state "<what the owner's OK unlocks
 - End state examples: "after my OK: commit, push, post replies, resolve threads"; "commit and push to a branch when tests pass, then stop".
 - Context: facts the hub already gathered (ticket text, MR number, decisions). Leave out steps the repo's skills already hold.
 - Background instead of a window: `crow dispatch` with the same note as prompt file.
+- Account: open, term and handoff pick a free allowed account with quota left (`crow-accounts pick`) and print
+  `crow: using '<name>'` when it is not the default. A refusal lists why each account was skipped; for an
+  ask-first account, ask the owner, then rerun with `CROW_ACCOUNT=<name>`. `--on-busy fail` never prompts.
 
 ## Stay
 ```

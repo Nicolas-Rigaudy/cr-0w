@@ -6,7 +6,8 @@
       demand, plus what a hub session cannot run for it (hooks, permission denies, git hooks).
   crow-project handoff <project> --task T --end-state E [--context C]
       Write a hand-off note to <state>/handoffs/ and print the first prompt of the repo
-      session (`crow handoff` opens it with `crow term`).
+      session (`crow handoff` opens it with `crow term`). --for-cdx prints it as the text of
+      `cdx --task`: the task first, without the Task and End state lines cdx writes itself.
   crow-project which <path>
       Name of the registered project that owns a path (worktrees included), or nothing.
 
@@ -206,6 +207,7 @@ def main():
     h.add_argument("--task", required=True); h.add_argument("--end-state", required=True,
                    help="what the owner's approval unlocks, e.g. 'commit and push after my OK, open the MR with the mr skill'")
     h.add_argument("--context", default="")
+    h.add_argument("--for-cdx", action="store_true", help=argparse.SUPPRESS)
     s = sub.add_parser("which"); s.add_argument("path")
     a = ap.parse_args()
     if a.cmd == "work":
@@ -214,6 +216,9 @@ def main():
     elif a.cmd == "handoff":
         out, text = handoff(project(a.project), a.task, a.end_state, a.context)
         print(f"crow: hand-off note saved to {out}", file=sys.stderr)
+        if a.for_cdx:
+            rest = [l for l in text.splitlines() if l not in (f"Task: {a.task}", f"End state: {a.end_state}")]
+            text = re.sub(r"\n{3,}", "\n\n", "\n".join([a.task, ""] + rest)) + "\n"
         sys.stdout.write(text)
     elif a.cmd == "which":
         p = owner_of(a.path)

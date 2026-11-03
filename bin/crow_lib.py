@@ -283,6 +283,40 @@ def account_state(current=None, cached=False):
     return pick_accounts(accts["accounts"], rows, current, datetime.now().astimezone())
 
 
+def room(a):
+    """Quota left on an account row of pick_accounts: the smaller of its 5h and weekly windows."""
+    return min(a["remaining_5h_pct"] or 0, a["remaining_week_pct"] or 0)
+
+
+def launch_pick(state, busy, default):
+    """Account for an interactive launch (crow open, term, handoff).
+
+    state: pick_accounts output with no current account; busy: names with a live cdx session.
+    Returns {account, ask, skipped}: account is None when none is free and has room; ask is True
+    when it is an ask-first account the owner must OK. The default stays the pick while it is free,
+    policy use and under NEARLY_OUT_PCT; otherwise the free account with the most room, use first."""
+    skipped, free = [], []
+    for a in state["accounts"]:
+        why = ("live session" if a["name"] in busy else None) or a["blocked"]
+        if not why and a["policy"] == "use" and (a["used_5h_pct"] or 0) >= NEARLY_OUT_PCT:
+            why = f"5h {a['used_5h_pct']}% used"
+        (skipped.append({"name": a["name"], "why": why}) if why else free.append(a))
+    free.sort(key=lambda a: (a["policy"] != "use", not a["auto_ok"], -room(a), a["name"]))
+    dflt = next((a for a in free if a["name"] == default and a["policy"] == "use"), None)
+    top = dflt or (free[0] if free else None)
+    return {"account": top and top["name"], "ask": bool(top and not top["auto_ok"]),
+            "room": top and room(top), "skipped": skipped}
+
+
+def live_sessions():
+    """Names of cdx accounts with a live interactive session (`cdx sessions --json`)."""
+    try:
+        out = subprocess.run(["cdx", "sessions", "--json"], capture_output=True, text=True, timeout=30).stdout
+        return {s["session"] for s in json.loads(out).get("sessions") or [] if s.get("active") and s.get("session")}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return set()
+
+
 # ---------- headless run flags (req_017 levers 3, 4, 7, 16) ----------
 
 CLAUDE_MODEL_IDS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-5-5",

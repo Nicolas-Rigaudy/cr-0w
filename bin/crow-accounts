@@ -11,6 +11,10 @@
   crow-accounts hub-session <name> exit 1 when the account's provider cannot run a guarded hub session
   crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
   crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
+  crow-accounts pick [--on-busy ask|fail]   account for crow open/term/handoff: skips accounts with a
+                                   live session or no quota left, keeps the default while it has room,
+                                   else the one with the most room; an ask-first pick asks on a terminal
+                                   (fail: never ask); exits 1 with the reasons when none fits
   crow-accounts json               every account with its policy, memory mode and tier (mine | team),
                                    plus fallback/max_5h_pct/max_week_pct/free_5h_min when fallback is auto
 
@@ -64,6 +68,44 @@ def find(cfg, name):
     return next((a for a in accounts(cfg) if a["name"] == name), None)
 
 
+def status_rows():
+    """cdx status rows by account name; empty when cdx does not answer."""
+    try:
+        r = subprocess.run(["cdx", "status", "--json"], capture_output=True, text=True, timeout=30)
+        return {x["session_name"]: x for x in json.loads(r.stdout).get("rows") or [] if x.get("session_name")}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {}
+
+
+def ask(question):
+    """y/N on the terminal; False without one."""
+    try:
+        with open("/dev/tty", "r+") as tty:
+            tty.write(question + " [y/N] ")
+            tty.flush()
+            return tty.readline().strip().lower() in ("y", "yes")
+    except OSError:
+        return False
+
+
+def pick(cfg, on_busy):
+    from datetime import datetime
+    default = cfg.get("default")
+    st = crow_lib.pick_accounts(accounts(cfg), status_rows(), None, datetime.now().astimezone())
+    p = crow_lib.launch_pick(st, crow_lib.live_sessions(), default)
+    skipped = "; ".join(f"{s['name']}: {s['why']}" for s in p["skipped"])
+    name = p["account"]
+    if not name:
+        sys.exit(f"crow: no allowed account is free with quota left ({skipped}). "
+                 "Wait for a reset or pick one: CROW_ACCOUNT=<name> crow ...")
+    if p["ask"] and not (on_busy == "ask" and ask(f"crow: use ask-first account '{name}' ({p['room']}% left; {skipped})?")):
+        sys.exit(f"crow: only ask-first account '{name}' is free ({p['room']}% left; {skipped}). "
+                 f"With the owner's OK: CROW_ACCOUNT={name} crow ...")
+    if name != default:
+        print(f"crow: using '{name}' ({p['room']}% left; {skipped})", file=sys.stderr)
+    print(name)
+
+
 def main(argv):
     cfg = load()
     cmd = argv[0] if argv else ""
@@ -97,6 +139,8 @@ def main(argv):
         why = crow_lib.check_model(crow_lib.provider_of(argv[1]), argv[2])
         if why:
             sys.exit(f"crow: {why}")
+    elif cmd == "pick" and argv[1:] in ([], ["--on-busy", "ask"], ["--on-busy", "fail"]):
+        pick(cfg, argv[2] if len(argv) == 3 else "ask")
     elif cmd == "json":
         print(json.dumps({"default": cfg.get("default"), "accounts": accounts(cfg)}))
     else:
