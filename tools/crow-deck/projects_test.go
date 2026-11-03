@@ -168,6 +168,9 @@ func TestProjectsTimelineWindow(t *testing.T) {
 	if _, days, _ = pv.window(true); days != 63 {
 		t.Errorf("portrait %d", days)
 	}
+	if _, days, past = pv.windowFit(false, 160); days != 77 || past != 5 {
+		t.Errorf("fit 160 cells: %d days, %d past", days, past)
+	}
 }
 
 func TestRegistryRoadDecodes(t *testing.T) {

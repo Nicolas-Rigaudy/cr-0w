@@ -537,6 +537,24 @@ func (pv projectsView) window(port bool) (time.Time, int, int) {
 	return t, 7 * (past + ahead), past
 }
 
+// windowFit is window, with planned then past weeks dropped in landscape until every
+// day gets 2 cells of mw, so the weekday row shows every day (3 weeks each at least).
+func (pv projectsView) windowFit(port bool, mw int) (time.Time, int, int) {
+	start, days, past := pv.window(port)
+	if port || pv.zoom {
+		return start, days, past
+	}
+	ahead := days/7 - past
+	for 14*(past+ahead) > mw && ahead > 3 {
+		ahead--
+	}
+	for 14*(past+ahead) > mw && past > 3 {
+		past--
+		start = start.AddDate(0, 0, 7)
+	}
+	return start, 7 * (past + ahead), past
+}
+
 // grid is one timeline row: a rune and a style per cell.
 type grid struct {
 	r  []rune
@@ -665,12 +683,15 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 		sp.rows = []line{{{"syncing…", lk.sub}}}
 		return sp
 	}
-	start, days, past := pv.window(port)
 	gut := 28
 	if port {
 		gut = 26
 	}
 	mw := max(10, iw-gut)
+	start, days, past := pv.windowFit(port, mw)
+	if !port && mw >= 2*days {
+		mw = mw / days * days // whole cells a day, so the weekday letters sit evenly
+	}
 	col := func(t time.Time) int { return int(day(t).Sub(start).Hours() / 24 * float64(mw) / float64(days)) }
 	end := start.AddDate(0, 0, days)
 	today := col(pv.now)

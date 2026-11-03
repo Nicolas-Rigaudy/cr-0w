@@ -103,10 +103,26 @@ func dur(mins int) string {
 	return fmt.Sprintf("%dm", mins)
 }
 
-// ctxBar is the context gauge: share of a 200k window, coloured by how full it is.
+// ctxWindow: the context window a session runs in. Past 200k it must be the 1M window.
+func ctxWindow(ctx int) int {
+	if ctx > 200_000 {
+		return 1_000_000
+	}
+	return 200_000
+}
+
+// ctxLabel: the context used out of its window, e.g. "163k/200k".
+func ctxLabel(ctx int) string {
+	if ctxWindow(ctx) == 1_000_000 {
+		return tokensK(ctx) + "/1M"
+	}
+	return tokensK(ctx) + "/200k"
+}
+
+// ctxBar is the context gauge: share of the session's window, coloured by how full it is.
 func (av agentsView) ctxBar(ctx, cells int) line {
 	lk := av.lk
-	pct := min(100, ctx*100/200_000)
+	pct := min(100, ctx*100/ctxWindow(ctx))
 	st := lk.ok
 	switch {
 	case pct >= 85:
@@ -221,7 +237,7 @@ func (av agentsView) teamSegs(g gauge, gw int) line {
 func (av agentsView) acctRows(iw int, port bool) []line {
 	lk, fx := av.lk, av.fx
 	var out []line
-	gw := 12
+	gw := min(12, max(4, (iw-46)/2)) // both gauges, their % and the reset fit in iw
 	if port {
 		gw = 14
 	}
@@ -250,7 +266,7 @@ func (av agentsView) acctRows(iw int, port bool) []line {
 
 func (av agentsView) acctSpec(iw int, port bool) boxSpec {
 	lk := av.lk
-	sp := boxSpec{title: "Accounts today", index: 2, sel: -1, right: line{{"→ 5 Usage", lk.sub}}}
+	sp := boxSpec{title: "Accounts today · % left", index: 2, sel: -1, right: line{{"→ 5 Usage", lk.sub}}}
 	if av.loading() {
 		sp.rows = []line{{{"syncing…", lk.sub}}}
 		return sp
@@ -303,7 +319,7 @@ type laneCols struct {
 
 func (av agentsView) laneLayout(iw int, port bool) laneCols {
 	c := laneCols{tw: 40, actw: 18, port: port}
-	c.cols = []laneCol{{"model", 10, 0}, {"context", 13, 0}, {"cost", 6, 1}, {"time", 5, 1}}
+	c.cols = []laneCol{{"model", 10, 0}, {"context", 17, 0}, {"cost", 6, 1}, {"time", 5, 1}}
 	if port {
 		c.tw, c.actw, c.cols = 32, 12, []laneCol{{"cost", 6, 1}}
 	}
@@ -444,7 +460,7 @@ func (av agentsView) laneLine(l laneRow, c laneCols, t0, t1 int, sel bool) line 
 		case "context":
 			if l.live() && !l.Run && l.Ctx > 0 {
 				out = append(out, av.ctxBar(l.Ctx, 7)...)
-				out = append(out, seg{fmt.Sprintf("%6s", tokensK(l.Ctx)), lk.sub})
+				out = append(out, seg{fmt.Sprintf(" %-9s", ctxLabel(l.Ctx)), lk.sub})
 			} else {
 				out = append(out, spc(k.w))
 			}
@@ -681,7 +697,7 @@ func (av agentsView) laneHead(l *laneRow, iw int) line {
 	if l.Ctx > 0 && !l.Run {
 		out = append(out, seg{"  ctx ", lk.sub})
 		out = append(out, av.ctxBar(l.Ctx, 7)...)
-		out = append(out, seg{" " + tokensK(l.Ctx), lk.sub})
+		out = append(out, seg{" " + ctxLabel(l.Ctx), lk.sub})
 	}
 	switch l.State {
 	case lsNeeds:

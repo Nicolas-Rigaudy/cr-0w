@@ -263,7 +263,7 @@ func histShots(write func(string, model), ti int, sizes map[string][2]int) {
 //
 //	LIVESHOTS=/abs/dir go test -run TestLiveShots .
 //
-// Files: home-, agents- and projects-live-<w>x<h>.ans at the board sizes, landscape 235x62 and portrait 118x60.
+// Files: home-, agents- and projects-live-<w>x<h>.ans at the board sizes, landscape 235x62 and 170x46, portrait 118x60.
 func TestLiveShots(t *testing.T) {
 	dir := os.Getenv("LIVESHOTS")
 	if dir == "" {
@@ -284,7 +284,7 @@ func TestLiveShots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, sz := range [][2]int{{235, 62}, {118, 60}} {
+	for _, sz := range [][2]int{{235, 62}, {170, 46}, {118, 60}} {
 		for _, mode := range []string{"all", "work"} {
 			m.w, m.h, m.mode, m.page = sz[0], sz[1], mode, 0
 			f := filepath.Join(dir, fmt.Sprintf("home-live-%dx%d-%s.ans", sz[0], sz[1], mode))
