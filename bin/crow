@@ -18,6 +18,7 @@
 # Delegate
 #   crow dispatch <project> <label> --prompt-file F [--model opus]   start a tracked background run
 #   crow runs relaunch <id> <account> [--dry-run] [--here]   continue a cut-off session on another allowed account; relaunch status
+#   crow rescue <account> [--to T] [--dry-run]   move every session the account lost in its last 5h window, one OK
 #   crow focus --pid P --account A --cwd D   focus a session's kitty window, or resume it
 # Rituals
 #   crow brief           print the morning brief (one-shot run)
@@ -124,6 +125,7 @@ for p in yaml.safe_load(open('$REGISTRY'))['projects']:
               relaunch) shift; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
               *)        exec "$CROW_HOME/bin/crow-runs" list "$@" ;;
             esac ;;
+  rescue)   exec "$CROW_HOME/bin/crow-relaunch" rescue "$@" ;;
   dispatch) exec "$CROW_HOME/bin/crow-runs" dispatch "$@" ;;
   json)     exec "$CROW_HOME/bin/crow-runs" json "$@" ;;
   report)   exec "$CROW_HOME/bin/crow-runs" report "$@" ;;

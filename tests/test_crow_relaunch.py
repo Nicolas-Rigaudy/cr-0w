@@ -201,7 +201,7 @@ def test_ask_first_hands_off_after_a_typed_yes(hub, cdx, session):
 
 def test_status_recommends_an_unblocked_allowed_account(hub, cdx):
     def status(blocked, fmt=("--json",)):
-        return relaunch(hub, cdx, "status", *fmt, extra={"FAKE_BLOCKED": blocked, "CROW_ACCOUNT": "main"}).stdout
+        return relaunch(hub, cdx, "status", *fmt, extra={"FAKE_BLOCKED": blocked, "CROW_ACCOUNT": "main", "CDX_SESSION_NAME": ""}).stdout
     st = json.loads(status("main"))
     assert st["current_blocked"].startswith("5h limit")
     assert st["recommended"] == "spare"  # use accounts before ask-first ones

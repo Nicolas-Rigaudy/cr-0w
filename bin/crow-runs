@@ -111,6 +111,17 @@ def wait(run_ids, poll=20):
 SEEN = STATE / "runs-seen.json"
 
 
+def run_state(r):
+    """done / limit / failed for a finished cdx run row (limit: the stdout or stderr tail names a usage limit)."""
+    if r.get("exit_code") == 0:
+        return "done"
+    tail = ""
+    for k in ("stdout_path", "stderr_path"):
+        f = Path((r.get("artifacts") or {}).get(k) or "/nonexistent")
+        tail += f.read_text(errors="replace")[-800:] if f.exists() else ""
+    return "limit" if "limit" in tail.lower() else "failed"
+
+
 def seen_ids():
     try:
         return set(json.loads(SEEN.read_text()))
@@ -135,9 +146,16 @@ def inbox(hook=False, peek=False):
     if hook:
         print("UNREPORTED BACKGROUND RUNS. Tell the owner now, before anything else: one line each (what finished, "
               "state), then read the report (`bin/crow-runs report <id>`) and summarise it. Put decisions in AskUserQuestion.")
+    followups = {}
+    for x in recs.values():
+        for k in ("resumes", "continues"):
+            if x.get(k):
+                followups[x[k]] = x
     for r, rec in fresh:
-        state = "done" if r.get("exit_code") == 0 else "failed"
-        print(f"- {state} {r['run_id'][:8]} {rec.get('project', '')}  {rec.get('label', '')}  (ended {r['ended_at']})")
+        state = run_state(r)
+        nxt = followups.get(r["run_id"])
+        then = f"; resumed as {nxt['run_id'][:8]} on {nxt.get('account', ACCOUNT)}" if nxt else ""
+        print(f"- {state} {r['run_id'][:8]} {rec.get('project', '')}  {rec.get('label', '')}  (ended {r['ended_at']}{then})")
     if not peek:
         mark_seen(*(r["run_id"] for r, _ in fresh))
 
@@ -153,12 +171,66 @@ def notify(run_ids, poll=20, max_hours=12):
         for rid in sorted(pending):
             if rid in done:
                 rec = recs.get(rid, {})
-                ok = done[rid].get("exit_code") == 0
-                subprocess.run(["notify-send", "-a", "crow", "-u", "normal" if ok else "critical",
-                                f"Run {'done' if ok else 'failed'}: {rec.get('project', '')}", rec.get("label", rid[:8])])
+                st = run_state(done[rid])
+                msg = requeue(rec, deadline) if st == "limit" and rec else ""
+                subprocess.run(["notify-send", "-a", "crow", "-u", "normal" if st == "done" else "critical",
+                                f"Run {st}: {rec.get('project', '')}", " ".join(x for x in (rec.get("label", rid[:8]), msg) if x)])
                 pending.discard(rid)
         if pending:
             time.sleep(poll)
+
+
+MAX_CHAIN = 3          # limit requeues per original run
+RESET_GRACE_S = 180    # wait this long past a window reset before continuing a run
+RESUME_NOTE = ("RESUME NOTE: a usage limit cut the previous run of this task off. Partial work may already be "
+               "in the tree: check `git log` and `git status` first, keep what is done, do not redo committed steps, "
+               "and finish the remaining ones.\n\n")
+
+
+def chain_depth(rec):
+    recs = {r["run_id"]: r for r in ledger()}
+    n = 0
+    while rec and (rec.get("resumes") or rec.get("continues")) and n <= MAX_CHAIN:
+        rec = recs.get(rec.get("resumes") or rec.get("continues"))
+        n += 1
+    return n
+
+
+def requeue(rec, deadline):
+    """A run stopped on a usage limit: move it to an account crow may use without asking (fresh run with a
+    RESUME NOTE), else wait for its own window to reset and continue the conversation there.
+    Returns a short note for the notification."""
+    if chain_depth(rec) >= MAX_CHAIN:
+        return f"not requeued: {MAX_CHAIN} limit requeues already"
+    acct = rec.get("account") or ACCOUNT
+    st = crow_lib.account_state(acct)
+    base = [sys.executable, os.path.realpath(__file__), "dispatch", rec["project"], rec["label"],
+            "--resumes", rec["run_id"]]
+    if rec.get("cwd") and rec["cwd"] != project(rec["project"])["path"]:
+        base += ["--cwd", rec["cwd"]]
+    target = st["auto_target"] if st["current_blocked"] else None
+    if target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists():
+        f = STATE / "dispatch" / f"resume-{rec['run_id'][:8]}.md"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(RESUME_NOTE + Path(rec["prompt_file"]).read_text())
+        cmd = base + ["--prompt-file", str(f), "--power", rec.get("power") or "medium", "--account", target,
+                      *(["--model", rec["model"]] if rec.get("model") else []),
+                      *(["--permission", rec["permission"]] if rec.get("permission") else [])]
+        where = f"resumed on {target}"
+    else:
+        row = next((a for a in st["accounts"] if a["name"] == acct), {})
+        if "weekly" in (st["current_blocked"] or ""):
+            return "not requeued: weekly limit, no other account free without an OK"
+        left = crow_lib.minutes_to(row.get("reset_5h_at_iso"), datetime.now().astimezone()) \
+            if st["current_blocked"] else 0
+        if left is None or time.time() + left * 60 + RESET_GRACE_S > deadline:
+            return "not requeued: no account free and no reset in time (see `crow runs relaunch status`)"
+        time.sleep(max(0, left * 60) + RESET_GRACE_S)
+        cmd = base + ["--continue-run", rec["run_id"], "--account", acct,
+                      "--prompt", RESUME_NOTE + "Continue the task from where it stopped."]
+        where = f"continued on {acct} after the reset"
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    return where if r.returncode == 0 else f"requeue failed: {(r.stderr or r.stdout).strip()[:120]}"
 
 
 def report(run_id, since="7d"):
@@ -417,14 +489,7 @@ def collect(since="today", include_unledgered=False):
             continue
         r = done.get(rec["run_id"])
         if r:
-            if r.get("exit_code") == 0:
-                st = "done"
-            else:
-                tail = ""
-                for k in ("stdout_path", "stderr_path"):
-                    f = Path(r.get("artifacts", {}).get(k) or "/nonexistent")
-                    tail += f.read_text(errors="replace")[-800:] if f.exists() else ""
-                st = "limit" if "limit" in tail.lower() else "failed"
+            st = run_state(r)
         else:
             st = "lost"
         past.append({
@@ -454,8 +519,33 @@ def collect(since="today", include_unledgered=False):
 
 # ---------- commands ----------
 
+def pick_account(a):
+    """--account wins (the caller has the owner's OK). --continue-run stays on the parent run's account
+    (cdx cannot move a conversation). Otherwise the default account, or the account crow may use
+    without asking when the default is blocked or nearly out."""
+    if a.account:
+        return a.account
+    if a.continue_run:
+        parent = next((r for r in ledger() if r["run_id"].startswith(a.continue_run)), {})
+        return parent.get("account") or ACCOUNT
+    try:
+        st = crow_lib.account_state(ACCOUNT)
+    except Exception:  # no usable account data: dispatch as before, cdx still refuses a blocked account
+        return ACCOUNT
+    if not st["current_blocked"]:
+        return ACCOUNT
+    if st["auto_target"]:
+        print(f"crow: {ACCOUNT} is out ({st['current_blocked']}); dispatching on {st['auto_target']}", file=sys.stderr)
+        return st["auto_target"]
+    rec = st["recommended"]
+    sys.exit(f"crow: {ACCOUNT} is out ({st['current_blocked']}). " +
+             (f"{rec} is free but needs the owner's OK: rerun with --account {rec} once given."
+              if rec else "No allowed account is free; wait for the reset."))
+
+
 def dispatch(a):
-    if subprocess.run([str(HOME / "bin/crow-accounts"), "require", ACCOUNT]).returncode:
+    acct = pick_account(a)
+    if subprocess.run([str(HOME / "bin/crow-accounts"), "require", acct]).returncode:
         sys.exit(1)
     p = project(a.project)
     cwd = p["path"]
@@ -467,7 +557,7 @@ def dispatch(a):
     # A review run cannot write, so it may share the folder with another run.
     if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
         sys.exit(f"crow: a run is already working in {cwd}; --force to override")
-    provider = crow_lib.provider_of(ACCOUNT)
+    provider = crow_lib.provider_of(acct)
     src = ["--prompt-file", a.prompt_file] if a.prompt_file else ["--prompt", a.prompt]
     if provider == "codex":  # Codex does not load CLAUDE.md: start the prompt with the read-first list
         task = Path(a.prompt_file).read_text() if a.prompt_file else a.prompt
@@ -478,7 +568,7 @@ def dispatch(a):
         src = ["--prompt-file", str(f)]
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
     pins = ["--continue-run", a.continue_run] if a.continue_run else ["--power", a.power, *(["--model", a.model] if a.model else [])]
-    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", cwd, *src, *pins,
+    out = subprocess.run(["cdx", "run", acct, "--cwd", cwd, *src, *pins,
              "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
              "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])],
              capture_output=True, text=True).stdout.strip()
@@ -497,7 +587,7 @@ def dispatch(a):
         "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "start_sha": sh("git", "rev-parse", "HEAD", cwd=cwd),
         "branch": sh("git", "branch", "--show-current", cwd=cwd),
-        "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
+        "account": acct, "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
     }
     if a.continue_run:
         rec["continues"] = a.continue_run
@@ -508,7 +598,7 @@ def dispatch(a):
         f.write(json.dumps(rec) + "\n")
     subprocess.Popen([sys.executable, os.path.realpath(__file__), "notify", rec["run_id"]],
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print(f"dispatched {rec['run_id'][:8]}  {p['name']}  {a.label}")
+    print(f"dispatched {rec['run_id'][:8]}  {p['name']}  {a.label}" + ("" if acct == ACCOUNT else f"  on {acct}"))
     print(f"NEXT: start `bin/crow-runs wait {rec['run_id'][:8]}` as a background Bash command now (wakes this session when the run ends)")
 
 
@@ -592,6 +682,7 @@ def main():
     d.add_argument("--force", action="store_true")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     d.add_argument("--cwd", help="run in this worktree of the project (<path>.wt/...) instead of the main checkout")
+    d.add_argument("--account", help="run on this account (an ask-first account needs the owner's OK first)")
     d.add_argument("--continue-run", metavar="RUN_ID", help="resume that finished run's conversation (cdx --continue-run; its model and effort)")
     sub.add_parser("report").add_argument("run_id")
     fp = sub.add_parser("final")

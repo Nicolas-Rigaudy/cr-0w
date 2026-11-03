@@ -21,7 +21,7 @@ want to trigger it by name.
 - [agent-tooling](agent-tooling.md): third-party agent tools installed (code graph, graphify, ast-grep, claude-hud), pinned versions, verdicts, undo
 - [service-tokens](service-tokens.md): personal API tokens in the keyring via `crow secret` (store, read without printing, rotate, revoke), registry in local/tokens.yaml
 - [ci-secrets](ci-secrets.md): prod-scoped CI variables and secrets (owner runs the generator script; scope/protect rules)
-- [interrupted-sessions](interrupted-sessions.md): list sessions cut off by a usage limit and relaunch them on another allowed account (always by id)
+- [interrupted-sessions](interrupted-sessions.md): quota warning before a usage limit, `crow rescue` for every session it stopped, relaunch one by id
 - [memory](memory.md): memory lives in local/memory, linked into allowed cdx profiles (never copied)
 - [design-canvas](design-canvas.md): add or change boards in a Design canvas artifact without losing the owner's layout (live index merge, one file per publish)
 - [tui-render](tui-render.md): render a TUI (or ANSI mockup) to PNG in the kitty theme at real monitor sizes; fallback-glyph and contrast checks

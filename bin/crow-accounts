@@ -11,7 +11,8 @@
   crow-accounts hub-session <name> exit 1 when the account's provider cannot run a guarded hub session
   crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
   crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
-  crow-accounts json               every account with its policy, memory mode and tier (mine | team)
+  crow-accounts json               every account with its policy, memory mode and tier (mine | team),
+                                   plus fallback/max_5h_pct/max_week_pct/free_5h_min when fallback is auto
 
 The policy comes from cdx (`cdx set <name> --policy use|ask-first|never`) and falls back to the
 policy in local/accounts.yaml for an account cdx has none for.
@@ -51,8 +52,11 @@ def accounts(cfg):
     cdx = cdx_policies()
     for a in cfg.get("accounts") or []:
         pol = cdx.get(a["name"]) or a.get("policy")
-        out.append({"name": a["name"], "policy": pol if pol in POLICIES else "never",
-                    "memory": a.get("memory", "none"), "tier": a.get("tier") if a.get("tier") == "team" else "mine"})
+        row = {"name": a["name"], "policy": pol if pol in POLICIES else "never",
+               "memory": a.get("memory", "none"), "tier": a.get("tier") if a.get("tier") == "team" else "mine"}
+        if a.get("fallback") == "auto":  # shared account crow may pick alone, within its caps
+            row.update(fallback="auto", **{k: a[k] for k in ("max_5h_pct", "max_week_pct", "free_5h_min") if k in a})
+        out.append(row)
     return out
 
 

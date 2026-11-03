@@ -6,6 +6,7 @@
 
 identity   git user.email of each registered repo against the registry identity of its scope
 accounts   default account, accounts crow may target, cdx on PATH
+quota      warn when every `use` account is blocked or past 90% of its 5h window (cdx status --cached)
 worktrees  <repo>.wt/* trees already merged into the default branch (crow tidy --apply removes them)
 
 Exit 1 when a check fails, 0 otherwise (warnings do not fail).
@@ -40,6 +41,25 @@ def accounts_json():
 
 def check(area, level, summary, details=()):
     return {"area": area, "level": level, "summary": summary, "details": list(details)}
+
+
+def quota(default):
+    sys.path.insert(0, HERE)
+    import crow_lib
+    try:
+        st = crow_lib.account_state(current=default, cached=True)
+    except Exception as e:
+        return check("quota", "ok", f"no quota data ({type(e).__name__})")
+    uses = [a for a in st["accounts"] if a["policy"] == "use" and a["used_5h_pct"] is not None]
+    details = [f"{a['name']}: 5h {a['used_5h_pct']}% week {a['used_week_pct']}% used"
+               + (f", blocked: {a['blocked']}" if a["blocked"] else "") for a in st["accounts"]]
+    if not uses:
+        return check("quota", "ok", "no quota data for the use accounts", details)
+    if all(a["blocked"] or a["used_5h_pct"] >= crow_lib.AUTO_FALLBACK_PCT for a in uses):
+        alt = st["auto_target"] or st["recommended"]
+        return check("quota", "warn", "every use account is out or past "
+                     f"{crow_lib.AUTO_FALLBACK_PCT}%; " + (f"fallback {alt}" if alt else "no fallback free"), details)
+    return check("quota", "ok", f"{len(uses)} use account(s) with room", details)
 
 
 def identity(reg):
@@ -95,7 +115,8 @@ def main(argv):
         sys.exit(__doc__)
     mod = load_registry()
     reg = mod.load()
-    checks = [identity(reg), accounts(accounts_json()), stale_worktrees(reg, mod)]
+    acc = accounts_json()
+    checks = [identity(reg), accounts(acc), quota((acc or {}).get("default")), stale_worktrees(reg, mod)]
     ok = all(c["level"] != "fail" for c in checks)
     if argv:
         json.dump({"ok": ok, "checks": checks}, sys.stdout)

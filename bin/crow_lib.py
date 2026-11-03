@@ -176,3 +176,108 @@ def secret_items(service=None):
         elif key.startswith("attribute."):
             cur[key[len("attribute."):]] = val
     return [i for i in items if i.get("service")]
+
+
+# ---------- account picking (limits, policies, shared-account caps) ----------
+
+NEARLY_OUT_PCT = 95   # 5h use at which crow stops starting new runs on an account
+AUTO_FALLBACK_PCT = 90  # every `use` account past this: a `fallback: auto` account needs no OK
+
+
+def used_pct(row, key):
+    """Points used of a cdx status window (remaining_5h_pct / remaining_week_pct), None when unknown."""
+    left = (row or {}).get(key)
+    return None if left is None else 100 - left
+
+
+def minutes_to(iso, now):
+    if not iso:
+        return None
+    from datetime import datetime
+    try:
+        return (datetime.fromisoformat(iso) - now).total_seconds() / 60
+    except ValueError:
+        return None
+
+
+def hard_block(row):
+    """Why cdx cannot serve work on the account at all, else None."""
+    if not row:
+        return "unknown to cdx"
+    if row.get("enabled") is False:
+        return "disabled"
+    if row.get("auth_status") not in (None, "authenticated"):
+        return f"auth {row['auth_status']}"
+    if row.get("remaining_5h_pct") == 0:
+        return f"5h limit (resets {row.get('reset_5h_at')})"
+    if row.get("remaining_week_pct") == 0:
+        return f"weekly limit (resets {row.get('reset_week_at')})"
+    return None
+
+
+def cap_block(acct, row, now):
+    """Why crow leaves a shared account alone (max_5h_pct / max_week_pct in accounts.yaml), else None.
+    Past the 5h cap the account stays usable when its 5h window resets within free_5h_min minutes
+    and the week is under its cap: nobody else is likely to need the rest of that window."""
+    u5, uw = used_pct(row, "remaining_5h_pct"), used_pct(row, "remaining_week_pct")
+    mx5, mxw = acct.get("max_5h_pct"), acct.get("max_week_pct")
+    if mxw is not None and uw is not None and uw >= mxw:
+        return f"week {uw}% used, crow's cap is {mxw}%"
+    if mx5 is not None and u5 is not None and u5 >= mx5:
+        left = minutes_to((row or {}).get("reset_5h_at_iso"), now)
+        free = acct.get("free_5h_min")
+        if free and left is not None and 0 <= left <= free:
+            return None
+        return f"5h {u5}% used, crow's cap is {mx5}% (resets {(row or {}).get('reset_5h_at')})"
+    return None
+
+
+def pick_accounts(accts, rows, current, now):
+    """Every allowed account with its state and the targets crow may pick.
+
+    accts: crow-accounts json entries; rows: cdx status rows by name. Returns
+    {current, current_blocked, accounts[], auto_target, recommended}: auto_target needs no OK
+    (policy use, or `fallback: auto` once every use account is blocked or past AUTO_FALLBACK_PCT);
+    recommended is the best unblocked account, ask-first included."""
+    out = []
+    for a in accts:
+        if a["policy"] == "never":
+            continue
+        row = rows.get(a["name"])
+        out.append({"name": a["name"], "policy": a["policy"], "fallback": a.get("fallback"),
+                    "current": a["name"] == current,
+                    "blocked": hard_block(row) or cap_block(a, row, now),
+                    "used_5h_pct": used_pct(row, "remaining_5h_pct"), "used_week_pct": used_pct(row, "remaining_week_pct"),
+                    "remaining_5h_pct": (row or {}).get("remaining_5h_pct"),
+                    "remaining_week_pct": (row or {}).get("remaining_week_pct"),
+                    "reset_5h_at": (row or {}).get("reset_5h_at"), "reset_5h_at_iso": (row or {}).get("reset_5h_at_iso"),
+                    "reset_week_at": (row or {}).get("reset_week_at")})
+    uses = [a for a in out if a["policy"] == "use"]
+    uses_spent = all(a["blocked"] or (a["used_5h_pct"] or 0) >= AUTO_FALLBACK_PCT for a in uses)
+    for a in out:
+        a["auto_ok"] = a["policy"] == "use" or (a["fallback"] == "auto" and a["policy"] == "ask-first" and uses_spent)
+    usable = [a for a in out if not a["blocked"] and not a["current"]]
+    usable.sort(key=lambda a: (a["policy"] != "use", not a["auto_ok"],
+                               -min(a["remaining_5h_pct"] or 0, a["remaining_week_pct"] or 0)))
+    cur = next((a for a in out if a["current"]), None)
+    nearly_out = bool(cur and (cur["used_5h_pct"] or 0) >= NEARLY_OUT_PCT)
+    return {"current": current, "current_blocked": (cur["blocked"] if cur else hard_block(rows.get(current)))
+            or (f"5h {cur['used_5h_pct']}% used" if nearly_out else None),
+            "accounts": out, "auto_target": next((a["name"] for a in usable if a["auto_ok"]), None),
+            "recommended": usable[0]["name"] if usable else None}
+
+
+def account_state(current=None, cached=False):
+    """pick_accounts on live data: crow-accounts json and `cdx status` (--cached for hooks)."""
+    from datetime import datetime
+    bin_dir = os.path.dirname(os.path.realpath(__file__))
+    accts = json.loads(subprocess.run([os.path.join(bin_dir, "crow-accounts"), "json"], capture_output=True,
+                                      text=True, timeout=30).stdout)
+    current = current or os.environ.get("CDX_SESSION_NAME") or os.environ.get("CROW_ACCOUNT") or accts.get("default")
+    try:
+        out = subprocess.run(["cdx", "status", *(["--cached"] if cached else []), "--json"],
+                             capture_output=True, text=True, timeout=30).stdout
+        rows = {r["session_name"]: r for r in json.loads(out).get("rows") or [] if r.get("session_name")}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        rows = {}
+    return pick_accounts(accts["accounts"], rows, current, datetime.now().astimezone())

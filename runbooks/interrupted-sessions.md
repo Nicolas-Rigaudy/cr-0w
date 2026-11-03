@@ -3,11 +3,23 @@
 When an account hits its 5-hour or weekly limit, the sessions running on it stop on a limit
 message. They can continue on another allowed account through a cdx handoff.
 
-## Fresh stop: use cdx
-- A stop in the last 24 hours: `cdx rescue --dry-run`, then `cdx rescue` (it picks a ready account of the same
-  provider, skips what it already rescued, and respects `cdx set --policy`). Policy lives in cdx; `local/accounts.yaml`
-  only supplies the fallback and the memory mode.
-- `crow runs sessions` and `crow runs relaunch` cover what cdx does not: older stops, a chosen target, memory linking.
+## Before the stop: the quota warning
+- A UserPromptSubmit hook (`crow-relaunch hook`, `cdx status --cached`) prints one QUOTA line when the current
+  account passes 80% and again at 95% of its 5h or week window, with the reset time and the fallback.
+  Each level shows once per account and window (`<state>/quota-warned.json`). At 95%: tell the owner and suggest /wrap.
+- `crow doctor` warns when every `use` account is blocked or past 90% of its 5h window.
+
+## Fresh stop: `crow rescue`
+- `crow rescue <account> --dry-run` lists every session the account lost in its last 5h window: each one cut off by
+  the limit and not relaunched yet, plus interactive sessions still open on it. `crow rescue <account>` relaunches all
+  of them on one OK (`--to <target>` to choose).
+- The target is the picker's choice (`crow runs relaunch status`): a `use` account first, then an account with
+  `fallback: auto` in `local/accounts.yaml` once every `use` account is out. That one needs no OK while under its caps
+  (`max_5h_pct`, `max_week_pct`; past the 5h cap it stays usable when its window resets within `free_5h_min`).
+  Any other `ask-first` target needs a typed `yes`.
+- `cdx rescue` moves only the latest conversation of an account and reads policies from `cdx set --policy`.
+  Without cdx policies it treats every account as `use`, so prefer `crow rescue`.
+- `crow runs sessions` and `crow runs relaunch` cover older stops and a single session.
 
 ## Find
 - `crow runs sessions`: one line per session whose last turn is a limit error (retros and the

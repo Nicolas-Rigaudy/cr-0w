@@ -7,6 +7,7 @@
 > Complexity: high
 > Theme: cost
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-03 16:54:35
 
 # AI Context
 - Summary: Apply a colleague's 16 token-saving levers to crow and make crow warn before a usage limit and move work to an allowed account instead of failing.
@@ -67,7 +68,7 @@
 
 # Backlog
 - item_072_token_baseline_cache_split (done 2026-11-03: reload 32%, reread 46%, output 22%; local/state/research/token-baseline-2026-11.md)
-- item_068_quota_warning_and_account_failover
+- item_068_quota_warning_and_account_failover (done 2026-11-03: warning hook, auto fallback with caps, limit requeue, `crow rescue`, doctor check)
 - item_069_headless_dispatch_flags
 - item_071_compaction_thresholds_and_idle_rule
 - item_070_live_session_multi_step_runs (parked 2026-11-03: resumes already hit the 1h cache, see item notes)

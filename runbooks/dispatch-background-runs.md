@@ -39,8 +39,13 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 
 ## Recover
 - **⏸ usage limit** (the stdout says "You've hit your session limit · resets HH:MM"): partial work stays
-  in the tree. Wait for the reset, then redispatch (`--resumes <id>`) with a "RESUME NOTE" at the top of the prompt
-  saying what is already committed or uncommitted and which steps not to redo.
+  in the tree. The run's notifier requeues it without the owner: a fresh run with a "RESUME NOTE" (`--resumes <id>`)
+  on an account crow may use without asking, else `--continue-run` on the same account once its 5h window resets
+  (cdx cannot move a conversation to another account). At most 3 requeues per task; a weekly limit is not requeued.
+  The inbox shows `limit` and "resumed as X on Y". By hand: redispatch with a RESUME NOTE saying what is already
+  committed or uncommitted and which steps not to redo.
+- **Account choice:** `crow dispatch` uses the default account, or the auto fallback when the default is blocked or
+  past 95% of its 5h window. It refuses a plain `ask-first` account: get the owner's OK, then pass `--account <name>`.
   Two medium runs launched together can exhaust a session window in about 90 seconds. Stagger them if the window was recently used.
 - **Deletions in auto mode**: the permission classifier blocks deleting files with real content, so the run stops and reports.
   If the prompt already expects deletions, name the exact files in it, or plan for the owner to approve them afterwards.
