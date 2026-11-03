@@ -23,13 +23,6 @@
           { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/bin/crow-runs inbox --hook", "timeout": 20 }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/bin/crow-ctx idle-hook", "timeout": 10 }
-        ]
-      }
     ]
   }
 }

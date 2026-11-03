@@ -58,3 +58,12 @@ def test_idle_nudge_skips_new_activity_small_sessions_and_short_ttl(tmp_path, mo
     assert cc.idle_watch(str(transcript(tmp_path, 30_000)), "sid", "/w/p", sleep=lambda s: None) is None
     assert cc.idle_watch(str(transcript(tmp_path, 90_000, one_h=False)), "sid", "/w/p", sleep=lambda s: None) is None
     assert sent == []
+
+
+def test_idle_hook_skips_headless_runs(monkeypatch):
+    started = []
+    monkeypatch.setattr(cc.subprocess, "Popen", lambda *a, **k: started.append(a))
+    monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", "sdk-cli")
+    monkeypatch.setattr(cc.sys, "stdin", __import__("io").StringIO('{"session_id": "s", "transcript_path": "/t"}'))
+    cc.idle_hook()
+    assert started == []

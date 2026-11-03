@@ -24,7 +24,7 @@ Cache reads on a long context are most of the spend: Opus turns above 150k token
   `compact` past 65k while the cache is warm, or past 125k once it expired; `reload` between the two when cold (just continue or close; do not compact); `none` otherwise.
   `crow-ctx --json` rows carry the same field. Thresholds: `CROW_CTX_HOT`, `CROW_CTX_COLD`.
 - Cache TTL per session: 1h when it wrote 1h cache (this hub), else 5 min. `CROW_CACHE_TTL_MIN` overrides.
-- Idle nudge: the hub Stop hook (`crow-ctx idle-hook`) arms one watcher per session. A session past 65k with a 1h cache that stays idle 50 min gets one desktop notification: "/compact <what to keep>, or close it". The next turn re-arms it. Nothing is sent into the session.
+- Idle nudge: a Stop hook (`crow-ctx idle-hook`) in every cdx profile's user settings arms one watcher per interactive session (headless runs, entrypoint `sdk-*`, are skipped). A session past 65k with a 1h cache that stays idle 50 min gets one desktop notification: "/compact <what to keep>, or close it". The next turn re-arms it. Nothing is sent into the session.
 - The hook lives in the hub's `.claude/settings.json`, so repo sessions do not get the nudge yet.
 
 ## When to wrap

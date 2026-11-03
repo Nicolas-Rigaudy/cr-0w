@@ -78,7 +78,9 @@ def last_turn(transcript):
 
 
 def idle_hook():
-    """Stop hook: replace this session's idle watcher with a fresh one."""
+    """Stop hook: replace this session's idle watcher with a fresh one. Headless runs (sdk-*) are skipped."""
+    if os.environ.get("CLAUDE_CODE_ENTRYPOINT", "").startswith("sdk"):
+        return
     try:
         ev = json.load(sys.stdin)
     except ValueError:
