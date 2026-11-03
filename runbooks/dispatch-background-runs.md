@@ -20,7 +20,7 @@ Use when the user wants work done in project repos without opening a session the
 - End with: report commits, what is left, open questions.
 
 ## Dispatch
-`crow dispatch <project> "<short label>" --prompt-file <file> [--power medium]`
+`crow dispatch <project> "<short label>" --prompt-file <file> [--kind task|review] [--power medium]`
 This records the run in `<state>/runs.jsonl` so `crow runs` can show its label and commits.
 When relaunching an interrupted run, add `--resumes <run_id>` so the old run is folded into the new one.
 
@@ -32,7 +32,7 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 - `crow watch`: a live two-pane board (Go + Bubble Tea in `tools/crow-watch`, rebuilt on demand; reads `crow-runs json`). Tall terminals stack the panes. Every agent row shows its state, project, task, last activity, context, commits and current action; the right pane shows the selected agent's timeline, commits and final report.
 - `crow runs`: the same view, printed once. `crow-runs json` gives the same data as JSON for widgets.
 - States: ● working / ◌ quiet (a run with no transcript writes for 20s or more) / ◆ waiting (a session whose last message is text, i.e. it is waiting on the user) / ○ idle.
-  Finished: ✓ done / ✗ failed / ⏸ usage limit / ? lost.
+  Finished: ✓ done / ✗ failed / ⏸ usage limit / $ budget cap / ! stuck (killed by the watchdog or its timeout) / ? lost.
 - Data sources: `<home>/.claude/sessions/<pid>.json` (current session id and busy/idle status; the id changes on /clear),
   then the transcript at `<home>/.claude/projects/<cwd with non-alphanumerics replaced by ->/<session>.jsonl`, and the ledger `<state>/runs.jsonl`.
 - `cdx runs` lists finished runs only. A run's final report is the `result` field in its `stdout_path`.
@@ -60,6 +60,15 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 - Read each report (`crow-runs report <id>`). Summarise the facts in prose: what shipped, and what's left.
 - Put every decision the owner must make into AskUserQuestion: up to 4 per round, each self-contained (project + one line of context), recommended option first. Never leave decisions inside the summary text.
 - Turn the answers into the next dispatch, update the open threads, and start queued work in the freed slots.
+
+## Headless flags (every launch, `crow_lib.run_flags`)
+- Every `cdx run` from crow (dispatch, review runs, retro, `crow` one-shots) takes its flags from one helper, per run kind (`crow_lib.RUN_KINDS`: task, review, retro, oneshot):
+  exact model id (`--model claude-opus-5-5`, never an alias), effort fixed at launch (`--power`), `--budget` USD (Claude only; cdx stops the run with `budget_exceeded`, exit 125) and `--timeout-seconds`.
+  Override per kind with `CROW_<KIND>_BUDGET` and `CROW_<KIND>_TIMEOUT_MIN`. `crow-runs dispatch ... --dry-run` prints the full command and env.
+- Env: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` (no phantom background results) and `ENABLE_CLAUDEAI_MCP_SERVERS=false` (no claude.ai connectors).
+- Watchdog: the run's notifier kills a Claude run whose transcript (and subagent transcripts) has not moved for `CROW_STUCK_MIN` minutes (20) and marks it stuck (`<state>/runs-stuck.json`).
+- Gap: a repo's own `.mcp.json` servers still load (a work repo loaded its code graph and cloud servers). Only `--strict-mcp-config` stops them and `cdx run` has no per-run extra args; `cdx set --extra-args` would also hit interactive sessions.
+- Prompts pass data through files (`--prompt-file`, JSON on disk), never inline in Bash.
 
 ## Cap and labels (cdx 0.22)
 - `crow dispatch` passes `--max-parallel 2` (`CROW_MAX_RUNS`) and `--label <project>/<label>` to `cdx run`; cdx refuses a third run with `too_many_runs`, race-free. `--force` passes 0 (no cap). The same-folder check stays in crow.

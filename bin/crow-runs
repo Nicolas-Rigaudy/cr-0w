@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """crow-runs: dispatch background runs and see what every agent is doing.
 
-  crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--power P] [--model M] [--permission review]
+  crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--kind task|review|retro] [--power P] [--model M]
+                     [--permission review] [--dry-run]   every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
   crow-runs json                                     same data as JSON (for widgets)
   crow-runs report <run_id>                          final report of a finished run
@@ -15,7 +16,7 @@ Every dispatch is recorded in <state>/runs.jsonl (run id, project, label, start
 commit). Running background runs come from `cdx runs --json`. Live agents come from the
 claude and codex processes: their cwd, cdx account and (Claude) session transcript.
 """
-import argparse, json, os, re, shutil, subprocess, sys, time
+import argparse, json, os, re, shutil, signal, subprocess, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -112,14 +113,61 @@ SEEN = STATE / "runs-seen.json"
 
 
 def run_state(r):
-    """done / limit / failed for a finished cdx run row (limit: the stdout or stderr tail names a usage limit)."""
+    """done / budget / stuck / limit / failed for a finished cdx run row (budget: cdx stopped it at --budget;
+    stuck: the watchdog killed it or it hit --timeout-seconds; limit: the stdout or stderr tail names a usage limit)."""
     if r.get("exit_code") == 0:
         return "done"
+    if ((r.get("error") or {}).get("code") or "").startswith("budget_"):
+        return "budget"
+    if r.get("run_id") in stuck_ids() or r.get("status") == "timed_out":
+        return "stuck"
     tail = ""
     for k in ("stdout_path", "stderr_path"):
         f = Path((r.get("artifacts") or {}).get(k) or "/nonexistent")
         tail += f.read_text(errors="replace")[-800:] if f.exists() else ""
     return "limit" if "limit" in tail.lower() else "failed"
+
+
+STUCK = STATE / "runs-stuck.json"
+STUCK_MIN = int(os.environ.get("CROW_STUCK_MIN", "20"))  # no transcript write for this long = stuck
+
+
+def stuck_ids():
+    try:
+        return set(json.loads(STUCK.read_text()))
+    except (OSError, ValueError):
+        return set()
+
+
+def run_transcript(row):
+    """Claude session transcript of a running cdx run (None when not found yet, or Codex)."""
+    sid = row.get("conversation_id") or row.get("provider_session_id")
+    if not sid:
+        return None
+    return next((t for base in Path(crow_lib.profiles_dir()).glob("*/claude-home/.claude/projects")
+                 for t in base.glob(f"*/{sid}.jsonl")), None)
+
+
+def watchdog(row, now=None):
+    """Kill a running run whose transcript has not moved for STUCK_MIN minutes. Returns True when killed."""
+    now = now or time.time()
+    t = run_transcript(row)
+    started = iso_age(row["started_at"]) if row.get("started_at") else 0
+    # A run waiting on subagents writes only to <sid>/subagents/*.jsonl.
+    files = [t, *t.with_suffix("").glob("subagents/*.jsonl")] if t else []
+    last = now - max(f.stat().st_mtime for f in files) if files else started
+    if min(last, started) < STUCK_MIN * 60:
+        return False
+    sid = row.get("conversation_id") or ""
+    pids = [x["pid"] for x in agent_procs() if sid and sid in " ".join(x["argv"])]
+    for pid in pids + ([row["pid"]] if row.get("pid") else []):
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            pass
+    STUCK.parent.mkdir(parents=True, exist_ok=True)
+    STUCK.write_text(json.dumps(sorted(stuck_ids() | {row["run_id"]})))
+    return True
 
 
 def seen_ids():
@@ -167,6 +215,9 @@ def notify(run_ids, poll=20, max_hours=12):
     pending = {next((k for k in recs if k.startswith(i)), i) for i in run_ids}
     deadline = time.time() + max_hours * 3600
     while pending and time.time() < deadline:
+        for row in running_runs():
+            if row["run_id"] in pending and row.get("provider", "claude") == "claude" and row["run_id"] not in stuck_ids():
+                watchdog(row)
         done = finished("7d", ttl=0)
         for rid in sorted(pending):
             if rid in done:
@@ -213,7 +264,8 @@ def requeue(rec, deadline):
         f = STATE / "dispatch" / f"resume-{rec['run_id'][:8]}.md"
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(RESUME_NOTE + Path(rec["prompt_file"]).read_text())
-        cmd = base + ["--prompt-file", str(f), "--power", rec.get("power") or "medium", "--account", target,
+        cmd = base + ["--prompt-file", str(f), "--kind", rec.get("kind") or "task", "--account", target,
+                      *(["--power", rec["power"]] if rec.get("power") else []),
                       *(["--model", rec["model"]] if rec.get("model") else []),
                       *(["--permission", rec["permission"]] if rec.get("permission") else [])]
         where = f"resumed on {target}"
@@ -226,7 +278,7 @@ def requeue(rec, deadline):
         if left is None or time.time() + left * 60 + RESET_GRACE_S > deadline:
             return "not requeued: no account free and no reset in time (see `crow runs relaunch status`)"
         time.sleep(max(0, left * 60) + RESET_GRACE_S)
-        cmd = base + ["--continue-run", rec["run_id"], "--account", acct,
+        cmd = base + ["--continue-run", rec["run_id"], "--account", acct, "--kind", rec.get("kind") or "task",
                       "--prompt", RESUME_NOTE + "Continue the task from where it stopped."]
         where = f"continued on {acct} after the reset"
     r = subprocess.run(cmd, capture_output=True, text=True)
@@ -567,11 +619,14 @@ def dispatch(a):
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
-    pins = ["--continue-run", a.continue_run] if a.continue_run else ["--power", a.power, *(["--model", a.model] if a.model else [])]
-    out = subprocess.run(["cdx", "run", acct, "--cwd", cwd, *src, *pins,
-             "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
-             "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])],
-             capture_output=True, text=True).stdout.strip()
+    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run)
+    cmd = ["cdx", "run", acct, "--cwd", cwd, *src, *(["--continue-run", a.continue_run] if a.continue_run else []), *flags,
+           "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
+           "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])]
+    if a.dry_run:
+        print(" ".join(f"{k}={v}" for k, v in env.items()), " ".join(cmd))
+        return
+    out = subprocess.run(cmd, capture_output=True, text=True, env=crow_lib.run_env(env)).stdout.strip()
     try:
         res = json.loads(out)
     except ValueError:
@@ -588,6 +643,7 @@ def dispatch(a):
         "start_sha": sh("git", "rev-parse", "HEAD", cwd=cwd),
         "branch": sh("git", "branch", "--show-current", cwd=cwd),
         "account": acct, "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
+        "kind": a.kind,
     }
     if a.continue_run:
         rec["continues"] = a.continue_run
@@ -604,7 +660,8 @@ def dispatch(a):
 
 C = {"dim": "\033[2m", "b": "\033[1m", "g": "\033[32m", "y": "\033[33m", "r": "\033[31m", "c": "\033[36m", "m": "\033[35m", "0": "\033[0m"}
 STATE_STYLE = {"working": ("●", "g"), "quiet": ("◌", "y"), "waiting": ("◆", "m"), "idle": ("○", "dim")}
-PAST_STYLE = {"done": ("✓", "g"), "failed": ("✗", "r"), "limit": ("⏸", "y"), "lost": ("?", "dim")}
+PAST_STYLE = {"done": ("✓", "g"), "failed": ("✗", "r"), "limit": ("⏸", "y"), "lost": ("?", "dim"),
+              "budget": ("$", "y"), "stuck": ("!", "r")}
 
 
 def render(data, color=True, width=None):
@@ -676,8 +733,10 @@ def main():
     d.add_argument("project"); d.add_argument("label")
     g = d.add_mutually_exclusive_group(required=True)
     g.add_argument("--prompt-file"); g.add_argument("--prompt")
-    d.add_argument("--power", default="medium")
-    d.add_argument("--model", help="model for this run (opus, sonnet); default is the account model")
+    d.add_argument("--power", help="effort; default from the run kind (crow_lib.RUN_KINDS)")
+    d.add_argument("--model", help="model for this run (opus, sonnet); default from the run kind, pinned to its exact id")
+    d.add_argument("--kind", choices=tuple(crow_lib.RUN_KINDS), default="task", help="budget, timeout and defaults (crow_lib.RUN_KINDS)")
+    d.add_argument("--dry-run", action="store_true", help="print the cdx command and env, start nothing")
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")

@@ -128,9 +128,10 @@ def analyze(entry):
     args = f"digest={digest} transcript={entry['transcript']} cwd={entry.get('cwd') or 'unknown'} session={sid}"
     prompt = subprocess.check_output([os.path.join(CROW_HOME, "bin", "crow-accounts"), "prompt", ACCOUNT, "retro", args], text=True).strip()
     permission = subprocess.check_output([os.path.join(CROW_HOME, "bin", "crow-accounts"), "permission", ACCOUNT], text=True).strip()
-    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *(["--model", MODEL] if MODEL else []),
+    flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL)
+    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags,
                           "--permission", permission, "--prompt", prompt, "--json"],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, env=crow_lib.run_env(env))
     try:
         result = json.loads(out.stdout)
     except json.JSONDecodeError:

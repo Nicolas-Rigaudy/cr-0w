@@ -73,7 +73,14 @@ oneshot() {
   local prompt out
   "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
   prompt=$("$CROW_HOME/bin/crow-accounts" prompt "$CROW_ACCOUNT" "$@")
-  out=$(cdx run "$CROW_ACCOUNT" --cwd "$CROW_HOME" --prompt "$prompt" \
+  # Headless flags and env (crow_lib.run_flags): one line of KEY=VALUE pairs, then one argument per line.
+  local spec env=() flags=() line
+  spec=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import crow_lib as c
+f, e = c.run_flags("oneshot", c.provider_of(sys.argv[2]))
+print(" ".join(f"{k}={v}" for k, v in e.items())); print("\n".join(f))' "$CROW_HOME/bin" "$CROW_ACCOUNT")
+  read -r -a env <<<"$(head -1 <<<"$spec")"
+  while IFS= read -r line; do [[ -n "$line" ]] && flags+=("$line"); done < <(tail -n +2 <<<"$spec")
+  out=$(env "${env[@]}" cdx run "$CROW_ACCOUNT" --cwd "$CROW_HOME" --prompt "$prompt" "${flags[@]}" \
         --permission "$("$CROW_HOME/bin/crow-accounts" permission "$CROW_ACCOUNT")" --json)
   local ok stdout_path
   ok=$(jq -r '.ok' <<<"$out")

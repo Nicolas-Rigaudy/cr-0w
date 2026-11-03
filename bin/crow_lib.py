@@ -281,3 +281,45 @@ def account_state(current=None, cached=False):
     except (OSError, ValueError, subprocess.TimeoutExpired):
         rows = {}
     return pick_accounts(accts["accounts"], rows, current, datetime.now().astimezone())
+
+
+# ---------- headless run flags (req_017 levers 3, 4, 7, 16) ----------
+
+CLAUDE_MODEL_IDS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "haiku": "claude-haiku-5-5",
+                    "fable": "claude-fable-5-1"}
+# kind: default model, effort, budget in USD, wall-clock cap in minutes. Env CROW_<KIND>_BUDGET / _TIMEOUT_MIN override.
+RUN_KINDS = {
+    "task": {"model": "opus", "power": "medium", "budget": 25.0, "timeout_min": 120},
+    "review": {"model": "opus", "power": "high", "budget": 10.0, "timeout_min": 60},
+    "retro": {"model": "sonnet", "power": "medium", "budget": 2.0, "timeout_min": 20},
+    "oneshot": {"model": "opus", "power": "medium", "budget": 3.0, "timeout_min": 20},
+}
+# Headless traps: no background tasks (phantom results), no claude.ai connectors (~40k tokens of tool defs per call).
+HEADLESS_ENV = {"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1", "ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
+
+
+def model_id(model):
+    """Exact Claude model id for an alias (opus -> claude-opus-5-5); other values pass through."""
+    return CLAUDE_MODEL_IDS.get((model or "").strip().lower(), model)
+
+
+def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None):
+    """cdx run arguments and environment every headless launch carries.
+    With continue_run, cdx pins the parent's model and effort, so neither is passed."""
+    env = os.environ if env is None else env
+    k = RUN_KINDS[kind]
+    budget = float(env.get(f"CROW_{kind.upper()}_BUDGET") or k["budget"])
+    timeout = int(env.get(f"CROW_{kind.upper()}_TIMEOUT_MIN") or k["timeout_min"])
+    args = []
+    if not continue_run:
+        m = model or (k["model"] if provider == "claude" else None)
+        args += (["--model", model_id(m) if provider == "claude" else m] if m else []) + ["--power", power or k["power"]]
+    args += ["--timeout-seconds", str(timeout * 60)]
+    if provider == "claude":  # cdx measures spend from Claude usage; Codex budgets fail as unverifiable without model evidence
+        args += ["--budget", f"{budget:g}"]
+    return args, (dict(HEADLESS_ENV) if provider == "claude" else {})
+
+
+def run_env(extra):
+    """os.environ plus the headless overrides, for subprocess calls."""
+    return {**os.environ, **extra}

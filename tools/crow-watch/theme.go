@@ -56,6 +56,8 @@ var states = map[string]stateStyle{
 	"failed":  {"✗", "failed", lipgloss.NewStyle().Foreground(cRed).Bold(true)},
 	"limit":   {"‖", "usage limit", lipgloss.NewStyle().Foreground(cYellow).Bold(true)},
 	"lost":    {"?", "lost", sSub},
+	"budget":  {"$", "budget cap", lipgloss.NewStyle().Foreground(cYellow).Bold(true)},
+	"stuck":   {"!", "stuck, killed", lipgloss.NewStyle().Foreground(cRed).Bold(true)},
 }
 
 func st(name string) stateStyle {

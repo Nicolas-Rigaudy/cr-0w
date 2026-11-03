@@ -401,7 +401,7 @@ def dispatch(project, label, prompt, model, power, cwd=None, continue_run=None, 
     """crow-runs dispatch (review permission unless told); returns the full run id.
     With continue_run, cdx pins the parent's model and effort, so none are passed."""
     args = [str(BIN / "crow-runs"), "dispatch", project, label, "--prompt-file", str(prompt)]
-    args += ["--continue-run", continue_run] if continue_run else ["--model", model, "--power", power]
+    args += ["--kind", "review"] + (["--continue-run", continue_run] if continue_run else ["--model", model, "--power", power])
     args += ["--permission", permission] if permission else []
     args += ["--cwd", str(cwd)] if cwd else []
     r = subprocess.run(args, capture_output=True, text=True)

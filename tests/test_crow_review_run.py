@@ -206,7 +206,7 @@ def test_dispatch_asks_cdx_for_review_permission(tmp_path, monkeypatch):
     cr.main()
     cdx = next(a for a in seen if a[:2] == ["cdx", "run"])
     assert cdx[cdx.index("--permission") + 1] == "review"
-    assert cdx[cdx.index("--model") + 1] == "opus"
+    assert cdx[cdx.index("--model") + 1] == "claude-opus-5-5"
 
 
 # ---------- decide ----------

@@ -1,10 +1,10 @@
 ## item_069_headless_dispatch_flags - Headless dispatch flags
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 80%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Low
 > Theme: cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -34,7 +34,9 @@
 - AC3: A run forced into a loop stops at the budget or the watchdog and shows `stuck` or `budget`.
 
 # AC Traceability
-- All ACs -> this item. Proof: to fill at build.
+- AC1 -> `crow-runs dispatch --dry-run`. Proof: dry runs for task, review, retro, oneshot and a `--continue-run` each print `--model claude-*-5-5 --power --timeout-seconds --budget` and the env pair; tests/test_crow_headless_flags.py::test_every_kind_pins_model_id_effort_budget_timeout.
+- AC2 -> `crow_lib.HEADLESS_ENV`, `crow_lib.model_id`. Proof: live haiku runs on 2026-11-03 report model `claude-haiku-5-5` and no `mcp__` tool from the hub. Partial: in a work repo with a `.mcp.json`, its's `.mcp.json` servers (code graph, cloud servers) still load; see Notes.
+- AC3 -> `cdx run --budget`, `crow-runs watchdog`, `run_state`. Proof: live run with a 0.004 USD budget stopped with `budget_exceeded` (exit 125, run dd25de73) and `run_state` read `budget`; test_watchdog_kills_idle_run_and_spares_young_one (idle 20 min = SIGTERM, state `stuck`).
 
 # Decision framing
 - Product framing: Not needed
@@ -50,3 +52,6 @@
 
 # Notes
 - Check which flags `cdx run` forwards (`--extra-args`) before adding a raw `claude` path.
+- Built 2026-11-03: `crow_lib.run_flags(kind, provider, model, power, continue_run)` and `RUN_KINDS` (task 25 USD/120 min, review 10/60, retro 2/20, oneshot 3/20; env `CROW_<KIND>_BUDGET`, `_TIMEOUT_MIN`). Used by crow-runs dispatch (`--kind`, `--dry-run`), crow-review-run (kind review), crow-retro, `crow` one-shots. Titler pinned to `claude-haiku-5-5` (it already had `--strict-mcp-config`). Watchdog in the run notifier, `CROW_STUCK_MIN` (20), reads main and subagent transcripts. New states `budget` and `stuck` in crow-runs and crow-watch.
+- Budget is Claude only: Codex budgets fail as `budget_unverifiable` without model evidence.
+- Lever 3 gap: `cdx run` has no per-run extra args, so `--strict-mcp-config` cannot be passed. `ENABLE_CLAUDEAI_MCP_SERVERS=false` removes claude.ai connectors only; a repo's `.mcp.json` servers still load. `cdx set --extra-args` would hit interactive sessions too. Needs a cdx-manager change (per-run `--extra-args` or `--strict-mcp`).

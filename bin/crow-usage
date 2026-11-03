@@ -95,7 +95,7 @@ TITLES_PER_RUN = 12
 TITLES_PER_DAY = int(os.environ.get("CROW_TITLES_PER_DAY") or 40)  # model calls; ~0.001 USD each on Haiku
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 TITLE_CMD = os.environ.get("CROW_TITLE_CMD") or (
-    "claude -p --model haiku --no-session-persistence --tools '' --strict-mcp-config "
+    "claude -p --model claude-haiku-5-5 --no-session-persistence --tools '' --strict-mcp-config "
     "--system-prompt 'You name coding sessions. Reply with a 3-6 word title for the main work of the whole session, not its opening prompt, in the language of the prompts, naming the project when it is not obvious, "
     "Title Case not required, no quotes, no trailing punctuation.'")
 PROFILES = crow_lib.profiles_dir()
