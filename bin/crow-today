@@ -16,9 +16,11 @@ JSON: {"at", "events": [{"start","end","subject","all_day","next"}], "tomorrow":
        "unread", "flagged": [{"id","subject","from","crow","webLink","until"}], "drafts",
        "important": [{"id","subject","from","at","unread","high","webLink"}]}. until: ISO time a snoozed flag returns.. Exit 2 when not signed in.
 """
-import datetime as dt, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
+import datetime as dt, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 import re
 import yaml
+
+from crow_lib import secret_lookup, secret_store
 
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 CONF = os.path.join(HOME, "local", "graph.yaml")
@@ -43,10 +45,9 @@ def post(url, data):
 
 
 def keyring(c, token=None):
-    args = ["secret-tool"] + (["store", "--label", "crow Graph refresh token"] if token else ["lookup"])
-    args += ["service", "crow-graph", "user", c["user"]]
-    r = subprocess.run(args, input=token, capture_output=True, text=True)
-    return r.stdout.strip() if r.returncode == 0 else ""
+    if token:
+        return secret_store("crow-graph", c["user"], token, "crow Graph refresh token")
+    return secret_lookup("crow-graph", c["user"]).strip()
 
 
 def authority(c):

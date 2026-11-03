@@ -1,5 +1,7 @@
 # CI secrets and protected variables
 
+Personal API tokens for scripts and sessions: [service-tokens](service-tokens.md).
+
 - Writing secrets (GitLab CI variables, Secrets Manager values) is blocked for the agent by the auto-mode classifier. Don't work around it:
   write a script to the scratchpad that generates the values without printing them, and have the owner run it with `! bash <script>`.
   Expect the `!` run to go to the background after 120s; its output lands in the task output file.

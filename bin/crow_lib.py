@@ -121,3 +121,58 @@ def hub_session_refusal(provider):
         return ("the hub guard (crow-hub-guard) is a Claude hook; an interactive Codex hub session would run "
                 "unguarded. Use a Claude account, or `crow open <project>` for repo work.")
     return None
+
+
+# ---------- keyring (secret-tool, attributes service + user) ----------
+
+def secret_lookup(service, user=None):
+    """Value stored for service (and user), "" when missing or the keyring is unreachable."""
+    args = ["secret-tool", "lookup", "service", service] + (["user", user] if user else [])
+    try:
+        r = subprocess.run(args, capture_output=True, text=True)
+    except OSError:
+        return ""
+    return r.stdout.rstrip("\n") if r.returncode == 0 else ""
+
+
+def secret_store(service, user, value, label):
+    """Store value on stdin (never argv); True on success."""
+    args = ["secret-tool", "store", "--label", label, "service", service, "user", user]
+    try:
+        return subprocess.run(args, input=value, capture_output=True, text=True).returncode == 0
+    except OSError:
+        return False
+
+
+def secret_clear(service, user):
+    args = ["secret-tool", "clear", "service", service, "user", user]
+    try:
+        return subprocess.run(args, capture_output=True, text=True).returncode == 0
+    except OSError:
+        return False
+
+
+def secret_items(service=None):
+    """Keyring items as dicts (label, created, modified, service, user), values dropped.
+    Without service: every generic item that carries a service attribute."""
+    query = ["service", service] if service else ["xdg:schema", "org.freedesktop.Secret.Generic"]
+    try:
+        # secret-tool prints attributes on stderr: one pipe keeps each item's lines together.
+        r = subprocess.run(["secret-tool", "search", "--all", *query], stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, text=True)
+    except OSError:
+        return []
+    items, cur = [], None
+    for line in r.stdout.splitlines():
+        if line.startswith("["):
+            cur = {}
+            items.append(cur)
+            continue
+        key, sep, val = line.partition(" = ")
+        if cur is None or not sep or key == "secret":
+            continue
+        if key in ("label", "created", "modified"):
+            cur[key] = val
+        elif key.startswith("attribute."):
+            cur[key[len("attribute."):]] = val
+    return [i for i in items if i.get("service")]

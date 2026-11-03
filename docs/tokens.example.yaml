@@ -1,0 +1,11 @@
+# Copy to local/tokens.yaml. One entry per personal service token kept in the keyring.
+# crow secret reads `user` as the default account; crow secret list shows `expiry`.
+# Values never go here: only `crow secret set <service>` stores them (runbooks/service-tokens.md).
+tokens:
+  - service: example            # keyring attribute service
+    user: you@example.com       # keyring attribute user (the account the token belongs to)
+    scope: read-only API access to project X   # least scope the job needs
+    created: 2026-01-01
+    expiry: 2026-04-01          # shortest the job allows; null when the service rotates it itself
+    rotate: https://example.com/account/tokens  # where to rotate and revoke
+    used_by: what reads it (script, runbook, session)
