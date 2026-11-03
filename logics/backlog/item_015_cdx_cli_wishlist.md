@@ -8,7 +8,7 @@
 > Complexity: Small
 > Theme: Hub portability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-03 17:24:37
+> Indicators reviewed: 2026-11-03 17:33:17
 
 # AI Context
 - Summary: Write the list of what crow still needs from the cdx CLI as the reply text for #6 (already drafted in the review note).
@@ -57,4 +57,4 @@ Not adopted yet: profile_dir/transcripts_dir (about 20 direct reads of the profi
 Issue #6 stays open until the owner closes it.
 
 ## cdx 0.25 follow-up (2026-11-03)
-Wanted: a per-run way to pass Claude CLI args (`--extra-args` on `cdx run`, or a `--strict-mcp` switch) so headless runs skip a repo's own .mcp.json servers. `cdx set --extra-args` is per account and also hits interactive sessions. Handed off to cdx-manager (owner fork); any upstream text needs the owner's OK.
+Wanted: a per-run way to pass Claude CLI args (`--extra-args` on `cdx run`, or a `--strict-mcp` switch) so headless runs skip a repo's own .mcp.json servers. `cdx set --extra-args` is per account and also hits interactive sessions. Maintainer view (2026-11-03): a per-run parameter is still a good idea; background runs should start from no authorisation and whitelist what they may do. Keep the cdx change small. Handed off to cdx-manager (owner fork) as a design check first; any upstream text needs the owner's OK.

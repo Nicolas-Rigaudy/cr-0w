@@ -7,7 +7,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-03 17:24:35
+> Indicators reviewed: 2026-11-03 17:33:36
 
 # AI Context
 - Summary: Four small slices that put cdx 0.24-0.25 and logics-manager 2.24 features to use in crow.
@@ -25,7 +25,7 @@
 - Release review done 2026-11-03 while closing items 069 and 071.
 - logics-manager `view` takes --focus, --fleet, --open, --port 0, --read, --lan. 2.24.2 adds `flow record-run` (Executions table per doc) and `--progress auto`.
 - cdx 0.25.0 adds --budget and cost_usd per run (crow uses --budget since item_069). 0.24.5-0.24.6 add --isolate-workspace; 0.25.5-0.25.8 give isolated runs git and RTK access.
-- Out of scope: cdx remote SSH workers (0.25.3, 0.25.9). Per-run strict MCP goes to a cdx-manager handoff and item_015.
+- Out of scope: cdx remote SSH workers (0.25.3, 0.25.9). Per-run run parameters go to a cdx-manager design check (item_015); sandboxing is item_077.
 - Owner decisions 2026-11-03: deck `v` opens the selected project's viewer, `V` the fleet view; plan all four slices.
 
 # Acceptance criteria
@@ -33,6 +33,7 @@
 - AC2: A dispatch linked to a Logics doc shows up in that doc's Executions table with its final state.
 - AC3: `crow runs` and the deck Agents page show cost_usd for finished Claude runs.
 - AC4: Review runs use cdx --isolate-workspace when it covers what the review needs, or the item records why not.
+- AC5: Background runs start with no authorisation and whitelist the tools each kind needs (item_077).
 
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.
@@ -54,6 +55,7 @@
 - `item_074_dispatch_records_logics_runs`
 - `item_075_runs_cost_per_run`
 - `item_076_review_runs_isolated_workspace`
+- `item_077_sandboxed_background_runs`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
