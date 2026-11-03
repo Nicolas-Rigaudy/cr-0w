@@ -11,7 +11,7 @@
   crow-accounts hub-session <name> exit 1 when the account's provider cannot run a guarded hub session
   crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
   crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
-  crow-accounts json               every account with its policy and memory mode
+  crow-accounts json               every account with its policy, memory mode and tier (mine | team)
 
 The policy comes from cdx (`cdx set <name> --policy use|ask-first|never`) and falls back to the
 policy in local/accounts.yaml for an account cdx has none for.
@@ -52,7 +52,7 @@ def accounts(cfg):
     for a in cfg.get("accounts") or []:
         pol = cdx.get(a["name"]) or a.get("policy")
         out.append({"name": a["name"], "policy": pol if pol in POLICIES else "never",
-                    "memory": a.get("memory", "none")})
+                    "memory": a.get("memory", "none"), "tier": a.get("tier") if a.get("tier") == "team" else "mine"})
     return out
 
 

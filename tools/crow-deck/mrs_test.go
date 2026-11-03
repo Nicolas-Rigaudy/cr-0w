@@ -214,14 +214,14 @@ func TestHomeBlockersComeFromMRs(t *testing.T) {
 	m, _ := liveMRModel(t)
 	m.page = 0
 	out := m.View()
-	for _, want := range []string{"waits for your review", "2 threads to answer", "1 awaits you"} {
+	for _, want := range []string{"You decide", "waits for your review", "2 threads to answer"} {
 		if !hasText(out, want) {
 			t.Errorf("home lacks %q", want)
 		}
 	}
 	m = send(m, srcMsg{src: srcMRs, val: &mrsSnap{Forges: map[string]string{"gitlab": "ok", "github": "ok"}}, at: testNow()})
-	if !hasText(m.View(), "No MR blocks you") {
-		t.Error("an MR list with nothing to do should say so")
+	if hasText(m.View(), "waits for your review") {
+		t.Error("MR rows stay after the MRs are gone")
 	}
 }
 

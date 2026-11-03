@@ -1,10 +1,10 @@
 ## item_057_deck_home_a_build_triage_table_pulse_projects_done_today - Deck Home A build: triage table, pulse, projects, done today
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -35,6 +35,9 @@
 
 # AC Traceability
 - request-AC3 -> owner pick before Go code. Proof: req_011 § Owner picks.
+- AC1 -> live renders at 235x62 and 118x60, all and work modes. Proof: `LIVESHOTS=<dir> go test -run TestLiveShots ./tools/crow-deck`; PNGs in local/state/shots/deck-rework/build/ compared with prop-home-A-land/port/land-work.
+- AC2 -> panes take their content height; Done and Today hide without data; the rail keeps Right now alone when Today has nothing. Proof: `tools/crow-deck/home.go` stack/floor, `TestHomeBreakpoints`, `TestHomeStates`.
+- AC3 -> `go test ./...` passes; `TestShots` (mock) and `TestLiveShots` (real) cover both sizes.
 
 # Decision framing
 - Product framing: Not needed
@@ -53,6 +56,7 @@
 # Notes
 - Depends on item_054 for the actor column. Execution order: 2.
 - Owner picks 2026-11-02 recorded in req_011 § Owner picks.
+- Build notes 2026-11-03: Next keeps the full row highlight used by every tab (board shows a `›` marker). Projects get up to 11 rows before Next scrolls. Thread tags match the registry by name, short name or checkout folder, so `[Nicolas-Rigaudy]` counts as personal.
 
 # Final spec (owner approved 2026-11-03)
 - Board: local/state/shots/deck-rework/png/prop-home-A-land.png, prop-home-A-port.png, prop-home-A-land-work.png (script home_a.py).

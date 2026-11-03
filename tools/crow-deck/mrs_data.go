@@ -372,3 +372,29 @@ func shortDays(d time.Duration) string {
 	}
 	return shortAge(d)
 }
+
+// mrDecide is the MR part of Home "You decide": the same rows as mrBlockers, with the
+// project's full name and scope.
+func mrDecide(now time.Time, rows []mrRow, reg *registry) []nextRow {
+	var out []nextRow
+	for _, r := range rows {
+		why := ""
+		switch {
+		case r.Role == "REVIEWER":
+			why = cmpOr(r.Author, "someone") + " waits for your review"
+		case r.ThreadsOpen > 0:
+			why = strconv.Itoa(r.ThreadsOpen) + " " + plural(r.ThreadsOpen, "thread", "threads") + " to answer"
+		case r.Pipeline == "failed":
+			why = "pipeline failed"
+		default:
+			continue
+		}
+		age := ""
+		if t, ok := parseTime(r.Updated); ok {
+			age = shortDays(now.Sub(t))
+		}
+		out = append(out, nextRow{Project: reg.shortName(r.Project), Repo: reg.fullName(r.Project), What: r.Ref + " " + why,
+			Perso: r.Scope == "personal", Actor: "me", Why: "MR", Age: age})
+	}
+	return out
+}

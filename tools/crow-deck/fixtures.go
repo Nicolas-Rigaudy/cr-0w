@@ -82,14 +82,23 @@ type nextRow struct {
 	Actor   string // me, crow, or the person a Waiting line names
 	Since   string // YYYY-MM-DD the thread was opened
 	Why     string // first ref in the line (item_047, !214, CD-580), else the next step
+	Repo    string // full repo name for the Home table, "" uses Project
+	Age     string // "today", "3d"; set when the fixtures are built
 }
 
+// projRow is one line of the Home Projects table.
 type projRow struct {
-	Name       string
-	Done, Of   int
-	Date       string
-	DateAtRisk bool
+	Name         string
+	Scope        string
+	Done, Of     int    // roadmap milestones, Of 0: no roadmap
+	Now          string // current milestone, else what runs on it
+	Date, Left   string // target "Dec 1" and "D-29", "" without a date
+	DateAtRisk   bool
+	Dirty, Ahead int
 }
+
+// doneRow is one line of today's activity log.
+type doneRow struct{ When, Tag, What string }
 
 type health struct {
 	Identity, CDX bool
@@ -106,6 +115,9 @@ type fixtures struct {
 	Today               []todayRow
 	Mail                []string
 	Next                []nextRow
+	Decide              []nextRow // MRs that need the owner, on top of You decide
+	Done                []doneRow // today's activity log, newest first
+	Team                []gauge   // tier team accounts, one compact Pulse line
 	Projects            []projRow
 	Cards               []projCard // Projects tab
 	Quiet               []string   // projects without a roadmap or activity
@@ -174,17 +186,37 @@ func mockFixtures() *fixtures {
 			{Project: "atlas", What: "review !220 after the rebase", Perso: false, Actor: "Sam", Since: "2026-10-29", Why: "!220"},
 			{Project: "vault", What: "answers on legal notices", Perso: false, Actor: "Lee", Since: "2026-10-18", Why: "mail"},
 		},
+		Decide: []nextRow{
+			{Project: "atlas", What: "!214 pipeline failed", Actor: "me", Why: "MR", Age: "2h"},
+			{Project: "atlas", What: "!220 Sam waits for your review", Actor: "me", Why: "MR", Age: "1d"},
+		},
+		Team: []gauge{
+			{Account: "team-a", FiveH: 20, Week: 68, Policy: "never"},
+			{Account: "team-b", FiveH: 100, Week: 2, Policy: "never"},
+		},
 		Projects: []projRow{
-			{"atlas", 6, 8, "Dec 1", true},
-			{"web", 4, 13, "", false},
-			{"crow", 3, 9, "", false},
-			{"vault", 5, 6, "", false},
+			{Name: "atlas", Scope: "work", Done: 6, Of: 8, Now: "init prod seed", Date: "Dec 1", Left: "D-33", DateAtRisk: true, Dirty: 2, Ahead: 1},
+			{Name: "web", Scope: "personal", Done: 4, Of: 13, Now: "design system v2"},
+			{Name: "crow", Scope: "personal", Done: 3, Of: 9, Now: "deck rework", Dirty: 4, Ahead: 3},
+			{Name: "vault", Scope: "work"},
+			{Name: "lint", Scope: "personal", Done: 1, Of: 8, Now: "current flow correctness", Date: "Nov 20", Left: "D-22"},
+			{Name: "tools", Scope: "personal", Done: 5, Of: 6, Now: "acceptance checks"},
+		},
+		Done: []doneRow{
+			{"13:58", "atlas", "!214 rebased on main, pipeline restarted"},
+			{"13:40", "crow", "done: deck Next rows carry actor and age"},
+			{"12:15", "vault", "design doc exported to PDF for review"},
+			{"11:30", "hub", "daily posted"},
+			{"10:05", "web", "0.40 tokens merged into the deck pill"},
 		},
 		Repos: 7, Dirty: 3, Ahead: 2,
 		Usage: mockUsage(),
 		MRs:   mockMRs(), Branches: mockBranches(), MRDetails: mockDetails(), MRsReady: true,
 	}
 	f.Cards, f.Quiet = mockCards(mockNow())
+	for i := range f.Next {
+		f.Next[i].Age = threadAge(f.Next[i].Since, time.Date(2026, 10, 29, 14, 2, 0, 0, time.Local))
+	}
 	mockMRCounts(f)
 	return f
 }
@@ -232,6 +264,7 @@ func mockWho() []whoRow {
 func emptyFixtures() *fixtures {
 	f := mockFixtures()
 	f.Agents, f.Blockers, f.Today, f.Mail, f.Next, f.Projects = nil, nil, nil, nil, nil, nil
+	f.Decide, f.Done = nil, nil
 	f.Hist, f.HistTotal = nil, 0
 	f.MRs, f.Branches, f.MRDetails = nil, nil, nil
 	f.MRsAwaiting, f.MRsMine, f.MRsThreads = 0, 0, 0

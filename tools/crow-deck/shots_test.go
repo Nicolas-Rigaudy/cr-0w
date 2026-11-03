@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -239,5 +240,41 @@ func histShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m = base("wide")
 		m.setSync(st)
 		write(fmt.Sprintf("%s-History-wide-%s", name, st), m)
+	}
+}
+
+// TestLiveShots renders Home from the real sources (crow scripts on PATH or in bin/):
+//
+//	LIVESHOTS=/abs/dir go test -run TestLiveShots .
+//
+// Files: home-live-<w>x<h>.ans at the board sizes, landscape 235x62 and portrait 118x60.
+func TestLiveShots(t *testing.T) {
+	dir := os.Getenv("LIVESHOTS")
+	if dir == "" {
+		t.Skip("set LIVESHOTS=<dir>")
+	}
+	lipgloss.SetColorProfile(termenv.ANSI)
+	defer lipgloss.SetColorProfile(termenv.Ascii)
+	m := newModel(defaultConfig())
+	m.now = time.Now()
+	m.goLive()
+	for _, src := range allSources() {
+		if msg, ok := fetchCmd(src)().(srcMsg); ok {
+			m.live.apply(msg)
+		}
+	}
+	m.fx = buildFixtures(liveInput{Now: m.now, LS: m.live})
+	m.sync = stFresh
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, sz := range [][2]int{{235, 62}, {118, 60}} {
+		for _, mode := range []string{"all", "work"} {
+			m.w, m.h, m.mode = sz[0], sz[1], mode
+			f := filepath.Join(dir, fmt.Sprintf("home-live-%dx%d-%s.ans", sz[0], sz[1], mode))
+			if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 }

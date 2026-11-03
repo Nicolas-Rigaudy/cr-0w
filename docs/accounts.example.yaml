@@ -1,9 +1,10 @@
 # cdx accounts crow may use. policy: use | ask-first | never.
 # memory: permanent = the profile's memory dirs stay symlinked into local/memory;
 #         session   = linked when a crow session starts, unlinked when it ends (shared accounts).
+# tier: mine (default) = full rows on the deck Pulse; team = one compact line (teammates' accounts).
 default: main
 accounts:
   - {name: main, policy: use,       memory: permanent}
   - {name: shared,   policy: ask-first, memory: session}
-  - {name: teammate-a, policy: never}
-  - {name: teammate-b, policy: never}
+  - {name: teammate-a, policy: never, tier: team}
+  - {name: teammate-b, policy: never, tier: team}

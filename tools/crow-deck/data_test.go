@@ -129,10 +129,26 @@ func TestGaugeRowsSkipsNever(t *testing.T) {
 		{Account: "main", Remaining5hPct: &five, RemainingWeekPct: &week, Burn5h: &burn, Reset5hAt: "Oct 29 21:10"},
 		{Account: "locked", Remaining5hPct: &five},
 		{Account: "nodata"},
+		{Account: "mate", Remaining5hPct: &five, RemainingWeekPct: &week},
 	}}
-	g := gaugeRows(testRuns(), usage, []acctPolicy{{"main", "use"}, {"locked", "never"}})
+	g, team := gaugeRows(testRuns(), usage, []acctPolicy{{"main", "use", "mine"}, {"locked", "never", "mine"}, {"mate", "never", "team"}})
 	if len(g) != 1 || g[0].Account != "main" || g[0].Reset != "21:10" || g[0].Burn != "burn 12%/h" || g[0].RunsMax != 2 || g[0].Week != 70 {
 		t.Fatalf("gauges %+v", g)
+	}
+	if len(team) != 1 || team[0].Account != "mate" || team[0].Week != 70 {
+		t.Fatalf("team %+v", team)
+	}
+}
+
+func TestDoneToday(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "day.md")
+	body := "- 09:10 [crow] first\n- 14:02 [retro] skipped\n- 11:30 [hub] daily posted\nnoise\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := doneToday(path)
+	if len(got) != 2 || got[0] != (doneRow{"11:30", "hub", "daily posted"}) || got[1].What != "first" {
+		t.Fatalf("done %+v", got)
 	}
 }
 
@@ -176,12 +192,12 @@ func TestOpenThreads(t *testing.T) {
 	}
 	got := openThreads(path, testReg())
 	want := []nextRow{
-		{"orb", "before any section", true, "me", "2026-10-20", ""},
-		{"crow", "write the runbook", true, "me", "2026-10-28", "decide"},
-		{"atl", "fix retry for CD-580 and !214", false, "crow", "2026-10-29", "CD-580"},
-		{"atl", "review item_047", false, "Sam", "2026-10-21", "item_047"},
-		{"orb", "legal answer, no person", true, "others", "2026-10-22", "mail"},
-		{"orb", "polish", true, "others", "", ""},
+		{"orb", "before any section", true, "me", "2026-10-20", "", "orbit", ""},
+		{"crow", "write the runbook", true, "me", "2026-10-28", "decide", "crow", ""},
+		{"atl", "fix retry for CD-580 and !214", false, "crow", "2026-10-29", "CD-580", "atlas", ""},
+		{"atl", "review item_047", false, "Sam", "2026-10-21", "item_047", "atlas", ""},
+		{"orb", "legal answer, no person", true, "others", "2026-10-22", "mail", "orbit", ""},
+		{"orb", "polish", true, "others", "", "", "orbit", ""},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("rows %+v", got)
@@ -442,5 +458,18 @@ func TestLiveAgentsFitEverySize(t *testing.T) {
 				checkFit(t, fmt.Sprintf("%s %dx%d pane %d", th.name, sz[0], sz[1], pane), m.View(), sz[0], sz[1])
 			}
 		}
+	}
+}
+
+func TestRegistryFindByFolder(t *testing.T) {
+	r := &registry{Projects: []regProject{{Name: "site-profile", Scope: "personal", Path: "/x/Site-Profile"}}}
+	if got := r.fullName("Site-Profile"); got != "site-profile" {
+		t.Fatalf("fullName by folder = %q", got)
+	}
+	if got := r.scopeOf("site-profile (hub)"); got != "personal" {
+		t.Fatalf("scopeOf = %q", got)
+	}
+	if got := r.fullName("unknown"); got != "unknown" {
+		t.Fatalf("unknown = %q", got)
 	}
 }

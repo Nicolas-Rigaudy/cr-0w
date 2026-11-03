@@ -31,7 +31,7 @@ func paletteCommands() []command {
 		cs = append(cs, command{"theme " + n, "switch the theme"})
 	}
 	for _, m := range []string{"work", "perso", "all"} {
-		cs = append(cs, command{"mode " + m, "filter Next and Blockers by scope"})
+		cs = append(cs, command{"mode " + m, "filter Next and Projects by scope"})
 	}
 	for _, s := range syncStates {
 		cs = append(cs, command{"mock " + s, "show the " + s + " state (invented data)"})

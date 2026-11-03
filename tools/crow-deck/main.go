@@ -63,7 +63,7 @@ type model struct {
 
 func newModel(cfg config) model {
 	th := max(0, themeIndex(cfg.Theme))
-	return model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pBlockers, w: 160, h: 45, now: mockNow(), histF: newHistFilter()}
+	return model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pNext, w: 160, h: 45, now: mockNow(), histF: newHistFilter()}
 }
 
 // mockNow is a fixed time of day (14:07) so mock renders are stable.
@@ -260,14 +260,13 @@ func (m *model) moveSel(d int) {
 	if !hv.selectable(m.focus) {
 		return
 	}
-	n := len(hv.spec(m.focus, 80).rows)
-	m.sel[m.focus] = max(0, min(n-1, m.sel[m.focus]+d))
+	m.sel[m.focus] = max(0, min(hv.items(m.focus)-1, m.sel[m.focus]+d))
 }
 
 func (m *model) moveFocus(d int) {
 	switch m.page {
 	case 0:
-		m.focus = (m.focus + d + homePanes) % homePanes
+		m.focus = m.homeView().nextFocus(m.w, d)
 	case 1:
 		if m.hist {
 			m.histPane = (m.histPane + d + histPanes) % histPanes

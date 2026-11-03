@@ -96,8 +96,8 @@ func TestResizeBothOrientations(t *testing.T) {
 			}
 			out := m.View()
 			checkFit(t, fmt.Sprintf("%s resize %dx%d", th.name, sz[0], sz[1]), out, sz[0], sz[1])
-			if layoutFor(sz[0]) != laySingle && !hasText(out, "Blockers") {
-				t.Errorf("%s %dx%d: Blockers pane missing", th.name, sz[0], sz[1])
+			if layoutFor(sz[0]) != laySingle && !hasText(out, "You decide") {
+				t.Errorf("%s %dx%d: Next groups missing", th.name, sz[0], sz[1])
 			}
 		}
 	}
@@ -184,13 +184,13 @@ func TestNoTruecolor(t *testing.T) {
 // AC3: Home at 170, 120 and 90 columns, per the breakpoints.
 func TestHomeBreakpoints(t *testing.T) {
 	withANSI(t)
-	titles := []string{"Usage", "Right now", "Blockers", "Today", "Next", "Projects and roadmap"}
+	titles := []string{"Pulse", "Next", "Projects", "Done today", "Right now", "Today"}
 	for ti, th := range themes {
 		for _, tc := range []struct {
 			w, h   int
 			panes  int // panes drawn at once
 			single bool
-		}{{170, 46, 6, false}, {120, 50, 6, false}, {90, 30, 1, true}} {
+		}{{170, 46, 6, false}, {120, 50, 4, false}, {90, 30, 1, true}} {
 			m := newModel(defaultConfig())
 			m.th = ti
 			m = send(m, resize(tc.w, tc.h))
@@ -202,14 +202,14 @@ func TestHomeBreakpoints(t *testing.T) {
 					got = append(got, ti)
 				}
 			}
-			if len(got) < tc.panes || (tc.single && len(got) > 2) {
+			if !tc.single && len(got) < tc.panes || tc.single && !hasText(out, "pane 1 of") {
 				t.Errorf("%s %d cols: panes shown %v, want %d", th.name, tc.w, got, tc.panes)
 			}
 		}
 	}
 }
 
-// Under 100 columns one pane shows at a time and tab walks through all six.
+// Under 100 columns one pane shows at a time and tab walks through every pane with data.
 func TestSinglePaneTabWalk(t *testing.T) {
 	m := newModel(defaultConfig())
 	m = send(m, resize(90, 30))
@@ -238,10 +238,10 @@ func TestHomeStates(t *testing.T) {
 		for ti, th := range themes {
 			base := newModel(defaultConfig())
 			base.th, base.w, base.h = ti, sz[0], sz[1]
-			base.focus = pBlockers
+			base.focus = pNext
 			norm := plain(base.View())
 			for st, want := range map[string]string{
-				stEmpty:   "Nothing blocks you.",
+				stEmpty:   "Nothing queued.",
 				stError:   "forge sync failed",
 				stLoading: "syncing",
 				stStale:   "stale",

@@ -154,6 +154,7 @@ type usageSnap struct {
 type acctPolicy struct {
 	Name   string `json:"name"`
 	Policy string `json:"policy"`
+	Tier   string `json:"tier"` // mine, team
 }
 
 type regGit struct {
@@ -395,16 +396,30 @@ func (r *registry) shortName(name string) string {
 	return name
 }
 
-func (r *registry) scopeOf(name string) string {
+// find is the project for a name, short name or checkout folder name (any case).
+func (r *registry) find(name string) (regProject, bool) {
 	name = strings.TrimSuffix(name, " (hub)")
 	if r != nil {
 		for _, p := range r.Projects {
-			if p.Name == name || p.Short == name {
-				return p.Scope
+			if p.Name == name || p.Short == name || strings.EqualFold(filepath.Base(p.Path), name) {
+				return p, true
 			}
 		}
 	}
-	return ""
+	return regProject{}, false
+}
+
+// fullName is the registry name for a short or full name; unknown names come back as is.
+func (r *registry) fullName(name string) string {
+	if p, ok := r.find(name); ok {
+		return p.Name
+	}
+	return strings.TrimSuffix(name, " (hub)")
+}
+
+func (r *registry) scopeOf(name string) string {
+	p, _ := r.find(name)
+	return p.Scope
 }
 
 func firstLine(s string) string {
@@ -556,13 +571,15 @@ func sameDay(a, b time.Time) bool {
 
 // gaugeRows maps cdx limits and the account policy to the Usage gauges; accounts with
 // policy never are left out (crow does not use them).
-func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) []gauge {
+// gaugeRows returns the accounts crow may use, then the tier team accounts (any policy)
+// for the compact Pulse line.
+func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) (mine, team []gauge) {
 	if usage == nil {
-		return nil
+		return nil, nil
 	}
-	policy := map[string]string{}
+	policy, tier := map[string]string{}, map[string]string{}
 	for _, a := range acct {
-		policy[a.Name] = a.Policy
+		policy[a.Name], tier[a.Name] = a.Policy, a.Tier
 	}
 	used := map[string]int{}
 	slots := 0
@@ -574,10 +591,9 @@ func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) []gauge {
 			}
 		}
 	}
-	var out []gauge
 	for _, l := range usage.Limits {
 		pol := policy[l.Account]
-		if pol == "never" || l.Remaining5hPct == nil {
+		if l.Remaining5hPct == nil || pol == "never" && tier[l.Account] != "team" {
 			continue
 		}
 		g := gauge{Account: l.Account, FiveH: *l.Remaining5hPct, Week: -1, Policy: pol, RunsUsed: used[l.Account], RunsMax: slots}
@@ -589,9 +605,13 @@ func gaugeRows(runs *runsSnap, usage *usageSnap, acct []acctPolicy) []gauge {
 		if l.Burn5h != nil {
 			g.Burn, g.BurnPct = fmt.Sprintf("burn %.0f%%/h", *l.Burn5h), *l.Burn5h
 		}
-		out = append(out, g)
+		if tier[l.Account] == "team" {
+			team = append(team, g)
+		} else {
+			mine = append(mine, g)
+		}
 	}
-	return out
+	return mine, team
 }
 
 // resetTime keeps the clock of a "Oct 29 21:10" reset, whatever the day.
@@ -698,9 +718,9 @@ func openThreads(path string, reg *registry) []nextRow {
 				actor, what = who, strings.TrimSpace(tail)
 			}
 		}
-		name := "crow"
+		name, repo := "crow", reg.fullName("crow")
 		if tag != "hub" {
-			name = reg.shortName(tag)
+			name, repo = reg.shortName(tag), reg.fullName(tag)
 		}
 		scope := reg.scopeOf(tag)
 		if tag == "hub" {
@@ -715,10 +735,31 @@ func openThreads(path string, reg *registry) []nextRow {
 			why = strings.TrimSpace(next)
 		}
 		out = append(out, nextRow{Project: name, What: what, Perso: scope == "personal",
-			Actor: actor, Since: since, Why: why})
+			Actor: actor, Since: since, Why: why, Repo: repo})
 	}
 	return out
 }
+
+// doneToday reads the "- HH:MM [tag] text" lines of a day's activity log, newest first.
+// Retro lines are skipped.
+func doneToday(path string) []doneRow {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var out []doneRow
+	for _, l := range strings.Split(string(b), "\n") {
+		m := doneLine.FindStringSubmatch(l)
+		if m == nil || m[2] == "retro" {
+			continue
+		}
+		out = append(out, doneRow{m[1], m[2], strings.TrimSpace(m[3])})
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].When > out[j].When })
+	return out
+}
+
+var doneLine = regexp.MustCompile(`^- (\d\d:\d\d) \[([^\]]+)\] (.*)$`)
 
 // threadRef finds the first Logics item, MR/PR or ticket key in a thread line.
 var threadRef = regexp.MustCompile(`\b(?:item|req|task)_\d{3}\b|![0-9]+\b|#[0-9]+\b|\b[A-Z][A-Z0-9]+-[0-9]+\b`)
@@ -773,12 +814,16 @@ func buildFixtures(in liveInput) *fixtures {
 	if ls.runs != nil {
 		fx.Slots = [2]int{ls.runs.Slots.Busy, ls.runs.Slots.Max}
 	}
-	fx.Gauges = gaugeRows(ls.runs, ls.usage, ls.acct)
+	fx.Gauges, fx.Team = gaugeRows(ls.runs, ls.usage, ls.acct)
 	fx.Usage = usageViewOf(ls.usage, ls.reg, now)
 	fx.Who = whoWorked(now, ls.usage, ls.intr, ls.reg)
 	fx.Hist = histOf(ls.usage, ls.reg, now)
 	if ls.reg != nil {
 		fx.Next = openThreads(filepath.Join(ls.reg.StateDir, "open-threads.md"), ls.reg)
+		for i := range fx.Next {
+			fx.Next[i].Age = threadAge(fx.Next[i].Since, now.Local())
+		}
+		fx.Done = doneToday(filepath.Join(ls.reg.StateDir, "activity", now.Local().Format("2006-01-02")+".md"))
 		for _, p := range ls.reg.Projects {
 			fx.Repos++
 			if p.Git.Dirty > 0 {
@@ -793,6 +838,7 @@ func buildFixtures(in liveInput) *fixtures {
 		fx.MRs, fx.Branches, fx.MRsReady = mrOrder(ls.mrs.MRs), ls.mrs.Branches, true
 		fx.MRsAwaiting, fx.MRsMine, fx.MRsThreads = mrCounts(fx.MRs)
 		fx.Blockers = mrBlockers(now, fx.MRs)
+		fx.Decide = mrDecide(now, fx.MRs, ls.reg)
 		for _, name := range []string{"gitlab", "github"} {
 			if st := ls.mrs.Forges[name]; st != "" && st != "ok" {
 				fx.ForgeErrs = append(fx.ForgeErrs, st)
@@ -800,7 +846,7 @@ func buildFixtures(in liveInput) *fixtures {
 		}
 	}
 	fx.Cards, fx.Quiet = projectCardsOf(now, ls.reg, fx.Agents, fx.Next, fx.MRs)
-	fx.Projects = projectRows(fx.Cards)
+	fx.Projects = homeProjects(now, ls.reg, fx.Cards)
 	fx.MRDetails, fx.MRErrs = map[string]*mrDetail{}, map[string]string{}
 	for k, e := range ls.details {
 		if e.d != nil {

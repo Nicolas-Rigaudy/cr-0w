@@ -255,3 +255,26 @@ func (lk *look) status(w int, cs chromeState, themeName string) string {
 	}
 	return lr(nil, right, w).render(w, false, lk.sel)
 }
+
+type col struct {
+	name  string
+	width int // 0: flexible
+	gap   int
+}
+
+// headRow: table header above a list; the first column starts after the glyph cell.
+func (lk *look) headRow(iw int, cols []col, right string) line {
+	prefix := "  "
+	if lk.th.frame == frameCyber {
+		prefix = "//"
+	}
+	l := line{{prefix, lk.head}}
+	for _, c := range cols {
+		text := lk.cap(c.name)
+		if c.width > 0 {
+			text = fit(text, c.width)
+		}
+		l = append(l, seg{text + rep(" ", c.gap), lk.head})
+	}
+	return lr(l, line{{lk.cap(right), lk.head}}, iw)
+}

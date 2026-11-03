@@ -119,20 +119,6 @@ func openText(mrs, threads int) string {
 }
 
 // projectRows feeds the Home Projects box: the cards that have a roadmap.
-func projectRows(cards []projCard) []projRow {
-	var out []projRow
-	for _, c := range cards {
-		if c.Of > 0 {
-			d := ""
-			if !c.Target.IsZero() {
-				d = c.Target.Format("Jan 2")
-			}
-			out = append(out, projRow{c.Name, c.Done, c.Of, d, c.AtRisk})
-		}
-	}
-	return out
-}
-
 func mockCards(now time.Time) ([]projCard, []string) {
 	y := now.Year()
 	day := func(m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, now.Location()) }
@@ -149,4 +135,35 @@ func mockCards(now time.Time) ([]projCard, []string) {
 		{Name: "crow", Scope: "personal", State: "running", Now: "writing designs", NowSince: "4m", Next: "P1 actions menu",
 			Done: 3, Of: 9, Current: "P1 actions", Exit: "every key does what its hint says"},
 	}, []string{"notes", "dots", "cdx", "tools"}
+}
+
+// homeProjects is the Home Projects table: every active project in registry order, with the
+// roadmap progress and target from its card and the git state from the registry.
+func homeProjects(now time.Time, reg *registry, cards []projCard) []projRow {
+	if reg == nil {
+		return nil
+	}
+	byName := map[string]projCard{}
+	for _, c := range cards {
+		byName[c.Name] = c
+	}
+	var out []projRow
+	for _, p := range reg.Projects {
+		if p.Status != "" && p.Status != "active" {
+			continue
+		}
+		r := projRow{Name: p.Name, Scope: p.Scope, Dirty: p.Git.Dirty, Ahead: p.Git.Ahead}
+		if c, ok := byName[p.Short]; ok {
+			r.Done, r.Of, r.DateAtRisk = c.Done, c.Of, c.AtRisk
+			r.Now = cmpOr(c.Current, c.Now)
+			if !c.Target.IsZero() {
+				r.Date = c.Target.Format("Jan 2")
+				r.Left = "D-" + itoa(max(0, int(c.Target.Sub(now).Hours()/24)))
+			}
+		} else if p.Road != nil {
+			r.Done, r.Of, r.Now = p.Road.Done, p.Road.Total, p.Road.Current
+		}
+		out = append(out, r)
+	}
+	return out
 }

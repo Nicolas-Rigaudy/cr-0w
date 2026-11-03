@@ -89,7 +89,8 @@ func TestProjectsLiveWithoutDates(t *testing.T) {
 	if c.roadText() != "2/5 · no date" || !strings.Contains(c.Block, "!7 sam waits for your review") {
 		t.Errorf("road %q block %q", c.roadText(), c.Block)
 	}
-	if rows := projectRows(cards); len(rows) != 1 || rows[0].Done != 2 || rows[0].Date != "" {
+	rows := homeProjects(now, reg, cards)
+	if len(rows) != 2 || rows[0].Done != 2 || rows[0].Now != "0.3 - Next" || rows[0].Date != "" || rows[1].Name != "beta" || rows[1].Of != 0 {
 		t.Errorf("home rows %+v", rows)
 	}
 	m := projModel(170, 46)
