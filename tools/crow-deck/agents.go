@@ -931,6 +931,60 @@ func tokSpark(vals []int) string {
 	return b.String()
 }
 
+// tokChart: tokens per 10 min as a 3-row bar chart, the max and half labelled on the
+// left, clock ticks under it, and the peak.
+func (av agentsView) tokChart(l *laneRow, f, la, iw int) []line {
+	lk := av.lk
+	const lab = 7 // " 1.2M ┤"
+	w := max(8, iw-lab-1)
+	if la-f+1 > w {
+		f = la - w + 1
+	}
+	peak, peakB := 0, f
+	for b := f; b <= la; b++ {
+		if l.Tok[b] > peak {
+			peak, peakB = l.Tok[b], b
+		}
+	}
+	const hh = 3
+	bars := make([]*grid, hh)
+	for i := range bars {
+		bars[i] = newGrid(la-f+1, lk.ok)
+	}
+	for b := f; b <= la; b++ {
+		for r, g := range barCells(l.Tok[b], peak, hh) {
+			if g != " " {
+				bars[r].put(b-f, g, lk.ok)
+			}
+		}
+	}
+	yl := []string{tokensShort(peak), tokensShort(peak / 2), "0"} // one per row, hh is 3
+	rows := []line{{{"tokens per 10 min", lk.head}}}
+	for r, g := range bars {
+		rows = append(rows, line{{fmt.Sprintf("%5s ┤", yl[r]), lk.dim}}.join(g.line()))
+	}
+	n := la - f + 1
+	axis := newGrid(n, lk.dim)
+	axis.put(0, clock(bucketTime(av.now, f)), lk.dim)
+	if n >= 12 {
+		axis.put(n-5, clock(bucketTime(av.now, la)), lk.dim)
+	}
+	for b := 9; b < n; b += 9 {
+		if axis.free(b-1, 7) {
+			axis.put(b, clock(bucketTime(av.now, f+b)), lk.dim)
+		}
+	}
+	rows = append(rows, line{{fit("", lab), lk.dim}}.join(axis.line()))
+	note := fmt.Sprintf("peak %s at %s", tokensShort(peak), clock(bucketTime(av.now, peakB)))
+	switch l.State {
+	case lsNeeds:
+		note += "  ·  now waiting for you"
+	case lsWorking, lsRun:
+		note += "  ·  still going"
+	}
+	return append(rows, line{{fit("", lab), lk.dim}, {note, lk.sub}})
+}
+
 func (av agentsView) detailRows(l *laneRow, iw, n int) []line {
 	lk := av.lk
 	var rows []line
@@ -980,26 +1034,7 @@ func (av agentsView) detailRows(l *laneRow, iw, n int) []line {
 		kv("tokens", seg{s, lk.plain})
 	}
 	if f, la := l.first(), l.last(); f >= 0 && len(l.Tok) > 0 {
-		rows = append(rows, line{{"tokens per 10 min", lk.head}})
-		var vals []int
-		peak, peakB := 0, f
-		for b := f; b <= la; b++ {
-			vals = append(vals, l.Tok[b])
-			if l.Tok[b] > peak {
-				peak, peakB = l.Tok[b], b
-			}
-		}
-		if w := max(8, iw/2); len(vals) > w {
-			vals = vals[len(vals)-w:]
-		}
-		note := fmt.Sprintf("  peak %s at %s", tokensShort(peak), clock(bucketTime(av.now, peakB)))
-		switch l.State {
-		case lsNeeds:
-			note += "  ·  now waiting for you"
-		case lsWorking, lsRun:
-			note += "  ·  still going"
-		}
-		rows = append(rows, line{{tokSpark(vals), lk.ok}, {note, lk.sub}})
+		rows = append(rows, av.tokChart(l, f, la, iw)...)
 	}
 	rows = append(rows, nil)
 	g := av.git(l)

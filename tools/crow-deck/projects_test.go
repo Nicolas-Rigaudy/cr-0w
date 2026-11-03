@@ -128,7 +128,7 @@ func TestProjectsLiveFromRegistry(t *testing.T) {
 	m.now = now
 	m.fx = &fixtures{Cards: cards, Live: true}
 	out := m.View()
-	for _, want := range []string{"◆ prod launch Dec 1", "no date", "worked  1d", "alpha 100%"} {
+	for _, want := range []string{"◆ prod launch Dec 1", "no date", "3 in 5 weeks", "alpha 100%"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("live view lacks %q:\n%s", want, out)
 		}
@@ -168,9 +168,6 @@ func TestProjectsTimelineWindow(t *testing.T) {
 	if _, days, _ = pv.window(true); days != 63 {
 		t.Errorf("portrait %d", days)
 	}
-	if heatGlyph(1) != "▃" || heatGlyph(5) != "▅" || heatGlyph(10) != "▇" || heatGlyph(40) != "█" {
-		t.Error("heat glyphs")
-	}
 }
 
 func TestRegistryRoadDecodes(t *testing.T) {
@@ -185,21 +182,26 @@ func TestRegistryRoadDecodes(t *testing.T) {
 	}
 }
 
-func TestProjectsTimelineUsesSpareRows(t *testing.T) {
-	if got := heatCells(16, 2); got[0] != "█" || got[1] != "█" {
-		t.Errorf("16 commits on 2 rows: %q", got)
+func TestProjectsTimelineWeeks(t *testing.T) {
+	if got := barCells(16, 16, 2); got[0] != "█" || got[1] != "█" {
+		t.Errorf("full on 2 rows: %q", got)
 	}
-	if got := heatCells(1, 3); got[0] != " " || got[2] == " " {
-		t.Errorf("1 commit on 3 rows: %q", got)
+	if got := barCells(1, 16, 3); got[0] != " " || got[2] == " " {
+		t.Errorf("small value on 3 rows: %q", got)
 	}
-	if hh, _ := heatRows(1, 20); hh != 4 {
-		t.Errorf("one project, 20 rows: %d-row bars", hh)
+	out := projModel(235, 62).View()
+	if !strings.Contains(strings.ToLower(out), "commits a day") || !strings.Contains(out, "0 ┤") {
+		t.Error("commit chart lacks its y axis")
 	}
-	if hh, gap := heatRows(6, 0); hh != 1 || gap != 0 {
-		t.Errorf("no room: %d %d", hh, gap)
+	if hh, gap := timelineFit(8, 30); hh != 2 || gap != 0 {
+		t.Errorf("fit 8 projects in 30 rows: %d %d", hh, gap)
 	}
-	// work mode has one active project: the timeline stays compact and the detail lists
-	// every next action instead of "+N more"
+	if got := yLabels(12, 3); got[0] != "12" || got[1] != "6" || got[2] != "0" {
+		t.Errorf("y labels: %q", got)
+	}
+	if got := yLabels(0, 3); got[0] != "" || got[1] != "" || got[2] != "0" {
+		t.Errorf("y labels with no commits: %q", got)
+	}
 	m := projModel(235, 62)
 	m.mode = "work"
 	if out := m.View(); strings.Contains(out, "more in the open threads") {

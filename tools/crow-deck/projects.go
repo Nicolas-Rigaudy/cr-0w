@@ -494,13 +494,13 @@ func (pv projectsView) detailWith(iw, n int, port bool, keep int) boxSpec {
 	return sp
 }
 
-// timelineMax is the timeline's height in rows with 4-row commit bars and a gap per project.
+// timelineMax is the timeline's height in rows with a gap between projects.
 func (pv projectsView) timelineMax() int {
 	active := 0
 	for _, cd := range pv.visible() {
 		active += btoi(cd.Group != pgQuiet)
 	}
-	return 4 + active*6
+	return 5 + active*(2+chartMax)
 }
 
 // detailNeed is the detail pane's natural height in rows: its content, a blank, the actions.
@@ -522,19 +522,6 @@ func (pv projectsView) detailNeedK(iw int, port bool, keep int) int {
 }
 
 // ----- timeline -----
-
-// heatGlyph: commits in a day as a bar height.
-func heatGlyph(n int) string {
-	switch {
-	case n <= 2:
-		return "▃"
-	case n <= 6:
-		return "▅"
-	case n <= 14:
-		return "▇"
-	}
-	return "█"
-}
 
 // window: the Monday some weeks back, and the days shown (past weeks then planned weeks).
 func (pv projectsView) window(port bool) (time.Time, int, int) {
@@ -591,14 +578,14 @@ func (g *grid) line() line {
 	return out
 }
 
-// heatEighths draws one day of commits as a bar of hh rows, in eighths of a cell, 16 commits
-// filling it; one row keeps the four-step glyphs of the legend.
-func heatCells(n, hh int) []string {
-	if hh <= 1 {
-		return []string{heatGlyph(n)}
-	}
-	e := max(1, (min(n, 16)*hh*8+8)/16)
+// barCells draws v against top as a bar of hh rows, top row first, in eighths of a cell.
+// Any value above zero shows at least one eighth.
+func barCells(v, top, hh int) []string {
 	out := make([]string, hh)
+	e := 0
+	if top > 0 && v > 0 {
+		e = max(1, (min(v, top)*hh*8+top/2)/top)
+	}
 	for r := range out {
 		fill := e - (hh-1-r)*8
 		switch {
@@ -613,26 +600,67 @@ func heatCells(n, hh int) []string {
 	return out
 }
 
-// heatRows: the tallest commit bars, and a gap between projects, that fit avail inner rows
-// (0 keeps one row each, no gap).
-func heatRows(projects, avail int) (hh, gap int) {
-	for hh = 4; hh > 1; hh-- {
-		for gap = 1; gap >= 0; gap-- {
-			if 4+projects*(1+hh+gap) <= avail {
-				return hh, gap
+// commitTop: the most commits any shown project made in a day since start, so every
+// project's chart shares one y scale.
+func (pv projectsView) commitTop(start time.Time) int {
+	top := 0
+	for _, cd := range pv.visible() {
+		if cd.Group == pgQuiet {
+			continue
+		}
+		perDay := map[string]int{}
+		for ds, n := range cd.Work {
+			d := parseDay(ds, pv.now.Location())
+			if d.IsZero() || d.Before(start) || d.After(day(pv.now)) {
+				continue
 			}
+			perDay[ds] += n
+			top = max(top, perDay[ds])
 		}
 	}
-	if avail > 0 && 4+projects*3 <= avail {
-		return 1, 1
+	return top
+}
+
+func weekend(d time.Time) bool { return d.Weekday() == time.Saturday || d.Weekday() == time.Sunday }
+
+// chartMax is the tallest commit chart, in rows.
+const chartMax = 3
+
+// timelineFit: the commit chart height and the gap between projects that fit in avail
+// inner rows (avail 0: no limit). The chart shrinks before the gap goes.
+func timelineFit(projects, avail int) (hh, gap int) {
+	if avail <= 0 {
+		return chartMax, 1
+	}
+	for _, f := range [][2]int{{3, 1}, {3, 0}, {2, 0}} {
+		if 5+projects*(1+f[0])+(projects-1)*f[1] <= avail {
+			return f[0], f[1]
+		}
 	}
 	return 1, 0
+}
+
+// yLabels: the commits-a-day value at the top of each chart row, the bottom row 0.
+func yLabels(top, hh int) []string {
+	out := make([]string, hh)
+	for r := range out {
+		out[r] = itoa(top * (hh - 1 - r) / max(1, hh-1))
+	}
+	if hh == 1 {
+		out[0] = itoa(top)
+	}
+	for r := hh - 2; r >= 0; r-- { // a value repeated from the row below says nothing
+		if out[r] == itoa(top*(hh-2-r)/max(1, hh-1)) {
+			out[r] = ""
+		}
+	}
+	return out
 }
 
 func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 	lk := pv.lk
 	sp := boxSpec{title: "Roadmap and work", index: 3, sel: -1, focused: pv.pane == jpTime,
-		right: line{{"█ done  ░ left  ◆ milestone  │ today  ┊ target   ▃▅▇█ your commits per day", lk.sub}}}
+		right: line{{"█ done  ░ left  ◆ milestone  │ today  ┊ target", lk.sub}}}
 	if pv.loading() {
 		sp.rows = []line{{{"syncing…", lk.sub}}}
 		return sp
@@ -652,7 +680,7 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 		launch = col(l.Target)
 	}
 	// axis: months and the launch label, then Monday dates and today, then the rule
-	months, dates, rule := newGrid(mw, lk.sub), newGrid(mw, lk.dim), newGrid(mw, lk.dim)
+	months, dates, wdays, rule := newGrid(mw, lk.sub), newGrid(mw, lk.dim), newGrid(mw, lk.dim), newGrid(mw, lk.dim)
 	if launch >= 0 && l != nil {
 		lbl := "◆ " + dateLabel(l.Target) + " " + strings.ToLower(l.Mile) + " " + l.left(pv.now)
 		months.put(max(0, min(launch, mw-len([]rune(lbl)))), lbl, lk.bad.Bold(true))
@@ -663,6 +691,15 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 		x := col(d)
 		if (d.Day() == 1 || d.Equal(start)) && months.free(x-1, 5) {
 			months.put(x, d.Format("Jan"), lk.sub)
+		}
+		// one weekday initial per day, weekends dim
+		wst := lk.sub
+		if weekend(d) {
+			wst = lk.dim
+		}
+		narrow := mw < 2*days // under 2 cells a day: Mondays and weekends only
+		if wdays.r[x] == ' ' && (!narrow || weekend(d) || d.Weekday() == time.Monday) {
+			wdays.put(x, d.Weekday().String()[:1], wst)
 		}
 		if d.Weekday() == time.Monday {
 			if dates.free(x-1, 4) {
@@ -681,7 +718,8 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 	pad := func(s string, st lipgloss.Style) line { return line{{fit(s, gut), st}} }
 	sp.rows = append(sp.rows, pad("", lk.sub).join(months.line()),
 		pad(fmt.Sprintf("last %d weeks worked", past), lk.sub).join(dates.line()),
-		pad(fmt.Sprintf("next %d weeks planned", days/7-past), lk.sub).join(rule.line()))
+		pad(fmt.Sprintf("next %d weeks planned", days/7-past), lk.sub).join(wdays.line()),
+		pad("", lk.sub).join(rule.line()))
 	guides := func(g *grid) {
 		if today >= 0 && today < mw && g.r[today] == ' ' {
 			g.put(today, "│", lk.dim)
@@ -695,7 +733,8 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 	for _, cd := range pv.visible() {
 		active += btoi(cd.Group != pgQuiet)
 	}
-	hh, gapRows := heatRows(active, avail)
+	hh, gapRows := timelineFit(active, avail)
+	top := pv.commitTop(start)
 	first := true
 	for _, cd := range pv.visible() {
 		if cd.Group == pgQuiet {
@@ -749,11 +788,9 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 		}
 		guides(bar)
 		sp.rows = append(sp.rows, line{pv.glyph(cd.Glyph), spc(1), {fit(cd.Name, gut-2), lk.bold}}.join(bar.line()))
-		heat := make([]*grid, hh)
-		for i := range heat {
-			heat[i] = newGrid(mw, lk.cyan)
-		}
-		worked, last := 0, ""
+		// commits a day as a bar chart: y labelled in the gutter, x on the shared date axis
+		perDay := map[int]int{}
+		sum, last := 0, ""
 		for ds, n := range cd.Work {
 			d := parseDay(ds, pv.now.Location())
 			if d.IsZero() || d.After(day(pv.now)) {
@@ -765,37 +802,60 @@ func (pv projectsView) timelineSpec(iw int, port bool, avail int) boxSpec {
 			if d.Before(start) {
 				continue
 			}
-			worked++
+			k := int(d.Sub(start).Hours() / 24)
+			perDay[k] += n
+			sum += n
 			tot[cd.Name] += n
-			x0, x1 := col(d), max(col(d)+1, col(d.AddDate(0, 0, 1)))
-			for r, g := range heatCells(n, hh) {
+		}
+		chart := make([]*grid, hh)
+		for r := range chart {
+			chart[r] = newGrid(mw, lk.cyan)
+		}
+		for k, n := range perDay {
+			d := start.AddDate(0, 0, k)
+			x0, x1 := col(d), max(col(d)+1, col(d.AddDate(0, 0, 1))-1)
+			for r, g := range barCells(n, top, hh) {
 				if g != " " {
-					heat[r].put(x0, rep(g, x1-x0), lk.cyan)
+					chart[r].put(x0, rep(g, x1-x0), lk.cyan)
 				}
 			}
 		}
-		for _, g := range heat {
-			guides(g)
-		}
-		note := " not touched"
+		note := "not touched"
 		if last != "" {
 			if d := parseDay(last, pv.now.Location()); d.Equal(day(pv.now)) {
-				note = " last today"
+				note = "last today"
 			} else {
-				note = " last " + dateLabel(d)
+				note = "last " + dateLabel(d)
 			}
 		}
-		heat[hh-1].put(today+2, note, lk.dim)
-		ws := lk.cyan
-		if worked == 0 {
-			ws = lk.dim
+		left := []string{"commits a day", fmt.Sprintf("%d in %d weeks", sum, past), note}
+		if hh < 3 {
+			when := strings.TrimPrefix(note, "last ")
+			left = []string{"commits a day", fmt.Sprintf("%d in %dw · %s", sum, past, when)}
 		}
-		for r, g := range heat {
-			lbl := line{{fit("", gut), lk.dim}}
-			if r == hh-1 {
-				lbl = line{{"  worked ", lk.dim}, {fit(fmt.Sprintf("%2dd", worked), gut-9), ws}}
+		yl := yLabels(top, hh)
+		const lab = 6 // "  12 ┤"
+		for d := start; !d.After(day(pv.now)); d = d.AddDate(0, 0, 1) {
+			if weekend(d) {
+				x0, x1 := col(d), max(col(d)+1, col(d.AddDate(0, 0, 1))-1)
+				for x := x0; x < x1; x++ {
+					if chart[hh-1].r[x] == ' ' {
+						chart[hh-1].put(x, "┈", lk.dim)
+					}
+				}
 			}
-			sp.rows = append(sp.rows, lbl.join(g.line()))
+		}
+		for r, g := range chart {
+			guides(g)
+			txt := ""
+			if r < len(left) {
+				txt = left[r]
+			}
+			sty := lk.dim
+			if r == 0 {
+				sty = lk.sub
+			}
+			sp.rows = append(sp.rows, line{{fit("  "+txt, gut-lab), sty}, {fmt.Sprintf("%4s ┤", yl[r]), lk.dim}}.join(g.line()))
 		}
 	}
 	sp.rows = append(sp.rows, pv.timeSplit(tot, port))
