@@ -1,10 +1,10 @@
 ## item_071_compaction_thresholds_and_idle_rule - Compaction thresholds and idle rule
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 75%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Low
 > Theme: cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -31,7 +31,8 @@
 - AC2: An idle session at 50 min triggers one notification, not more.
 
 # AC Traceability
-- All ACs -> this item. Proof: to fill at build.
+- AC1 -> `crow-ctx` compact_advice (`--json` rows and `crow-ctx advice --json`). Proof: tests/test_crow_ctx_advice.py::test_three_fixture_sessions (warm 80k compact, cold 80k reload, cold 130k compact) and test_five_minute_cache_goes_cold_fast.
+- AC2 -> `crow-ctx idle-hook` (hub Stop hook) and `idle-watch`. Proof: test_idle_nudge_fires_once_when_still_idle (one notify-send, wait 50 min for a 1h cache), test_idle_nudge_skips_new_activity_small_sessions_and_short_ttl; live: a second hook call for the same session replaced the first watcher.
 
 # Decision framing
 - Product framing: Not needed
@@ -47,3 +48,5 @@
 
 # Notes
 - Check the hub's cache TTL (1h here) per account before fixing 50 min.
+- Built 2026-11-03: TTL is read per session (1h when it wrote 1h cache, else 5 min; `CROW_CACHE_TTL_MIN` overrides), so the nudge fires at TTL minus `CROW_CTX_IDLE_LEAD_MIN` (10) and is skipped on 5 min caches. crow-usage sessions carry `cache_1h_tokens`. Thresholds `CROW_CTX_HOT` (65k), `CROW_CTX_COLD` (125k).
+- Not done: `idleCompaction: false` for headless runs (not checked whether Claude Code has this setting; headless runs do not sit idle). The Stop hook is hub only; repo sessions need it in the profile settings.

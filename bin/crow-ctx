@@ -3,14 +3,21 @@
 
   crow-ctx [--json]            live sessions past the warning (default 120k), from crow-usage
   crow-ctx --brief             the same as one line per session, nothing when all are short
+  crow-ctx advice [--json]     every live session past CROW_CTX_HOT with its compact advice
+  crow-ctx idle-hook           Stop hook: arm one idle nudge for this session (replaces the previous one)
   crow-ctx cap check           every allowed profile has the auto-compact window set (exit 1 if not)
   crow-ctx cap apply           set it in every allowed profile's settings.json (env.CLAUDE_CODE_AUTO_COMPACT_WINDOW)
 
 Thresholds: CROW_CTX_WARN (default 120000) and CROW_CTX_CAP (default 150000), shared with crow-usage.
+Compact advice (levers 9, 10): `compact` past CROW_CTX_HOT (65000) while the cache is warm, past CROW_CTX_COLD
+(125000) once it expired; `reload` between the two when cold (a compaction costs more than the reload); else `none`.
+Cache TTL is 1h when the session wrote 1h cache, else 5 min (CROW_CACHE_TTL_MIN overrides). The idle nudge fires
+CROW_CTX_IDLE_LEAD_MIN (10) minutes before a 1h cache expires, once per idle period, past CROW_CTX_HOT.
 CROW_USAGE_JSON=<file> reads a saved `crow-usage --json` instead of running it.
 The warning proposes `/wrap`, then one crow handoff per narrow end state (runbooks/long-sessions.md).
 """
-import json, os, subprocess, sys
+import json, os, signal, subprocess, sys, time
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_lib  # noqa: E402
@@ -19,6 +26,92 @@ BIN = os.path.dirname(os.path.realpath(__file__))
 WARN = int(os.environ.get("CROW_CTX_WARN", 120_000))
 CAP = int(os.environ.get("CROW_CTX_CAP", 150_000))
 ENV_KEY = "CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+HOT = int(os.environ.get("CROW_CTX_HOT", 65_000))
+COLD = int(os.environ.get("CROW_CTX_COLD", 125_000))
+IDLE_LEAD = int(os.environ.get("CROW_CTX_IDLE_LEAD_MIN", 10)) * 60
+HUB = os.path.dirname(BIN)
+IDLE_DIR = os.path.join(HUB, "local", "state", "idle")
+
+
+def ttl_s(s):
+    if os.environ.get("CROW_CACHE_TTL_MIN"):
+        return int(os.environ["CROW_CACHE_TTL_MIN"]) * 60
+    return 3600 if s.get("cache_1h_tokens") else 300
+
+
+def idle_s(s, now=None):
+    if not s.get("end"):
+        return 0
+    return (now or time.time()) - datetime.fromisoformat(s["end"].replace("Z", "+00:00")).timestamp()
+
+
+def compact_advice(s, now=None):
+    ctx, warm = s.get("context_tokens") or 0, idle_s(s, now) < ttl_s(s)
+    if ctx >= (HOT if warm else COLD):
+        return "compact"
+    return "reload" if not warm and ctx >= HOT else "none"
+
+
+def last_turn(transcript):
+    """(context tokens, cache TTL in s) from the transcript's last main-thread assistant turn."""
+    try:
+        with open(transcript, "rb") as fh:
+            fh.seek(max(0, os.path.getsize(transcript) - 400_000))
+            lines = fh.read().decode(errors="replace").splitlines()
+    except OSError:
+        return 0, 0
+    ctx = None
+    for line in reversed(lines):
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        u = (e.get("message") or {}).get("usage") if e.get("type") == "assistant" and not e.get("isSidechain") else None
+        if not u:
+            continue
+        if ctx is None:
+            ctx = sum(u.get(k) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+        cc = u.get("cache_creation") or {}
+        if cc.get("ephemeral_1h_input_tokens") or cc.get("ephemeral_5m_input_tokens"):  # the newest turn that wrote cache
+            return ctx, ttl_s({"cache_1h_tokens": cc.get("ephemeral_1h_input_tokens") or 0})
+    return ctx or 0, ttl_s({"cache_1h_tokens": 1})
+
+
+def idle_hook():
+    """Stop hook: replace this session's idle watcher with a fresh one."""
+    try:
+        ev = json.load(sys.stdin)
+    except ValueError:
+        return
+    sid, transcript = ev.get("session_id"), ev.get("transcript_path")
+    if not sid or not transcript:
+        return
+    os.makedirs(IDLE_DIR, exist_ok=True)
+    pidf = os.path.join(IDLE_DIR, f"{sid}.pid")
+    try:
+        os.kill(int(open(pidf).read()), signal.SIGTERM)
+    except (OSError, ValueError):
+        pass
+    p = subprocess.Popen([sys.executable, os.path.realpath(__file__), "idle-watch", transcript, sid, ev.get("cwd") or ""],
+                         start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    with open(pidf, "w") as fh:
+        fh.write(str(p.pid))
+
+
+def idle_watch(transcript, sid, cwd, sleep=time.sleep):
+    """Wait until the cache is IDLE_LEAD from expiry; notify once if the session stayed idle and is big enough.
+    Returns the message sent, or None."""
+    ctx, ttl = last_turn(transcript)
+    if ttl <= IDLE_LEAD or ctx < HOT:
+        return None
+    mtime = os.path.getmtime(transcript)
+    sleep(max(0, mtime + ttl - IDLE_LEAD - time.time()))
+    if os.path.getmtime(transcript) != mtime:
+        return None
+    msg = (f"{os.path.basename(cwd) or sid[:8]}: idle {(ttl - IDLE_LEAD) // 60} min at {ctx // 1000}k, cache expires in "
+           f"{IDLE_LEAD // 60} min. /compact <what to keep>, or close it.")
+    subprocess.run(["notify-send", "-a", "crow", "Session cache expiring", msg])
+    return msg
 
 
 def usage():
@@ -90,6 +183,21 @@ def main(argv):
         sys.exit(1 if bad else 0)
     if argv[:2] == ["cap", "apply"]:
         return cap_apply()
+    if argv[:1] == ["idle-hook"]:
+        return idle_hook()
+    if argv[:1] == ["idle-watch"]:
+        idle_watch(*argv[1:4])
+        return
+    if argv[:1] == ["advice"]:
+        rows = [{"id": s["id"], "project": s.get("project"), "title": s.get("title"), "context_tokens": s["context_tokens"],
+                 "idle_min": int(idle_s(s) // 60), "cache_ttl_min": ttl_s(s) // 60, "compact_advice": compact_advice(s)}
+                for s in usage().get("sessions", []) if s.get("active") and (s.get("context_tokens") or 0) >= HOT]
+        if "--json" in argv:
+            print(json.dumps(rows))
+        for r in ([] if "--json" in argv else rows):
+            print(f"{r['project'] or '?'}: {r['title'] or r['id'][:8]} {r['context_tokens'] // 1000}k, idle {r['idle_min']} min "
+                  f"(cache {r['cache_ttl_min']} min): {r['compact_advice']}")
+        return
     flags = set(argv)
     if flags - {"--json", "--brief"}:
         sys.exit(__doc__)
@@ -97,7 +205,7 @@ def main(argv):
     if "--json" in flags:
         print(json.dumps([{"id": s["id"], "account": s["account"], "project": s.get("project"), "title": s.get("title"),
                            "context_tokens": s["context_tokens"], "level": "over" if s["context_tokens"] > CAP else "warn",
-                           "advice": advice(s)} for s in found]))
+                           "advice": advice(s), "compact_advice": compact_advice(s)} for s in found]))
     elif "--brief" in flags:
         for s in found:
             print(f"- {s.get('project') or '?'}: {s.get('title') or s['id'][:8]} is at {label(s)} of context; wrap and split")

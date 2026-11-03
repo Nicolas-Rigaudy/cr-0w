@@ -778,6 +778,7 @@ def collect_sessions(days):
             "output_tokens": totals["output_tokens"],
             "cache_write_tokens": totals["cache_creation_tokens"],
             "cache_read_tokens": totals["cache_read_tokens"],
+            "cache_1h_tokens": sum(u.get("cache_1h_tokens") or 0 for u in data["per_model"].values()),
             "cache_pct": round(100 * totals["cache_read_tokens"] / tokens) if tokens else 0,
             "cost_usd": round(cost, 4) if priced else None,
             "cost_split": {k: round(v, 4) for k, v in f["split"].items()},
