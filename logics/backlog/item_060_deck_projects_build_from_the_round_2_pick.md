@@ -1,13 +1,15 @@
 ## item_060_deck_projects_build_from_the_round_2_pick - Deck Projects build from the round 2 pick
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-03 13:55:24
 
 # AI Context
 - Summary: Build the Projects tab from the board the owner picks in item_055.
@@ -33,6 +35,11 @@
 
 # AC Traceability
 - request-AC3 -> owner pick before Go code. Proof: req_011 § Owner picks.
+- AC1 -> board and portrait renders. Proof: d3b6f6b; TestShots writes Projects-board-all and Projects-portrait-all, TestLiveShots writes projects-live-235x62 and 118x60, compared against prop-projects-R2-land/port.png.
+- AC2 -> action keys flash "arrives with the actions slice", no Jira box. Proof: d3b6f6b; TestProjectsShowsListDetailAndTimeline asserts no "not wired" at both sizes.
+- AC3 -> tests. Proof: d3b6f6b; `cd tools/crow-deck && go test ./...` (108 passed), `python3 -m pytest tests` (171 passed).
+- request-AC6 -> lambda release.date 2026-12-01 in the registry, shown as "prod launch Dec 1 · D-28". Proof: d3b6f6b; TestProjectsLiveFromRegistry.
+- request-AC7 -> no "not wired" box on Projects. Proof: d3b6f6b.
 
 # Decision framing
 - Product framing: Not needed
@@ -59,4 +66,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

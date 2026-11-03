@@ -371,9 +371,9 @@ func (hv homeView) pulseRows(iw int) []line {
 			}
 			l = append(l, seg{fit(g.Account, 8), lk.sub}, seg{"5h ", lk.dim})
 			l = append(l, gaugeBar(lk, g.FiveH, tw, lk.level(g.FiveH))...)
-			l = append(l, seg{fmt.Sprintf(" %3d%%  ", g.FiveH), lk.sub}, seg{"wk ", lk.dim})
+			l = append(l, seg{fmt.Sprintf(" %3d%% left  ", g.FiveH), lk.sub}, seg{"wk ", lk.dim})
 			l = append(l, gaugeBar(lk, g.Week, tw, lk.level(max(0, g.Week)))...)
-			l = append(l, seg{fmt.Sprintf(" %3d%%", max(0, g.Week)), lk.sub})
+			l = append(l, seg{fmt.Sprintf(" %3d%% left", max(0, g.Week)), lk.sub})
 		}
 		if wide {
 			l = append(l, spc(6), seg{"crow never uses these", lk.dim})

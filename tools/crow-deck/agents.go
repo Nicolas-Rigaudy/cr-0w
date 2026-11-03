@@ -103,10 +103,26 @@ func dur(mins int) string {
 	return fmt.Sprintf("%dm", mins)
 }
 
-// ctxBar is the context gauge: share of a 200k window, coloured by how full it is.
+// ctxWindow: the context window a session runs in. Past 200k it must be the 1M window.
+func ctxWindow(ctx int) int {
+	if ctx > 200_000 {
+		return 1_000_000
+	}
+	return 200_000
+}
+
+// ctxLabel: the context used out of its window, e.g. "163k/200k".
+func ctxLabel(ctx int) string {
+	if ctxWindow(ctx) == 1_000_000 {
+		return tokensK(ctx) + "/1M"
+	}
+	return tokensK(ctx) + "/200k"
+}
+
+// ctxBar is the context gauge: share of the session's window, coloured by how full it is.
 func (av agentsView) ctxBar(ctx, cells int) line {
 	lk := av.lk
-	pct := min(100, ctx*100/200_000)
+	pct := min(100, ctx*100/ctxWindow(ctx))
 	st := lk.ok
 	switch {
 	case pct >= 85:
@@ -221,7 +237,7 @@ func (av agentsView) teamSegs(g gauge, gw int) line {
 func (av agentsView) acctRows(iw int, port bool) []line {
 	lk, fx := av.lk, av.fx
 	var out []line
-	gw := 12
+	gw := min(12, max(4, (iw-46)/2)) // both gauges, their % and the reset fit in iw
 	if port {
 		gw = 14
 	}
@@ -250,7 +266,7 @@ func (av agentsView) acctRows(iw int, port bool) []line {
 
 func (av agentsView) acctSpec(iw int, port bool) boxSpec {
 	lk := av.lk
-	sp := boxSpec{title: "Accounts today", index: 2, sel: -1, right: line{{"→ 5 Usage", lk.sub}}}
+	sp := boxSpec{title: "Accounts today · % left", index: 2, sel: -1, right: line{{"→ 5 Usage", lk.sub}}}
 	if av.loading() {
 		sp.rows = []line{{{"syncing…", lk.sub}}}
 		return sp
@@ -303,7 +319,7 @@ type laneCols struct {
 
 func (av agentsView) laneLayout(iw int, port bool) laneCols {
 	c := laneCols{tw: 40, actw: 18, port: port}
-	c.cols = []laneCol{{"model", 10, 0}, {"context", 13, 0}, {"cost", 6, 1}, {"time", 5, 1}}
+	c.cols = []laneCol{{"model", 10, 0}, {"context", 17, 0}, {"cost", 6, 1}, {"time", 5, 1}}
 	if port {
 		c.tw, c.actw, c.cols = 32, 12, []laneCol{{"cost", 6, 1}}
 	}
@@ -444,7 +460,7 @@ func (av agentsView) laneLine(l laneRow, c laneCols, t0, t1 int, sel bool) line 
 		case "context":
 			if l.live() && !l.Run && l.Ctx > 0 {
 				out = append(out, av.ctxBar(l.Ctx, 7)...)
-				out = append(out, seg{fmt.Sprintf("%6s", tokensK(l.Ctx)), lk.sub})
+				out = append(out, seg{fmt.Sprintf(" %-9s", ctxLabel(l.Ctx)), lk.sub})
 			} else {
 				out = append(out, spc(k.w))
 			}
@@ -681,7 +697,7 @@ func (av agentsView) laneHead(l *laneRow, iw int) line {
 	if l.Ctx > 0 && !l.Run {
 		out = append(out, seg{"  ctx ", lk.sub})
 		out = append(out, av.ctxBar(l.Ctx, 7)...)
-		out = append(out, seg{" " + tokensK(l.Ctx), lk.sub})
+		out = append(out, seg{" " + ctxLabel(l.Ctx), lk.sub})
 	}
 	switch l.State {
 	case lsNeeds:
@@ -931,6 +947,60 @@ func tokSpark(vals []int) string {
 	return b.String()
 }
 
+// tokChart: tokens per 10 min as a 3-row bar chart, the max and half labelled on the
+// left, clock ticks under it, and the peak.
+func (av agentsView) tokChart(l *laneRow, f, la, iw int) []line {
+	lk := av.lk
+	const lab = 7 // " 1.2M ┤"
+	w := max(8, iw-lab-1)
+	if la-f+1 > w {
+		f = la - w + 1
+	}
+	peak, peakB := 0, f
+	for b := f; b <= la; b++ {
+		if l.Tok[b] > peak {
+			peak, peakB = l.Tok[b], b
+		}
+	}
+	const hh = 3
+	bars := make([]*grid, hh)
+	for i := range bars {
+		bars[i] = newGrid(la-f+1, lk.ok)
+	}
+	for b := f; b <= la; b++ {
+		for r, g := range barCells(l.Tok[b], peak, hh) {
+			if g != " " {
+				bars[r].put(b-f, g, lk.ok)
+			}
+		}
+	}
+	yl := []string{tokensShort(peak), tokensShort(peak / 2), "0"} // one per row, hh is 3
+	rows := []line{{{"tokens per 10 min", lk.head}}}
+	for r, g := range bars {
+		rows = append(rows, line{{fmt.Sprintf("%5s ┤", yl[r]), lk.dim}}.join(g.line()))
+	}
+	n := la - f + 1
+	axis := newGrid(n, lk.dim)
+	axis.put(0, clock(bucketTime(av.now, f)), lk.dim)
+	if n >= 12 {
+		axis.put(n-5, clock(bucketTime(av.now, la)), lk.dim)
+	}
+	for b := 9; b < n; b += 9 {
+		if axis.free(b-1, 7) {
+			axis.put(b, clock(bucketTime(av.now, f+b)), lk.dim)
+		}
+	}
+	rows = append(rows, line{{fit("", lab), lk.dim}}.join(axis.line()))
+	note := fmt.Sprintf("peak %s at %s", tokensShort(peak), clock(bucketTime(av.now, peakB)))
+	switch l.State {
+	case lsNeeds:
+		note += "  ·  now waiting for you"
+	case lsWorking, lsRun:
+		note += "  ·  still going"
+	}
+	return append(rows, line{{fit("", lab), lk.dim}, {note, lk.sub}})
+}
+
 func (av agentsView) detailRows(l *laneRow, iw, n int) []line {
 	lk := av.lk
 	var rows []line
@@ -980,26 +1050,7 @@ func (av agentsView) detailRows(l *laneRow, iw, n int) []line {
 		kv("tokens", seg{s, lk.plain})
 	}
 	if f, la := l.first(), l.last(); f >= 0 && len(l.Tok) > 0 {
-		rows = append(rows, line{{"tokens per 10 min", lk.head}})
-		var vals []int
-		peak, peakB := 0, f
-		for b := f; b <= la; b++ {
-			vals = append(vals, l.Tok[b])
-			if l.Tok[b] > peak {
-				peak, peakB = l.Tok[b], b
-			}
-		}
-		if w := max(8, iw/2); len(vals) > w {
-			vals = vals[len(vals)-w:]
-		}
-		note := fmt.Sprintf("  peak %s at %s", tokensShort(peak), clock(bucketTime(av.now, peakB)))
-		switch l.State {
-		case lsNeeds:
-			note += "  ·  now waiting for you"
-		case lsWorking, lsRun:
-			note += "  ·  still going"
-		}
-		rows = append(rows, line{{tokSpark(vals), lk.ok}, {note, lk.sub}})
+		rows = append(rows, av.tokChart(l, f, la, iw)...)
 	}
 	rows = append(rows, nil)
 	g := av.git(l)

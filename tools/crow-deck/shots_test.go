@@ -202,7 +202,11 @@ func projectShots(write func(string, model), ti int, sizes map[string][2]int) {
 	m = base("wide")
 	m.mode = "work"
 	write(name+"-Projects-wide-work", m)
-	for pane, pn := range []string{"cards", "timeline"} {
+	for _, sn := range []string{"board", "portrait"} {
+		m = base(sn)
+		write(fmt.Sprintf("%s-Projects-%s-all", name, sn), m)
+	}
+	for pane, pn := range []string{"list", "detail", "timeline"} {
 		m = base("small")
 		m.prjPane = pane
 		write(fmt.Sprintf("%s-Projects-small-%s", name, pn), m)
@@ -259,7 +263,7 @@ func histShots(write func(string, model), ti int, sizes map[string][2]int) {
 //
 //	LIVESHOTS=/abs/dir go test -run TestLiveShots .
 //
-// Files: home-live-<w>x<h>.ans at the board sizes, landscape 235x62 and portrait 118x60.
+// Files: home-, agents- and projects-live-<w>x<h>.ans at the board sizes, landscape 235x62 and 170x46, portrait 118x60.
 func TestLiveShots(t *testing.T) {
 	dir := os.Getenv("LIVESHOTS")
 	if dir == "" {
@@ -280,7 +284,7 @@ func TestLiveShots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, sz := range [][2]int{{235, 62}, {118, 60}} {
+	for _, sz := range [][2]int{{235, 62}, {170, 46}, {118, 60}} {
 		for _, mode := range []string{"all", "work"} {
 			m.w, m.h, m.mode, m.page = sz[0], sz[1], mode, 0
 			f := filepath.Join(dir, fmt.Sprintf("home-live-%dx%d-%s.ans", sz[0], sz[1], mode))
@@ -301,5 +305,14 @@ func TestLiveShots(t *testing.T) {
 		if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
 			t.Fatal(err)
 		}
+		m.page = 3
+		for _, mode := range []string{"all", "work"} {
+			m.mode = mode
+			f = filepath.Join(dir, fmt.Sprintf("projects-live-%dx%d-%s.ans", sz[0], sz[1], mode))
+			if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		m.mode = "all"
 	}
 }

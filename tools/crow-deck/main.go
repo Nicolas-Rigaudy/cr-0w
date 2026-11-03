@@ -689,10 +689,10 @@ func (m model) projectKey(k string) string {
 	}
 	for _, a := range cardActions {
 		if a[0] == k {
-			return k + ": " + a[1] + " on " + c.Name + " is not wired yet"
+			return k + ": " + a[1] + " on " + c.Name + " arrives with the actions slice"
 		}
 	}
-	return k + ": not wired"
+	return k + ": no action on this key"
 }
 
 // curAgent is the selected lane's agent. A lane that ended today gets a stand-in row
@@ -995,7 +995,7 @@ func (m model) context() []keyHint {
 		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"r", "review"}, {"a x e c", "decide"}, {"A", "apply"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 3 {
-		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o", "action"}, {"z", "zoom"}, {"/", "filter"}, {"m", "work / perso / all"}}
+		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o h", "action"}, {"z", "zoom"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 4 {
 		return []keyHint{{"j k", "account"}, {"tab", "pane"}, {"d", "7 / 14 days"}, {"r", "refresh"}, {"p l [ ]", "policy"}}
