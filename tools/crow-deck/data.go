@@ -260,6 +260,7 @@ type liveState struct {
 	acct  []acctPolicy
 	reg   *registry
 	mrs   *mrsSnap
+	today *todaySnap
 	at    map[string]time.Time
 	err   map[string]string
 	// MR diffs and threads, fetched when an MR is selected.
@@ -305,6 +306,8 @@ func (ls *liveState) apply(msg srcMsg) {
 		ls.reg = v
 	case *mrsSnap:
 		ls.mrs = v
+	case *todaySnap:
+		ls.today = v
 	}
 }
 
@@ -817,6 +820,7 @@ func buildFixtures(in liveInput) *fixtures {
 	fx.Gauges, fx.Team = gaugeRows(ls.runs, ls.usage, ls.acct)
 	fx.Usage = usageViewOf(ls.usage, ls.reg, now)
 	fx.Who = whoWorked(now, ls.usage, ls.intr, ls.reg)
+	fx.Today, fx.Mail = todayRows(ls.today, now.Local())
 	fx.Hist = histOf(ls.usage, ls.reg, now)
 	if ls.reg != nil {
 		fx.Next = openThreads(filepath.Join(ls.reg.StateDir, "open-threads.md"), ls.reg)

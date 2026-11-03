@@ -36,6 +36,7 @@ var fetchers = map[string]func() (any, error){
 	srcAccounts: func() (any, error) { return fetchAccounts() },
 	srcRegistry: func() (any, error) { return fetchRegistry() },
 	srcMRs:      func() (any, error) { return fetchMRs() },
+	srcToday:    func() (any, error) { return fetchToday() },
 }
 
 func fetchCmd(src string) tea.Cmd {
@@ -50,7 +51,7 @@ func tickCmd() tea.Cmd {
 }
 
 func allSources() []string {
-	return []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry, srcMRs}
+	return []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry, srcMRs, srcToday}
 }
 
 // refreshCmds picks the sources due at this tick.
@@ -60,7 +61,7 @@ func refreshCmds(tick int) []tea.Cmd {
 		cmds = append(cmds, fetchCmd(srcUsage), fetchCmd(srcAccounts))
 	}
 	if tick%registryTicks == 0 {
-		cmds = append(cmds, fetchCmd(srcRegistry), fetchCmd(srcMRs))
+		cmds = append(cmds, fetchCmd(srcRegistry), fetchCmd(srcMRs), fetchCmd(srcToday))
 	}
 	return cmds
 }

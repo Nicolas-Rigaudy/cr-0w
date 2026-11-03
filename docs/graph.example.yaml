@@ -1,0 +1,7 @@
+# Copy to local/graph.yaml. bin/crow-today reads it.
+# Register a single-tenant Entra app with "Allow public client flows" on and no secret.
+# Delegated scopes (admin consent): User.Read Calendars.Read Mail.Read offline_access; crow-today asks for .default.
+tenant: 00000000-0000-0000-0000-000000000000
+client_id: 00000000-0000-0000-0000-000000000000
+user: you@example.com        # keyring entry: secret-tool lookup service crow-graph user <user>
+timezone: Europe/Paris       # IANA zone the event times come in (default UTC)

@@ -251,21 +251,36 @@ func (hv homeView) display(i, iw int) (sp boxSpec, at []int) {
 		}
 	case pToday:
 		for _, t := range fx.Today {
-			tag := line{}
-			if t.Tag != "" {
-				st := lk.ok
-				if t.TagState == "warn" {
-					st = lk.warn
-				}
-				tag = line{{t.Tag, st}}
-			}
-			add(lr(line{{fit(t.When, 5), lk.cyan}, spc(2), {t.What, lk.plain}}, tag, iw))
+			add(hv.todayLine(t, iw))
 		}
 		if len(fx.Mail) > 0 {
 			sp.right = line{{strings.Join(fx.Mail, " · "), lk.sub}}
 		}
 	}
 	return sp, at
+}
+
+// todayLine draws one rail row: an event, a section heading, a flagged mail or a gap.
+func (hv homeView) todayLine(t todayRow, iw int) line {
+	lk := hv.lk
+	switch t.Kind {
+	case "gap":
+		return line{}
+	case "head":
+		return line{{t.What, lk.label}}
+	case "flag":
+		return line{{"! ", lk.warn}, {t.What, lk.plain}, spc(2), {t.Tag, lk.sub}}
+	}
+	when, what, tag := lk.cyan, lk.plain, lk.ok
+	switch t.TagState {
+	case "next":
+		when, what, tag = lk.acc.Bold(true), lk.bold, lk.warn.Bold(true)
+	case "past":
+		when, what = lk.sub, lk.sub
+	case "warn":
+		tag = lk.warn
+	}
+	return lr(line{{fit(t.When, 11), when}, spc(2), {t.What, what}}, line{{t.Tag, tag}}, iw)
 }
 
 // pulseRows: the owner's accounts in full, the team accounts on one compact line.

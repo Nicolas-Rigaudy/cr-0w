@@ -72,7 +72,8 @@ type blocker struct {
 
 type todayRow struct {
 	When, What, Tag string
-	TagState        string // ok, warn, ""
+	TagState        string // ok, warn, next, past, ""
+	Kind            string // "" event, head, flag, gap
 }
 
 type nextRow struct {
@@ -165,13 +166,17 @@ func mockFixtures() *fixtures {
 			{"waiting", "vault", "design doc review before PDF export", "4d"},
 		},
 		Today: []todayRow{
-			{"11:30", "daily", "sent", "ok"},
-			{"14:00", "design doc to PDF", "", ""},
-			{"Fri", "terms reply", "draft", "warn"},
-			{"Fri", "weekly slides", "", ""},
-			{"Mon", "sprint planning", "", ""},
+			{When: "09:30–10:00", What: "Sprint sync", TagState: "past"},
+			{When: "11:30–11:45", What: "Team daily", TagState: "past"},
+			{When: "16:00–16:30", What: "1:1 product", Tag: "in 8 min", TagState: "next"},
+			{When: "17:30–18:00", What: "Demo dry run"},
+			{Kind: "gap"}, {Kind: "head", What: "Flagged"},
+			{Kind: "flag", What: "Terms v3 feedback", Tag: "legal"},
+			{Kind: "flag", What: "Shipping date", Tag: "supplier"},
+			{Kind: "gap"}, {Kind: "head", What: "Tomorrow"},
+			{When: "09:00", What: "Travel to the demo site"},
 		},
-		Mail: []string{"mail 3 unread", "1 flagged"},
+		Mail: []string{"mail 4 unread", "2 flagged"},
 		Next: []nextRow{
 			{Project: "atlas", What: "review !214, merge 214 then 213", Perso: false, Actor: "me", Since: "2026-10-29", Why: "!214"},
 			{Project: "atlas", What: "purge job for retention", Perso: false, Actor: "me", Since: "2026-10-27", Why: "decide"},

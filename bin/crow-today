@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""crow-today: today's calendar and mail counts from Microsoft Graph, for the deck Today box.
+
+  crow-today login     device-code sign-in once; stores the refresh token in the keyring
+  crow-today json      today's data as JSON (cached for 5 minutes in local/state/today.json)
+  crow-today json -f   skip the cache
+
+Config: local/graph.yaml (tenant, client_id, user, timezone). Keyring: service crow-graph, user <user>.
+JSON: {"at", "events": [{"start","end","subject","all_day","next"}], "tomorrow": [...],
+       "unread", "flagged": [{"subject","from"}], "drafts"}. Exit 2 when not signed in.
+"""
+import datetime as dt, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
+import yaml
+
+HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+CONF = os.path.join(HOME, "local", "graph.yaml")
+CACHE = os.path.join(HOME, "local", "state", "today.json")
+SCOPE = "https://graph.microsoft.com/.default offline_access"  # the scopes the admin consented
+GRAPH = "https://graph.microsoft.com/v1.0"
+TTL = 300
+
+
+def conf():
+    with open(CONF) as f:
+        return yaml.safe_load(f)
+
+
+def post(url, data):
+    req = urllib.request.Request(url, urllib.parse.urlencode(data).encode())
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        return json.load(e)
+
+
+def keyring(c, token=None):
+    args = ["secret-tool"] + (["store", "--label", "crow Graph refresh token"] if token else ["lookup"])
+    args += ["service", "crow-graph", "user", c["user"]]
+    r = subprocess.run(args, input=token, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def authority(c):
+    return f"https://login.microsoftonline.com/{c['tenant']}/oauth2/v2.0"
+
+
+def login(c):
+    d = post(authority(c) + "/devicecode", {"client_id": c["client_id"], "scope": SCOPE})
+    if "device_code" not in d:
+        sys.exit("devicecode failed: " + d.get("error_description", str(d)))
+    print(d["message"], flush=True)
+    end = time.time() + d.get("expires_in", 900)
+    while time.time() < end:
+        time.sleep(d.get("interval", 5))
+        t = post(authority(c) + "/token", {"grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                                            "client_id": c["client_id"], "device_code": d["device_code"]})
+        if "refresh_token" in t:
+            keyring(c, t["refresh_token"])
+            print("signed in; refresh token stored in the keyring")
+            return
+        if t.get("error") not in ("authorization_pending", "slow_down"):
+            sys.exit("login failed: " + t.get("error_description", str(t)))
+    sys.exit("login timed out")
+
+
+def access(c):
+    rt = keyring(c)
+    if not rt:
+        print("not signed in: run crow-today login", file=sys.stderr)
+        sys.exit(2)
+    t = post(authority(c) + "/token", {"grant_type": "refresh_token", "client_id": c["client_id"],
+                                        "refresh_token": rt, "scope": SCOPE})
+    if "access_token" not in t:
+        print("token refresh failed: " + t.get("error_description", str(t)).splitlines()[0], file=sys.stderr)
+        sys.exit(2)
+    if t.get("refresh_token") and t["refresh_token"] != rt:
+        keyring(c, t["refresh_token"])
+    return t["access_token"]
+
+
+TZ = "UTC"
+
+
+def get(tok, path, extra=None):
+    h = {"Authorization": "Bearer " + tok, "Prefer": f'outlook.timezone="{TZ}"'}
+    h.update(extra or {})
+    with urllib.request.urlopen(urllib.request.Request(GRAPH + path, headers=h), timeout=20) as r:
+        return json.load(r)
+
+
+def events(tok, day):
+    q = urllib.parse.urlencode({"startDateTime": day.isoformat(), "endDateTime": (day + dt.timedelta(days=1)).isoformat(),
+                                "$select": "subject,start,end,isAllDay,isCancelled,showAs", "$orderby": "start/dateTime", "$top": "30"})
+    out, seen = [], set()
+    for e in get(tok, "/me/calendarView?" + q)["value"]:
+        if e.get("isCancelled") or e.get("showAs") == "free" and not e.get("isAllDay"):
+            continue
+        lo, hi = day.strftime("%Y-%m-%dT%H:%M"), (day + dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+        if e["end"]["dateTime"][:16] <= lo or e["start"]["dateTime"][:16] >= hi:
+            continue  # Graph returns events that only touch the window edge
+        key = (e["start"]["dateTime"][:16], e.get("subject"))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"start": e["start"]["dateTime"][:16], "end": e["end"]["dateTime"][:16],
+                    "subject": e.get("subject") or "(no subject)", "all_day": bool(e.get("isAllDay"))})
+    return out
+
+
+def fetch(c):
+    tok = access(c)
+    now = dt.datetime.now().astimezone()
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today = events(tok, day)
+    nxt = next((e for e in today if not e["all_day"] and e["start"] >= now.strftime("%Y-%m-%dT%H:%M")), None)
+    if nxt:
+        nxt["next"] = True
+    inbox = get(tok, "/me/mailFolders/inbox?$select=unreadItemCount")
+    drafts = get(tok, "/me/mailFolders/drafts?$select=totalItemCount")
+    fq = urllib.parse.urlencode({"$filter": "flag/flagStatus eq 'flagged'", "$select": "subject,from", "$top": "5"})
+    flagged = [{"subject": m.get("subject") or "", "from": ((m.get("from") or {}).get("emailAddress") or {}).get("name", "")}
+               for m in get(tok, "/me/messages?" + fq)["value"]]
+    return {"at": now.isoformat(timespec="seconds"), "events": today, "tomorrow": events(tok, day + dt.timedelta(days=1)),
+            "unread": inbox.get("unreadItemCount", 0), "flagged": flagged, "drafts": drafts.get("totalItemCount", 0)}
+
+
+def main():
+    global TZ
+    a = sys.argv[1:]
+    c = conf()
+    TZ = c.get("timezone", TZ)
+    if a[:1] == ["login"]:
+        return login(c)
+    if a[:1] != ["json"]:
+        sys.exit(__doc__)
+    if "-f" not in a and os.path.exists(CACHE) and time.time() - os.path.getmtime(CACHE) < TTL:
+        print(open(CACHE).read())
+        return
+    data = json.dumps(fetch(c))
+    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+    with open(CACHE, "w") as f:
+        f.write(data)
+    print(data)
+
+
+if __name__ == "__main__":
+    main()

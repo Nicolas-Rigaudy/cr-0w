@@ -56,7 +56,7 @@
 # Notes
 - Depends on item_054 for the actor column. Execution order: 2.
 - Owner picks 2026-11-02 recorded in req_011 § Owner picks.
-- Build notes 2026-11-03: Next keeps the full row highlight used by every tab (board shows a `›` marker). Projects get up to 11 rows before Next scrolls. Thread tags match the registry by name, short name or checkout folder, so `[Nicolas-Rigaudy]` counts as personal.
+- Build notes 2026-11-03: Next keeps the full row highlight used by every tab (board shows a `›` marker). Projects get up to 11 rows before Next scrolls. Today rail reads `bin/crow-today` (Graph app crow, consent granted 2026-11-02, login done 2026-11-03; runbooks/graph-today.md). Thread tags match the registry by name, short name or checkout folder, so `[Nicolas-Rigaudy]` counts as personal.
 
 # Final spec (owner approved 2026-11-03)
 - Board: local/state/shots/deck-rework/png/prop-home-A-land.png, prop-home-A-port.png, prop-home-A-land-work.png (script home_a.py).
