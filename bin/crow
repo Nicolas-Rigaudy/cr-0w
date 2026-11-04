@@ -34,6 +34,7 @@
 #   crow note "text #tag"  one-line timestamped capture into today's daily note (no model)
 #   crow notes [--since 7d]  vault notes of the last days as compact JSON (recap input)
 #   crow projects [...]  release tracks: roadmap progress toward public releases
+#   crow release propose  draft the next version and notes from commits since the last tag (no tagging)
 #   crow doctor [--json] identity, accounts, stale worktrees (read only)
 #   crow secret set|get|list|rm <service> [--user U]   service tokens in the keyring (see runbooks/service-tokens.md)
 #
@@ -199,6 +200,10 @@ note) exec "$CROW_HOME/bin/crow-note" "$@" ;;
 notes) exec "$CROW_HOME/bin/crow-notes" "$@" ;;
   projects) exec "$CROW_HOME/bin/crow-releases" "$@" ;;
   releases) hint "crow releases" "crow projects"; exec "$CROW_HOME/bin/crow-releases" "$@" ;;
+  release)  case "${1:-}" in
+              propose) shift; exec "$CROW_HOME/bin/crow-release-propose" "$@" ;;
+              *) echo "usage: crow release propose [--json]" >&2; exit 1 ;;
+            esac ;;
   doctor)   exec "$CROW_HOME/bin/crow-doctor" "$@" ;;
   secret)   exec "$CROW_HOME/bin/crow-secret" "$@" ;;
   -h|--help|help) sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;

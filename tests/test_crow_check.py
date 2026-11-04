@@ -117,11 +117,33 @@ def test_version_bad_semver_fails(tree):
     assert code == 1 and g["version"]["status"] == "fail"
 
 
+def write_release(root, ver="1.2.0"):
+    (root / "VERSION").write_text(ver + "\n")
+    (root / "changelogs").mkdir(exist_ok=True)
+    (root / "changelogs" / ("CHANGELOGS_" + ver.replace(".", "_") + ".md")).write_text("- x\n")
+    subprocess.run([sys.executable, str(BIN / "crow-changelog"), "--root", str(root)], check=True, capture_output=True)
+
+
 def test_version_missing_changelog_entry_fails(tree):
     (tree / "VERSION").write_text("1.2.0\n")
-    (tree / "CHANGELOG.md").write_text("## 1.1.0\n- x\n")
     assert check(tree, "--fast")[1]["version"]["status"] == "fail"
-    (tree / "CHANGELOG.md").write_text("## 1.2.0\n- x\n")
+    write_release(tree)
+    assert check(tree, "--fast")[1]["version"]["status"] == "pass"
+
+
+def test_version_stale_aggregate_fails(tree):
+    write_release(tree)
+    (tree / "changelogs" / "CHANGELOGS_1_2_0.md").write_text("- changed after the aggregate\n")
+    g = check(tree, "--fast")[1]["version"]
+    assert g["status"] == "fail" and "stale" in g["note"]
+
+
+def test_version_carrier_mismatch_fails(tree):
+    write_release(tree)
+    (tree / "package.json").write_text('{"name": "x", "version": "1.1.0"}\n')
+    g = check(tree, "--fast")[1]["version"]
+    assert g["status"] == "fail" and "package.json says 1.1.0" in g["note"]
+    (tree / "package.json").write_text('{"name": "x", "version": "1.2.0"}\n')
     assert check(tree, "--fast")[1]["version"]["status"] == "pass"
 
 

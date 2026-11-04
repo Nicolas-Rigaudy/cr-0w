@@ -125,16 +125,41 @@ def g_commits(root):
     return "pass", f"subjects ok {label}"
 
 
+def version_carriers(root):
+    """(label, version) for each file besides VERSION that carries one."""
+    out = []
+    for p in [root / "package.json", root / "pyproject.toml", *sorted(root.glob("tools/*/package.json")),
+              *sorted(root.glob("tools/*/VERSION"))]:
+        if not p.is_file():
+            continue
+        text = p.read_text(errors="replace")
+        if p.name == "VERSION":
+            out.append((str(p.relative_to(root)), text.strip()))
+        elif p.name == "package.json":
+            m = re.search(r'"version"\s*:\s*"([^"]+)"', text)
+            out.append((str(p.relative_to(root)), m.group(1) if m else None))
+        else:
+            m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+            out.append((str(p.relative_to(root)), m.group(1) if m else None))
+    return [c for c in out if c[1] is not None]
+
+
 def g_version(root):
     if not (root / "VERSION").is_file():
-        return "pass", "VERSION not introduced yet (item_033); nothing to compare"
+        return "pass", "no VERSION file; nothing to compare"
     ver = (root / "VERSION").read_text().strip()
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][\w.]+)?", ver):
         return "fail", f"VERSION is not semver: {ver!r}"
-    cl = root / "CHANGELOG.md"
-    if cl.is_file() and not re.search(rf"^#+\s*\[?v?{re.escape(ver)}\b", cl.read_text(), re.M):
-        return "fail", f"CHANGELOG.md has no entry for {ver}"
-    return "pass", f"version {ver}"
+    bad = [f"{name} says {v}" for name, v in version_carriers(root) if v != ver]
+    if bad:
+        return "fail", f"VERSION is {ver} but " + "; ".join(bad)
+    entry = root / "changelogs" / ("CHANGELOGS_" + re.split(r"[-+]", ver)[0].replace(".", "_") + ".md")
+    if not entry.is_file():
+        return "fail", f"no {entry.relative_to(root)} for {ver}"
+    tool = Path(__file__).resolve().parent / "crow-changelog"
+    if sh([sys.executable, str(tool), "--check", "--root", str(root)], root).returncode != 0:
+        return "fail", "CHANGELOG.md is stale: run bin/crow-changelog"
+    return "pass", f"version {ver}, changelog current"
 
 
 GROUPS = [("pytest", g_pytest, True), ("shellcheck", g_shellcheck, False), ("ruff", g_ruff, False),

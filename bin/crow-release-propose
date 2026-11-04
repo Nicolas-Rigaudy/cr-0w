@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""crow-release-propose: draft the next release from the commits since the last tag. No network.
+
+Groups subjects by type (new bumps the minor, chg and fix bump the patch).
+Prints the proposed version and notes. Never tags or writes files; the owner approves each release.
+  --root DIR   repository to read (default: this checkout)
+  --json       machine-readable output
+"""
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+SUBJECT = re.compile(r"^(new|chg|fix)\[([A-Z0-9/]+)\]: (.+)$")
+TITLES = {"new": "Added", "chg": "Changed", "fix": "Fixed"}
+
+
+def git(root, *args):
+    r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
+    return r.returncode, r.stdout.strip()
+
+
+def current_version(root):
+    f = root / "VERSION"
+    m = re.match(r"(\d+)\.(\d+)\.(\d+)", f.read_text().strip() if f.is_file() else "0.0.0")
+    return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
+
+def propose(root):
+    code, tag = git(root, "describe", "--tags", "--abbrev=0")
+    tag = tag if code == 0 else ""
+    _, log = git(root, "log", "--format=%s", f"{tag}..HEAD" if tag else "HEAD")
+    groups = {"new": [], "chg": [], "fix": []}
+    other = []
+    for subj in filter(None, log.splitlines()):
+        m = SUBJECT.match(subj)
+        if m:
+            groups[m.group(1)].append(m.group(3))
+        elif not subj.startswith(("Merge ", "Revert ")):
+            other.append(subj)
+    cur = current_version(root)
+    if not tag:  # first release: VERSION itself is the proposal
+        nxt = cur
+    elif groups["new"]:
+        nxt = (cur[0], cur[1] + 1, 0)
+    else:
+        nxt = (cur[0], cur[1], cur[2] + 1)
+    version = ".".join(map(str, nxt))
+    notes = []
+    for k in ("new", "chg", "fix"):
+        if groups[k]:
+            notes += [f"### {TITLES[k]}", *(f"- {s}" for s in groups[k]), ""]
+    return {"since": tag or None, "version": version, "tag": f"v{version}",
+            "commits": sum(map(len, groups.values())) + len(other), "other": other,
+            "notes": "\n".join(notes).strip()}
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="crow-release-propose", description=__doc__.splitlines()[0])
+    ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent))
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args(argv)
+    p = propose(Path(a.root).resolve())
+    if a.json:
+        print(json.dumps(p, indent=2))
+        return 0
+    print(f"proposed: {p['version']} (tag {p['tag']}), {p['commits']} commit(s) since {p['since'] or 'the start'}")
+    print("After approval: write changelogs/CHANGELOGS_<X_Y_Z>.md, set VERSION, run bin/crow-changelog.\n")
+    print(p["notes"] or "(no commits)")
+    if p["other"]:
+        print("\nSubjects outside the new/chg/fix format:\n" + "\n".join(f"- {s}" for s in p["other"]))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

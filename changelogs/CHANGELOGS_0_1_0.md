@@ -1,0 +1,7 @@
+First release of crow, the chief-of-staff hub.
+
+- Launch and hand off repo sessions, with the account chosen by free quota.
+- Track background runs, with failover to another account when a limit is hit.
+- Control room deck: agents, projects, today and merge requests.
+- Release gate (`bin/crow-check`): tests, linters, leak scan, commit subjects, version.
+- Usage, cost and context tooling across accounts.
