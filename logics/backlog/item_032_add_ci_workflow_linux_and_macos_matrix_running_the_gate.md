@@ -1,10 +1,10 @@
 ## item_032_add_ci_workflow_linux_and_macos_matrix_running_the_gate - Add CI workflow: Linux and macOS matrix running the gate
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -36,6 +36,13 @@
 # AC Traceability
 - request-AC3 -> This backlog slice. Proof: bounded slice with testable criteria above.
 - request-AC4 -> The slice's criteria feed the first tagged release and the install/update round trip.
+
+# Validation
+- `.github/workflows/ci.yml`: push to main and pull_request, ubuntu-latest and macos-latest, actions pinned by commit SHA, runs `bin/crow-check` then `go vet` and `go test` for both Go tools. No weekly audit job: the only dependencies are pytest, pyyaml and markdown, installed unpinned.
+- AC1: run 41833856752 on main is green on both operating systems (a PR run was not opened; the push run uses the same job).
+- AC2: the first five runs were red on a clean checkout, each for a real defect, fixed in order: tests needing `local/projects.yaml`, a shellcheck warning in `crow-prepush-check`, bash 3.2 empty array in `crow term`, BSD sed in `crow-commit-msg-check`, `crow-runs` needing `cdx` and `/proc`. No commit was broken on purpose.
+- AC3: the checkout has no `local/` and the workflow sets no secrets.
+- The CI runs found macOS and cdx-less defects the local run hid, because the local shell had CROW_HOME and cdx set. Local check without them: `env -u CROW_HOME -u CROW_ACCOUNT python3 -m pytest -q tests` with cdx off PATH.
 
 # Decision framing
 - Product framing: Not needed
