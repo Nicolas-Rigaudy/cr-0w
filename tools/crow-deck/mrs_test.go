@@ -245,3 +245,28 @@ func TestHandoffOverlayThenRun(t *testing.T) {
 		t.Errorf("want one crow handoff call, got %v", *calls)
 	}
 }
+
+func TestHandoffTaskRolesAndFindings(t *testing.T) {
+	rev := &mrRow{Role: "REVIEWER", Ref: "!7", Title: "retry"}
+	own := &mrRow{Role: "AUTHOR", Ref: "!8", Title: "cache", ThreadsOpen: 2}
+	if task, _ := handoffTask(rev, ""); !strings.HasPrefix(task, "Review !7") || strings.Contains(task, "findings") {
+		t.Errorf("reviewer task: %q", task)
+	}
+	if task, _ := handoffTask(own, ""); !strings.HasPrefix(task, "Address the 2 open review threads") {
+		t.Errorf("own task: %q", task)
+	}
+	if task, _ := handoffTask(rev, "/s/reviews/g_a-7.json"); !strings.Contains(task, "/s/reviews/g_a-7.json") {
+		t.Errorf("findings path missing: %q", task)
+	}
+}
+
+func TestHandoffOverlayShowsFindingsFile(t *testing.T) {
+	m := newModel(defaultConfig())
+	m.page = 2
+	m = send(m, keyMsg("h"))
+	r := m.mrsView().cur()
+	m.fx.MRDetails[r.key()] = &mrDetail{FindingsFile: "/s/reviews/x-1.json"}
+	if !hasText(m.View(), "/s/reviews/x-1.json") {
+		t.Error("overlay must show the findings file before enter")
+	}
+}

@@ -109,3 +109,13 @@ def test_findings_are_read_from_the_state_dir(tmp_path, monkeypatch):
         '{"schema": 1, "run": {"state": "done"}, "apply": {"state": "running"}, "findings": []}')
     monkeypatch.setattr(mod, "sync_review", lambda repo, n: {"run": {"state": "done"}, "apply": {"state": "done"}, "findings": []})
     assert mod.findings("grp/demo-service", "8") == ([], {"state": "done"}, {"state": "done"}, "")
+
+
+def test_findings_file_path_only_when_the_file_exists(tmp_path, monkeypatch):
+    mod = load()
+    monkeypatch.setattr(mod, "HOME", tmp_path)
+    reviews = tmp_path / "local" / "state" / "reviews"
+    reviews.mkdir(parents=True)
+    (reviews / "grp_demo-service-5.json").write_text("[]")
+    assert mod.findings_file("grp/demo-service", "5") == str(reviews / "grp_demo-service-5.json")
+    assert mod.findings_file("grp/demo-service", "6") == ""

@@ -499,7 +499,7 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.overlay = ovNone
 			if r := m.mrsView().cur(); r != nil {
-				task, end := handoffTask(r)
+				task, end := handoffTask(r, m.findingsFile())
 				m.flash = "opening a session on " + r.Name + "…"
 				return m, actionCmd("handoff", "crow", "handoff", r.Name, "--task", task, "--end-state", end)
 			}
@@ -1036,7 +1036,7 @@ func (m model) View() string {
 	case m.overlay == ovConfirm:
 		body = lk.confirmOverlay(m.w, bh, m.curAgent())
 	case m.overlay == ovHandoff:
-		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur())
+		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur(), m.findingsFile())
 	case m.overlay == ovReview:
 		body = lk.reviewOverlay(m.w, bh, m.mrsView().cur())
 	case m.overlay == ovApply:
@@ -1105,4 +1105,12 @@ func main() {
 		fmt.Fprintln(os.Stderr, "crow-deck:", err)
 		os.Exit(1)
 	}
+}
+
+// findingsFile is the findings file of the selected MR, empty when it has none.
+func (m model) findingsFile() string {
+	if d := m.mrsView().detail(); d != nil {
+		return d.FindingsFile
+	}
+	return ""
 }

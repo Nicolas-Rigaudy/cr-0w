@@ -142,6 +142,8 @@ type mrDetail struct {
 	Findings []mrFinding
 	Review   *mrReview
 	Apply    *mrApply
+	// FindingsFile is the path of the review findings file, empty when the MR has none.
+	FindingsFile string
 }
 
 // ----- fetching -----
@@ -199,7 +201,8 @@ type rawDetail struct {
 			At string `json:"at"`
 		} `json:"resolved"`
 	} `json:"findings"`
-	Review *struct {
+	FindingsFile string `json:"findings_file"`
+	Review       *struct {
 		ID        string `json:"id"`
 		State     string `json:"state"`
 		Reason    string `json:"reason"`
@@ -230,7 +233,7 @@ func fetchMRDetail(r mrRow) (*mrDetail, error) {
 }
 
 func mapDetail(raw rawDetail) *mrDetail {
-	d := &mrDetail{}
+	d := &mrDetail{FindingsFile: raw.FindingsFile}
 	for _, f := range raw.Files {
 		d.Files = append(d.Files, mrFile{Path: f.Path, Add: f.Add, Del: f.Del, Lines: parseDiff(f.Diff)})
 	}

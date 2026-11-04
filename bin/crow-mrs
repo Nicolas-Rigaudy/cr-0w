@@ -237,6 +237,17 @@ def list_all(projs, gl=gitlab_rows, gh=github_rows):
             "now": datetime.now(timezone.utc).isoformat(timespec="seconds")}
 
 
+def findings_file(repo, number):
+    """Path of the findings file when it exists, else empty."""
+    try:
+        reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
+    except FileNotFoundError:
+        reg = {}
+    state = Path((reg.get("vault") or {}).get("crow_dir") or HOME / "local" / "state")
+    f = state / "reviews" / f"{repo.replace('/', '_')}-{number}.json"
+    return str(f) if f.is_file() else ""
+
+
 def findings(repo, number):
     """(findings, review run, apply run, mode) from <state>/reviews/<group>_<name>-<number>.json (runbooks/review-findings.md).
     An older file is a bare list of findings with no run."""
@@ -272,7 +283,8 @@ def show(projs, repo, number, gl=gitlab_show, gh=github_show):
         raise SystemExit(f"crow-mrs: {repo} is not a registered remote")
     out = (gl if p["forge"] == "gitlab" else gh)(repo, number)
     found, run, applied, mode = findings(repo, number)
-    return {**out, "findings": found, "review": {**run, "mode": mode} if run else run, "apply": applied}
+    return {**out, "findings": found, "review": {**run, "mode": mode} if run else run, "apply": applied,
+            "findings_file": findings_file(repo, number) if found else ""}
 
 
 def main(argv):
