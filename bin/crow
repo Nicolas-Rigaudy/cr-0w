@@ -5,10 +5,11 @@
 #   crow                 open the hub session
 #   crow open [--model M] [--on-busy fail] <project> [prompt | --task T --end-state E]
 #                        open a session in a registered project, optionally on a first message (model: opus, sonnet)
-#   crow term [--model M] [--on-busy fail] <project> [...]   same, in a new kitty window (safe to call from inside a Claude session)
+#   crow term [--model M] [--on-busy fail] <project> [...]   same, in a new terminal window (safe to call from inside a Claude session)
 #   crow handoff <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
 #   open, term and handoff pick a free allowed account with quota left (crow-accounts pick);
 #   CROW_ACCOUNT=<name> forces one. --on-busy fail never asks (scripts).
+#   term, focus and relaunch open windows through CROW_TERMINAL=kitty|tmux|print (unset: kitty, else tmux, else print).
 #   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
 # See
 #   crow deck [--theme t] control room: 5 tabs, 4 themes (? for keys)
@@ -22,7 +23,7 @@
 #   crow dispatch <project> <label> --prompt-file F [--model opus]   start a tracked background run
 #   crow runs relaunch <id> <account> [--dry-run] [--here]   continue a cut-off session on another allowed account; relaunch status
 #   crow rescue <account> [--to T] [--dry-run]   move every session the account lost in its last 5h window, one OK
-#   crow focus --pid P --account A --cwd D   focus a session's kitty window, or resume it
+#   crow focus --pid P --account A --cwd D   focus a session's window, or resume it
 # Rituals
 #   crow brief           print the morning brief (one-shot run)
 #   crow daily           draft today's daily into the state dir (one-shot run; post it from the hub)
@@ -144,16 +145,20 @@ case "$cmd" in
             pick_account
             if [[ "${2:-}" == --task ]]; then launch "$dir" --on-busy "$on_busy" "${@:2}"
             else launch "$dir" --on-busy "$on_busy" ${2:+--prompt "$2"}; fi ;;
-  term)     # Detach from the calling session: real HOME (kitty config) and no inherited
-            # Claude/cdx variables (session markers, ANTHROPIC_PROFILE, CDX_SESSION_NAME).
+  term)     # A new terminal window (crow_term backend: kitty, tmux, or print the command), detached
+            # from the calling session: real HOME and no inherited Claude/cdx variables.
             # The account is picked here, where the caller sees a refusal, and passed down.
             launch_opts "$@"; shift "$n"
             dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt | --task T --end-state E]}")"
             pick_account
-            strip=(); for v in $(compgen -e | grep -E '^(CLAUDE|CLAUDECODE|ANTHROPIC_|CDX_)'); do strip+=(-u "$v"); done
-            env "${strip[@]}" HOME="$(getent passwd "$(id -un)" | cut -d: -f6)" CROW_ACCOUNT="$CROW_ACCOUNT" \
-              setsid -f kitty --title "crow · $1 · $CROW_ACCOUNT" "$CROW_HOME/bin/crow" open "${model[@]}" --on-busy "$on_busy" "$@" >/dev/null 2>&1
-            echo "crow: $1 opened on $CROW_ACCOUNT" >&2 ;;
+            line=$(python3 "$CROW_HOME/bin/crow_term.py" open --title "crow · $1 · $CROW_ACCOUNT" --set CROW_ACCOUNT="$CROW_ACCOUNT" \
+                   -- "$CROW_HOME/bin/crow" open "${model[@]}" --on-busy "$on_busy" "$@")
+            if [[ -n "$line" ]]; then
+              echo "crow: no terminal backend (CROW_TERMINAL=kitty|tmux); run this in a new terminal:" >&2
+              printf '%s\n' "$line"
+            else
+              echo "crow: $1 opened on $CROW_ACCOUNT" >&2
+            fi ;;
   work)     exec "$CROW_HOME/bin/crow-project" work "$@" ;;
   handoff)  # Pick before writing the note: a refusal leaves no orphan note.
             pick_account

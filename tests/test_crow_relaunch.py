@@ -132,7 +132,8 @@ def test_default_opens_a_new_kitty_window(hub, cdx, session, tmp_path):
     (d / "setsid").write_text('#!/bin/sh\necho "$@" >> "$SETSID_LOG"\n')
     (d / "setsid").chmod(0o755)
     r = relaunch(hub, cdx, "abc", "spare", "--yes",
-                 extra={"PATH": f"{d}:{cdx[0]['PATH']}", "SETSID_LOG": str(log), "CDX_SESSION_NAME": "x"})
+                 extra={"PATH": f"{d}:{cdx[0]['PATH']}", "SETSID_LOG": str(log), "CDX_SESSION_NAME": "x",
+                        "CROW_TERMINAL": "kitty"})
     assert r.returncode == 0, r.stderr
     line = log.read_text()
     assert "-f kitty --title" in line and f"--directory {session}" in line
@@ -210,3 +211,11 @@ def test_status_recommends_an_unblocked_allowed_account(hub, cdx):
     assert json.loads(status("main,spare,shared"))["recommended"] is None
     text = status("main,spare", fmt=())
     assert "main is blocked" in text and "Recommended target: shared (ask-first)" in text
+
+
+def test_without_kitty_prints_the_window_command(hub, cdx, session):
+    r = relaunch(hub, cdx, "abc", "spare", "--yes", extra={"CROW_TERMINAL": "print", "CDX_SESSION_NAME": "x"})
+    assert r.returncode == 0, r.stderr
+    assert "run this in a new terminal" in r.stdout
+    assert f"_run abc-123 main spare {session}" in r.stdout
+    assert handoffs(cdx) == []

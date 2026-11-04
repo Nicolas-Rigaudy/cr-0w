@@ -84,7 +84,7 @@ func actionCmd(label string, name string, args ...string) tea.Cmd {
 	}
 }
 
-// sendCmd types text into the agent's window (kitty remote control) and presses enter.
+// sendCmd types text into the agent's window (crow-focus terminal backend) and presses enter.
 func sendCmd(a agentRow, text string) tea.Cmd {
 	if a.PID == 0 {
 		return func() tea.Msg { return actionMsg{"no running session to send to"} }

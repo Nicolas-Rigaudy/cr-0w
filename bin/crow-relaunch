@@ -20,18 +20,19 @@ on a terminal every time, --yes does not count. --dry-run runs only the read-onl
 (can-resume, status) and prints the handoff it would run; nothing is launched or prepared.
 
 The handoff is `cdx handoff <source> <target> --source-conversation <id>`, run from the
-session's workspace in a new kitty window (detached, real HOME, no inherited Claude/cdx
-variables); --here runs it in the current terminal instead. Accounts with memory mode session get local/memory linked for the run.
+session's workspace in a new terminal window (crow_term backend: kitty, tmux, or the command
+printed to run by hand; detached, real HOME, no inherited Claude/cdx variables); --here runs it
+in the current terminal instead. Accounts with memory mode session get local/memory linked for the run.
 """
 import json, os, re, subprocess, sys
 from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_lib  # noqa: E402
+import crow_term  # noqa: E402
 
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 BIN = os.path.join(HOME, "bin")
-REAL_HOME = crow_lib.real_home()
 PROFILES = crow_lib.profiles_dir()
 ID_RE = re.compile(r"[A-Za-z0-9_-]+")
 
@@ -222,17 +223,14 @@ def run_handoff(cmd, ws, target, session_memory):
 
 
 def open_window(cid, source, target, ws):
-    """Detach like `crow term`: real HOME (kitty config), no inherited Claude/cdx variables."""
-    env = {k: v for k, v in os.environ.items() if not re.match(r"(CLAUDE|CLAUDECODE|ANTHROPIC_|CDX_)", k)}
-    env["HOME"] = REAL_HOME
-    cmd = ["setsid", "-f", "kitty", "--title", f"crow · relaunch {target}", "--directory", ws,
-           os.path.join(BIN, "crow-relaunch"), "_run", cid, source, target, ws]
+    """Detach like `crow term`: a new window from the terminal backend, real HOME, no inherited Claude/cdx variables."""
+    backend = crow_term.choose()
+    cmd = [os.path.join(BIN, "crow-relaunch"), "_run", cid, source, target, ws]
     try:
-        subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL, check=True)
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        die(f"could not open a kitty window ({e}); rerun with --here")
-    print(f"opened a kitty window on {target}")
+        out = crow_term.open_window(cmd, f"crow · relaunch {target}", ws, crow_term.clean_env(), backend=backend)
+    except (OSError, subprocess.CalledProcessError) as e:
+        die(f"could not open a {backend} window ({e}); rerun with --here")
+    print(f"opened a {backend} window on {target}" if out == "opened" else f"run this in a new terminal: {out}")
     return 0
 
 

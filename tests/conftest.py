@@ -53,7 +53,7 @@ def hub(tmp_path):
 
 def run(hub, script, *args, input=None, env=None):
     home, profiles = hub
-    e = {k: v for k, v in os.environ.items() if k != "CROW_ACCOUNT"}
+    e = {k: v for k, v in os.environ.items() if k not in ("CROW_ACCOUNT", "CROW_TERMINAL", "TMUX")}
     e.update(CROW_HOME=str(home), CDX_PROFILES=str(profiles), **(env or {}))
     cmd = [str(BIN / script), *args]
     if _is_python_script(BIN / script):

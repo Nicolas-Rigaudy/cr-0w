@@ -101,7 +101,7 @@ def fake(hub, tmp_path):
         (d / name).chmod(0o755)
     log, state = tmp_path / "cdx.log", tmp_path / "state.json"
     env = {"PATH": f"{d}:{os.environ['PATH']}", "FAKE_LOG": str(log), "FAKE_STATE": str(state),
-           "CDX_SESSION_NAME": "", "CROW_ACCOUNT": ""}
+           "CDX_SESSION_NAME": "", "CROW_ACCOUNT": "", "CROW_TERMINAL": "kitty"}
 
     def set_state(rows, busy=()):
         state.write_text(json.dumps({"rows": rows, "busy": list(busy)}))
@@ -166,3 +166,21 @@ def test_the_inherited_account_of_the_calling_session_is_not_a_choice(hub, fake)
     r = run(hub, "crow", "term", "demo", env={**env, "CROW_ACCOUNT": "main", "CDX_SESSION_NAME": "main"})
     assert r.returncode == 0, r.stderr
     assert launches()[0]["argv"][0] == "spare"
+
+
+def test_term_without_kitty_prints_the_command_and_launches_nothing(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare")])
+    r = run(hub, "crow", "term", "demo", "hello", env={**env, "CROW_TERMINAL": "print"})
+    assert r.returncode == 0, r.stderr
+    assert "run this in a new terminal" in r.stderr
+    assert r.stdout.startswith("CROW_ACCOUNT=main ") and r.stdout.rstrip().endswith("open --on-busy ask demo hello")
+    assert launches() == []
+
+
+def test_term_refuses_an_unknown_backend(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main")])
+    r = run(hub, "crow", "term", "demo", env={**env, "CROW_TERMINAL": "xterm"})
+    assert r.returncode != 0 and "not a backend" in r.stderr
+    assert launches() == []

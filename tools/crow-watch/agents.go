@@ -486,7 +486,7 @@ func (m model) agentsView(h int) block {
 	if m.cursor < len(lm.end) && lm.end[m.cursor] > listH-2 {
 		off = lm.end[m.cursor] - (listH - 2)
 	}
-	hint := line{{"o open in kitty · c copy id", sSub}}
+	hint := line{{"o open in a new window · c copy id", sSub}}
 	listBox := m.agentBox(list, lm, listW, listH, off, sel, hint)
 	if wide {
 		tl := m.timelineLines(listW-4, h-listH-2)

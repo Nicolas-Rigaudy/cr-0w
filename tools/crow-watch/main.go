@@ -314,13 +314,13 @@ func copyID(id string) string {
 	return "copied " + short(id)
 }
 
-// openProject opens a new kitty window on the project (crow term, safe from inside Claude).
+// openProject opens a new terminal window on the project (crow term, safe from inside Claude).
 func openProject(project string) string {
 	name := strings.TrimSuffix(project, " (hub)")
 	if err := exec.Command(crowBin("crow"), "term", name).Start(); err != nil {
 		return "crow term failed: " + err.Error()
 	}
-	return "opening " + name + " in kitty"
+	return "opening " + name + " in a new window"
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -565,7 +565,7 @@ func (m model) footer() string {
 func (m model) helpView(h int) block {
 	rows := [][2]string{
 		{"1 2", "Agents · Usage"}, {"Tab / Shift+Tab", "next / previous view"}, {"u", "toggle Agents ↔ Usage"},
-		{"↑↓  j k", "select an agent or a session"}, {"PgUp PgDn", "scroll the details"}, {"o  Enter", "open the project in a new kitty window"},
+		{"↑↓  j k", "select an agent or a session"}, {"PgUp PgDn", "scroll the details"}, {"o  Enter", "open the project in a new terminal window"},
 		{"c", "copy the run or session id"}, {"d w m", "period: today, 7 days, 30 days (Usage)"}, {"r", "refresh now"},
 		{"Enter  Space", "Usage: fold or unfold the day under the cursor"}, {"t", "Usage: context weight by tool instead of project and model"},
 		{"?", "this help (any key closes)"}, {"q", "quit"},
