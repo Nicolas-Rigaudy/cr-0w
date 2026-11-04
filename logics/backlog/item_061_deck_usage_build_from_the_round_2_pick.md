@@ -1,10 +1,10 @@
 ## item_061_deck_usage_build_from_the_round_2_pick - Deck Usage build from the round 2 pick
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -35,6 +35,11 @@
 
 # AC Traceability
 - request-AC3 -> owner pick before Go code. Proof: req_011 § Owner picks.
+- AC1 -> live render matches the picked board at 235x62 and 118x60. Proof: implemented in 0afbd38; shots `SHOTS=<dir> go test -run TestShots .` (Usage-board-*, Usage-portrait-*) compared with prop-usage-R2-land/port.png; live `crow-usage --json` rendered at 235x62.
+- AC2 -> no 'not wired' box. Proof: 0afbd38; `TestUsageShowsEveryBox` asserts it at both sizes.
+- AC3 -> go test passes with shots at both sizes. Proof: 0afbd38; `go test ./...` in tools/crow-deck, 116 passed.
+- request-AC5 -> per session project, title, model, tokens, cost; today / week / month; chart under 10 rows. Proof: 0afbd38; Ledger columns, `p` period cycle, Daily spend 8 plot rows with labelled axes.
+- request-AC7 -> real data only. Proof: 0afbd38; AFK queue, planned runs, scripts saving and midnight forecast dropped (no source in crow-usage).
 
 # Decision framing
 - Product framing: Not needed
