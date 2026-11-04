@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""Cost audit of the Claude transcripts (runbooks/cost-audit.md as a script).
+
+  crow-cost-audit --days N          readable summary
+  crow-cost-audit --days N --json   the same figures as JSON (baseline and re-measure use the same window)
+
+Method: assistant events of every transcript in the cdx profiles (subagents included), deduplicated on
+(message.id, requestId). Context of a turn = input + cache reads + cache writes. Prices come from crow-usage
+(cdx's table). Buckets by context size: <50k, 50-100k, 100-150k, >150k.
+JSON: {days, since, dedup_key, turns, cost_usd, by_model{}, buckets{}, top_bucket{}, by_project{}, by_skill{},
+start_context{}}.
+by_skill: sessions classed by first typed prompt (/skill name, retro, headless, interactive).
+start_context: context of each session's first turn (the start cost every hub session pays), hub sessions only
+when a hub path is given with --hub.
+"""
+import argparse
+import datetime as dt
+import glob
+import importlib.machinery
+import importlib.util
+import json
+import os
+import statistics
+import sys
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+BUCKETS = (("<50k", 50_000), ("50-100k", 100_000), ("100-150k", 150_000), (">150k", None))
+DEDUP_KEY = "(message.id, requestId)"
+
+
+def load_usage():
+    loader = importlib.machinery.SourceFileLoader("crow_usage_lib", os.path.join(HERE, "crow-usage"))
+    spec = importlib.util.spec_from_loader("crow_usage_lib", loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+def bucket(ctx):
+    return next(name for name, hi in BUCKETS if hi is None or ctx < hi)
+
+
+def skill_class(prompt, entrypoint):
+    p = (prompt or "").strip()
+    if p.startswith("/"):
+        return p.split()[0]
+    if "digest=" in p or p.startswith("/retro"):
+        return "retro"
+    return "headless" if entrypoint == "sdk-cli" else "interactive"
+
+
+def read_transcript(path, cu):
+    """Deduplicated turns of one session file plus its subagents, with the session's first prompt."""
+    seen, turns, first_prompt, entry, cwd = set(), [], None, None, None
+    for fpath in [path] + glob.glob(os.path.join(path[:-6], "subagents", "*.jsonl")):
+        with open(fpath, encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                try:
+                    ev = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                if fpath == path:
+                    cwd = cwd or ev.get("cwd")
+                    entry = entry or ev.get("entrypoint")
+                    first_prompt = first_prompt or cu.typed_prompt(ev)
+                msg = ev.get("message") or {}
+                usage = msg.get("usage")
+                if ev.get("type") != "assistant" or not usage or not ev.get("timestamp"):
+                    continue
+                key = (msg.get("id"), ev.get("requestId"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                turns.append((ev["timestamp"], msg.get("model"), usage, fpath == path))
+    return turns, first_prompt, entry, cwd
+
+
+def audit(days, hub=None, profiles=None):
+    cu = load_usage()
+    registry = cu.load_registry()
+    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
+    since = cutoff.isoformat(timespec="seconds")
+    pattern = os.path.join(profiles or cu.PROFILES, "*", "claude-home", ".claude", "projects", "*", "*.jsonl")
+    total = {"turns": 0, "cost": 0.0}
+    by_model, buckets, by_project, by_skill = {}, {}, {}, {}
+    top_ctx, top_proj, start = [], {}, []
+    hub_root = os.path.realpath(hub).rstrip("/") if hub else None
+    for path in glob.glob(pattern):
+        if dt.datetime.fromtimestamp(os.stat(path).st_mtime, dt.timezone.utc) < cutoff:
+            continue
+        turns, prompt, entry, cwd = read_transcript(path, cu)
+        project = cu.project_of(cwd, registry) or os.path.basename(cwd or "") or "?"
+        skill = skill_class(prompt, entry)
+        first_main = True
+        for ts, model, usage, main in sorted(turns, key=lambda t: t[0]):
+            if ts < since or cu.pseudo_model(model or "unknown"):
+                continue
+            u = {"input_tokens": usage.get("input_tokens") or 0,
+                 "cache_read_tokens": usage.get("cache_read_input_tokens") or 0,
+                 "cache_creation_tokens": usage.get("cache_creation_input_tokens") or 0,
+                 "output_tokens": usage.get("output_tokens") or 0,
+                 "cache_1h_tokens": (usage.get("cache_creation") or {}).get("ephemeral_1h_input_tokens") or 0}
+            ctx = u["input_tokens"] + u["cache_read_tokens"] + u["cache_creation_tokens"]
+            cost = cu.price(u, model) or 0.0
+            name = (model or "?").replace("claude-", "")
+            total["turns"] += 1
+            total["cost"] += cost
+            for table, key in ((by_model, name), (by_project, project), (by_skill, skill),
+                               (buckets, f"{name}|{bucket(ctx)}")):
+                row = table.setdefault(key, {"cost_usd": 0.0, "turns": 0})
+                row["cost_usd"] += cost
+                row["turns"] += 1
+            if main and first_main:
+                first_main = False
+                if hub_root and cwd and os.path.realpath(cwd).rstrip("/") == hub_root and skill == "interactive":
+                    start.append(ctx)
+            if bucket(ctx) == ">150k":
+                top_ctx.append(ctx)
+                tp = top_proj.setdefault(project, {"cost_usd": 0.0, "turns": 0})
+                tp["cost_usd"] += cost
+                tp["turns"] += 1
+    rnd = lambda d: {k: {**v, "cost_usd": round(v["cost_usd"], 4),
+                         "share_pct": round(100 * v["cost_usd"] / total["cost"], 1) if total["cost"] else 0}
+                     for k, v in sorted(d.items(), key=lambda kv: -kv[1]["cost_usd"])}
+    top = {"turns": len(top_ctx), "median_context": int(statistics.median(top_ctx)) if top_ctx else None,
+           "p90_context": int(statistics.quantiles(top_ctx, n=10)[-1]) if len(top_ctx) >= 2 else (top_ctx[0] if top_ctx else None),
+           "by_project": rnd(top_proj)}
+    sc = {"sessions": len(start), "median": int(statistics.median(start)) if start else None,
+          "min": min(start) if start else None, "max": max(start) if start else None}
+    return {"days": days, "since": since, "dedup_key": DEDUP_KEY, "turns": total["turns"],
+            "cost_usd": round(total["cost"], 2), "by_model": rnd(by_model), "buckets": rnd(buckets),
+            "top_bucket": top, "by_project": rnd(by_project), "by_skill": rnd(by_skill), "start_context": sc}
+
+
+def text(r):
+    lines = [f"window {r['days']}d since {r['since']}, {r['turns']} turns, ${r['cost_usd']}, dedup {r['dedup_key']}"]
+    for title in ("by_model", "buckets", "by_project", "by_skill"):
+        lines.append(f"{title}:")
+        lines += [f"  {k:<28} ${v['cost_usd']:>9.2f} {v['share_pct']:>5}% {v['turns']:>7} turns"
+                  for k, v in list(r[title].items())[:12]]
+    t = r["top_bucket"]
+    lines.append(f">150k turns: {t['turns']}, median ctx {t['median_context']}, p90 {t['p90_context']}")
+    s = r["start_context"]
+    lines.append(f"hub start context: {s['sessions']} sessions, median {s['median']}, min {s['min']}, max {s['max']}")
+    return "\n".join(lines)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--days", type=int, default=14)
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--hub", default=os.environ.get("CROW_HOME"), help="hub path for the start-context figure")
+    a = ap.parse_args()
+    r = audit(a.days, a.hub)
+    print(json.dumps(r, indent=2) if a.json else text(r))
+
+
+if __name__ == "__main__":
+    main()
