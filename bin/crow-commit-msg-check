@@ -8,7 +8,7 @@ set -u
 CROW_HOME="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 file="${1:--}"
 msg=$(if [ "$file" = - ]; then cat; else cat "$file"; fi | grep -v '^#')
-subject=$(printf '%s\n' "$msg" | sed -n '/./{p;q}')
+subject=$(printf '%s\n' "$msg" | sed -n '/./{p;q;}')
 case "$subject" in Merge\ *|Revert\ *|fixup!\ *|squash!\ *|amend!\ *) exit 0 ;; esac
 bad=0
 if ! printf '%s' "$subject" | grep -qE '^(new|chg|fix)\[[A-Z0-9]+(/[A-Z0-9]+)*\]: [^ ]'; then
@@ -17,7 +17,7 @@ if ! printf '%s' "$subject" | grep -qE '^(new|chg|fix)\[[A-Z0-9]+(/[A-Z0-9]+)*\]
   bad=1
 fi
 # Attribution and other forbidden lines: local/commit-msg-deny.txt (private, one regex per line)
-pats=$(grep -v '^\s*#' "$CROW_HOME/local/commit-msg-deny.txt" 2>/dev/null | grep -v '^\s*$' | paste -sd'|')
+pats=$(grep -v '^[[:space:]]*#' "$CROW_HOME/local/commit-msg-deny.txt" 2>/dev/null | grep -v '^[[:space:]]*$' | paste -sd'|')
 if [ -n "$pats" ] && printf '%s\n' "$msg" | grep -qiE "$pats"; then
   echo "commit-msg: the message matches local/commit-msg-deny.txt" >&2
   bad=1
