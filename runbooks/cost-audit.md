@@ -12,6 +12,10 @@ Measure where hub tokens and money go, and re-measure after a change with the sa
 - `bin/crow-usage --json`: `cost_split.by_kind` (all, interactive, run) for the same window; `sessions[].cost_split` and each `by_day` entry carry the parts too.
 - The parts sum to the session cost. They use the same price table as the totals.
 
+## Script
+- `bin/crow-cost-audit --days N [--json] [--hub PATH]` runs the method below: dedup, context buckets by model, per project, per skill class, and the first-turn context of interactive hub sessions (`start_context`). Use it for the baseline and the re-measure (same `--days`).
+- `bin/crow-usage` `by_model` gives each model its own turns (a multi-model session no longer lands on its first model); `tests/test_crow_usage_by_model.py` recounts a transcript.
+
 ## Method
 1. Read assistant events from the transcripts of the window. Deduplicate on `(message.id, requestId)`: one API call is written as several lines and counting every line inflates cost about 2x.
 2. Context size of a turn = `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`.
@@ -24,3 +28,11 @@ Measure where hub tokens and money go, and re-measure after a change with the sa
 - crow-usage's per-model split of multi-model sessions has been wrong before (Haiku inflated). Cross-check `by_model` against a transcript recount.
 - Subagent transcripts live under `<session>/subagents/`; include them, they share the parent's project.
 - A re-measure must use the same window length and the same price table as the baseline.
+
+## Hub start context (item_029)
+Baseline 2026-11-04, interactive sessions started in the hub, first-turn context (input + cache reads + cache writes), last 14 days, `bin/crow-cost-audit`-style recount:
+- account with 2 plugins (ui-ux-pro-max, claude-hud) and the Atlassian MCP server: 42 sessions, median 48.8k, max 50.4k.
+- account with 1 plugin (humanizer) and no MCP server: 11 sessions, median 42.6k, min 40.6k, max 43.1k.
+- Difference about 6k tokens per session start: the plugin skill listings and the MCP tool names. The rest (about 42k) is Claude's own system prompt and tools, the hub CLAUDE.md (7 KB), the memory index (5 KB), the repo skills and hooks output.
+- Last 7 days overall: 5533 turns, $277.54; 1080 turns past 150k context.
+After the owner trims the profile (plugins or MCP are profile settings outside the repo), re-run the same measure with the same window and record the "after" line here.
