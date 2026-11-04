@@ -99,7 +99,7 @@ def test_focus_without_kitty_prints_the_resume_command(hub, tmp_path):
     assert r.returncode == 0, r.stderr
     assert f"cdx main --dir {tmp_path} --resume" in r.stdout and "new terminal" in r.stdout
     s = run(hub, "crow-focus", "--pid", "5", "--send", "yes", env=env)
-    assert s.returncode == 1 and "no print window" in s.stderr
+    assert s.returncode == 1 and "cannot type into a window" in s.stderr
 
 
 def test_script_open_prints_on_the_print_backend(tmp_path):

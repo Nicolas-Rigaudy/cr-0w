@@ -38,7 +38,9 @@ def main(argv):
         if crow_term.send(pid, opts["send"], backend):
             print("sent")
             return 0
-        print(f"crow-focus: no {backend} window holds pid {pid}", file=sys.stderr)
+        why = (f"no {backend} window holds pid {pid}" if backend != "print"
+               else "the print backend cannot type into a window (CROW_TERMINAL=kitty|tmux)")
+        print(f"crow-focus: {why}", file=sys.stderr)
         return 1
     account, cwd = opts.get("account"), opts.get("cwd")
     if not account or not cwd:
