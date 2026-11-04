@@ -1,13 +1,14 @@
 ## item_050_mr_page_walkthrough_mockups - MR page mockups: walkthrough layout options to choose from
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Obsolete
 > Understanding: 85%
 > Confidence: 80%
 > Progress: 80%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-04 13:39:00
 
 # AI Context
 - Summary: Draw 2-3 layout options for the MR page from item_049's principles, render them as terminal-true images at three sizes, and let the owner pick.
@@ -43,6 +44,7 @@
 - Architecture decision(s): (none yet)
 - Request: req_013_mr_page_walkthrough_rework
 - Primary task(s): (none yet)
+- Superseded by: `item_051_mr_page_walkthrough_build`
 
 # Priority
 - Priority: Medium

@@ -1,9 +1,9 @@
 ## req_013_mr_page_walkthrough_rework - MR page walkthrough rework in crow deck
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 80%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -69,3 +69,4 @@
 
 # Notes
 - 2026-11-02 owner pick (canvas boards Rw_MRs_*): layout B focused walkthrough plus more code context around the highlighted line, merged board in req_011 item_055. Badge: count of MRs on the owner's move, colored dot only when there is a problem.
+- 2026-11-04 delivered in item_051. AC1 to AC5: stage box and panel, list groups, move badge with problem dot, done state, refetch after post and apply start (tests in `tools/crow-deck/mrs_move_test.go`). AC6 met: the build follows the R3 board the owner approved on 2026-11-02.

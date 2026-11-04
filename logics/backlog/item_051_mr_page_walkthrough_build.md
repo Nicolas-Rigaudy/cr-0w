@@ -1,10 +1,10 @@
 ## item_051_mr_page_walkthrough_build - MR page build: chosen walkthrough layout and whose-move states
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -56,6 +56,9 @@
 
 # Notes
 - Depends on item_050. Execution order: 3 of 3. Personal repo, commit on main allowed.
+- Delivered 2026-11-04: `mrs_move.go` holds the stage rule (stage line, panel, list groups, badge). `mrs.go` draws the three columns. Tests in `mrs_move_test.go`. Real !214 renders at four stages and three sizes: env-gated `TestShotsReal` (SHOTS + REAL_MR).
+- AC1 met, AC2 met (`mrs_move_test.go`), AC3 met (runbook section "Deck page").
+- Left for the owner: Home Blockers still use `mrBlockers` (row data only, loaded before MR details), not the stage rule.
 
 # Final spec (owner approved 2026-11-03)
 - Board: MRs R3 approved 2026-11-02 (req_011 round 3), supersedes the item_050 pick: local/state/shots/deck-rework/png/prop-mrs-R3-land.png and -port.png (scripts mrs_r3.py, mrs_r2.py, mrs_lib.py).
