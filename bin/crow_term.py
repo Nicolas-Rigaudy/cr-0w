@@ -44,16 +44,28 @@ def clean_env(extra=None):
     return env
 
 
+def parent(pid, proc="/proc"):
+    """Parent pid from /proc, else from `ps` (macOS), else None."""
+    try:
+        with open(f"{proc}/{pid}/stat") as fh:
+            return int(fh.read().rsplit(")", 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+        pass
+    if os.path.isdir(proc):
+        return None
+    try:
+        r = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True, timeout=5)
+        return int(r.stdout.strip())
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+
+
 def ancestors(pid, proc="/proc"):
-    """pid and its parents, nearest first (just pid where /proc is missing)."""
+    """pid and its parents, nearest first."""
     out = []
-    while pid > 1 and pid not in out:
+    while pid and pid > 1 and pid not in out:
         out.append(pid)
-        try:
-            with open(f"{proc}/{pid}/stat") as fh:
-                pid = int(fh.read().rsplit(")", 1)[1].split()[1])
-        except (OSError, ValueError, IndexError):
-            break
+        pid = parent(pid, proc)
     return out
 
 

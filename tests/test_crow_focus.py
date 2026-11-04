@@ -111,3 +111,13 @@ def test_script_open_prints_on_the_print_backend(tmp_path):
     assert r.stdout.strip() == f"cd {tmp_path} && CROW_ACCOUNT=spare crow open demo"
     b = subprocess.run([sys.executable, str(BIN / "crow_term.py"), "backend"], capture_output=True, text=True, env=e)
     assert b.stdout.strip() == "print"
+
+
+def test_ancestors_use_ps_without_proc(tmp_path, monkeypatch):
+    parents = {30: "20", 20: "1"}
+
+    class R:
+        def __init__(self, out):
+            self.stdout = out
+    monkeypatch.setattr(ct.subprocess, "run", lambda cmd, **_: R(parents.get(int(cmd[-1]), "")))
+    assert ct.ancestors(30, proc=str(tmp_path / "no-proc")) == [30, 20]
