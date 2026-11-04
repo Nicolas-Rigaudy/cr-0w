@@ -11,7 +11,7 @@ for v in agents usage; do
 done
 ```
 
-Colours and font come from your kitty theme. See `runbooks/tui-render.md`.
+Colours come from your kitty theme when it exists, else the bundled `share/ansi-shot/default.conf` (`--theme FILE` for any kitty-format theme). See `runbooks/tui-render.md`.
 
 ## Deck live shots
 

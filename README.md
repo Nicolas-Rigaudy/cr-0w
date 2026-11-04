@@ -88,8 +88,9 @@ no merges, drafts before any mail. Edit them to match how you work. Everything y
    (start from [`docs/accounts.example.yaml`](docs/accounts.example.yaml)).
 4. Run `crow brief`, then `crow watch`.
 
-Requirements: Linux. Crow reads `/proc` to find live agents, and uses `kitty` (remote control) with `setsid`
-to open and focus session windows (`crow term`, `crow focus`). Python 3 with PyYAML, `jq`, `git`, `gh` or `glab`
+Requirements: Linux. Crow reads `/proc` to find live agents. Session windows (`crow term`, `crow focus`) go
+through a terminal backend: kitty, tmux, or printing the command to run (`CROW_TERMINAL`, see
+[`docs/terminal-backends.md`](docs/terminal-backends.md), which also lists what each platform supports). Python 3 with PyYAML, `jq`, `git`, `gh` or `glab`
 for forge activity, and Go to build `crow watch`. Tests (`python3 -m pytest`) need only Python and PyYAML: they
 create their own `accounts.yaml` and cdx profiles dir in a temp folder. The `ansi-shot` test also needs Pillow and
 fonttools and is skipped without them or without the default font.
@@ -106,9 +107,10 @@ which is ignored by this repo and meant to be its own private repo.
 | `bin/crow-runs`, `bin/crow-usage`, `bin/crow-activity` | background runs, usage and cost across accounts, git/MR activity |
 | `bin/crow-accounts`, `bin/crow-memory` | account policy, and memory stored once in `local/memory` and linked into allowed profiles |
 | `bin/crow-sessions`, `bin/crow-relaunch` | registry of sessions cut off by a usage limit, and the guarded relaunch |
+| `bin/crow_term.py` | terminal backends (kitty, tmux, print) behind `crow term`, `crow focus` and relaunch |
 | `bin/crow-retro`, `bin/crow-digest` | automatic retrospective after every session |
 | `bin/crow-tidy`, `bin/crow-releases`, `bin/crow-doctor` | repo hygiene report with safe cleanup, release-track progress (`crow projects`), read-only checks of identity, accounts and stale worktrees (`crow doctor`) |
-| `bin/ansi-shot` | render any terminal output to a PNG in your own theme (how the screenshots here are made) |
+| `bin/ansi-shot` | render any terminal output to a PNG in your own theme or the bundled one (how the screenshots here are made) |
 | `tools/crow-watch` | the terminal board (Go, Bubble Tea) |
 | `integrations/` | optional desktop-shell widgets |
 | `skills/`, `.claude/skills/` | brief, review, review-threads, mr, wrap, afk, retro |
