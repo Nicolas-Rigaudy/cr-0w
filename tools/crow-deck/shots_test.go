@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -127,26 +128,35 @@ func mrsShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m.th, m.page, m.w, m.h = ti, 2, sizes[sn][0], sizes[sn][1]
 		return m
 	}
+	// The list puts your move first: !213 (threads), !220 (review), then !214 (waiting).
 	m := base("wide")
-	m.mrSel = 2
+	m.mrSel = 1
 	write(name+"-MRs-wide-review", m)
 	m.mrItem = 1
 	write(name+"-MRs-wide-review-2", m)
-	m = base("wide")
+	m = base("board")
 	m.mrSel = 1
+	write(name+"-MRs-board-review", m)
+	m = base("wide")
+	m.mrSel = 0
 	write(name+"-MRs-wide-threads", m)
 	m = base("wide")
-	m.mrSel, m.mrToggle = 1, true
+	m.mrSel, m.mrToggle = 0, true
 	write(name+"-MRs-wide-threads-flipped", m)
+	m = base("wide")
+	m.mrSel = 2
+	write(name+"-MRs-wide-waiting", m)
 	m = base("wide")
 	m.mode = "all"
 	write(name+"-MRs-wide-all", m)
 	m = base("portrait")
-	m.mrSel = 2
+	m.mrSel = 1
 	write(name+"-MRs-portrait-review", m)
-	for pane, pn := range []string{"list", "diff", "card"} {
+	m.mrPane = mpList
+	write(name+"-MRs-portrait-list", m)
+	for pane, pn := range []string{"list", "code", "move"} {
 		m = base("small")
-		m.mrSel, m.mrPane = 2, pane
+		m.mrSel, m.mrPane = 1, pane
 		write(fmt.Sprintf("%s-MRs-small-%s", name, pn), m)
 	}
 	for _, st := range []string{stEmpty, stError, stLoading, stStale} {
@@ -314,5 +324,85 @@ func TestLiveShots(t *testing.T) {
 			}
 		}
 		m.mode = "all"
+	}
+}
+
+// TestShotsReal renders a saved MR detail (crow-mrs show JSON) at the four walkthrough stages:
+//
+//	SHOTS=/abs/dir REAL_MR=/abs/detail.json go test -run TestShotsReal .
+//
+// The detail stands in for the mock !214. Work data: keep the JSON and the renders out of git.
+func TestShotsReal(t *testing.T) {
+	dir, src := os.Getenv("SHOTS"), os.Getenv("REAL_MR")
+	if dir == "" || src == "" {
+		t.Skip("set SHOTS=<dir> REAL_MR=<detail.json>")
+	}
+	lipgloss.SetColorProfile(termenv.ANSI)
+	defer lipgloss.SetColorProfile(termenv.Ascii)
+	b, err := os.ReadFile(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stages := map[string]func(d *mrDetail, r *mrRow){
+		"1-deciding": func(d *mrDetail, r *mrRow) {
+			for i := range d.Findings {
+				d.Findings[i].State, d.Findings[i].Applied = "pending", ""
+			}
+			d.Findings[0].State = "accepted"
+			d.Apply = nil
+		},
+		"2-applying": func(d *mrDetail, r *mrRow) {
+			for i := range d.Findings {
+				d.Findings[i].State, d.Findings[i].Applied = "accepted", ""
+			}
+			d.Apply = &mrApply{State: "running", StartedAt: mockNow().Add(-2 * time.Minute).UTC().Format(time.RFC3339)}
+		},
+		"3-pushed": func(d *mrDetail, r *mrRow) {
+			for i := range d.Findings {
+				d.Findings[i].State, d.Findings[i].Applied, d.Findings[i].AppliedFor = "accepted", "fixed", [2]string{"accepted", ""}
+			}
+			d.Apply.State, d.Apply.Pushed = "done", true
+		},
+		"4-done": func(d *mrDetail, r *mrRow) {
+			for i := range d.Findings {
+				d.Findings[i].State, d.Findings[i].Applied, d.Findings[i].AppliedFor = "accepted", "fixed", [2]string{"accepted", ""}
+				d.Findings[i].Resolved, d.Findings[i].Posted = true, true
+			}
+			d.Apply.State, d.Apply.Pushed = "done", true
+			r.Pipeline, r.ThreadsOpen = "passed", 0
+		},
+	}
+	sizes := map[string][2]int{"board": {235, 62}, "wide": {170, 46}, "portrait": {118, 60}}
+	for stage, tweak := range stages {
+		for sn, sz := range sizes {
+			var raw rawDetail
+			if err := json.Unmarshal(b, &raw); err != nil {
+				t.Fatal(err)
+			}
+			m := newModel(defaultConfig())
+			m.page, m.w, m.h, m.mode = 2, sz[0], sz[1], "all"
+			d := mapDetail(raw)
+			for i, r := range m.fx.MRs {
+				if r.Ref == "!214" {
+					m.fx.MRs[i].ThreadsOpen = len(d.Threads)
+					tweak(d, &m.fx.MRs[i])
+					m.fx.MRDetails[r.key()] = d
+				}
+			}
+			for i, r := range visibleMRs(m.fx, m.mode) {
+				if r.Ref == "!214" {
+					m.selectMR(i)
+				}
+			}
+			m.followItem()
+			if stage == "1-deciding" {
+				m.mrItem = 1
+				m.followItem()
+			}
+			f := filepath.Join(dir, "real214-"+stage+"-"+sn+".ans")
+			if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 }

@@ -81,7 +81,7 @@ func liveMRModel(t *testing.T) (model, *[]string) {
 	}
 	t.Cleanup(func() { detailFetcher = old })
 	m = send(m, srcMsg{src: srcMRs, val: testMRs(), at: testNow()})
-	m.page = 2
+	m.page, m.mrPane = 2, mpList
 	return m, &asked
 }
 
@@ -89,7 +89,7 @@ func TestMRsPageLive(t *testing.T) {
 	withANSI(t)
 	m, _ := liveMRModel(t)
 	out := m.View()
-	for _, want := range []string{"atlas", "web", "!6", "retry", "awaiting me", "2 threads", "CI failed"} {
+	for _, want := range []string{"atlas", "web", "!6", "retry", "Your move", "review asked of you", "pipeline failed", "Waiting on others"} {
 		if !hasText(out, want) {
 			t.Errorf("view lacks %q", want)
 		}
@@ -179,22 +179,22 @@ func TestMRsMockCards(t *testing.T) {
 	withANSI(t)
 	m := newModel(defaultConfig())
 	m.page, m.w, m.h = 2, 170, 46
-	m.mrSel = 2 // !220, a review
+	m.mrSel = 1 // !220, a review (the list puts your move first: !213, !220, then !214)
 	out := m.View()
-	for _, want := range []string{"Findings 3", "env var undocumented", "End of review", "nothing posted yet", "patterns hit"} {
+	for _, want := range []string{"finding 1 of 3", "env var undocumented", "Decide F1", "a", "accept", "Then", "next finding", "post the comments", "pattern"} {
 		if !hasText(out, want) {
 			t.Errorf("review view lacks %q", want)
 		}
 	}
-	m.mrSel = 1 // !213, own MR with a thread and a saved fix
+	m.mrSel = 0 // !213, own MR with a thread and a saved fix
 	out = m.View()
-	for _, want := range []string{"Threads 2", "the fix", "the test", "End of review"} {
+	for _, want := range []string{"thread 1 of 2", "Proposed fix", "Test", "review the threads"} {
 		if !hasText(out, want) {
 			t.Errorf("thread view lacks %q", want)
 		}
 	}
 	m = send(m, keyMsg("T"))
-	if !hasText(m.View(), "Findings") {
+	if !hasText(m.View(), "No findings saved") {
 		t.Error("T did not flip the card kind")
 	}
 }

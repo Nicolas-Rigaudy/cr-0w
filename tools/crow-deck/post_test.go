@@ -169,7 +169,7 @@ func TestPostedAndPushedShowOnTheCard(t *testing.T) {
 	withANSI(t)
 	d := reviewDetail("done", "")
 	d.Findings[0].State, d.Findings[0].Posted = "accepted", true
-	if out := reviewModel(t, d).View(); !hasText(out, "posted") || !hasText(out, "1 posted") || !hasText(out, "post 1 comment,") {
+	if out := reviewModel(t, d).View(); !hasText(out, "posted") {
 		t.Error("a posted finding must say so")
 	}
 	d = applyDetail()
@@ -177,12 +177,12 @@ func TestPostedAndPushedShowOnTheCard(t *testing.T) {
 		d.Findings[i].AppliedFor = [2]string{d.Findings[i].State, d.Findings[i].Note}
 	}
 	d.Apply = &mrApply{ID: "ap1", State: "done", Commit: "1a2b3c4d5e", Subject: "fix[PY]: paginate"}
-	if out := selfReviewModel(t, d).View(); !hasText(out, "nothing pushed yet") || !hasText(out, "push 1a2b3c4d") {
+	if out := selfReviewModel(t, d).View(); !hasText(out, "push 1a2b3c4d") || !hasText(out, "local only, P pushes it") {
 		t.Errorf("a committed apply must offer the push\n%s", out)
 	}
 	d.Apply.Pushed = true
-	if out := selfReviewModel(t, d).View(); hasText(out, "nothing pushed yet") || !hasText(out, "pushed; ask a reviewer") {
-		t.Error("a pushed commit must say so")
+	if out := selfReviewModel(t, d).View(); hasText(out, "local only") || !hasText(out, "✓ done") || !hasText(out, "1a2b3c4d pushed") {
+		t.Errorf("a pushed commit must say so\n%s", out)
 	}
 }
 

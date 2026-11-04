@@ -55,21 +55,21 @@ func TestThreadsReviewShowsEachAnswer(t *testing.T) {
 	withANSI(t)
 	m := threadsModel(t, threadsDetail())
 	out := m.View()
-	for _, want := range []string{"Threads 3", "Thread 1", "sam: Pagine cet appel.", "agree", "no reply: the fix answers it",
-		"proposed fix", "test", "assert len(items) == 3", "push, reply, resolve, after your OK"} {
+	for _, want := range []string{"finding 1 of 3", "sam", "Pagine cet appel.", "no reply: the fix answers it",
+		"Proposed fix", "Test", "assert len(items) == 3", "push + reply"} {
 		if !hasText(out, want) {
 			t.Errorf("thread 1 lacks %q", want)
 		}
 	}
 	m.mrItem = 1
-	if out := m.View(); !hasText(out, "reply (FR)") || !hasText(out, "Le nom suit le module voisin.") {
+	if out := m.View(); !hasText(out, "Reply") || !hasText(out, "Le nom suit le module voisin.") {
 		t.Error("thread 2 must show its reply")
 	}
 	m.mrItem = 2
 	if out := m.View(); !hasText(out, "disagree") || !hasText(out, "stays open") {
 		t.Error("thread 3 must say the run disagrees and the thread stays open")
 	}
-	if out := send(m, keyMsg("T")).View(); !hasText(out, "Pagine cet appel") || hasText(out, "Threads 3") {
+	if out := send(m, keyMsg("T")).View(); !hasText(out, "Pagine cet appel") || !hasText(out, "thread 1 of 1") {
 		t.Error("T shows the raw threads")
 	}
 }
@@ -134,9 +134,13 @@ func TestThreadsStatesInTheList(t *testing.T) {
 	d := threadsDetail()
 	d.Findings[0].State, d.Findings[0].Resolved = "accepted", true
 	d.Findings[1].State, d.Findings[1].Posted = "accepted", true
-	out := threadsModel(t, d).View()
-	if !hasText(out, "resolved") || !hasText(out, "replied") {
-		t.Error("the list must show resolved and replied threads")
+	m := threadsModel(t, d)
+	if !hasText(m.View(), "resolved") {
+		t.Error("the card must show a resolved thread")
+	}
+	m.mrItem = 1
+	if !hasText(m.View(), "replied") {
+		t.Error("the card must show a replied thread")
 	}
 }
 
@@ -148,7 +152,7 @@ func TestThreadsCardKeepsButtonsAndStatusInSight(t *testing.T) {
 	m := threadsModel(t, d)
 	m.w, m.h = 170, 30
 	out := m.View()
-	for _, want := range []string{"a accept", "c chat", "apply running", "more lines"} {
+	for _, want := range []string{"accept the fix", "chat", "apply running", "more lines"} {
 		if !hasText(out, want) {
 			t.Errorf("a short window must still show %q", want)
 		}
@@ -168,7 +172,7 @@ func TestApplyStartShowsAtOnceAndResultsInTheList(t *testing.T) {
 	m = send(m, reviewStartedMsg{key: "grp/atlas!6", text: "apply failed to start: no slot", apply: true, failed: true})
 	m.mrPane = mpCard
 	m = send(m, keyMsg("j"))
-	if !hasText(m.View(), "apply failed: apply failed to start: no slot") {
+	if !hasText(m.View(), "apply failed: apply failed to start") {
 		t.Error("a failed start must stay on the card after the next key")
 	}
 	d.Findings[0].Applied, d.Findings[0].AppliedFor = "fixed", [2]string{"accepted", ""}
@@ -194,16 +198,17 @@ func TestThreadsShowPushedAtTheTop(t *testing.T) {
 	d.Apply = &mrApply{State: "done", Commit: "abc1234def", Pushed: true}
 	d.Findings[0].Applied, d.Findings[0].AppliedFor = "fixed", [2]string{"accepted", ""}
 	d.Findings[0].State = "accepted"
-	d.Findings[1].Resolved = true
+	d.Findings[1].State, d.Findings[1].Resolved = "accepted", true
+	d.Findings[2].State = "refused"
 	out := threadsModel(t, d).View()
-	for _, want := range []string{"✓ pushed abc1234", "1 thread to resolve", "P resolves", "pushed", "resolved"} {
+	for _, want := range []string{"committed abc1234d", "pushed to the MR branch", "1 thread to resolve", "resolves 1 thread", "pushed abc1234d"} {
 		if !hasText(out, want) {
 			t.Errorf("missing %q", want)
 		}
 	}
 	d.Apply.Pushed = false
 	out = threadsModel(t, d).View()
-	for _, want := range []string{"● committed abc1234", "not pushed", "P pushes it", "fixed"} {
+	for _, want := range []string{"committed abc1234d", "local only, P pushes it", "push abc1234d", "fixed"} {
 		if !hasText(out, want) {
 			t.Errorf("unpushed: missing %q", want)
 		}

@@ -1,10 +1,10 @@
 package main
 
-// MRs page: per project list of every MR or PR the owner authors, reviews or is assigned,
-// the diff of the selected one in the centre, and one right box with the findings (review)
-// or threads (own MR) list, the card of the selected item and the end-of-review footer.
-// Landscape puts the three side by side; portrait stacks them; under 100 columns one pane
-// shows at a time. Read only: the action keys explain what arrives with a later slice.
+// MRs page, a walkthrough per MR: the list grouped by whose move, the stage line, the code
+// of the current file that scrolls in place with the commented line marked, and the Your
+// move panel (steps, the current finding, its fix, the decision keys, then apply and push).
+// Landscape puts list | stage + code | panel side by side; portrait stacks stage, code and a
+// compact panel; under 100 columns one pane shows at a time.
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 	mrPanes
 )
 
-var mrPaneNames = [mrPanes]string{"MRs and PRs", "Diff", "Card"}
+var mrPaneNames = [mrPanes]string{"MRs and PRs", "Code", "Your move"}
 
 // mrsView is the data and state an MRs render needs.
 type mrsView struct {
@@ -35,6 +36,7 @@ type mrsView struct {
 	pane   int
 	file   int
 	item   int
+	scroll int    // first code row the owner scrolled to, -1: follow the card
 	toggle bool   // T: the other kind of card (threads on a review, findings on an own MR)
 	typing string // "e" or "c" while the owner types on the current finding
 	input  string
@@ -51,11 +53,14 @@ func inMode(mode, scope string) bool {
 
 func (mv mrsView) visible() []mrRow { return visibleMRs(mv.fx, mv.mode) }
 
+// visibleMRs lists the MRs of the mode grouped by whose move: yours, waiting, done.
 func visibleMRs(fx *fixtures, mode string) []mrRow {
 	var out []mrRow
-	for _, r := range fx.MRs {
-		if inMode(mode, r.Scope) {
-			out = append(out, r)
+	for g := 0; g < 3; g++ {
+		for _, r := range fx.MRs {
+			if inMode(mode, r.Scope) && mrStageOf(r, fx.MRDetails[r.key()], time.Time{}).group() == g {
+				out = append(out, r)
+			}
 		}
 	}
 	return out
@@ -202,80 +207,71 @@ func (mv mrsView) replyBlock(text string, iw int) []line {
 
 // ----- list -----
 
-func (mv mrsView) statusParts(r mrRow) line {
-	lk := mv.lk
-	var parts []line
-	if r.Draft {
-		parts = append(parts, line{{"draft", lk.sub}})
-	}
-	switch r.Pipeline {
-	case "running":
-		parts = append(parts, line{{"CI running", lk.warn}})
-	case "failed":
-		parts = append(parts, line{{"CI failed", lk.bad}})
-	case "passed":
-		if len(parts) == 0 && r.ThreadsOpen == 0 && r.Role != "REVIEWER" {
-			parts = append(parts, line{{"CI passed", lk.ok}})
-		}
-	}
-	if r.ThreadsOpen > 0 {
-		parts = append(parts, line{{fmt.Sprintf("%d %s", r.ThreadsOpen, plural(r.ThreadsOpen, "thread", "threads")), lk.warn}})
-	}
-	if r.Role == "REVIEWER" {
-		age := "now"
-		if t, ok := parseTime(r.Updated); ok {
-			age = shortDays(mv.now.Sub(t))
-		}
-		parts = append(parts, line{{"awaiting me " + age, lk.plain}})
-	}
-	var out line
-	for i, p := range parts {
-		if i > 0 {
-			out = append(out, seg{" · ", lk.sub})
-		}
-		out = append(out, p...)
-	}
-	return out
+// stage is the walkthrough stage of an MR (mrs_move.go).
+func (mv mrsView) stage(r mrRow) mrStage {
+	return mrStageOf(r, mv.fx.MRDetails[r.key()], mv.now)
 }
 
-// listRows builds the grouped list. start[i] is the first display row of visible MR i.
-func (mv mrsView) listRows() (rows []line, start []int) {
+var mrGroupNames = [3]string{"Your move", "Waiting on others", "Done"}
+
+// listRows builds the list grouped by whose move. start[i] is the first display row of visible MR i.
+func (mv mrsView) listRows(iw int) (rows []line, start []int) {
 	lk, fx := mv.lk, mv.fx
 	vis := mv.visible()
 	start = make([]int, len(vis))
+	for g := 0; g < 3; g++ {
+		var idx []int
+		for i, r := range vis {
+			if mv.stage(r).group() == g {
+				idx = append(idx, i)
+			}
+		}
+		if len(idx) == 0 {
+			continue
+		}
+		gs := []lipgloss.Style{lk.warn.Bold(true), lk.sub.Bold(true), lk.ok.Bold(true)}[g]
+		hdr := line{{lk.cap(mrGroupNames[g]), gs}, {"  " + strconv.Itoa(len(idx)) + " ", lk.sub}}
+		rows = append(rows, append(hdr, seg{rep("╌", iw-hdr.width()), lk.dim}))
+		for _, i := range idx {
+			r := vis[i]
+			st := mv.stage(r)
+			mark, ms, ts, rs := "● ", lk.warn, lk.bold, lk.warn.Bold(true)
+			switch g {
+			case 1:
+				mark, ms, ts, rs = "○ ", lk.dim, lk.sub, lk.sub
+			case 2:
+				mark, ms, ts, rs = "✓ ", lk.ok, lk.plain, lk.ok
+			}
+			if st.Problem {
+				ms, rs = lk.bad, lk.bad.Bold(true)
+			}
+			cur := ifs(i == mv.sel, "› ") + ifs(i != mv.sel, "  ")
+			title := r.Title
+			if mv.mode == "all" {
+				title = r.Project + " · " + title
+			}
+			start[i] = len(rows)
+			rows = append(rows, line{{cur, lk.acc}, {mark, ms}, {r.Ref + " ", ts.Bold(true)}, {title, ts.Bold(i == mv.sel)}})
+			age := ""
+			if t, ok := parseTime(r.Updated); ok {
+				age = shortDays(mv.now.Sub(t))
+			}
+			rows = append(rows, lr(line{spc(4), {st.Reason, rs}}, line{{age, lk.sub}}, iw))
+		}
+	}
 	var branches []mrBranch
 	for _, b := range fx.Branches {
 		if inMode(mv.mode, b.Scope) {
 			branches = append(branches, b)
 		}
 	}
-	seen := map[string]bool{}
-	group := func(project string) {
-		if seen[project] {
-			return
-		}
-		seen[project] = true
-		rows = append(rows, mv.groupHdr(project))
-		for i, r := range vis {
-			if r.Project != project {
-				continue
-			}
-			start[i] = len(rows)
-			rows = append(rows, line{{r.Ref, lk.bold}, spc(1), {r.Title, lk.plain}})
-			rows = append(rows, append(append(mv.chip(r.Role), spc(1)), mv.statusParts(r)...))
-		}
+	if len(branches) > 0 {
+		hdr := line{{lk.cap("No MR yet"), lk.sub.Bold(true)}, {"  " + strconv.Itoa(len(branches)) + " ", lk.sub}}
+		rows = append(rows, append(hdr, seg{rep("╌", iw-hdr.width()), lk.dim}))
 		for _, b := range branches {
-			if b.Project == project {
-				rows = append(rows, line{{"no MR", lk.warn}, spc(1), {b.Branch, lk.plain}},
-					line{{fmt.Sprintf("%d %s ahead", b.Ahead, plural(b.Ahead, "commit", "commits")), lk.sub}, spc(1), {"M", lk.key}, spc(1), {"open MR", lk.sub}})
-			}
+			rows = append(rows, line{spc(2), {"○ ", lk.dim}, {b.Project + " ", lk.sub.Bold(true)}, {b.Branch, lk.sub}},
+				line{spc(4), {fmt.Sprintf("%d %s ahead", b.Ahead, plural(b.Ahead, "commit", "commits")), lk.sub}, spc(1), {"M", lk.key}, spc(1), {"open MR", lk.sub}})
 		}
-	}
-	for _, r := range vis {
-		group(r.Project)
-	}
-	for _, b := range branches {
-		group(b.Project)
 	}
 	if len(rows) == 0 {
 		rows = append(rows, line{{"Nothing open: no MR or PR is yours.", lk.sub}})
@@ -283,9 +279,19 @@ func (mv mrsView) listRows() (rows []line, start []int) {
 	return rows, start
 }
 
-func (mv mrsView) listSpec() boxSpec {
+func (mv mrsView) yourCount() int {
+	n := 0
+	for _, r := range mv.visible() {
+		if mv.stage(r).Who == moveYou {
+			n++
+		}
+	}
+	return n
+}
+
+func (mv mrsView) listSpec(iw int) boxSpec {
 	lk := mv.lk
-	sp := boxSpec{title: "MRs and PRs", index: 1, sel: -1, selN: 2, focused: mv.pane == mpList}
+	sp := boxSpec{title: "MRs", index: 1, sel: -1, selN: 2, quiet: true, focused: mv.pane == mpList}
 	switch {
 	case mv.loading():
 		sp.rows = []line{{{"syncing…", lk.sub}}}
@@ -298,10 +304,10 @@ func (mv mrsView) listSpec() boxSpec {
 	}
 	vis := mv.visible()
 	if len(vis) > 0 {
-		sp.title += " " + strconv.Itoa(len(vis))
+		sp.right = line{{fmt.Sprintf("%d/%d your move", mv.yourCount(), len(vis)), lk.sub}}
 	}
 	var start []int
-	sp.rows, start = mv.listRows()
+	sp.rows, start = mv.listRows(iw)
 	for _, e := range mv.fx.ForgeErrs {
 		sp.rows = append(sp.rows, line{{"◆ " + e, lk.bad}})
 	}
@@ -314,7 +320,147 @@ func (mv mrsView) listSpec() boxSpec {
 	return sp
 }
 
-// ----- diff -----
+// ----- cards: the findings of a review, or the raw threads of an own MR -----
+
+// mrCard is what the code pane marks and the Your move panel shows.
+type mrCard struct {
+	Label     string // F1, T1
+	Path      string
+	Line      int
+	Who, When string
+	Text      string
+	State     string // the word shown: pending, accepted, fixed, pushed, replied, resolved…
+	Fix, Test string // diff text
+	Reply     string // what goes to the forge with accept
+	Note      string // the owner's edited reply or chat note
+	Applied   string
+	AppDetail string
+	AppStale  bool
+	Disagree  bool
+	Agree     string // threads review: yes, partly, no
+	Why       string
+	Pattern   string
+	Seen      int
+	Severity  string
+	decided   string // raw decision state: pending, accepted, refused, edited, chat
+}
+
+func sectionText(s *mrSection) string {
+	if s == nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, l := range s.Lines {
+		if l.Kind == '@' {
+			continue
+		}
+		b.WriteString(string(l.Kind) + l.Text + "\n")
+	}
+	return b.String()
+}
+
+func (mv mrsView) cards() []mrCard {
+	d := mv.detail()
+	if d == nil {
+		return nil
+	}
+	var out []mrCard
+	if mv.threadsMode() {
+		for i, t := range d.Threads {
+			out = append(out, mrCard{Label: fmt.Sprintf("T%d", i+1), Path: t.Path, Line: t.Line, Who: t.Author, When: mv.when(t.At), Text: t.Body,
+				State: ifs(t.Resolved, "resolved") + ifs(!t.Resolved, "pending"), Fix: sectionText(t.Fix), Test: sectionText(t.Test),
+				Reply: t.Reply, Pattern: t.Pattern, Seen: t.Seen, decided: "pending"})
+		}
+		return out
+	}
+	for i, f := range d.Findings {
+		p, l := f.at()
+		c := mrCard{Label: fmt.Sprintf("F%d", i+1), Path: p, Line: l, Text: f.Body, Fix: f.Fix, Test: f.Test, Reply: f.Comment,
+			Note: f.Note, Pattern: f.Pattern, Seen: f.Seen, Severity: f.Severity, decided: f.State,
+			Applied: f.Applied, AppDetail: f.AppliedDetail, AppStale: f.AppliedFor != [2]string{f.State, f.Note}}
+		if mv.answering() {
+			c.Who, c.Text, c.Why, c.Disagree, c.Agree = cmpOr(f.ThreadAuthor, "reviewer"), cmpOr(f.ThreadBody, f.Body), f.Body, f.Agree == "no", f.Agree
+		} else {
+			c.Who = cmpOr(f.Severity, "finding")
+			if f.Title != "" {
+				c.Text = f.Title + ". " + f.Body
+			}
+		}
+		c.State = f.State
+		switch {
+		case f.Resolved:
+			c.State = "resolved"
+		case f.Posted && mv.answering():
+			c.State = "replied"
+		case f.Posted:
+			c.State = "posted"
+		case f.Applied == "fixed" && d.Apply != nil && d.Apply.Pushed:
+			c.State = "pushed"
+		case f.Applied != "" && !c.AppStale:
+			c.State = f.Applied
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+func (mv mrsView) curCard() *mrCard {
+	cs := mv.cards()
+	if len(cs) == 0 {
+		return nil
+	}
+	c := cs[mv.itemIdx(len(cs))]
+	return &c
+}
+
+// ----- stage line -----
+
+func (mv mrsView) rail(st mrStage) line {
+	lk := mv.lk
+	var l line
+	for i, s := range st.Steps {
+		if i > 0 {
+			l = append(l, seg{" ─ ", lk.dim})
+		}
+		switch {
+		case i < st.Cur:
+			l = append(l, seg{"✓ " + s.Name, lk.ok})
+		case i == st.Cur:
+			l = append(l, seg{"● " + s.Name, lk.warn.Bold(true)})
+		case s.Name == "done" && st.done():
+			l = append(l, seg{"✓ done", lk.ok.Bold(true)})
+		default:
+			l = append(l, seg{"○ " + s.Name, lk.dim})
+		}
+	}
+	return l
+}
+
+func (mv mrsView) stageSpec(iw int, portrait bool) boxSpec {
+	lk := mv.lk
+	sp := boxSpec{title: "MR", sel: -1}
+	r := mv.cur()
+	if r == nil || mv.loading() {
+		sp.rows = []line{{{ifs(mv.loading(), "syncing…") + ifs(!mv.loading(), "Nothing to show."), lk.sub}}}
+		return sp
+	}
+	sp.title = r.Ref + " " + r.Title
+	st := mv.stage(*r)
+	if portrait {
+		sp.right = line{{"tab", lk.key.Bold(true)}, {fmt.Sprintf(" MR list  %d your move", mv.yourCount()), lk.sub}}
+	} else {
+		meta := nonEmpty(ifs(r.Draft, "draft"), mv.ciSeg(*r).text, mv.mode2()+" review")
+		sp.right = line{{strings.Join(meta, " · "), lk.sub}}
+	}
+	l := mv.rail(st)
+	if st.Keys != "" && l.width()+4+len(st.Keys)+10 <= iw {
+		l = lr(l, line{{"next ", lk.sub}, {st.Keys, lk.key.Bold(true)}}, iw)
+	}
+	sp.rows = []line{l}
+	return sp
+}
+
+// ----- code pane -----
 
 func (mv mrsView) fileIdx(d *mrDetail) int {
 	if d == nil || len(d.Files) == 0 {
@@ -323,147 +469,243 @@ func (mv mrsView) fileIdx(d *mrDetail) int {
 	return max(0, min(mv.file, len(d.Files)-1))
 }
 
-// markers lists the cards of the current file by new line number.
-func (mv mrsView) markers(d *mrDetail, path string) map[int]int {
-	out := map[int]int{}
-	if d == nil {
-		return out
+// codeRow is one display row of the code pane; hunk is true on hunk headers.
+type codeRow struct {
+	l    line
+	hunk bool
+	num  int // new (else old) line number, 0 on headers and boxes
+}
+
+// codeRows lays out the whole diff of the current file: numbered lines, the current card's
+// line reversed with its marker, and the card's thread drawn under it. at is the row of that line.
+func (mv mrsView) codeRows(d *mrDetail, iw int) (rows []codeRow, at int) {
+	lk := mv.lk
+	at = -1
+	f := d.Files[mv.fileIdx(d)]
+	c := mv.curCard()
+	marks := map[int]string{}
+	for _, o := range mv.cards() {
+		if o.Path == f.Path && o.Line > 0 {
+			marks[o.Line] = o.Label
+		}
 	}
-	if mv.threadsMode() {
-		for i, t := range d.Threads {
-			if t.Path == path && t.Line > 0 {
-				out[t.Line] = i + 1
+	tw := iw - 2 // the scrollbar takes the last column
+	for _, dl := range f.Lines {
+		if dl.Kind == '@' {
+			rows = append(rows, codeRow{l: line{{"┄┄ " + dl.Text, lk.dim}}, hunk: true})
+			continue
+		}
+		num := func(n int) string {
+			if n == 0 {
+				return "    "
+			}
+			return fmt.Sprintf("%4d", n)
+		}
+		st, ks := lk.plain, lk.plain
+		switch dl.Kind {
+		case '+':
+			st, ks = lk.ok, lk.ok.Bold(true)
+		case '-':
+			st, ks = lk.bad, lk.bad.Bold(true)
+		}
+		text := strings.ReplaceAll(dl.Text, "\t", "    ")
+		lab, marked := marks[dl.New], dl.Kind != '-' && dl.New > 0
+		hi := marked && c != nil && c.Path == f.Path && c.Line == dl.New
+		l := line{{num(dl.Old) + " " + num(dl.New) + " ", lk.dim}}
+		switch {
+		case hi:
+			rv := st.Bold(true).Reverse(true)
+			body := string(dl.Kind) + " " + text
+			tail := "  ◀ " + c.Label + ifs(c.Who != "", " "+c.Who) + " "
+			room := max(4, tw-l.width()-2-runewidth.StringWidth(tail))
+			body = runewidth.Truncate(body, room, "…")
+			l = append(l, seg{"▶ ", lk.warn.Bold(true)}, seg{body + tail, rv})
+			at = len(rows)
+		case marked && lab != "":
+			l = append(l, seg{"◆ ", lk.warn}, seg{string(dl.Kind) + " " + text, st})
+		default:
+			l = append(l, spc(2), seg{string(dl.Kind), ks}, seg{" " + text, st})
+		}
+		n := dl.New
+		if n == 0 {
+			n = dl.Old
+		}
+		rows = append(rows, codeRow{l: l, num: n})
+		if hi && c.Text != "" {
+			for _, b := range mv.threadBox(c, tw-13) {
+				rows = append(rows, codeRow{l: append(line{spc(13)}, b...)})
 			}
 		}
-		return out
 	}
-	for i, f := range d.Findings {
-		if p, l := f.at(); p == path && l > 0 {
-			out[l] = i + 1
+	return rows, at
+}
+
+// threadBox is the card's comment drawn under its line, in a thin box.
+func (mv mrsView) threadBox(c *mrCard, w int) []line {
+	lk := mv.lk
+	w = min(84, w)
+	if w < 20 {
+		return nil
+	}
+	head := line{{"╭─ ", lk.warn}, {c.Who, lk.title}, {ifs(c.When != "", " "+c.When), lk.sub}, {" ", lk.warn}}
+	kind := ifs(mv.answering() || mv.threadsMode(), "thread") + ifs(!mv.answering() && !mv.threadsMode(), "finding")
+	head = append(head, seg{rep("─", w-head.width()-len(kind)-3), lk.warn}, seg{" " + kind + " ", lk.warn}, seg{"╮", lk.warn})
+	out := []line{head}
+	for _, t := range wrapLines(c.Text, w-4) {
+		out = append(out, line{{"│ ", lk.warn}, {fit(t, w-4), lk.plain}, {" │", lk.warn}})
+	}
+	return append(out, line{{"╰" + rep("─", w-2) + "╯", lk.warn}})
+}
+
+// codeTop is the first row shown: the owner's scroll, else the card's line a third down.
+func (mv mrsView) codeTop(n, at, slots int) int {
+	top := mv.scroll
+	if top < 0 {
+		top = 0
+		if at >= 0 {
+			top = at - slots/3
+		}
+	}
+	return max(0, min(top, n-slots))
+}
+
+// fileStrip lists the files that carry a card with their cards: decided ✓, open ○; the
+// current file is marked ▶.
+func (mv mrsView) fileStrip(d *mrDetail, iw int) line {
+	lk := mv.lk
+	cur := d.Files[mv.fileIdx(d)].Path
+	var paths []string
+	cards := map[string][]mrCard{}
+	for _, c := range mv.cards() {
+		if c.Path == "" {
+			continue
+		}
+		if cards[c.Path] == nil {
+			paths = append(paths, c.Path)
+		}
+		cards[c.Path] = append(cards[c.Path], c)
+	}
+	if cards[cur] == nil {
+		paths = append([]string{cur}, paths...)
+	}
+	var l line
+	for i, p := range paths {
+		if i > 0 {
+			l = append(l, spc(4))
+		}
+		ps := lk.sub
+		if p == cur {
+			l, ps = append(l, seg{"▶ ", lk.acc}), lk.bold
+		}
+		l = append(l, seg{p, ps})
+		for _, c := range cards[p] {
+			mk, ms := "○", lk.warn
+			if c.decided != "pending" || c.State == "resolved" {
+				mk, ms = "✓", lk.ok
+			}
+			l = append(l, seg{" " + mk + " " + c.Label, ms})
+		}
+	}
+	return l.trunc(iw)
+}
+
+func (mv mrsView) codeSpec(iw, h int) boxSpec {
+	lk := mv.lk
+	sp := boxSpec{title: "Code", index: 2, sel: -1, focused: mv.pane == mpDiff}
+	r := mv.cur()
+	switch {
+	case mv.loading():
+		sp.rows = []line{{{"syncing…", lk.sub}}}
+		return sp
+	case r == nil:
+		sp.rows = []line{{{"Nothing to show.", lk.sub}}}
+		return sp
+	}
+	d := mv.detail()
+	if d == nil {
+		if e := mv.fx.MRErrs[r.key()]; e != "" {
+			sp.rows = []line{{{"◆ diff unavailable: " + e, lk.bad}}}
+			return sp
+		}
+		sp.rows = []line{{{"loading the diff…", lk.sub}}}
+		return sp
+	}
+	if len(d.Files) == 0 {
+		sp.rows = []line{{{"No file changed.", lk.sub}}}
+		return sp
+	}
+	f := d.Files[mv.fileIdx(d)]
+	sp.title = fmt.Sprintf("%s +%d -%d", f.Path, f.Add, f.Del)
+	sp.right = line{{"j k", lk.key.Bold(true)}, {" scroll  ", lk.sub}, {"J K", lk.key.Bold(true)}, {" hunk  ", lk.sub}, {"[ ]", lk.key.Bold(true)}, {fmt.Sprintf(" file %d of %d", mv.fileIdx(d)+1, len(d.Files)), lk.sub}}
+	slots := max(1, h-lk.boxH(0))
+	sp.rows = []line{mv.fileStrip(d, iw), {{rep("╌", iw), lk.dim}}}
+	body := max(1, slots-len(sp.rows))
+	rows, at := mv.codeRows(d, iw)
+	top := mv.codeTop(len(rows), at, body)
+	end := min(len(rows), top+body)
+	// Scrollbar on the last column: the thumb is the share of the diff in sight.
+	t0, t1 := 0, body
+	if len(rows) > body {
+		t0 = top * body / len(rows)
+		t1 = max(t0+1, (end*body+len(rows)-1)/len(rows))
+	}
+	for k := 0; k < body; k++ {
+		var l line
+		if top+k < end {
+			l = rows[top+k].l.trunc(iw - 2)
+		}
+		l = append(l, spc(iw-1-l.width()))
+		if t0 <= k && k < t1 {
+			l = append(l, seg{"█", lk.acc})
+		} else {
+			l = append(l, seg{"│", lk.dim})
+		}
+		sp.rows = append(sp.rows, l)
+	}
+	first, last := 0, 0
+	for _, cr := range rows[top:end] {
+		if cr.num > 0 {
+			if first == 0 {
+				first = cr.num
+			}
+			last = cr.num
+		}
+	}
+	pos := []string{fmt.Sprintf("↑ %d above · ↓ %d below", top, len(rows)-end)}
+	if first > 0 {
+		pos = append(pos, fmt.Sprintf("lines %d–%d", first, last))
+	}
+	sp.bottom = strings.Join(pos, " · ")
+	return sp
+}
+
+// hunkStarts lists the code rows that open a hunk.
+func (mv mrsView) hunkStarts(iw int) []int {
+	d := mv.detail()
+	if d == nil || len(d.Files) == 0 {
+		return nil
+	}
+	rows, _ := mv.codeRows(d, iw)
+	var out []int
+	for i, r := range rows {
+		if r.hunk {
+			out = append(out, i)
 		}
 	}
 	return out
-}
-
-func (mv mrsView) diffRow(d diffLine, mark string, cur bool) line {
-	lk := mv.lk
-	if d.Kind == '@' {
-		return line{{d.Text, lk.dim}}
-	}
-	n := d.New
-	if n == 0 {
-		n = d.Old
-	}
-	num := rep(" ", 4)
-	if n > 0 {
-		num = fmt.Sprintf("%3d ", n)
-	}
-	st, gut := lk.plain, lk.dim
-	switch d.Kind {
-	case '+':
-		st, gut = lk.ok, lk.ok
-	case '-':
-		st, gut = lk.bad, lk.bad
-	}
-	ms := lk.warn
-	if cur {
-		ms = lk.warn.Bold(true)
-	}
-	l := line{{num, lk.dim}, {fit(mark, 3), ms}}
-	if lk.th.frame == frameHUD || lk.th.frame == frameCyber {
-		g := " "
-		if d.Kind != ' ' {
-			g = "▏"
-		}
-		l = append(l, seg{g, gut})
-	}
-	return append(l, seg{string(d.Kind) + " " + strings.ReplaceAll(d.Text, "\t", "    "), st})
-}
-
-// window returns n diff lines around the line of the current card.
-func diffWindow(lines []diffLine, focus, n int) []diffLine {
-	if len(lines) <= n {
-		return lines
-	}
-	at := 0
-	for i, l := range lines {
-		if focus > 0 && l.New == focus && l.Kind != '-' {
-			at = i
-			break
-		}
-	}
-	from := max(0, min(at-3, len(lines)-n))
-	return lines[from : from+n]
-}
-
-func (mv mrsView) totals(d *mrDetail) (add, del int) {
-	if d != nil {
-		for _, f := range d.Files {
-			add, del = add+f.Add, del+f.Del
-		}
-	}
-	return
 }
 
 func (mv mrsView) ciSeg(r mrRow) seg {
 	lk := mv.lk
 	switch r.Pipeline {
 	case "passed":
-		return seg{"CI passed", lk.ok}
+		return seg{"pipeline passed", lk.ok}
 	case "failed":
-		return seg{"CI failed", lk.bad}
+		return seg{"pipeline failed", lk.bad}
 	case "running":
-		return seg{"CI running", lk.warn}
+		return seg{"pipeline running", lk.warn}
 	}
 	return seg{"", lk.sub}
-}
-
-func (mv mrsView) diffSpec(iw, h int) boxSpec {
-	lk := mv.lk
-	sp := boxSpec{title: "Diff", index: 2, sel: -1, focused: mv.pane == mpDiff}
-	r := mv.cur()
-	if mv.loading() {
-		sp.rows = []line{{{"syncing…", lk.sub}}}
-		return sp
-	}
-	if r == nil {
-		sp.rows = []line{{{"Nothing to show.", lk.sub}}}
-		return sp
-	}
-	sp.title = r.Ref + " " + r.Title
-	d := mv.detail()
-	if mv.threadsMode() {
-		sp.title += " · threads"
-	}
-	add, del := mv.totals(d)
-	meta := r.Author
-	if r.Branch != "" {
-		meta += " · " + r.Branch + " → " + r.Target
-	}
-	if d != nil {
-		meta += fmt.Sprintf(" · +%d -%d", add, del)
-	}
-	if mv.threadsMode() {
-		meta = strings.TrimPrefix(strings.Join([]string{ifs(r.Draft, "draft"), fmt.Sprintf("%d open, %d resolved", r.ThreadsOpen, r.ThreadsResolved)}, " · "), " · ")
-	}
-	sp.right = line{{meta, lk.sub}}
-	if d == nil {
-		msg := "loading the diff…"
-		if e := mv.fx.MRErrs[r.key()]; e != "" {
-			msg = "◆ diff unavailable: " + e
-			sp.rows = []line{{{msg, lk.bad}}}
-			return sp
-		}
-		sp.rows = []line{{{msg, lk.sub}}}
-		return sp
-	}
-	slots := max(1, h-lk.boxH(0))
-	if mv.threadsMode() {
-		sp.rows = mv.threadRows(d, r, iw, slots)
-		return sp
-	}
-	sp.rows = mv.reviewRows(d, r, iw, slots)
-	return sp
 }
 
 func ifs(ok bool, s string) string {
@@ -471,126 +713,6 @@ func ifs(ok bool, s string) string {
 		return s
 	}
 	return ""
-}
-
-// reviewRows: the file bar, then the diff of the current file around the current finding.
-func (mv mrsView) reviewRows(d *mrDetail, r *mrRow, iw, slots int) []line {
-	lk := mv.lk
-	if len(d.Files) == 0 {
-		return []line{{{"No file changed.", lk.sub}}}
-	}
-	fi := mv.fileIdx(d)
-	// The current file and the card's line first; the bar used to list every file and got cut.
-	cur := d.Files[fi].Path
-	bar := line{{lk.cap("file"), lk.sub}, spc(1), {cur, lk.underlineAcc}}
-	if f := mv.curFinding(d); f != nil {
-		if p, l := f.at(); p == cur && l > 0 {
-			bar = append(bar, seg{fmt.Sprintf(":%d", l), lk.acc})
-		}
-	}
-	bar = append(bar, seg{fmt.Sprintf("  %d of %d", fi+1, len(d.Files)), lk.sub})
-	cards := 0
-	for _, f := range d.Files {
-		cards += len(mv.markers(d, f.Path))
-	}
-	if n := len(mv.markers(d, cur)); n > 0 || cards > 0 {
-		bar = append(bar, seg{fmt.Sprintf("  ◆%d of %d", n, cards), lk.warn})
-	}
-	rows := []line{lr(bar, line{mv.ciSeg(*r)}, iw), nil}
-	// Findings with no file sit in the commit row at the bottom.
-	var commit line
-	for i, f := range d.Findings {
-		if p, _ := f.at(); p == "" && !mv.threadsMode() {
-			commit = append(commit, seg{fmt.Sprintf("◆%d %s", i+1, firstSentence(f.Body)), lk.warn})
-		}
-	}
-	reserve := 0
-	if commit != nil {
-		reserve = 2
-	}
-	focus := 0
-	mk := mv.markers(d, d.Files[fi].Path)
-	cardLine := -1
-	if f := mv.curFinding(d); f != nil {
-		if p, l := f.at(); p == d.Files[fi].Path {
-			focus, cardLine = l, l
-		}
-	}
-	for _, dl := range diffWindow(d.Files[fi].Lines, focus, max(1, slots-len(rows)-reserve)) {
-		m := ""
-		if n, ok := mk[dl.New]; ok && dl.Kind != '-' {
-			m = fmt.Sprintf("◆%d", n)
-		}
-		rows = append(rows, mv.diffRow(dl, m, dl.New == cardLine && dl.Kind != '-'))
-	}
-	if commit != nil {
-		for len(rows) < slots-2 {
-			rows = append(rows, nil)
-		}
-		rows = append(rows, mv.divider(iw), lr(line{{lk.cap("commit"), lk.sub}, spc(2), {r.Title, lk.plain}}, commit, iw))
-	}
-	return rows
-}
-
-func firstSentence(s string) string {
-	s, _, _ = strings.Cut(s, ". ")
-	return strings.TrimSuffix(s, ".")
-}
-
-// threadRows: the current thread, its saved fix and test or the code it points at, and the
-// other threads in one line.
-func (mv mrsView) threadRows(d *mrDetail, r *mrRow, iw, slots int) []line {
-	lk := mv.lk
-	t := mv.curThread(d)
-	if t == nil {
-		return []line{{{"No review thread on this MR.", lk.sub}}}
-	}
-	where := t.Path
-	if t.Line > 0 {
-		where += ":" + strconv.Itoa(t.Line)
-	}
-	rows := []line{{{t.Author, lk.bold}, spc(2), {mv.when(t.At) + " · " + where, lk.sub}}}
-	for _, l := range wrapLines(t.Body, iw) {
-		rows = append(rows, line{{l, lk.plain}})
-	}
-	sections := []*mrSection{t.Fix, t.Test}
-	any := false
-	for _, s := range sections {
-		if s == nil {
-			continue
-		}
-		any = true
-		rows = append(rows, nil, lr(line{{s.Title, lk.head}}, line{{s.Meta, lk.sub}}, iw))
-		for _, dl := range s.Lines {
-			rows = append(rows, mv.diffRow(dl, "", false))
-		}
-	}
-	if !any {
-		rows = append(rows, nil, line{{lk.cap("code at " + where), lk.head}})
-		for _, f := range d.Files {
-			if f.Path != t.Path {
-				continue
-			}
-			room := max(3, slots-len(rows)-3)
-			for _, dl := range diffWindow(f.Lines, t.Line, room) {
-				rows = append(rows, mv.diffRow(dl, "", dl.New == t.Line && dl.Kind != '-'))
-			}
-		}
-		rows = append(rows, nil, line{{"No fix prepared yet. h hands this MR to a repo session.", lk.sub}})
-	}
-	var others []string
-	for i, o := range d.Threads {
-		if i != mv.itemIdx(len(d.Threads)) {
-			others = append(others, fmt.Sprintf("%s %s", o.Path, ifs(o.Resolved, "resolved")+ifs(!o.Resolved, "open")))
-		}
-	}
-	if len(others) > 0 && len(rows) < slots-2 {
-		for len(rows) < slots-2 {
-			rows = append(rows, nil)
-		}
-		rows = append(rows, mv.divider(iw), line{{lk.cap("other threads"), lk.sub}, spc(2), {strings.Join(others, " · "), lk.plain}})
-	}
-	return rows
 }
 
 // when formats a thread time as today, yesterday or a date; text that is not a time stays.
@@ -629,7 +751,7 @@ func (mv mrsView) curThread(d *mrDetail) *mrThread {
 	return &d.Threads[mv.itemIdx(len(d.Threads))]
 }
 
-// ----- right box -----
+// ----- Your move panel -----
 
 func stateStyle(lk *look, state string) lipgloss.Style {
 	switch state {
@@ -642,19 +764,6 @@ func stateStyle(lk *look, state string) lipgloss.Style {
 	case "refused":
 		return lk.sub
 	case "chat":
-		return lk.cyan
-	}
-	return lk.warn
-}
-
-// severityStyle colours a finding's severity: blocking stands out, nits fade.
-func severityStyle(lk *look, sev string) lipgloss.Style {
-	switch sev {
-	case "blocking":
-		return lk.bad.Bold(true)
-	case "nit":
-		return lk.dim
-	case "question":
 		return lk.cyan
 	}
 	return lk.warn
@@ -674,14 +783,30 @@ func (mv mrsView) applyLine(ap *mrApply) line {
 		if t, err := time.Parse(time.RFC3339, ap.StartedAt); err == nil {
 			since = " " + shortAge(mv.now.Sub(t))
 		}
-		return line{{"● apply running" + since, lk.warn}, {" · background run, commits locally, pushes nothing; the card refreshes every 20 s", lk.sub}}
+		return line{{"● apply running" + since, lk.warn}, {" · background run, commits locally, pushes nothing", lk.sub}}
 	case "failed":
 		return line{{"✗ apply failed: ", lk.bad}, {cmpOr(ap.Reason, "no reason given"), lk.sub}}
 	}
 	if ap.Commit == "" {
 		return line{{"✓ applied", lk.ok}, {" · no code change", lk.sub}}
 	}
-	return line{{"✓ committed ", lk.ok}, {shortSHA(ap.Commit) + " " + ap.Subject + ifs(ap.Pushed, " · pushed") + ifs(!ap.Pushed, " · local only, P pushes it"), lk.sub}}
+	return line{{"✓ committed ", lk.ok}, {shortSHA(ap.Commit) + ifs(ap.Subject != "", " "+ap.Subject), lk.sub}}
+}
+
+// applyRows is the apply state under the steps; a commit says whether it is pushed.
+func (mv mrsView) applyRows(ap *mrApply, iw int) []line {
+	l := mv.applyLine(ap)
+	if l == nil {
+		return nil
+	}
+	if ap.State == "running" || ap.State == "starting" || ap.State == "failed" {
+		return wrapLine(l, iw)
+	}
+	rows := []line{l.trunc(iw)}
+	if ap.Commit != "" {
+		rows = append(rows, line{spc(2), {ifs(ap.Pushed, "pushed to the MR branch") + ifs(!ap.Pushed, "local only, P pushes it"), mv.lk.sub}})
+	}
+	return rows
 }
 
 func shortSHA(s string) string {
@@ -691,308 +816,143 @@ func shortSHA(s string) string {
 	return s
 }
 
-// reviewLine is the state of the review run, nil when there is none or it is done.
-func (mv mrsView) reviewLine(rv *mrReview) line {
+// keycap draws a key as a reversed cap.
+func (mv mrsView) keycap(k string) seg {
+	return seg{" " + k + " ", mv.lk.key.Bold(true).Reverse(true)}
+}
+
+// action is one big key row: cap, bold label, muted detail. on marks the decision taken.
+func (mv mrsView) action(k, label, detail string, on bool, iw int) line {
 	lk := mv.lk
-	if rv == nil {
-		return nil
+	ls := lk.bold
+	if on {
+		ls = lk.acc
 	}
-	switch rv.State {
-	case "running":
-		since := ""
-		if t, err := time.Parse(time.RFC3339, rv.StartedAt); err == nil {
-			since = " · " + shortAge(mv.now.Sub(t))
-		}
-		return line{{"● review running", lk.warn}, {since + ifs(rv.Model != "", " · "+rv.Model), lk.sub}}
-	case "failed":
-		return line{{"✗ review failed: ", lk.bad}, {cmpOr(rv.Reason, "no reason given"), lk.sub}}
+	l := line{spc(1), mv.keycap(k), spc(2), {label, ls}}
+	if detail != "" {
+		l = append(l, spc(2), seg{detail, lk.sub})
 	}
-	return nil
+	return l.trunc(iw)
 }
 
-func (mv mrsView) cardSpec(iw, h int) boxSpec {
+// actionRows is an action on one line, or in roomy mode the detail on a second line under
+// the label.
+func (mv mrsView) actionRows(k, label, detail string, on, two bool, iw int) []line {
+	if !two {
+		return []line{mv.action(k, label, detail, on, iw)}
+	}
+	return []line{mv.action(k, label, "", on, iw), line{spc(6), {detail, mv.lk.sub}}.trunc(iw)}
+}
+
+func (mv mrsView) steps(st mrStage, iw int) []line {
 	lk := mv.lk
-	sp := boxSpec{title: "Card", index: 3, sel: -1, focused: mv.pane == mpCard}
-	r, d := mv.cur(), mv.detail()
-	switch {
-	case mv.loading():
-		sp.rows = []line{{{"syncing…", lk.sub}}}
-		return sp
-	case r == nil:
-		sp.rows = []line{{{"Nothing to show.", lk.sub}}}
-		return sp
-	case d == nil:
-		sp.rows = []line{{{"loading…", lk.sub}}}
-		return sp
-	}
-	threads := mv.threadsMode()
-	n := mv.items()
-	sp.title = ifs(threads || mv.answering(), "Threads") + ifs(!threads && !mv.answering(), "Findings")
-	if n > 0 {
-		sp.title += " " + strconv.Itoa(n)
-	}
-	if hits := patternsHit(d, threads); hits > 0 {
-		sp.right = line{{fmt.Sprintf("patterns hit: %d", hits), lk.sub}}
-	}
-	var run line
-	if !threads {
-		run = mv.reviewLine(d.Review)
-	}
-	if n == 0 {
-		if run != nil {
-			sp.rows = []line{run}
-			if d.Review.State == "running" {
-				sp.rows = append(sp.rows, line{{"Read only. Findings appear here when the run ends.", lk.sub}})
-			} else {
-				sp.rows = append(sp.rows, line{{"r", lk.key}, spc(1), {"runs the review again", lk.sub}})
+	var out []line
+	for i, s := range st.Steps {
+		text := cmpOr(s.Text, s.Name)
+		var l line
+		switch {
+		case i < st.Cur || st.done():
+			l = line{spc(2), {fmt.Sprintf("✓ %d  ", i+1), lk.ok}, {text, lk.sub}}
+		case i == st.Cur:
+			l = line{{"▶ ", lk.warn.Bold(true)}, {fmt.Sprintf("● %d  ", i+1), lk.warn.Bold(true)}, {text, lk.bold}}
+			if s.Sub != "" {
+				l = lr(l, line{{s.Sub, lk.warn.Bold(true)}}, iw)
 			}
-			return sp
+		default:
+			l = line{spc(2), {fmt.Sprintf("○ %d  ", i+1), lk.dim}, {text, lk.dim}}
 		}
-		sp.rows = []line{{{ifs(threads, "No review thread on this MR.") + ifs(!threads, "No findings saved for this MR."), lk.sub}}}
-		if !threads {
-			sp.rows = append(sp.rows, line{{"r", lk.key}, spc(1), {"starts a read-only review; h hands the MR to a repo session.", lk.sub}})
-		}
-		return sp
+		out = append(out, l)
 	}
-	// Run state sits in the pinned bottom block, so it stays in sight however long the card is.
-	var status []line
-	if run != nil {
-		status = append(status, run)
-	}
-	if ap := mv.applyLine(d.Apply); ap != nil && !threads {
-		status = append(status, wrapLine(ap, iw)...)
-		for _, w := range d.Apply.Warnings {
-			for _, l := range wrapLines("! "+w, iw) {
-				status = append(status, line{{l, lk.warn}})
-			}
-		}
-	}
-	idx := mv.itemIdx(n)
-	var list []line
-	for i := 0; i < n; i++ {
-		var title, state string
-		if threads {
-			t := d.Threads[i]
-			title = t.Path + ifs(t.Line > 0, ":"+strconv.Itoa(t.Line)) + " " + cmpOr(t.Pattern, firstWords(t.Body, 4))
-			state = ifs(t.Resolved, "resolved") + ifs(!t.Resolved, "pending")
-		} else {
-			f := d.Findings[i]
-			title, state = f.Title, f.State
-			switch {
-			case f.Resolved:
-				state = "resolved"
-			case f.Posted && mv.answering():
-				state = "replied"
-			case f.Posted:
-				state = "posted"
-			case f.Applied == "fixed" && d.Apply != nil && d.Apply.Pushed:
-				state = "pushed"
-			case f.Applied != "" && f.AppliedFor == [2]string{f.State, f.Note}:
-				state = f.Applied
-			}
-		}
-		g := seg{fmt.Sprintf("◆%d", i+1), stateStyle(lk, state)}
-		list = append(list, lr(line{g, spc(1), {title, lk.bold}}, line{{state, stateStyle(lk, state)}}, iw))
-	}
-	card := mv.cardRows(d, iw)
-	tail := mv.cardTail(d, iw) // the decision buttons or the input line: always shown
-	foot := mv.footRows(d, r, iw)
-	slots := max(1, h-lk.boxH(0))
-	// Pinned bottom block: buttons, then run state, then the end of review (cut to its last line
-	// when room is short). The card body above gets what is left and says what it hides.
-	bottom := func() []line {
-		var b []line
-		b = append(b, tail...)
-		if len(status)+len(foot) > 0 {
-			b = append(b, mv.divider(iw))
-		}
-		return append(append(b, status...), foot...)
-	}
-	if len(list)+1+4+len(bottom()) > slots && len(foot) > 1 {
-		foot = foot[len(foot)-1:]
-	}
-	pinned := bottom()
-	if pl := mv.progressLine(d, iw); pl != nil {
-		sp.rows = append(sp.rows, pl)
-	}
-	off := len(sp.rows)
-	sp.rows = append(sp.rows, list...)
-	sp.sel = off + idx
-	sp.rows = append(sp.rows, mv.divider(iw))
-	room := max(1, slots-len(sp.rows)-len(pinned))
-	if len(card) > room {
-		hidden := len(card) - room + 1
-		card = append(card[:room-1], line{{fmt.Sprintf("… %d more %s, the window is too short", hidden, plural(hidden, "line", "lines")), lk.sub}})
-	}
-	sp.rows = append(sp.rows, card...)
-	for len(sp.rows) < slots-len(pinned) {
-		sp.rows = append(sp.rows, nil)
-	}
-	sp.rows = append(sp.rows, pinned...)
-	sp.bottom = fmt.Sprintf("%d of %d", idx+1, n)
-	return sp
+	return out
 }
 
-func (mv mrsView) pushed() bool {
-	d := mv.detail()
-	return d != nil && d.Apply != nil && d.Apply.Pushed
-}
-
-// progressLine sits above the list: where the MR stands once the apply run committed
-// (committed, pushed, threads resolved), so the push is visible without scrolling the card.
-func (mv mrsView) progressLine(d *mrDetail, iw int) line {
-	lk := mv.lk
-	ap := d.Apply
-	if ap == nil || ap.Commit == "" || mv.threadsMode() || detailMode(mv.cur(), d) == "peer" {
-		return nil
-	}
-	sha := shortSHA(ap.Commit)
-	if !ap.Pushed {
-		return lr(line{{"● committed " + sha, lk.warn}, {" · not pushed", lk.sub}}, line{{"P", lk.key.Bold(true)}, {" pushes it", lk.sub}}, iw)
-	}
-	l := line{{"✓ pushed " + sha, lk.ok}}
-	if !mv.answering() {
-		return l
-	}
-	open := 0
-	for _, f := range d.Findings {
-		if !f.Resolved && f.Agree != "no" {
-			open++
-		}
-	}
-	if open == 0 {
-		return append(l, seg{" · all threads resolved", lk.ok})
-	}
-	return lr(append(l, seg{fmt.Sprintf(" · %d %s to resolve", open, plural(open, "thread", "threads")), lk.warn}),
-		line{{"P", lk.key.Bold(true)}, {" resolves", lk.sub}}, iw)
-}
-
-func firstWords(s string, n int) string {
-	f := strings.Fields(s)
-	if len(f) > n {
-		f = f[:n]
-	}
-	return strings.Join(f, " ")
-}
-
-func patternsHit(d *mrDetail, threads bool) int {
-	seen := map[string]bool{}
-	if threads {
-		for _, t := range d.Threads {
-			if t.Pattern != "" {
-				seen[t.Pattern] = true
-			}
-		}
-	} else {
-		for _, f := range d.Findings {
-			if f.Pattern != "" {
-				seen[f.Pattern] = true
-			}
-		}
-	}
-	return len(seen)
-}
-
-func (mv mrsView) cardRows(d *mrDetail, iw int) []line {
+// diffText colours a fix or test diff.
+func (mv mrsView) diffText(text string, iw int) []line {
 	lk := mv.lk
 	var rows []line
-	pattern := func(name string, seen int) {
-		if name == "" {
-			return
+	for _, l := range strings.Split(strings.TrimRight(text, "\n"), "\n") {
+		if strings.HasPrefix(l, "+++") || strings.HasPrefix(l, "---") {
+			continue
 		}
-		rows = append(rows, nil, line{{lk.cap("pattern"), lk.sub}, spc(1), {name, lk.warn}, spc(1), {fmt.Sprintf("· seen %dx", seen), lk.sub}})
-	}
-	if mv.threadsMode() {
-		t := mv.curThread(d)
-		if t == nil {
-			return nil
+		st, mark, body := lk.plain, "  ", l
+		switch {
+		case strings.HasPrefix(l, "@@"):
+			st = lk.dim
+		case strings.HasPrefix(l, "+"):
+			st, mark, body = lk.ok, "+ ", l[1:]
+		case strings.HasPrefix(l, "-"):
+			st, mark, body = lk.bad, "- ", l[1:]
 		}
-		rows = append(rows, line{{fmt.Sprintf("Thread %d · %s", mv.itemIdx(len(d.Threads))+1, t.Path+ifs(t.Line > 0, ":"+strconv.Itoa(t.Line))), lk.head}})
-		for _, l := range wrapLines(t.Author+": "+t.Body, iw) {
-			rows = append(rows, line{{l, lk.sub}})
-		}
-		pattern(t.Pattern, t.Seen)
-		if t.Reply != "" {
-			rows = append(rows, nil, line{{lk.cap("reply"), lk.sub}, spc(1), {"0", lk.key.Bold(true)}, spc(1), {"none, fix only", lk.sub}, spc(2), {"1", lk.key.Bold(true)}, spc(1), {"short", lk.bold}})
-			rows = append(rows, line{{"reply (FR), skipped with 0", lk.sub}})
-			rows = append(rows, mv.replyBlock(t.Reply, iw)...)
-			rows = append(rows, nil, mv.buttons(0, [2]string{"a", "accept"}, [2]string{"x", "refuse"}, [2]string{"e", "edit"}, [2]string{"c", "chat"}))
-		}
-		return rows
-	}
-	f := mv.curFinding(d)
-	if f == nil {
-		return nil
-	}
-	where := ifs(f.Path != "", f.Path+ifs(f.Line > 0, ":"+strconv.Itoa(f.Line))) + ifs(f.Path == "", "commit")
-	head := line{{fmt.Sprintf(ifs(mv.answering(), "Thread")+ifs(!mv.answering(), "Finding")+" %d · ", mv.itemIdx(len(d.Findings))+1), lk.head}}
-	if f.Severity != "" {
-		head = append(head, seg{f.Severity, severityStyle(lk, f.Severity)}, seg{" · ", lk.head})
-	}
-	rows = append(rows, append(head, seg{where, lk.head}))
-	if mv.answering() {
-		// What matters to decide comes first: comment, verdict, reply, fix, test. The run's
-		// reasoning and the pattern go last, where a short window cuts them.
-		rows = append(rows, mv.answerRows(f, iw)...)
-		return append(rows, mv.answerTail(f, iw)...)
-	}
-	for _, l := range wrapLines(f.Body, iw) {
-		rows = append(rows, line{{l, lk.sub}})
-	}
-	pattern(f.Pattern, f.Seen)
-	if f.Comment != "" {
-		rows = append(rows, nil, line{{ifs(mv.answering(), "reply (FR)") + ifs(!mv.answering(), "comment (FR)"), lk.sub}})
-		rows = append(rows, mv.replyBlock(f.Comment, iw)...)
-	}
-	if f.Fix != "" {
-		rows = append(rows, nil, line{{"proposed fix", lk.sub}})
-		for _, l := range strings.Split(strings.TrimRight(f.Fix, "\n"), "\n") {
-			st := lk.plain
-			switch {
-			case strings.HasPrefix(l, "+"):
-				st = lk.ok
-			case strings.HasPrefix(l, "-"):
-				st = lk.bad
-			}
-			rows = append(rows, line{{fit(l, iw), st}})
-		}
-	}
-	if f.Test != "" {
-		rows = append(rows, nil, line{{"test", lk.sub}})
-		for _, l := range strings.Split(strings.TrimRight(f.Test, "\n"), "\n") {
-			st := lk.plain
-			if strings.HasPrefix(l, "+") {
-				st = lk.ok
-			}
-			rows = append(rows, line{{fit(l, iw), st}})
-		}
-	}
-	if f.Note != "" && mv.typing == "" {
-		rows = append(rows, nil, line{{ifs(f.State == "chat", "chat note"), lk.cyan}, {ifs(f.State != "chat", ifs(mv.answering(), "your reply")+ifs(!mv.answering(), "your edit")), lk.ok}})
-		rows = append(rows, mv.replyBlock(f.Note, iw)...)
-	}
-	if f.Applied != "" && mv.typing == "" {
-		label, st := "apply: "+f.Applied, lk.ok
-		switch f.Applied {
-		case "answered":
-			label, st = "answer", lk.cyan
-		case "skipped", "failed":
-			st = lk.bad
-		}
-		stale := f.AppliedFor != [2]string{f.State, f.Note}
-		rows = append(rows, nil, line{{label, st}, {ifs(stale, " · before your last decision"), lk.sub}})
-		rows = append(rows, mv.replyBlock(f.AppliedDetail, iw)...)
+		rows = append(rows, line{spc(2), {mark, st.Bold(true)}, {fit(strings.TrimLeft(body, " \t"), iw-4), st}})
 	}
 	return rows
 }
 
-// cardTail is the decision line of the current finding: the input while typing, else the buttons.
-func (mv mrsView) cardTail(d *mrDetail, iw int) []line {
+// cardBody is the current card: who and where, the comment, the fix, the test, the owner's
+// note, the apply result, then the run's reasoning and pattern (cut first when room is short).
+func (mv mrsView) cardBody(c *mrCard, n int, iw int) []line {
 	lk := mv.lk
-	f := mv.curFinding(d)
-	if f == nil {
-		return nil
+	where := c.Path + ifs(c.Line > 0, ":"+strconv.Itoa(c.Line))
+	if c.Path == "" {
+		where = "commit"
 	}
+	head := line{{c.Label + "  ", lk.warn.Bold(true)}, {where, lk.bold}, {ifs(c.Who != "", "   "+c.Who) + ifs(c.When != "", " · "+c.When), lk.sub}}
+	rows := []line{lr(head, line{{c.State, stateStyle(lk, c.State)}}, iw)}
+	for _, l := range wrapLines("« "+c.Text+" »", iw-2) {
+		rows = append(rows, line{spc(2), {l, lk.plain}})
+	}
+	if c.Disagree {
+		rows = append(rows, line{spc(2), {"disagree", lk.warn}, {" · the thread stays open for the reviewer", lk.sub}})
+	}
+	if c.Fix != "" {
+		rows = append(rows, nil, line{{"Proposed fix", lk.head.Bold(true)}})
+		rows = append(rows, mv.diffText(c.Fix, iw)...)
+	}
+	if c.Test != "" {
+		rows = append(rows, nil, line{{"Test", lk.head.Bold(true)}})
+		rows = append(rows, mv.diffText(c.Test, iw)...)
+	}
+	if mv.answering() && c.Note == "" {
+		rows = append(rows, nil, line{{"Reply", lk.head.Bold(true)}, {ifs(c.Agree == "partly", "  agree in part"), lk.sub}})
+		if c.Reply == "" {
+			rows = append(rows, line{spc(2), {"no reply: the fix answers it", lk.sub}})
+		}
+		for _, l := range wrapLines(c.Reply, iw-2) {
+			rows = append(rows, line{spc(2), {l, lk.plain}})
+		}
+	}
+	if c.Note != "" && mv.typing == "" {
+		lab := ifs(c.decided == "chat", "Chat note") + ifs(c.decided != "chat", ifs(mv.answering(), "Your reply")+ifs(!mv.answering(), "Your edit"))
+		rows = append(rows, nil, line{{lab, lk.head.Bold(true)}})
+		for _, l := range wrapLines(c.Note, iw-2) {
+			rows = append(rows, line{spc(2), {l, lk.plain}})
+		}
+	}
+	if c.Applied != "" && mv.typing == "" {
+		st := lk.ok
+		if c.Applied == "skipped" || c.Applied == "failed" {
+			st = lk.bad
+		}
+		rows = append(rows, nil, line{{"apply: " + c.Applied, st.Bold(true)}, {ifs(c.AppStale, " · before your last decision"), lk.sub}})
+		for _, l := range wrapLines(c.AppDetail, iw-2) {
+			rows = append(rows, line{spc(2), {l, lk.sub}})
+		}
+	}
+	if c.Why != "" && c.Why != c.Text {
+		rows = append(rows, nil, line{{"Why", lk.head.Bold(true)}})
+		for _, l := range wrapLines(c.Why, iw-2) {
+			rows = append(rows, line{spc(2), {l, lk.sub}})
+		}
+	}
+	if c.Pattern != "" {
+		rows = append(rows, nil, line{{lk.cap("pattern"), lk.sub}, spc(1), {c.Pattern, lk.warn}, spc(1), {fmt.Sprintf("· seen %dx", c.Seen), lk.sub}})
+	}
+	return rows
+}
+
+// decideRows are the decision keys of the current card, or the input line while typing.
+func (mv mrsView) decideRows(c *mrCard, gap bool, iw int) []line {
+	lk := mv.lk
 	if mv.typing != "" {
 		label := ifs(mv.typing == "e", ifs(mv.answering(), "reply › ")+ifs(!mv.answering(), "edit › ")) + ifs(mv.typing == "c", "chat › ")
 		var rows []line
@@ -1001,91 +961,222 @@ func (mv mrsView) cardTail(d *mrDetail, iw int) []line {
 		}
 		return rows
 	}
-	active := map[string]int{"accepted": 1, "refused": 2, "edited": 3, "chat": 4}[f.State] - 1
-	return []line{mv.buttons(active, [2]string{"a", "accept"}, [2]string{"x", "refuse"}, [2]string{"e", ifs(mv.answering(), "reply") + ifs(!mv.answering(), "edit")}, [2]string{"c", "chat"})}
+	// Once the fix left the machine, the card is settled: one line instead of the keycaps.
+	switch c.State {
+	case "pushed", "replied", "resolved", "posted":
+		return []line{{{"Decided " + c.Label + " ", lk.head.Bold(true)}, {c.decided, stateStyle(lk, c.decided)}, {"   a x e c", lk.key}, {" change it", lk.sub}}}
+	}
+	mode := mv.mode2()
+	quote := func(s string) string {
+		return "« " + firstWords(s, 8) + ifs(len(strings.Fields(s)) > 8, "…") + " »"
+	}
+	var acc, ref, edit string
+	switch {
+	case mv.answering():
+		acc = ifs(c.Reply != "", "reply "+quote(c.Reply)) + ifs(c.Reply == "", "fix only, no reply")
+		ref, edit = "the thread stays open", "type your own reply"
+	case mode == "peer":
+		acc = ifs(c.Reply != "", "post "+quote(c.Reply))
+		ref, edit = "nothing posted", "type your own comment"
+	default:
+		acc, ref, edit = "fix it in the apply run", "keep the code", "type the fix you want"
+	}
+	accLabel := ifs(c.Fix != "", "accept the fix") + ifs(c.Fix == "", "accept")
+	rows := []line{{{"Decide " + c.Label, lk.head.Bold(true)}}}
+	for _, a := range [][4]string{{"a", accLabel, acc, "accepted"}, {"x", "refuse", ref, "refused"}, {"e", ifs(mv.answering(), "reply") + ifs(!mv.answering(), "edit"), edit, "edited"}, {"c", "chat", "ask the agent about it", "chat"}} {
+		rows = append(rows, mv.actionRows(a[0], a[1], a[2], c.decided == a[3], gap, iw)...)
+	}
+	return rows
 }
 
-// footRows is the end of the review: counts and the next step. Posting and pushing wait for
-// the owner's OK and for a later slice.
-func (mv mrsView) footRows(d *mrDetail, r *mrRow, iw int) []line {
+// thenRows: what comes after this card. n next, A apply, P push or post.
+func (mv mrsView) thenRows(d *mrDetail, st mrStage, gap bool, iw int) []line {
 	lk := mv.lk
-	if mv.threadsMode() {
-		fixes, resolved := 0, 0
-		for _, t := range d.Threads {
-			if t.Fix != nil {
-				fixes++
-			}
-			if t.Resolved {
-				resolved++
-			}
-		}
-		if fixes == 0 {
-			return []line{line{{"h", lk.key}, spc(1), {"hand this MR to a repo session", lk.sub}}}
-		}
-		return []line{
-			lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{ifs(d.Apply != nil && d.Apply.Pushed, "pushed") + ifs(d.Apply == nil || !d.Apply.Pushed, "nothing pushed yet"), lk.sub}}, iw),
-			line{{fmt.Sprintf("%d fix + reply", fixes), lk.plain}, spc(2), {fmt.Sprintf("%d resolved", resolved), lk.ok}},
-			line{{"next", lk.sub}, spc(2), {"push, reply, resolve the thread", lk.plain}},
-			lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {"push, after your OK", lk.sub}}, iw),
-		}
+	r := mv.cur()
+	mode := mv.mode2()
+	cs := mv.cards()
+	rows := []line{{{"Then", lk.head.Bold(true)}}}
+	add := func(l []line) { rows = append(rows, l...) }
+	if i := mv.itemIdx(len(cs)); i+1 < len(cs) {
+		nx := cs[i+1]
+		add(mv.actionRows("n", "next finding", nx.Label+" "+nx.Path+ifs(nx.Line > 0, ":"+strconv.Itoa(nx.Line))+ifs(nx.Who != "", " ("+nx.Who+")"), false, gap, iw))
+	} else if len(cs) > 0 {
+		add(mv.actionRows("n", "next MR", "last finding of "+r.Ref, false, gap, iw))
 	}
-	acc, pend, ref, chat := 0, 0, 0, 0
-	for _, f := range d.Findings {
-		switch f.State {
-		case "accepted", "edited":
-			acc++
-		case "refused":
-			ref++
-		case "chat":
-			chat++
-		default:
-			pend++
-		}
-	}
-	mode, todo := detailMode(r, d), 0
-	self := mode != "peer"
+	todo := 0
 	for _, f := range d.Findings {
 		if f.toApply(mode) {
 			todo++
 		}
 	}
-	unposted := 0
-	for _, f := range d.Findings {
-		if (f.State == "accepted" || f.State == "edited") && !f.Posted {
-			unposted++
+	applied := false
+	for i, sp := range st.Steps {
+		if sp.Name == "apply" {
+			applied = st.Cur > i
 		}
 	}
-	next := fmt.Sprintf("post %d %s, mark reviewed", unposted, plural(unposted, "comment", "comments"))
-	switch ap := d.Apply; {
-	case !self:
-	case todo == 0 && ap != nil && ap.Commit != "" && !ap.Pushed:
-		next = "push " + shortSHA(ap.Commit)
-	case todo == 0 && ap != nil && ap.Pushed && mode == "threads":
-		next = "pushed; P replies and resolves"
-	case todo == 0 && ap != nil && ap.Pushed:
-		next = "pushed; ask a reviewer"
-	case todo == 0 && mode == "threads":
-		next = "P replies and resolves the threads"
+	if mode != "peer" && !applied {
+		det := "background run, local commit"
+		switch {
+		case d.Apply != nil && (d.Apply.State == "running" || d.Apply.State == "starting"):
+			det = "running in the background"
+		case todo == 0:
+			det = "nothing to apply yet"
+		}
+		add(mv.actionRows("A", fmt.Sprintf("apply %d %s", todo, plural(todo, "decision", "decisions")), det, st.Keys == "A", gap, iw))
+	}
+	open := 0
+	for _, f := range d.Findings {
+		if !f.Resolved && f.Agree != "no" {
+			open++
+		}
+	}
+	switch mode {
+	case "peer":
+		add(mv.actionRows("P", "post the comments", "after your OK, then mark reviewed", st.Keys == "P", gap, iw))
+	case "threads":
+		add(mv.actionRows("P", "push + reply", fmt.Sprintf("resolves %d %s", open, plural(open, "thread", "threads")), st.Keys == "P", gap, iw))
 	default:
-		next = "apply the decisions, then push"
+		add(mv.actionRows("P", "push", "after your OK", st.Keys == "P", gap, iw))
 	}
-	verb := map[string]string{"peer": "post", "self": "push", "threads": "push, reply, resolve"}[mode]
-	end := lr(nil, line{{"P", lk.key.Bold(true)}, spc(1), {verb + ", after your OK", lk.sub}}, iw)
-	if todo > 0 && (d.Apply == nil || d.Apply.State != "running") {
-		end = lr(nil, line{{"A", lk.key.Bold(true)}, spc(1), {fmt.Sprintf("apply %d %s, commit locally", todo, plural(todo, "decision", "decisions")), lk.sub}}, iw)
+	return rows
+}
+
+// doneRows: the finished walkthrough.
+func (mv mrsView) doneRows(d *mrDetail, st mrStage, iw int) []line {
+	lk := mv.lk
+	r := mv.cur()
+	sent := "nothing pushed"
+	if d.Apply != nil && d.Apply.Commit != "" {
+		sent = shortSHA(d.Apply.Commit) + ifs(d.Apply.Pushed, " pushed") + ifs(!d.Apply.Pushed, " local")
 	}
-	sent := ifs(self, "nothing pushed yet") + ifs(!self, "nothing posted yet")
-	if self && d.Apply != nil && d.Apply.Pushed {
-		sent = "pushed"
-	} else if posted := acc - unposted; !self && posted > 0 {
-		sent = fmt.Sprintf("%d posted", posted)
+	if mv.mode2() == "peer" {
+		sent = "comments posted"
 	}
-	return []line{
-		lr(line{{"End of review · " + r.Ref, lk.bold}}, line{{sent, lk.sub}}, iw),
-		line{{fmt.Sprintf("%d accepted", acc), lk.ok}, spc(2), {fmt.Sprintf("%d pending", pend), lk.warn}, spc(2), {fmt.Sprintf("%d refused", ref), lk.sub}, {ifs(chat > 0, fmt.Sprintf("  %d chat", chat)), lk.cyan}},
-		line{{"next", lk.sub}, spc(2), {next, lk.plain}},
-		end,
+	n, res := len(d.Findings), 0
+	for _, f := range d.Findings {
+		if f.Resolved {
+			res++
+		}
 	}
+	rows := []line{
+		{{"✓ done", lk.ok.Bold(true)}, spc(3), {sent, lk.plain}},
+	}
+	if mv.mode2() == "threads" {
+		rows = append(rows, line{{fmt.Sprintf("%d/%d threads replied and resolved", res, n), lk.sub}, {ifs(r.Pipeline != "", " · "+mv.ciSeg(*r).text), lk.sub}})
+	}
+	last := st.Steps[len(st.Steps)-1]
+	rows = append(rows, line{{"next: ", lk.sub}, {strings.TrimPrefix(last.Text, "done: "), lk.bold}})
+	rows = append(rows, nil, mv.action("n", "next MR", "your move first", false, iw))
+	return rows
+}
+
+func (mv mrsView) moveSpec(iw, h int, compact bool) boxSpec {
+	lk := mv.lk
+	sp := boxSpec{title: "Your move", index: 3, sel: -1, focused: mv.pane == mpCard}
+	r, d := mv.cur(), mv.detail()
+	switch {
+	case mv.loading():
+		sp.rows = []line{{{"syncing…", lk.sub}}}
+		return sp
+	case r == nil:
+		sp.rows = []line{{{"Nothing to show.", lk.sub}}}
+		return sp
+	}
+	st := mv.stage(*r)
+	sp.title = map[string]string{moveYou: "Your move", moveCrow: "Crow is on it", moveOthers: "Waiting on others", moveDone: "Done"}[st.Who] + " · " + r.Ref
+	slots := max(1, h-lk.boxH(0))
+	var steps, top []line
+	if !compact {
+		steps = append(mv.steps(st, iw), line{{rep("╌", iw), lk.dim}})
+	}
+	if d == nil {
+		sp.rows = append(steps, line{{"loading…", lk.sub}})
+		return sp
+	}
+	// Run state: a running or failed review or apply stays in sight under the steps.
+	if mv.mode2() != "peer" && !mv.threadsMode() {
+		if ap := mv.applyRows(d.Apply, iw); ap != nil {
+			top = append(top, ap...)
+			for _, w := range d.Apply.Warnings {
+				for _, l := range wrapLines("! "+w, iw) {
+					top = append(top, line{{l, lk.warn}})
+				}
+			}
+		}
+	}
+	if d.Review != nil && d.Review.State == "failed" {
+		top = append(top, line{{"✗ review failed: ", lk.bad}, {cmpOr(d.Review.Reason, "no reason given"), lk.sub}})
+	}
+	if st.done() && !mv.threadsMode() {
+		sp.rows = append(append(append(steps, top...), nil), mv.doneRows(d, st, iw)...)
+		return sp
+	}
+	cs := mv.cards()
+	if len(cs) == 0 {
+		var msg []line
+		switch {
+		case d.Review != nil && d.Review.State == "running":
+			msg = []line{{{"Read only. Findings appear here when the run ends.", lk.sub}}}
+		case mv.threadsMode():
+			msg = []line{{{"No review thread on this MR.", lk.sub}}}
+		default:
+			msg = []line{{{"No findings saved for this MR.", lk.sub}}}
+		}
+		again := d.Review != nil && d.Review.State == "failed"
+		msg = append(msg, nil, mv.action("r", "review", ifs(again, "runs the review again")+ifs(!again, "a read-only run prepares the findings"), st.Keys == "r", iw),
+			mv.action("h", "hand off", "opens a repo session on this MR", false, iw))
+		sp.rows = append(append(steps, top...), msg...)
+		return sp
+	}
+	idx := mv.itemIdx(len(cs))
+	c := cs[idx]
+	sp.right = line{{fmt.Sprintf("%s %d of %d", ifs(mv.threadsMode(), "thread")+ifs(!mv.threadsMode(), "finding"), idx+1, len(cs)), lk.warn.Bold(true)}}
+	body := mv.cardBody(&c, len(cs), iw)
+	var pinned []line
+	if mv.threadsMode() {
+		pinned = []line{{{rep("╌", iw), lk.dim}}, {{"Next", lk.head.Bold(true)}},
+			mv.action("r", "review the threads", "prepares a fix and a reply for each", false, iw),
+			mv.action("h", "hand off", "opens a repo session on this MR", false, iw),
+			mv.action("T", "findings", "shows the review findings", false, iw)}
+	} else {
+		build := func(gap bool) []line {
+			p := []line{nil}
+			p = append(p, mv.decideRows(&c, gap, iw)...)
+			p = append(p, line{{rep("╌", iw), lk.dim}})
+			return append(p, mv.thenRows(d, st, gap, iw)...)
+		}
+		pinned = build(!compact)
+		if len(steps)+len(top)+len(body)+len(pinned)+1 > slots {
+			pinned = build(false)
+		}
+	}
+	foot := line{{"p", lk.key.Bold(true)}, {" previous finding   ", lk.sub}, {"M", lk.key.Bold(true)}, {" open MR", lk.sub}}
+	if len(steps)+len(top)+4+len(pinned)+1 <= slots {
+		top = append(steps, top...)
+	} // else a short window: the steps give way to the card; the stage line keeps the stage.
+	room := max(1, slots-len(top)-len(pinned)-1)
+	if len(body) > room {
+		hidden := len(body) - room + 1
+		body = append(body[:room-1], line{{fmt.Sprintf("… %d more %s, the window is too short", hidden, plural(hidden, "line", "lines")), lk.sub}})
+	}
+	sp.rows = append(top, body...)
+	sp.rows = append(sp.rows, pinned...)
+	for len(sp.rows) < slots-1 {
+		sp.rows = append(sp.rows, nil)
+	}
+	if len(sp.rows) < slots {
+		sp.rows = append(sp.rows, foot)
+	}
+	return sp
+}
+
+func firstWords(s string, n int) string {
+	f := strings.Fields(s)
+	if len(f) > n {
+		f = f[:n]
+	}
+	return strings.Join(f, " ")
 }
 
 // ----- composition -----
@@ -1100,28 +1191,26 @@ func (mv mrsView) body(w, h int) []string {
 	if lk.th.frame == frameSoft {
 		gapH, gapV = 3, 1
 	}
+	stageH := lk.boxH(1)
 	var out block
 	if lay == layLandscape {
-		w1 := min(36, w*22/100)
-		w3 := min(48, w*29/100)
-		if mv.answering() {
-			// Answering threads: the card holds the comment, the fix and the reply, so it takes
-			// almost half the width and the list shrinks.
-			w1, w3 = min(28, w*15/100), w*45/100
-		}
+		w1 := min(44, w*19/100)
+		w3 := min(66, w*28/100)
 		w2 := w - w1 - w3 - 2*gapH
-		out = hcat([]int{w1, w2, w3}, gapH, mv.listBox(w1, h), mv.diffBox(w2, h), mv.cardBox(w3, h))
+		mid := vcat(lk.box(mv.stageSpec(lk.innerW(w2), false), w2, stageH), blankLines(w2, gapV), mv.codeBox(w2, h-stageH-gapV))
+		out = hcat([]int{w1, w2, w3}, gapH, mv.listBox(w1, h), mid, mv.moveBox(w3, h, false))
 	} else {
-		list := mv.listSpec()
-		listH := max(lk.boxH(4), min(lk.boxH(len(list.rows)), h*30/100))
-		cardH := max(lk.boxH(8), h*36/100)
-		if mv.answering() {
-			// Same reason as landscape: the card gets the room, the diff keeps the thread's lines.
-			listH = max(lk.boxH(4), min(lk.boxH(len(list.rows)), h*15/100))
-			cardH = max(lk.boxH(8), h*55/100)
+		stage := lk.box(mv.stageSpec(lk.innerW(w), true), w, stageH)
+		rest := h - stageH - 2*gapV
+		moveH := max(lk.boxH(10), rest*45/100)
+		codeH := rest - moveH
+		var mid block
+		if mv.pane == mpList {
+			mid = mv.listBox(w, codeH)
+		} else {
+			mid = mv.codeBox(w, codeH)
 		}
-		diffH := max(lk.boxH(3), h-listH-cardH-2*gapV)
-		out = vcat(mv.listBox(w, listH), blankLines(w, gapV), mv.diffBox(w, diffH), blankLines(w, gapV), mv.cardBox(w, h-listH-diffH-2*gapV))
+		out = vcat(stage, blankLines(w, gapV), mid, blankLines(w, gapV), mv.moveBox(w, moveH, true))
 	}
 	for len(out) < h {
 		out = append(out, blank(w))
@@ -1129,12 +1218,26 @@ func (mv mrsView) body(w, h int) []string {
 	return out[:h]
 }
 
-func (mv mrsView) listBox(w, h int) block { return mv.lk.box(mv.listSpec(), w, h) }
-func (mv mrsView) diffBox(w, h int) block {
-	return mv.lk.box(mv.diffSpec(mv.lk.innerW(w), h), w, h)
+func (mv mrsView) listBox(w, h int) block { return mv.lk.box(mv.listSpec(mv.lk.innerW(w)), w, h) }
+func (mv mrsView) codeBox(w, h int) block {
+	return mv.lk.box(mv.codeSpec(mv.lk.innerW(w), h), w, h)
 }
-func (mv mrsView) cardBox(w, h int) block {
-	return mv.lk.box(mv.cardSpec(mv.lk.innerW(w), h), w, h)
+func (mv mrsView) moveBox(w, h int, compact bool) block {
+	return mv.lk.box(mv.moveSpec(mv.lk.innerW(w), h, compact), w, h)
+}
+
+// codeSlots is the number of code rows the current layout shows (for scrolling by keys).
+func (mv mrsView) codeSlots(w, h int) (iw, body int) {
+	lk := mv.lk
+	switch layoutFor(w) {
+	case laySingle:
+		return lk.innerW(w), h - lk.boxH(0) - 2
+	case layLandscape:
+		w2 := w - min(44, w*19/100) - min(66, w*28/100)
+		return lk.innerW(w2), h - lk.boxH(1) - lk.boxH(0) - 2
+	}
+	rest := h - lk.boxH(1)
+	return lk.innerW(w), rest - max(lk.boxH(10), rest*45/100) - lk.boxH(0) - 2
 }
 
 func (mv mrsView) single(w, h int) []string {
@@ -1143,11 +1246,11 @@ func (mv mrsView) single(w, h int) []string {
 	var sp boxSpec
 	switch mv.pane {
 	case mpDiff:
-		sp = mv.diffSpec(lk.innerW(w), h)
+		sp = mv.codeSpec(lk.innerW(w), h)
 	case mpCard:
-		sp = mv.cardSpec(lk.innerW(w), h)
+		sp = mv.moveSpec(lk.innerW(w), h, true)
 	default:
-		sp = mv.listSpec()
+		sp = mv.listSpec(lk.innerW(w))
 	}
 	sp.bottom = strings.Join(nonEmpty(sp.bottom, pos), " · ")
 	b := lk.box(sp, w, h)
@@ -1181,84 +1284,6 @@ func wrapLine(l line, iw int) []line {
 		} else {
 			rows = append(rows, line{{t, tail.style}})
 		}
-	}
-	return rows
-}
-
-// answerRows: the reviewer's comment and the run's verdict on it.
-func (mv mrsView) answerRows(f *mrFinding, iw int) []line {
-	lk := mv.lk
-	var rows []line
-	if f.ThreadBody != "" {
-		for _, l := range wrapLines(cmpOr(f.ThreadAuthor, "reviewer")+": "+f.ThreadBody, iw) {
-			rows = append(rows, line{{l, lk.plain}})
-		}
-	}
-	verdict := map[string]string{"yes": "agree", "no": "disagree", "partly": "partly agree"}[f.Agree]
-	st := lk.ok
-	if f.Agree == "no" {
-		st = lk.warn
-	}
-	if verdict != "" {
-		rows = append(rows, nil, line{{verdict, st}, {ifs(f.Agree == "no", " · the thread stays open for the reviewer"), lk.sub}})
-	}
-	return rows
-}
-
-// answerTail: reply, fix, test, the owner's note, the apply result, then the reasoning and pattern.
-func (mv mrsView) answerTail(f *mrFinding, iw int) []line {
-	lk := mv.lk
-	var rows []line
-	reply := cmpOr(ifs(f.State == "edited", f.Note), f.Comment)
-	if reply == "" {
-		end := ifs(f.Resolved, "resolved") + ifs(!f.Resolved && mv.pushed(), "P resolves it") + ifs(!f.Resolved && !mv.pushed(), "resolved after the push")
-		rows = append(rows, line{{"no reply: the fix answers it, " + end, lk.sub}})
-	} else {
-		rows = append(rows, line{{ifs(f.State == "edited", "your reply (FR)") + ifs(f.State != "edited", "reply (FR)"), lk.sub}})
-		rows = append(rows, mv.replyBlock(reply, iw)...)
-	}
-	diff := func(title, text string) {
-		if text == "" {
-			return
-		}
-		rows = append(rows, nil, line{{title, lk.sub}})
-		for _, l := range strings.Split(strings.TrimRight(text, "\n"), "\n") {
-			if strings.HasPrefix(l, "+++") || strings.HasPrefix(l, "---") {
-				continue
-			}
-			st := lk.plain
-			switch {
-			case strings.HasPrefix(l, "@@"):
-				st = lk.dim
-			case strings.HasPrefix(l, "+"):
-				st = lk.ok
-			case strings.HasPrefix(l, "-"):
-				st = lk.bad
-			}
-			rows = append(rows, line{{fit(l, iw), st}})
-		}
-	}
-	diff("proposed fix", f.Fix)
-	diff("test", f.Test)
-	if f.State == "chat" && f.Note != "" && mv.typing == "" {
-		rows = append(rows, nil, line{{"chat note", lk.cyan}})
-		rows = append(rows, mv.replyBlock(f.Note, iw)...)
-	}
-	if f.Applied != "" && mv.typing == "" {
-		st := lk.ok
-		if f.Applied == "skipped" || f.Applied == "failed" {
-			st = lk.bad
-		}
-		stale := f.AppliedFor != [2]string{f.State, f.Note}
-		rows = append(rows, nil, line{{"apply: " + f.Applied, st}, {ifs(stale, " · before your last decision"), lk.sub}})
-		rows = append(rows, mv.replyBlock(f.AppliedDetail, iw)...)
-	}
-	rows = append(rows, nil, line{{"why", lk.sub}})
-	for _, l := range wrapLines(f.Body, iw) {
-		rows = append(rows, line{{l, lk.sub}})
-	}
-	if f.Pattern != "" {
-		rows = append(rows, nil, line{{lk.cap("pattern"), lk.sub}, spc(1), {f.Pattern, lk.warn}, spc(1), {fmt.Sprintf("· seen %dx", f.Seen), lk.sub}})
 	}
 	return rows
 }

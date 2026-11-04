@@ -276,5 +276,6 @@ func (f *fixtures) agentsNeedYou() int {
 	return n
 }
 
-// mrsNeedYou is the badge on the MRs tab: MRs awaiting a review plus threads to fix.
-func (f *fixtures) mrsNeedYou() int { return f.MRsAwaiting + f.MRsThreads }
+// mrsNeedYou is the badge on the MRs tab: the MRs on the owner's move, and whether one has a
+// real problem (a red pipeline, a failed run).
+func (f *fixtures) mrsNeedYou() (int, bool) { return mrMoveCounts(f, time.Time{}) }

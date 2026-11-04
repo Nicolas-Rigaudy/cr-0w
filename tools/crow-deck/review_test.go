@@ -142,7 +142,7 @@ func TestSavedDecisionsShowAfterRestart(t *testing.T) {
 	m := reviewModel(t, reviewDetail("done", ""))
 	m.mrItem = 1
 	out := m.View()
-	for _, want := range []string{"Findings 2", "edited", "your edit", "Ajoute le scope PY.", "1 accepted"} {
+	for _, want := range []string{"finding 2 of 2", "edited", "Your edit", "Ajoute le scope PY.", "1 of 2 decided"} {
 		if !hasText(out, want) {
 			t.Errorf("view lacks %q", want)
 		}

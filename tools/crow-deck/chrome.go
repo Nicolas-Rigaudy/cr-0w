@@ -137,14 +137,15 @@ func (lk *look) header(w int, cs chromeState) string {
 	return lr(left, right(false, false), w).render(w, false, lk.sel)
 }
 
-func (lk *look) badge(page int, fx *fixtures) int {
+// badge is the count on a tab and whether a real problem waits there (a red dot).
+func (lk *look) badge(page int, fx *fixtures) (int, bool) {
 	switch page {
 	case 1:
-		return fx.agentsNeedYou()
+		return fx.agentsNeedYou(), false
 	case 2:
 		return fx.mrsNeedYou()
 	}
-	return 0
+	return 0, false
 }
 
 func (lk *look) tabs(w int, cs chromeState) string {
@@ -180,8 +181,13 @@ func (lk *look) tabs(w int, cs chromeState) string {
 			}
 		}
 		l = append(l, seg{label, textStyle})
-		if b := lk.badge(i, cs.fx); b > 0 && cs.sync != stLoading {
-			l = append(l, spc(1), seg{strconv.Itoa(b), lk.warn.Bold(true)})
+		if b, bad := lk.badge(i, cs.fx); cs.sync != stLoading {
+			if b > 0 {
+				l = append(l, spc(1), seg{strconv.Itoa(b), lk.warn.Bold(true)})
+			}
+			if bad {
+				l = append(l, spc(1), seg{"●", lk.bad})
+			}
 		}
 		switch lk.th.frame {
 		case frameCyber:

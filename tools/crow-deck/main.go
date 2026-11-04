@@ -43,6 +43,8 @@ type model struct {
 	typing     bool
 
 	mrSel, mrPane, mrFile, mrItem int
+	mrScroll                      int    // first code row shown once the owner scrolled
+	mrManual                      bool   // the owner scrolled the code: it no longer follows the card
 	mrKey                         string // key of the selected MR, keeps the cursor on it across refreshes
 	mrToggle                      bool
 	mrTyping                      string // "e" edit or "c" chat on the current finding, "" when not typing
@@ -66,7 +68,7 @@ type model struct {
 
 func newModel(cfg config) model {
 	th := max(0, themeIndex(cfg.Theme))
-	m := model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pNext, w: 160, h: 45, now: mockNow(), histF: newHistFilter()}
+	m := model{th: th, accent: cfg.Accent, mode: cfg.Mode, sync: stFresh, fx: mockFixtures(), focus: pNext, w: 160, h: 45, now: mockNow(), histF: newHistFilter(), mrPane: mpDiff}
 	m.selectDefaultLane()
 	return m
 }
@@ -153,7 +155,7 @@ func (m *model) selectMR(i int) {
 		key = vis[i].key()
 	}
 	if key != m.mrKey {
-		m.mrKey, m.mrFile, m.mrItem, m.mrToggle = key, 0, 0, false
+		m.mrKey, m.mrFile, m.mrItem, m.mrToggle, m.mrManual = key, 0, 0, false, false
 	}
 }
 
@@ -184,8 +186,12 @@ func (m *model) wantDetail() tea.Cmd {
 }
 
 func (m model) mrsView() mrsView {
+	scroll := -1
+	if m.mrManual {
+		scroll = m.mrScroll
+	}
 	return mrsView{lk: m.look(), fx: m.fx, now: m.now, sync: m.sync, mode: m.mode, sel: m.mrSel, pane: m.mrPane,
-		file: m.mrFile, item: m.mrItem, toggle: m.mrToggle, typing: m.mrTyping, input: m.mrInput}
+		file: m.mrFile, item: m.mrItem, scroll: scroll, toggle: m.mrToggle, typing: m.mrTyping, input: m.mrInput}
 }
 
 func (m model) projectsView() projectsView {
@@ -280,9 +286,7 @@ func (m *model) moveSel(d int) {
 		case mpList:
 			m.selectMR(m.mrSel + d)
 		case mpDiff:
-			if det := mv.detail(); det != nil {
-				m.mrFile = max(0, min(len(det.Files)-1, mv.fileIdx(det)+d))
-			}
+			m.scrollCode(d)
 		case mpCard:
 			m.mrItem = max(0, min(mv.items()-1, mv.itemIdx(mv.items())+d))
 			m.followItem()
@@ -450,6 +454,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.overlay, m.posts = ovNone, nil
 		}
+		// The forge changed: read the MR again now, not at the next tick.
+		return m, m.wantDetail()
 	case reviewStartedMsg:
 		m.flash = msg.text
 		if d := m.fx.MRDetails[msg.key]; d != nil && msg.apply && msg.failed {
@@ -460,6 +466,8 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				e.at = time.Time{}
 			}
 		}
+		// A run started: show its state now, not at the next tick.
+		return m, m.wantDetail()
 	}
 	return m, nil
 }
@@ -633,6 +641,10 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.agentFull, m.agentShift = !m.agentFull, 0
 		}
 	case "[", "]", "<", ">":
+		if m.page == 2 && (k == "[" || k == "]") {
+			m.codeFile(map[string]int{"[": -1, "]": 1}[k])
+			return m, nil
+		}
 		if m.page == 1 {
 			if k == "[" || k == "<" {
 				m.agentShift = min(m.agentShift+1, max(0, m.now.Hour()-3))
@@ -645,7 +657,21 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.page == 4 {
 			m.flash = k + ": editing the account policy arrives with the actions slice"
 		}
-	case "p", "l":
+	case "n", "p", "J", "K":
+		if m.page == 2 {
+			switch k {
+			case "n", "p":
+				m.stepItem(map[string]int{"n": 1, "p": -1}[k])
+				return m, m.wantDetail()
+			default:
+				m.codeHunk(map[string]int{"J": 1, "K": -1}[k])
+			}
+			return m, nil
+		}
+		if m.page == 4 && k == "p" {
+			m.flash = k + ": editing the account policy arrives with the actions slice"
+		}
+	case "l":
 		if m.page == 4 {
 			m.flash = k + ": editing the account policy arrives with the actions slice"
 		}
@@ -716,6 +742,7 @@ func (m model) curAgent() *agentRow {
 
 // followItem moves the diff to the file of the card the cursor is on.
 func (m *model) followItem() {
+	m.mrManual = false
 	mv := m.mrsView()
 	d := mv.detail()
 	if d == nil {
@@ -731,6 +758,79 @@ func (m *model) followItem() {
 		if path != "" && f.Path == path {
 			m.mrFile = i
 		}
+	}
+}
+
+// codeView is the code pane as the current window shows it: rows, the first one shown and
+// the rows in sight.
+func (m *model) codeView() (rows []codeRow, top, body int) {
+	mv := m.mrsView()
+	d := mv.detail()
+	if d == nil || len(d.Files) == 0 {
+		return nil, 0, 0
+	}
+	iw, body := mv.codeSlots(m.w, m.h-4)
+	body = max(1, body)
+	rows, at := mv.codeRows(d, iw)
+	return rows, mv.codeTop(len(rows), at, body), body
+}
+
+// scrollCode moves the code by d rows; the code stops following the card.
+func (m *model) scrollCode(d int) {
+	rows, top, body := m.codeView()
+	m.mrScroll, m.mrManual = max(0, min(len(rows)-body, top+d)), true
+}
+
+// codeHunk puts the next (d > 0) or previous hunk at the top of the code.
+func (m *model) codeHunk(d int) {
+	rows, top, body := m.codeView()
+	to := -1
+	for i, r := range rows {
+		if !r.hunk {
+			continue
+		}
+		if d > 0 && i > top && to < 0 {
+			to = i
+		}
+		if d < 0 && i < top {
+			to = i
+		}
+	}
+	if to < 0 {
+		m.flash = ifs(d > 0, "last hunk of the file") + ifs(d < 0, "first hunk of the file")
+		return
+	}
+	m.mrScroll, m.mrManual = max(0, min(len(rows)-body, to)), true
+}
+
+// codeFile shows the next or previous changed file from its top.
+func (m *model) codeFile(d int) {
+	det := m.mrsView().detail()
+	if det == nil || len(det.Files) == 0 {
+		return
+	}
+	m.mrFile = max(0, min(len(det.Files)-1, m.mrsView().fileIdx(det)+d))
+	m.mrScroll, m.mrManual = 0, false
+}
+
+// stepItem moves to the next or previous card; past the last card, n goes to the next MR.
+func (m *model) stepItem(d int) {
+	mv := m.mrsView()
+	n := mv.items()
+	i := mv.itemIdx(n) + d
+	switch {
+	case n > 0 && i >= 0 && i < n && !(d > 0 && mv.cur() != nil && mv.stage(*mv.cur()).done()):
+		m.mrItem = i
+		m.followItem()
+	case d > 0:
+		if m.mrSel+1 < len(mv.visible()) {
+			m.selectMR(m.mrSel + 1)
+			m.followItem()
+		} else {
+			m.flash = "last MR of the list"
+		}
+	default:
+		m.flash = "first finding"
 	}
 }
 
@@ -997,7 +1097,7 @@ func (m model) context() []keyHint {
 		if m.mrTyping != "" {
 			return []keyHint{{"enter", "save"}, {"esc", "cancel"}}
 		}
-		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"T", "threads / findings"}, {"r", "review"}, {"a x e c", "decide"}, {"A", "apply"}, {"M", "open MR"}, {"P", "post"}, {"m", "work / perso / all"}}
+		return []keyHint{{"j k", "scroll"}, {"J K", "hunk"}, {"[ ]", "file"}, {"n p", "finding"}, {"tab", "pane"}, {"a x e c", "decide"}, {"A", "apply"}, {"P", "push / post"}, {"r", "review"}, {"T", "threads / findings"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 3 {
 		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o h", "action"}, {"z", "zoom"}, {"m", "work / perso / all"}}
