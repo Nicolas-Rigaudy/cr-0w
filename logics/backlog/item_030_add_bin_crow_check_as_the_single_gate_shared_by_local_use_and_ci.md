@@ -1,10 +1,10 @@
 ## item_030_add_bin_crow_check_as_the_single_gate_shared_by_local_use_and_ci - Add bin/crow-check as the single gate, shared by local use and CI
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,3 +57,12 @@
 
 # Notes
 - Planned 2026-10-29. Execution happens in a fresh, clear-context session started from this doc and the request; do not execute from the planning session.
+
+# Validation
+- AC1: proven by `tests/test_crow_check.py` (one failing fixture per group: pytest, shellcheck, ruff, leak, commits, version; clean tree exits 0). 243 tests pass.
+- AC2: `test_leak_planted_name_fails`, `test_leak_personal_path_fails`, `test_leak_ignores_local`.
+- AC3: pure Python 3 stdlib plus git, no root; `test_runs_without_local_dir` runs with no `local/`.
+- AC4: pending item_037 (CONTRIBUTING does not exist yet); document `bin/crow-check [--fast] [--json]` there.
+- shellcheck and ruff are not installed here: those groups skip with a note; failure paths are tested with fake binaries.
+- Version group is a stub: passes with a note when VERSION is absent (item_033 not done); checks semver and a CHANGELOG entry when VERSION exists.
+- Commit range: since the last tag; with no tag, since origin/main.
