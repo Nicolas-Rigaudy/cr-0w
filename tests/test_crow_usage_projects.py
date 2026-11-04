@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import os
 
 from conftest import run, write_jsonl
 
@@ -85,11 +86,15 @@ def test_hub_session_hopping_between_projects_is_shared(hub):
     assert today["hub"]["shared_sessions"] == 1 and today["lazytf"]["shared_sessions"] == 1
 
 
-def test_crow_runs_json_carries_project_totals(hub):
+def test_crow_runs_json_carries_project_totals(hub, tmp_path):
+    fake = tmp_path / "fakebin"
+    fake.mkdir()
+    (fake / "cdx").write_text("#!/bin/sh\necho '{\"runs\": []}'\n")
+    (fake / "cdx").chmod(0o755)
     setup(hub, "s7", [turn("a", 0, [("Read", {"file_path": "/w/lazytf/f"})], out=5)])
     usage(hub)
     (hub[0] / "local" / "projects.yaml").write_text(PROJECTS)
-    r = run(hub, "crow-runs", "json")
+    r = run(hub, "crow-runs", "json", env={"PATH": f"{fake}:{os.environ['PATH']}"})
     assert r.returncode == 0, r.stderr
     assert by_name(json.loads(r.stdout)["usage_by_project"])["lazytf"]["tokens"] == 5
 

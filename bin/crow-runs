@@ -355,6 +355,8 @@ def provider_of(argv0, exe):
 def agent_procs(proc="/proc"):
     """Live claude and codex processes (interactive sessions and headless runs)."""
     out = []
+    if not Path(proc).is_dir():  # no /proc (macOS)
+        return out
     for d in Path(proc).iterdir():
         if not d.name.isdigit():
             continue
