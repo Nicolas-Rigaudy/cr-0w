@@ -18,7 +18,7 @@ if [ "${1:-}" = "--history" ]; then  # audit: everything already pushed, not onl
   echo "crow-prepush-check: denied patterns in pushed history:" >&2; echo "$hits" | cut -c1-160 | head -20 >&2; exit 1
 fi
 if [ "${1:-}" = "--check" ]; then   # manual run: check what HEAD would push to its upstream
-  exec "$0" < <(printf "HEAD %s upstream %s\n" "$(git rev-parse HEAD)" "$(git rev-parse @{u} 2>/dev/null || echo $zero)")
+  exec "$0" < <(printf "HEAD %s upstream %s\n" "$(git rev-parse HEAD)" "$(git rev-parse "@{u}" 2>/dev/null || echo $zero)")
 fi
 while read -r lref lsha rref rsha; do
   [ "$lsha" = "$zero" ] && continue

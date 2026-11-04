@@ -27,7 +27,8 @@ import crow_lib  # noqa: E402
 
 HOME = Path(os.environ.get("CROW_HOME") or Path(__file__).resolve().parent.parent)
 ACCOUNT = os.environ.get("CROW_ACCOUNT") or subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "default"], text=True).strip()
-REG = yaml.safe_load(open(HOME / "local/projects.yaml"))
+_REG_FILE = HOME / "local/projects.yaml"
+REG = (yaml.safe_load(open(_REG_FILE)) if _REG_FILE.is_file() else None) or {"projects": []}
 STATE = Path(REG.get("vault", {}).get("crow_dir") or HOME / "local/state")
 LEDGER = STATE / "runs.jsonl"
 MAX_PARALLEL = int(os.environ.get("CROW_MAX_RUNS", "2"))
