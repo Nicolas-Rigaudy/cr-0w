@@ -201,10 +201,12 @@ func (hv homeView) display(i, iw int) (sp boxSpec, at []int) {
 		n := 0
 		for k, g := range gs {
 			n += len(g.rows)
-			head := line{{lk.cap(g.name), g.glyph.style.Bold(true)}, {"  " + strconv.Itoa(len(g.rows)) + " ", lk.sub}}
-			sp.rows = append(sp.rows, append(head, seg{rep("╌", iw-head.width()), lk.dim}))
+			sp.rows = append(sp.rows, lk.groupHead(g.name, g.glyph.style.Bold(true), len(g.rows), iw))
 			if k == 0 {
 				sp.rows = append(sp.rows, hv.nextHead(iw))
+				if r := lk.headRule(iw); r != nil {
+					sp.rows = append(sp.rows, r)
+				}
 			}
 			for _, r := range g.rows {
 				add(hv.nextRow(g, r, iw))
@@ -490,24 +492,14 @@ func (hv homeView) spec(i, iw int) boxSpec {
 
 // ----- composition -----
 
-func (hv homeView) gapH() int {
-	if hv.lk.th.frame == frameSoft {
-		return 3
-	}
-	return 0
-}
+func (hv homeView) gapH() int { h, _ := hv.lk.gaps(); return h }
 
-func (hv homeView) gapV() int {
-	if hv.lk.th.frame == frameSoft {
-		return 1
-	}
-	return 0
-}
+func (hv homeView) gapV() int { _, v := hv.lk.gaps(); return v }
 
 // want is the box height that shows all of pane i at width w.
 func (hv homeView) want(i, w int) int {
 	sp := hv.spec(i, hv.lk.innerW(w))
-	return hv.lk.boxH(len(sp.rows) + btoi(sp.hdr != nil))
+	return hv.lk.boxH(len(sp.rows) + hv.lk.hdrH(sp))
 }
 
 // stack draws panes top to bottom in w x h. Each pane takes what it wants in order;
@@ -604,7 +596,7 @@ func (hv homeView) pane(i, w, h int, pos string) block {
 	lk := hv.lk
 	sp, at := hv.display(i, lk.innerW(w))
 	var bottom []string
-	slots := h - lk.boxH(0) - btoi(sp.hdr != nil)
+	slots := h - lk.boxH(0) - lk.hdrH(sp)
 	if hv.focus == i && len(at) > 0 {
 		k := max(0, min(hv.sel[i], len(at)-1))
 		sp.sel = at[k]

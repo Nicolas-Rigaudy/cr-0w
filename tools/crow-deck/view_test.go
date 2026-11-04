@@ -118,7 +118,7 @@ func TestThemeCycle(t *testing.T) {
 	if themes[m.th].name != "lazytf" {
 		t.Fatalf("default theme %q, want lazytf", themes[m.th].name)
 	}
-	want := []string{"hud", "cyber", "soft", "lazytf"}
+	want := []string{"soft", "cyber", "hud", "lazytf"}
 	for _, name := range want {
 		m = send(m, keyMsg("t"), keyMsg("esc"))
 		if got := themes[m.th].name; got != name {
@@ -145,7 +145,7 @@ func TestThemesDifferAndStatusNamesTheme(t *testing.T) {
 		m := newModel(defaultConfig())
 		m.th = ti
 		out := m.View()
-		if !hasText(out, "t theme: "+th.name) {
+		if !hasText(out, "theme: "+th.name) {
 			t.Errorf("%s: status bar does not name the theme", th.name)
 		}
 		if other, ok := seen[out]; ok {

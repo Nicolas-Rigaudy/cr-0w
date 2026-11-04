@@ -1141,12 +1141,7 @@ func (av agentsView) body(w, h int) []string {
 	return out[:h]
 }
 
-func (av agentsView) gaps() (gh, gv int) {
-	if av.lk.th.frame == frameSoft {
-		return 3, 1
-	}
-	return 0, 0
-}
+func (av agentsView) gaps() (gh, gv int) { return av.lk.gaps() }
 
 func (av agentsView) landscape(w, h int) block {
 	lk := av.lk

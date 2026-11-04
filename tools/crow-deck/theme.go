@@ -18,30 +18,33 @@ type frameKind int
 
 const (
 	frameRound frameKind = iota // lazytf: rounded border, title on the border
-	frameHUD                    // brackets, tags, panel index
-	frameCyber                  // single rules, //, corner notch
-	frameSoft                   // no lines, spacing only
+	frameHUD                    // corner brackets, tags, panel index
+	frameCyber                  // square, double on focus, //, corner notch
+	frameSoft                   // top rule and left spine
 )
 
 const follow = -1 // role follows the accent slot
 
+// defaultAccent is the accent slot of every theme unless the config sets one. Themes
+// differ by shape, never by accent: the terminal theme decides the colours.
+const defaultAccent = 4
+
 type theme struct {
-	name   string
-	frame  frameKind
-	accent int // default accent slot (config can override)
-	title  int // box title slot, follow = accent
-	key    int // key hint slot
-	label  int // right labels and links
-	head   int // table header slot
-	caps   bool
+	name  string
+	frame frameKind
+	title int // box title slot, follow = accent
+	key   int // key hint slot
+	label int // right labels and links
+	head  int // table header slot
+	caps  bool
 }
 
-// Slots: 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white.
+// Slots: 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white. `t` cycles in this order.
 var themes = []theme{
-	{"lazytf", frameRound, 4, 5, 4, 4, 7, false},
-	{"hud", frameHUD, 6, follow, follow, follow, follow, true},
-	{"cyber", frameCyber, 5, follow, 4, 6, 6, true},
-	{"soft", frameSoft, 6, follow, 4, 4, 7, false},
+	{"lazytf", frameRound, 5, follow, follow, 7, false},
+	{"soft", frameSoft, follow, follow, follow, 7, false},
+	{"cyber", frameCyber, follow, 6, 6, 6, true},
+	{"hud", frameHUD, follow, 6, 6, 6, true},
 }
 
 func themeIndex(name string) int {
@@ -104,7 +107,7 @@ type look struct {
 func newLook(th theme, accent int) *look {
 	custom := accent
 	if accent < 0 {
-		accent = th.accent
+		accent = defaultAccent
 	}
 	pick := func(s int) int {
 		if s == follow {

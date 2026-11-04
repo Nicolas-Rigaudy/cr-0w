@@ -121,12 +121,12 @@ func (lk *look) themeOverlay(w, h, cur int) []string {
 	return lk.overlayBlock(sp, w, h)
 }
 
-// accentFor is the accent a theme would show: the config accent, else its default.
-func (lk *look) accentFor(t theme) int {
+// accentFor is the accent a theme would show: the config accent, else the default.
+func (lk *look) accentFor(theme) int {
 	if lk.custom >= 0 {
 		return lk.custom
 	}
-	return t.accent
+	return defaultAccent
 }
 
 func (lk *look) confirmOverlay(w, h int, a *agentRow) []string {

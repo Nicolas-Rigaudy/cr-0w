@@ -225,9 +225,7 @@ func (pv projectsView) listSpec(iw int, port bool) boxSpec {
 				n += btoi(x.Group == group)
 			}
 			gst := []lipgloss.Style{lk.warn.Bold(true), lk.cyan.Bold(true), lk.dim.Bold(true)}[group]
-			name := lk.cap(projGroupNames[group])
-			head := line{{name, gst}, {fmt.Sprintf("  %d ", n), lk.sub}}
-			sp.rows = append(sp.rows, head.join(line{{rep("╌", iw-head.width()), lk.dim}}))
+			sp.rows = append(sp.rows, lk.groupHead(projGroupNames[group], gst, n, iw))
 		}
 		if i == pv.sel {
 			sp.sel = len(sp.rows)
@@ -937,19 +935,11 @@ func (pv projectsView) body(w, h int) []string {
 	return out[:h]
 }
 
-func (pv projectsView) gapV() int {
-	if pv.lk.th.frame == frameSoft {
-		return 1
-	}
-	return 0
-}
+func (pv projectsView) gapV() int { _, v := pv.lk.gaps(); return v }
 
 func (pv projectsView) landscape(w, h int) block {
 	lk := pv.lk
-	gv, gh := pv.gapV(), 0
-	if lk.th.frame == frameSoft {
-		gh = 3
-	}
+	gh, gv := lk.gaps()
 	lw := w * 128 / 235
 	dw := w - lw - gh
 	ls := pv.listSpec(lk.innerW(lw), false)

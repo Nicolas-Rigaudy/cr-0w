@@ -56,14 +56,25 @@ func (lk *look) healthSegs(cs chromeState, labels bool) line {
 		label string
 	}{{h.Identity, "identity"}, {h.CDX, "cdx"}}
 	var out line
+	sep := func() {
+		switch lk.th.frame {
+		case frameSoft:
+			out = append(out, spc(1), seg{"·", lk.sub}, spc(1))
+		case frameCyber:
+			out = append(out, spc(1), seg{"//", lk.dim}, spc(1))
+		default:
+			out = append(out, spc(2))
+		}
+	}
 	for _, it := range items {
 		st := lk.ok
 		if !it.ok {
 			st = lk.bad
 		}
-		out = append(out, spc(2), lk.dot(st))
+		sep()
+		out = append(out, lk.dot(st))
 		if labels {
-			out = append(out, spc(1), seg{it.label, lk.sub})
+			out = append(out, spc(1), seg{lk.cap(it.label), lk.sub})
 		}
 	}
 	trees := lk.ok
@@ -74,9 +85,10 @@ func (lk *look) healthSegs(cs chromeState, labels bool) line {
 			label += "s"
 		}
 	}
-	out = append(out, spc(2), lk.dot(trees))
+	sep()
+	out = append(out, lk.dot(trees))
 	if labels {
-		out = append(out, spc(1), seg{label, lk.sub})
+		out = append(out, spc(1), seg{lk.cap(label), lk.sub})
 	}
 	return out
 }
@@ -88,7 +100,7 @@ func (lk *look) brand(page int) line {
 	case frameCyber:
 		return line{{"▌CROW_DECK", lk.acc}, spc(1), {"//", lk.label}, spc(1), {strings.ToLower(pageNames[page]), lk.sub}, spc(1), {"░▒▓", lk.dim}}
 	case frameSoft:
-		return line{{"Crow deck", lk.acc}}
+		return line{{"Crow deck", lk.acc}, spc(1), {"╶──", lk.sub}}
 	}
 	return line{{"◆ crow deck", lk.title}}
 }
@@ -97,16 +109,24 @@ func (lk *look) modeSegs(mode string, word bool) line {
 	var out line
 	out = append(out, spc(2))
 	if word {
-		out = append(out, seg{"mode", lk.sub}, spc(1))
+		out = append(out, seg{lk.cap("mode"), lk.sub}, spc(1))
 	}
 	for i, m := range []string{"all", "work", "perso"} {
 		if i > 0 {
 			out = append(out, spc(1))
 		}
-		if m == mode {
-			out = append(out, seg{" " + m + " ", lk.sel.Bold(true)})
-		} else {
-			out = append(out, seg{m, lk.sub})
+		name := lk.cap(m)
+		switch {
+		case m != mode:
+			out = append(out, seg{name, lk.sub})
+		case lk.th.frame == frameSoft:
+			out = append(out, seg{name, lk.underlineAcc})
+		case lk.th.frame == frameHUD:
+			out = append(out, seg{"▏" + name + "▕", lk.acc})
+		case lk.th.frame == frameCyber:
+			out = append(out, seg{"[" + name + "]", lk.sel.Bold(true)})
+		default:
+			out = append(out, seg{" " + name + " ", lk.sel.Bold(true)})
 		}
 	}
 	return append(out, spc(1), seg{"m", lk.key})
@@ -225,11 +245,11 @@ func (lk *look) rule(w int) string {
 		stripe := "━━━━ ╌╌╌ ░░"
 		return lk.acc.Render(stripe) + lk.dim.Render(rep("╌", w-lipgloss.Width(stripe)))
 	case frameCyber:
-		return lk.acc.Render("//////////") + lk.dim.Render(rep("─", w-10))
+		return lk.acc.Render("//////////") + lk.sub.Render(rep("─", w-10))
 	case frameSoft:
 		return blank(w)
 	}
-	return lk.dim.Render(rep("─", w))
+	return lk.sub.Render(rep("─", w))
 }
 
 // status is the unified bar: context keys, then ? help, : palette, t theme, q quit.
@@ -239,15 +259,28 @@ func (lk *look) status(w int, cs chromeState, themeName string) string {
 		var l line
 		for i, h := range hints {
 			if i > 0 {
-				l = append(l, spc(2))
-				if lk.th.frame == frameCyber {
-					l = append(l, seg{"// ", lk.dim})
+				switch lk.th.frame {
+				case frameSoft:
+					l = append(l, spc(1), seg{"·", lk.sub}, spc(1))
+				case frameCyber:
+					l = append(l, spc(1), seg{"//", lk.dim}, spc(1))
+				default:
+					l = append(l, spc(2))
 				}
 			}
-			l = append(l, seg{h.key, lk.key}, spc(1), seg{lk.cap(h.desc), lk.sub})
+			switch lk.th.frame {
+			case frameCyber:
+				l = append(l, seg{"[", lk.dim}, seg{h.key, lk.key.Bold(true)}, seg{"]", lk.dim})
+			case frameHUD:
+				l = append(l, seg{"▏", lk.acc}, seg{h.key, lk.key.Bold(true)}, seg{"▕", lk.acc})
+			default:
+				l = append(l, seg{h.key, lk.key.Bold(true)})
+			}
+			l = append(l, spc(1), seg{lk.cap(h.desc), lk.sub})
 		}
 		return l
 	}
+
 	right := render(global)
 	if cs.flash != "" {
 		return lr(line{{cs.flash, lk.warn}}, right, w).render(w, false, lk.sel)
@@ -255,6 +288,9 @@ func (lk *look) status(w int, cs chromeState, themeName string) string {
 	ctx := cs.context
 	for n := len(ctx); n >= 0; n-- {
 		left := render(ctx[:n])
+		if lk.th.frame == frameSoft && n > 0 {
+			left = append(line{{"╶─", lk.sub}, spc(1)}, left...)
+		}
 		if left.width()+3+right.width() <= w {
 			return lr(left, right, w).render(w, false, lk.sel)
 		}

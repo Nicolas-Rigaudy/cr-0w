@@ -230,8 +230,7 @@ func (mv mrsView) listRows(iw int) (rows []line, start []int) {
 			continue
 		}
 		gs := []lipgloss.Style{lk.warn.Bold(true), lk.sub.Bold(true), lk.ok.Bold(true)}[g]
-		hdr := line{{lk.cap(mrGroupNames[g]), gs}, {"  " + strconv.Itoa(len(idx)) + " ", lk.sub}}
-		rows = append(rows, append(hdr, seg{rep("╌", iw-hdr.width()), lk.dim}))
+		rows = append(rows, lk.groupHead(mrGroupNames[g], gs, len(idx), iw))
 		for _, i := range idx {
 			r := vis[i]
 			st := mv.stage(r)
@@ -1187,10 +1186,7 @@ func (mv mrsView) body(w, h int) []string {
 	if lay == laySingle {
 		return mv.single(w, h)
 	}
-	gapH, gapV := 0, 0
-	if lk.th.frame == frameSoft {
-		gapH, gapV = 3, 1
-	}
+	gapH, gapV := lk.gaps()
 	stageH := lk.boxH(1)
 	var out block
 	if lay == layLandscape {

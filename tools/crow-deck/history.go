@@ -274,20 +274,13 @@ func (hv histView) rowsAll() []int {
 func (hv histView) body(w, h int) []string {
 	lk := hv.lk
 	rows := hv.rows()
-	gapV := 0
-	if lk.th.frame == frameSoft {
-		gapV = 1
-	}
+	gap, gapV := lk.gaps()
 	searchH := lk.boxH(2)
 	search := lk.box(hv.searchSpec(rows, lk.innerW(w)), w, searchH)
 	restH := h - searchH - gapV
 	var rest block
 	switch layoutFor(w) {
 	case layLandscape:
-		gap := 0
-		if lk.th.frame == frameSoft {
-			gap = 3
-		}
 		w1 := (w - gap) * 60 / 100
 		w2 := w - gap - w1
 		rest = hcat([]int{w1, w2}, gap,

@@ -318,10 +318,7 @@ func (uv usageViewState) body(w, h int) []string {
 	if lay == laySingle {
 		return uv.single(w, h)
 	}
-	gapH, gapV := 0, 0
-	if lk.th.frame == frameSoft {
-		gapH, gapV = 3, 1
-	}
+	gapH, gapV := lk.gaps()
 	accH := lk.boxH(len(uv.fx.Gauges) + 3)
 	if len(uv.fx.Gauges) == 0 {
 		accH = lk.boxH(1)
