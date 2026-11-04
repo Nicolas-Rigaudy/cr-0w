@@ -1,10 +1,10 @@
 ## item_058_deck_theme_set_build_lazytf_soft_cyber_hud_per_the_theme_specs - Deck theme set build: lazytf, soft, cyber, hud per the theme specs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -36,6 +36,10 @@
 
 # AC Traceability
 - request-AC3 -> owner pick before Go code. Proof: req_011 § Owner picks.
+- AC1 -> every theme draws its own frame (round, top rule + spine, square/double, corner brackets). Proof: tools/crow-deck/themes_test.go TestThemesDifferInMonochrome; shots local/state/afk/shots/themes-2026-11-04/sheets/home-land-mockup-vs-build.png, mrs-land-mockup-vs-build.png.
+- AC2 -> foreground slots 0-15 only, no background codes. Proof: TestThemesUseANSI16Only, TestThemesShareAccent.
+- AC3 -> t cycles lazytf, soft, cyber, hud. Proof: view_test.go theme cycle test, TestShots writes each theme per page and size.
+- Final spec -> gauges differ in monochrome (━─, ●○, [///...], ▕▮▯│▏). Proof: TestThemesDifferInMonochrome, TestHUDGaugeTick, sheets/mono-home-mockup-vs-build.png.
 
 # Decision framing
 - Product framing: Not needed
@@ -60,7 +64,15 @@
 - Reference: local/state/shots/deck-rework/themes.py, mono.py (strip colors to check), png/theme-*-*.png, png/mono-grid.png.
 - Comparison page: local/state/shots/deck-rework/r2-compare.html
 
+# Open choices (owner review)
+- HUD gauge fill keeps the semantic slots (ok/warn/bad), the mock painted slot 3 because amber was the HUD accent then.
+- Soft panels sit 2 columns apart with no blank row, as in the mockup (the runbook says 1 blank row).
+- HUD 80% tick is on every gauge, cost bars included (no policy cap data yet).
+- Tab badges keep the current style; the HUD ●N badge in ANSI slot 1 is not built.
+- Theme-specific empty, loading and error text and the ✕ glyph are not built.
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-04T13:10:21.492582+00:00 | afk | themes-2026-11-04 | Four themes by shape, tests, shots | succeeded |  | Shots in local/state/afk/shots/themes-2026-11-04/sheets. Paused choices wait for owner review. |
 
