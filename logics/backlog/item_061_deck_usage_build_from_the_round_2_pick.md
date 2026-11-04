@@ -9,7 +9,7 @@
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-03 18:27:21
+> Indicators reviewed: 2026-11-04 11:31:38
 
 # AI Context
 - Summary: Build the Usage tab from the board the owner picks in item_055.
@@ -44,6 +44,8 @@
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
+- Usage period key is p (cycles today/week/month); m stays the global mode key; policy editing moved to P. Owner choice 2026-11-03.
+- Board parts with no crow-usage source dropped (AFK queue, approve run, planned runs, scripts saving, midnight forecast); runway forecast comes from burn to the 5h reset.
 
 # Links
 - Product brief(s): (none yet)
