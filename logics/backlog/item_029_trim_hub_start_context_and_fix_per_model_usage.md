@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 70%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -34,6 +34,11 @@
 # AC Traceability
 - request-AC5 -> This backlog slice. Proof: AC1: start context measured before and after in the runbook.
 - request-AC3 -> This backlog slice. Proof: AC2: per-model totals match a transcript recount within 2%.
+
+# Progress notes (2026-11-04)
+- `bin/crow-cost-audit` done with `tests/test_crow_cost_audit.py`.
+- Per-model fix done: crow-usage `by_model` counts each model's own turns; `tests/test_crow_usage_by_model.py` recounts within 2% (AC2).
+- AC1 before: baseline recorded in runbooks/cost-audit.md (hub start median 48.8k tokens, 42.6k on a plugin-light account). The after number waits for the owner to trim profile plugins or MCP servers (outside the repo).
 
 # Decision framing
 - Product framing: Not needed

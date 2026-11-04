@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 85%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -34,6 +34,11 @@
 
 # AC Traceability
 - request-AC5 -> This backlog slice. Proof: AC1: every crow headless run carries failover and a fallback model.
+
+# Progress notes (2026-11-04)
+- AC1 failover: done. `crow_lib.run_flags` adds `--failover` to every headless run (dispatch, review runs, retro, one-shots); retro also passes `--kind retro`. Tests: `tests/test_crow_headless_flags.py`.
+- AC1 fallback model: not passable. `cdx run --help` has no `--fallback-model`; it exists only on `cdx set <account> --fallback-model`. Open for the owner: run `cdx set <account> --fallback-model MODEL` per account, or ask cdx for a run flag.
+- AC2 budget: done. `crow-runs dispatch --budget USD` overrides the kind's budget; documented in runbooks/dispatch-background-runs.md.
 
 # Decision framing
 - Product framing: Not needed
