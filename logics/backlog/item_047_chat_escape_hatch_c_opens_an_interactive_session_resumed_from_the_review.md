@@ -1,10 +1,10 @@
 ## item_047_chat_escape_hatch_c_opens_an_interactive_session_resumed_from_the_review - Chat escape hatch: c opens an interactive session resumed from the review
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -54,4 +54,5 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-04T12:18:30.401961+00:00 | afk | afk-deckh |  | succeeded |  | AC1-3 met: go test + pytest green; findings path in task and overlay, REVIEWER case fixed, enter-only run |
 
