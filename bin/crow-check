@@ -55,8 +55,11 @@ def g_pytest(root):
     if not (root / "tests").is_dir():
         return "skip", "no tests/ directory"
     r = sh([sys.executable, "-m", "pytest", "-q", "-x", "tests"], root)
-    tail = (r.stdout + r.stderr).strip().splitlines()[-1:] or [""]
-    return ("pass" if r.returncode == 0 else "fail"), tail[0]
+    lines = (r.stdout + r.stderr).strip().splitlines() or [""]
+    if r.returncode == 0:
+        return "pass", lines[-1]
+    why = [l for l in lines if l.startswith(("ERROR", "FAILED", "E  "))][:4]
+    return "fail", "; ".join(why + lines[-1:])
 
 
 def g_shellcheck(root):
