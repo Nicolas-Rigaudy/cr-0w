@@ -13,12 +13,20 @@ A read-only background run reviews one MR and its findings land in a JSON file t
 - `bin/crow-review-run apply <group/name> <number>`: resumes the review conversation to act on the decisions (below).
 - `bin/crow-review-run actions <group/name> <number>` and `act <group/name> <number> <id> --hash H`: push and post, one action per call (below).
 
-## Deck keys (MRs tab)
+## Deck page (MRs tab)
+Three columns in landscape: the MR list, the code, the Your move panel. Portrait stacks the stage line, the code (or the list on `tab`) and a compact panel.
+- One rule sets each MR's stage (`mrStageOf` in `tools/crow-deck/mrs_move.go`): steps review, decide, apply, commit, push, resolve (threads mode), done. Peer reviews use review, decide, post, done. It also sets who moves next (you, crow, others, done), the list reason and the key that moves it on.
+- The list groups MRs by whose move: Your move, Waiting on others, Done. A done MR shows `✓` and `done, pushed <sha>`.
+- The MRs tab badge counts the MRs on the owner's move. A dot follows the count only for a real problem: a failed pipeline, review or apply.
+- The stage box above the code shows `✓ done ─ ● current ─ ○ next` and `next <keys>`.
+- The code pane opens on the current finding's file, the commented line reversed with `▶` and `◀ Fx author`, the comment boxed under it, other findings marked `◆`. A strip lists the files with findings. A scrollbar and `↑ N above · ↓ M below · lines a–b` give the position.
+- The panel lists the steps (current one marked `▶ ●`), the finding, the proposed fix, then the keycaps `a x e c` and `n` / `A` / `P`. Once the finding is pushed or posted, the keycaps fold into one `Decided Fx` line. A done MR shows the commit, the thread count and who acts next.
+- Keys: `j k` scroll the focused pane, `J K` jump by hunk, `[ ]` by file, `n p` move between findings (`n` past the last one opens the next MR), `tab` cycles list, code, panel.
+- `a` accept, `x` refuse, `e` edit the comment or reply (prefilled), `c` chat note. `enter` saves, `esc` drops. Each decision calls `decide`, so it survives a restart.
 - `r` asks, then starts a review of the selected MR: `peer` on a review, `threads` on an own MR with open threads, `self` on another own MR. Refused while one runs.
-- `a` accept, `x` refuse, `e` edit the comment (prefilled), `c` chat note. `enter` saves, `esc` drops. Each decision calls `decide`, so it survives a restart.
 - `A` asks (counts of fixes and chat notes), then starts the apply run. Refused before the review is done, while an apply runs, or when nothing is left to apply.
-- `P` lists the pending actions, then shows them one overlay at a time: title, exact text, exact command, warnings. `enter` runs that one action, `s` skips it, `esc` stops. Keys wait while it runs. A failure closes the overlay with the reason. The card shows `posted` per finding and `pushed` on the apply line.
-- A running review or apply refetches every 20 s. A failed one shows its reason; `r` runs the review again.
+- `P` lists the pending actions, then shows them one overlay at a time: title, exact text, exact command, warnings. `enter` runs that one action, `s` skips it, `esc` stops. Keys wait while it runs. A failure closes the overlay with the reason.
+- A post that succeeds and an apply that starts refetch the MR at once. A running review or apply refetches every 20 s. A failed one shows its reason; `r` runs the review again.
 - The mock deck keeps decisions in memory and starts no run.
 
 ## Threads mode (answer reviewers on the owner's MR)
