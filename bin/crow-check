@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""crow-check: the single release gate, shared by local use and CI.
+
+Groups: pytest, shellcheck, ruff, leak (engine-vs-config), commits, version.
+Every group runs and prints its result; the exit code is 1 if any group is red.
+  --fast       skip the slow groups (pytest)
+  --json       print a JSON summary instead of text
+  --root DIR   check DIR instead of this checkout
+A missing linter is reported as 'skip' with a note, never as a failure.
+Leak patterns: a generic personal-path regex, plus the lines of local/prepush-deny.txt
+(when local/ exists) and of the file named by $CROW_CHECK_DENY.
+"""
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+PERSONAL_PATH = re.compile(r"""(?:/home|/Users)/(?!me\b|user\b|\$|<|\*|\.\.\.)[A-Za-z]\w*""")
+COMMIT_FORMAT = re.compile(r"^(new|chg|fix)\[[A-Z0-9]+(/[A-Z0-9]+)*\]: \S")
+COMMIT_EXEMPT = ("Merge ", "Revert ", "fixup! ", "squash! ", "amend! ")
+SKIP_SUFFIX = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".pyc", ".woff", ".woff2"}
+
+
+def sh(cmd, cwd, timeout=900):
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+
+
+def tracked(root):
+    r = sh(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], root)
+    if r.returncode != 0:
+        return [p for p in root.rglob("*") if p.is_file() and ".git" not in p.parts]
+    return [root / n for n in r.stdout.split("\0") if n]
+
+
+def shell_scripts(root):
+    out = []
+    for p in tracked(root):
+        rel = p.relative_to(root).parts
+        if rel[0] == "local" or not p.is_file() or p.is_symlink():
+            continue
+        try:
+            first = p.open("rb").readline(200)
+        except OSError:
+            continue
+        if p.suffix == ".sh" or re.match(rb"#!.*\b(ba|z)?sh\b", first):
+            out.append(p)
+    return out
+
+
+def g_pytest(root):
+    if not (root / "tests").is_dir():
+        return "skip", "no tests/ directory"
+    r = sh([sys.executable, "-m", "pytest", "-q", "-x", "tests"], root)
+    tail = (r.stdout + r.stderr).strip().splitlines()[-1:] or [""]
+    return ("pass" if r.returncode == 0 else "fail"), tail[0]
+
+
+def g_shellcheck(root):
+    if not shutil.which("shellcheck"):
+        return "skip", "shellcheck not installed"
+    files = shell_scripts(root)
+    if not files:
+        return "skip", "no shell scripts"
+    r = sh(["shellcheck", "-S", "warning", *map(str, files)], root)
+    return ("pass" if r.returncode == 0 else "fail"), (r.stdout + r.stderr).strip()[:400] or f"{len(files)} scripts"
+
+
+def g_ruff(root):
+    if not shutil.which("ruff"):
+        return "skip", "ruff not installed"
+    r = sh(["ruff", "check", "."], root)
+    return ("pass" if r.returncode == 0 else "fail"), (r.stdout + r.stderr).strip()[:400] or "clean"
+
+
+def deny_patterns(root):
+    pats = []
+    files = [root / "local" / "prepush-deny.txt"]
+    if os.environ.get("CROW_CHECK_DENY"):
+        files.append(Path(os.environ["CROW_CHECK_DENY"]))
+    for f in files:
+        if f.is_file():
+            pats += [l.strip() for l in f.read_text().splitlines() if l.strip() and not l.lstrip().startswith("#")]
+    return re.compile("|".join(f"(?:{p})" for p in pats), re.I) if pats else None
+
+
+def g_leak(root):
+    deny = deny_patterns(root)
+    hits = []
+    for p in tracked(root):
+        rel = p.relative_to(root)
+        if rel.parts[0] == "local" or p.suffix in SKIP_SUFFIX or not p.is_file() or p.is_symlink():
+            continue
+        try:
+            text = p.read_text(errors="replace")
+        except OSError:
+            continue
+        for n, line in enumerate(text.splitlines(), 1):
+            if PERSONAL_PATH.search(line) or (deny and deny.search(line)):
+                hits.append(f"{rel}:{n}")
+    note = "personal paths" + (" and deny list" if deny else "; no deny list")
+    if hits:
+        return "fail", f"{len(hits)} hit(s) outside local/: " + ", ".join(hits[:8])
+    return "pass", f"no hits ({note})"
+
+
+def g_commits(root):
+    if sh(["git", "rev-parse", "--git-dir"], root).returncode != 0:
+        return "skip", "not a git repository"
+    tag = sh(["git", "describe", "--tags", "--abbrev=0"], root)
+    if tag.returncode == 0:
+        rng, label = f"{tag.stdout.strip()}..HEAD", f"since {tag.stdout.strip()}"
+    elif sh(["git", "rev-parse", "--verify", "-q", "origin/main"], root).returncode == 0:
+        rng, label = "origin/main..HEAD", "since origin/main (no tag yet)"
+    else:
+        return "skip", "no tag and no origin/main to bound the range"
+    r = sh(["git", "log", "--format=%h %s", rng], root)
+    bad = [l for l in r.stdout.splitlines() if not COMMIT_FORMAT.match(l.split(" ", 1)[1] if " " in l else "")
+           and not l.split(" ", 1)[1].startswith(COMMIT_EXEMPT)]
+    if bad:
+        return "fail", f"{len(bad)} bad subject(s) {label}: " + "; ".join(bad[:3])
+    return "pass", f"subjects ok {label}"
+
+
+def g_version(root):
+    if not (root / "VERSION").is_file():
+        return "pass", "VERSION not introduced yet (item_033); nothing to compare"
+    ver = (root / "VERSION").read_text().strip()
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][\w.]+)?", ver):
+        return "fail", f"VERSION is not semver: {ver!r}"
+    cl = root / "CHANGELOG.md"
+    if cl.is_file() and not re.search(rf"^#+\s*\[?v?{re.escape(ver)}\b", cl.read_text(), re.M):
+        return "fail", f"CHANGELOG.md has no entry for {ver}"
+    return "pass", f"version {ver}"
+
+
+GROUPS = [("pytest", g_pytest, True), ("shellcheck", g_shellcheck, False), ("ruff", g_ruff, False),
+          ("leak", g_leak, False), ("commits", g_commits, False), ("version", g_version, False)]
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="crow-check", description="Run every release gate.")
+    ap.add_argument("--fast", action="store_true", help="skip slow groups")
+    ap.add_argument("--json", action="store_true", help="JSON summary")
+    ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent))
+    a = ap.parse_args(argv)
+    root = Path(a.root).resolve()
+    results = []
+    for name, fn, slow in GROUPS:
+        if slow and a.fast:
+            results.append({"group": name, "status": "skip", "note": "--fast"})
+            continue
+        try:
+            st, note = fn(root)
+        except Exception as e:  # a crashing group is red, never silent
+            st, note = "fail", f"{type(e).__name__}: {e}"
+        results.append({"group": name, "status": st, "note": note})
+    ok = all(r["status"] != "fail" for r in results)
+    if a.json:
+        print(json.dumps({"ok": ok, "groups": results}, indent=2))
+    else:
+        for r in results:
+            print(f"{r['status']:<5} {r['group']:<11} {r['note']}")
+        print("crow-check: " + ("green" if ok else "RED"))
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
