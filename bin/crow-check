@@ -58,7 +58,7 @@ def g_pytest(root):
     lines = (r.stdout + r.stderr).strip().splitlines() or [""]
     if r.returncode == 0:
         return "pass", lines[-1]
-    why = [l for l in lines if l.startswith(("ERROR", "FAILED", "E  "))][:4]
+    why = [l for l in lines if l.startswith(("ERROR", "FAILED", "E  "))][:12]
     return "fail", "; ".join(why + lines[-1:])
 
 

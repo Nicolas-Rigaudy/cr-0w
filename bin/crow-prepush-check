@@ -20,7 +20,7 @@ fi
 if [ "${1:-}" = "--check" ]; then   # manual run: check what HEAD would push to its upstream
   exec "$0" < <(printf "HEAD %s upstream %s\n" "$(git rev-parse HEAD)" "$(git rev-parse "@{u}" 2>/dev/null || echo $zero)")
 fi
-while read -r lref lsha rref rsha; do
+while read -r lref lsha _ rsha; do
   [ "$lsha" = "$zero" ] && continue
   if [ "$rsha" = "$zero" ]; then range="$lsha --not --remotes"; else range="$rsha..$lsha"; fi
   if [ "$rsha" != "$zero" ] && ! git merge-base --is-ancestor "$rsha" "$lsha" 2>/dev/null; then

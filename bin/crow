@@ -153,7 +153,7 @@ case "$cmd" in
             dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt | --task T --end-state E]}")"
             pick_account
             line=$(python3 "$CROW_HOME/bin/crow_term.py" open --title "crow · $1 · $CROW_ACCOUNT" --set CROW_ACCOUNT="$CROW_ACCOUNT" \
-                   -- "$CROW_HOME/bin/crow" open "${model[@]}" --on-busy "$on_busy" "$@")
+                   -- "$CROW_HOME/bin/crow" open ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$@")
             if [[ -n "$line" ]]; then
               echo "crow: no terminal backend (CROW_TERMINAL=kitty|tmux); run this in a new terminal:" >&2
               printf '%s\n' "$line"
