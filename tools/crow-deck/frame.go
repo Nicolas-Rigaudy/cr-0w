@@ -126,6 +126,7 @@ type boxSpec struct {
 	sel     int // selected row, -1 none
 	selN    int // rows the selection spans (0 or 1: one)
 	focused bool
+	quiet   bool // the selection only scrolls into view, it is not drawn reversed
 }
 
 // has reports whether display row i is inside the selection starting at sel.
@@ -172,7 +173,7 @@ func (lk *look) box(sp boxSpec, w, h int) block {
 		lines = append(lines, nil)
 	}
 	sel := -1
-	if sp.sel >= 0 {
+	if sp.sel >= 0 && !sp.quiet {
 		sel = sp.sel - off + hdr
 	}
 	inner := lk.innerW(w)
@@ -255,8 +256,7 @@ func (lk *look) boxHUD(sp boxSpec, w, inner int, lines []line, sel int) block {
 	left := "▏▏▏▏" + idx + "▏▏▏▏ "
 	bot := bs.Render(left)
 	used = runewidth.StringWidth(left)
-	if sp.bottom != "" {
-		lab := " " + lk.cap(sp.bottom) + " "
+	if lab := " " + lk.cap(sp.bottom) + " "; sp.bottom != "" && used+runewidth.StringWidth(lab)+3 <= w {
 		bot += lk.dim.Render(rep("─", w-used-runewidth.StringWidth(lab)-3)) + lk.sub.Render(lab) + lk.acc.Render("━━┛")
 	} else {
 		bot += lk.dim.Render(rep("─", w-used-3)) + lk.acc.Render("━━┛")
