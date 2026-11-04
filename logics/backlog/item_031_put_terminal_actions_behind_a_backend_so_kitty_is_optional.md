@@ -1,10 +1,10 @@
 ## item_031_put_terminal_actions_behind_a_backend_so_kitty_is_optional - Put terminal actions behind a backend so kitty is optional
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -38,6 +38,16 @@
 # AC Traceability
 - request-AC3 -> This backlog slice. Proof: bounded slice with testable criteria above.
 - request-AC4 -> The slice's criteria feed the first tagged release and the install/update round trip.
+
+# Validation
+- 23ac682: `bin/crow_term.py` holds the backends (kitty, tmux, print; `CROW_TERMINAL`, unset picks kitty, else tmux inside tmux, else print). `crow term`, `crow-focus` and `crow-relaunch` go through it; kitty commands are the same as before (`setsid -f kitty --title ...`).
+- d5ae66c: `ansi-shot --theme FILE|default`; without a kitty theme it uses the bundled `share/ansi-shot/default.conf`; a missing font falls back to the first installed fallback font.
+- 68e0d27: parent processes from `ps` where `/proc` is missing (tmux focus on macOS).
+- AC1: tests run `crow term`, `crow-focus` (resume and `--send`) and `crow-relaunch` on the print backend: each prints the command and launches nothing. A manual run with a PATH holding no kitty and no tmux picked `print` and printed the resume command.
+- AC2: the kitty launch and relaunch tests (fake setsid) pass unchanged with `CROW_TERMINAL=kitty`; focus tests cover window matching, send args, backend choice and the tmux commands.
+- AC3: `tests/test_ansi_shot.py` renders with the bundled theme and a missing font; render of the palette under `local/state/afk/shots/`.
+- AC4: `docs/terminal-backends.md` holds the backend table and the feature-by-platform table for item_037.
+- `python3 -m pytest -q`: 239 passed; `go test` in tools/crow-deck and tools/crow-watch: ok.
 
 # Decision framing
 - Product framing: Not needed
