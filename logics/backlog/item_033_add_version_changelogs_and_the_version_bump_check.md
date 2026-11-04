@@ -1,10 +1,10 @@
 ## item_033_add_version_changelogs_and_the_version_bump_check - Add VERSION, changelogs and the version-bump check
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -35,6 +35,14 @@
 # AC Traceability
 - request-AC3 -> This backlog slice. Proof: bounded slice with testable criteria above.
 - request-AC4 -> The slice's criteria feed the first tagged release and the install/update round trip.
+
+# Validation
+- 0460525: `VERSION` (0.1.0), `changelogs/CHANGELOGS_0_1_0.md`, `CHANGELOG.md` built by `bin/crow-changelog` (`--check` for staleness), `bin/crow-release-propose` (`crow release propose`), `runbooks/releases.md`.
+- AC1: `test_version_carrier_mismatch_fails` (package.json against VERSION).
+- AC2: `test_version_missing_changelog_entry_fails`, `test_version_stale_aggregate_fails`.
+- AC3: `test_propose_after_tag_groups_commits_offline` and `..._without_tag_...`: git only, no network.
+- AC4: `changelogs/CHANGELOGS_0_1_0.md` exists and the gate is green on this repo.
+- `python3 -m pytest -q`: 265 passed; `bin/crow-check --fast`: green.
 
 # Decision framing
 - Product framing: Not needed
