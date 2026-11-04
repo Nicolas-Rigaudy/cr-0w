@@ -69,3 +69,17 @@ def test_watchdog_kills_idle_run_and_spares_young_one(monkeypatch, tmp_path):
     assert cr.watchdog(old)
     assert p.wait(timeout=5) < 0
     assert cr.run_state({"run_id": "o", "exit_code": 1}) == "stuck"
+
+
+def test_every_run_carries_failover_and_retro_kind():
+    for kind in crow_lib.RUN_KINDS:
+        for provider in ("claude", "codex"):
+            args, _ = crow_lib.run_flags(kind, provider, model="gpt-5.5" if provider == "codex" else None, env={})
+            assert "--failover" in args
+            assert ("--kind" in args) == (kind == "retro")
+    assert opt(crow_lib.run_flags("retro", "claude", env={})[0], "--kind") == "retro"
+
+
+def test_per_run_budget_overrides_kind_and_env():
+    args, _ = crow_lib.run_flags("task", "claude", env={"CROW_TASK_BUDGET": "9"}, budget=1.5)
+    assert opt(args, "--budget") == "1.5"

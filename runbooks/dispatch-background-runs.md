@@ -64,7 +64,8 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 ## Headless flags (every launch, `crow_lib.run_flags`)
 - Every `cdx run` from crow (dispatch, review runs, retro, `crow` one-shots) takes its flags from one helper, per run kind (`crow_lib.RUN_KINDS`: task, review, retro, oneshot):
   exact model id (`--model claude-opus-5-5`, never an alias), effort fixed at launch (`--power`), `--budget` USD (Claude only; cdx stops the run with `budget_exceeded`, exit 125) and `--timeout-seconds`.
-  Override per kind with `CROW_<KIND>_BUDGET` and `CROW_<KIND>_TIMEOUT_MIN`. `crow-runs dispatch ... --dry-run` prints the full command and env.
+  Every run also carries `--failover` (a usage-limit stop moves to another allowed account) and retro runs `--kind retro`. `cdx run` has no `--fallback-model` flag: set it per account with `cdx set <account> --fallback-model MODEL`.
+  Override per kind with `CROW_<KIND>_BUDGET` and `CROW_<KIND>_TIMEOUT_MIN`, or for one run with `crow-runs dispatch ... --budget USD` (no default cap beyond the kind's budget). `crow-runs dispatch ... --dry-run` prints the full command and env.
 - Env: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` (no phantom background results) and `ENABLE_CLAUDEAI_MCP_SERVERS=false` (no claude.ai connectors).
 - Watchdog: the run's notifier kills a Claude run whose transcript (and subagent transcripts) has not moved for `CROW_STUCK_MIN` minutes (20) and marks it stuck (`<state>/runs-stuck.json`).
 - Gap: a repo's own `.mcp.json` servers still load (a work repo loaded its code graph and cloud servers). Only `--strict-mcp-config` stops them and `cdx run` has no per-run extra args; `cdx set --extra-args` would also hit interactive sessions.

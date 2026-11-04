@@ -328,6 +328,8 @@ RUN_KINDS = {
     "retro": {"model": "sonnet", "power": "medium", "budget": 2.0, "timeout_min": 20},
     "oneshot": {"model": "opus", "power": "medium", "budget": 3.0, "timeout_min": 20},
 }
+# crow kinds that map to a cdx --kind (cdx knows assistant|code-review|retro; the rest keep its default).
+CDX_KINDS = {"retro": "retro"}
 # Headless traps: no background tasks (phantom results), no claude.ai connectors (~40k tokens of tool defs per call).
 HEADLESS_ENV = {"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1", "ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
 
@@ -337,18 +339,23 @@ def model_id(model):
     return CLAUDE_MODEL_IDS.get((model or "").strip().lower(), model)
 
 
-def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None):
+def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None, budget=None):
     """cdx run arguments and environment every headless launch carries.
-    With continue_run, cdx pins the parent's model and effort, so neither is passed."""
+    With continue_run, cdx pins the parent's model and effort, so neither is passed.
+    --failover moves a run stopped by a usage limit to another allowed account. cdx run has no --fallback-model
+    flag: the fallback model is a per-account setting (`cdx set <account> --fallback-model M`).
+    budget (USD) overrides the kind's budget for this run; Claude only."""
     env = os.environ if env is None else env
     k = RUN_KINDS[kind]
-    budget = float(env.get(f"CROW_{kind.upper()}_BUDGET") or k["budget"])
+    budget = float(budget if budget is not None else env.get(f"CROW_{kind.upper()}_BUDGET") or k["budget"])
     timeout = int(env.get(f"CROW_{kind.upper()}_TIMEOUT_MIN") or k["timeout_min"])
     args = []
     if not continue_run:
         m = model or (k["model"] if provider == "claude" else None)
         args += (["--model", model_id(m) if provider == "claude" else m] if m else []) + ["--power", power or k["power"]]
-    args += ["--timeout-seconds", str(timeout * 60)]
+    args += ["--timeout-seconds", str(timeout * 60), "--failover"]
+    if kind in CDX_KINDS:
+        args += ["--kind", CDX_KINDS[kind]]
     if provider == "claude":  # cdx measures spend from Claude usage; Codex budgets fail as unverifiable without model evidence
         args += ["--budget", f"{budget:g}"]
     return args, (dict(HEADLESS_ENV) if provider == "claude" else {})

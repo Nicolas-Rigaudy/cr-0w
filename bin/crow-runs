@@ -619,7 +619,7 @@ def dispatch(a):
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
-    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run)
+    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget)
     cmd = ["cdx", "run", acct, "--cwd", cwd, *src, *(["--continue-run", a.continue_run] if a.continue_run else []), *flags,
            "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
            "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])]
@@ -735,6 +735,7 @@ def main():
     g.add_argument("--prompt-file"); g.add_argument("--prompt")
     d.add_argument("--power", help="effort; default from the run kind (crow_lib.RUN_KINDS)")
     d.add_argument("--model", help="model for this run (opus, sonnet); default from the run kind, pinned to its exact id")
+    d.add_argument("--budget", type=float, help="USD cap for this run (default: the kind's budget, crow_lib.RUN_KINDS)")
     d.add_argument("--kind", choices=tuple(crow_lib.RUN_KINDS), default="task", help="budget, timeout and defaults (crow_lib.RUN_KINDS)")
     d.add_argument("--dry-run", action="store_true", help="print the cdx command and env, start nothing")
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
