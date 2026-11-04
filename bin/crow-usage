@@ -674,10 +674,13 @@ def figures(per_model):
     cost, priced, cache_saved, routing_saved = 0.0, True, 0.0, 0.0
     split = dict.fromkeys(SPLIT_PARTS, 0.0)
     prices = all_prices()
+    by_model = {}
     for model, usage in per_model.items():
         for k in totals:
             totals[k] += usage.get(k, 0)
         c = price(usage, model)
+        if not pseudo_model(model):
+            by_model[model.replace("claude-", "")] = {"cost_usd": c or 0.0, "tokens": sum(usage.get(k, 0) for k in totals)}
         if c is None:
             priced = False
             continue
@@ -693,7 +696,7 @@ def figures(per_model):
             if top is not None:
                 routing_saved += max(0.0, top - c)
     return {"totals": totals, "cost_usd": cost, "priced": priced, "cache_saved_usd": cache_saved,
-            "routing_saved_usd": routing_saved, "split": split}
+            "routing_saved_usd": routing_saved, "split": split, "by_model": by_model}
 
 
 def slim(f):
@@ -702,7 +705,8 @@ def slim(f):
             "input_tokens": t["input_tokens"], "output_tokens": t["output_tokens"],
             "cache_write_tokens": t["cache_creation_tokens"], "cache_read_tokens": t["cache_read_tokens"],
             "cache_saved_usd": round(f["cache_saved_usd"], 4), "routing_saved_usd": round(f["routing_saved_usd"], 4),
-            "cost_split": {k: round(v, 4) for k, v in f["split"].items()}}
+            "cost_split": {k: round(v, 4) for k, v in f["split"].items()},
+            "by_model": {m: {"cost_usd": round(v["cost_usd"], 4), "tokens": v["tokens"]} for m, v in f["by_model"].items()}}
 
 
 def context_level(tokens):
@@ -883,11 +887,12 @@ def rollup(slices):
             p["tokens"] += px.get("tokens") or 0
             p["sessions"] += 1
             p["shared_sessions"] += len(split) > 1
-        main = next((m for m in s["models"] if not pseudo_model(m)), "?").replace("claude-", "")
-        m = by_model.setdefault(main, {"cost_usd": 0.0, "tokens": 0, "sessions": 0})
-        m["cost_usd"] += x.get("cost_usd") or 0
-        m["tokens"] += x.get("tokens") or 0
-        m["sessions"] += 1
+        # Each model gets its own turns' cost; a multi-model session counts once per model it used.
+        for name, mx in (x.get("by_model") or {"?": x}).items():
+            m = by_model.setdefault(name, {"cost_usd": 0.0, "tokens": 0, "sessions": 0})
+            m["cost_usd"] += mx.get("cost_usd") or 0
+            m["tokens"] += mx.get("tokens") or 0
+            m["sessions"] += 1
         if x.get("_last"):  # whole-session counters land on the session's last day
             r["compactions"] += s.get("compactions") or 0
             for name, (calls, tok, img) in (s.get("tools") or {}).items():
