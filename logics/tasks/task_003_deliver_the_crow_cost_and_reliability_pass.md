@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:16:27
+> Indicators reviewed: 2026-11-04 11:33:22
 
 # AI Context
 - Summary: Delivery order for req_008: account choice, context cap, run failover, retro batch, gather script, start context, then re-measure.
@@ -59,9 +59,12 @@
 - (no validation recorded yet)
 
 # Report
-- Not started.
+- item_027 done and merged to main (54c8e6f). Next: item_023 context cap and long-session warning.
 
 # Links
 - Request: `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`
 - Product brief(s): `prod_003_crow_cost_and_reliability_pass`
 - Architecture decision(s): (none yet)
+
+# Notes
+- item_027: crow open/term/handoff pick a free allowed account with quota left; default kept while it has room; inherited CROW_ACCOUNT of the calling session ignored; handoff passes --task/--end-state to cdx (owner kept it, 2026-11-04).
