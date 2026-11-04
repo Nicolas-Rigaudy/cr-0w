@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Render ANSI terminal output to a PNG, with a kitty theme and a monospace font.
 
-  ansi-shot IN.ans OUT.png [--cols N] [--theme kitty.conf] [--font F.ttf] [--size PX] [--glass HEX]
+  ansi-shot IN.ans OUT.png [--cols N] [--theme kitty.conf|default] [--font F.ttf] [--size PX] [--glass HEX]
 
 Lets a tool see what a TUI looks like without a display: run the TUI's View() to a
-file (any width x height), then render it here. Colours come from the kitty theme
-(color0-15, foreground, background); --glass HEX blends the background with a
+file (any width x height), then render it here. Colours come from a kitty-format theme
+(color0-15, foreground, background): --theme FILE, else ~/.config/kitty/current-theme.conf when
+it exists, else the bundled share/ansi-shot/default.conf (also `--theme default`). When the font
+is missing, the first installed fallback font is used. --glass HEX blends the background with a
 wallpaper tint at the theme's background_opacity, to judge contrast on a
 translucent terminal. Handles SGR 0/1/2/3/4/7/22/23/24/27, 30-37, 39, 40-47, 49,
 90-97, 100-107, 38/48;5;n and 38/48;2;r;g;b.
@@ -52,6 +54,31 @@ FALLBACKS = ["/usr/share/fonts/TTF/DejaVuSansMono.ttf", "/usr/share/fonts/noto/N
 BLOCKS = {"█": (0, 0, 1, 1), "▀": (0, 0, 1, .5), "▄": (0, .5, 1, 1), "▌": (0, 0, .5, 1), "▐": (.5, 0, 1, 1)}
 BLOCKS.update({ch: (0, 1 - (i + 1) / 8, 1, 1) for i, ch in enumerate("▁▂▃▄▅▆▇")})
 BLOCKS.update({ch: (0, 0, (7 - i) / 8, 1) for i, ch in enumerate("▉▊▋▌▍▎▏")})
+
+
+DEFAULT_THEME = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "share", "ansi-shot", "default.conf")
+KITTY_THEME = os.path.join(pwd.getpwuid(os.getuid()).pw_dir, ".config/kitty/current-theme.conf")
+
+
+def theme_path(arg):
+    """The theme file: --theme as given ('default' is the bundled one), else kitty's, else the bundled one."""
+    if arg == "default":
+        return DEFAULT_THEME
+    if arg:
+        if not os.path.exists(arg):
+            raise SystemExit(f"ansi-shot: theme {arg} not found")
+        return arg
+    return KITTY_THEME if os.path.exists(KITTY_THEME) else DEFAULT_THEME
+
+
+def font_path(path):
+    """path when installed, else the first installed fallback font."""
+    if os.path.exists(path):
+        return path
+    alt = next((f for f in FALLBACKS if os.path.exists(f)), None)
+    if not alt:
+        raise SystemExit(f"ansi-shot: font {path} not found and no fallback font installed (--font F.ttf)")
+    return alt
 
 
 def kitty_theme(path):
@@ -137,7 +164,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
     ap.add_argument("out")
-    ap.add_argument("--theme", default=os.path.join(pwd.getpwuid(os.getuid()).pw_dir, ".config/kitty/current-theme.conf"))
+    ap.add_argument("--theme", help="kitty-format theme file, or 'default' for the bundled one")
     ap.add_argument("--font", default="/usr/share/fonts/TTF/FiraCodeNerdFontMono-Regular.ttf")
     ap.add_argument("--bold-font", default="/usr/share/fonts/TTF/FiraCodeNerdFontMono-Bold.ttf")
     ap.add_argument("--size", type=int, default=15)
@@ -145,7 +172,8 @@ def main():
     ap.add_argument("--opacity", type=float, default=None, help="background opacity (default: kitty's)")
     a = ap.parse_args()
 
-    th = kitty_theme(a.theme)
+    th = kitty_theme(theme_path(a.theme))
+    a.font = font_path(a.font)
     pal = [hexrgb(th.get(f"color{i}", "#808080")) for i in range(16)]
     fg0, bg0 = hexrgb(th.get("foreground", "#ffffff")), hexrgb(th.get("background", "#000000"))
     if a.glass:
