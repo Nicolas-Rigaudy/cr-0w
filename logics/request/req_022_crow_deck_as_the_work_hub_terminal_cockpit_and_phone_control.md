@@ -29,7 +29,7 @@
     - **nest**: the graphical interface (`crow nest`), on the laptop in the browser and on the phone as the installed app. The crow's nest is the lookout post where everything is visible.
     - **core**: the always-on engine that feeds deck and nest. A systemd user service started at login; `crow core status` / `restart` only when needed. Replaces the earlier `crow serve` and `crow nest` names.
     - **comlink**: the phone notifications (ntfy topic and the feature name).
-  - **The deck engine** exposes per session: read (last screen via `tmux capture-pane`, or the transcript tail from the session .jsonl) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
+  - **core** exposes per session: read (last screen via `tmux capture-pane`, or the transcript tail from the session .jsonl) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
   - **Phone step 1: comlink**, ntfy notifications with action buttons (approve, dispatch, open) when a run finishes or a session waits on the owner.
   - ****nest**: one responsive web app (PWA)** over core:
     - Phone: touch views of sessions (pane view, send box, approve buttons), runs, MRs, threads, today.
