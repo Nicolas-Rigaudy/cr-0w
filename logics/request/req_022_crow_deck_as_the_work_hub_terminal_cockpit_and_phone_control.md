@@ -9,7 +9,7 @@
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
 
 # AI Context
-- Summary: Make crow deck the place the owner works from, not a side dashboard: a terminal cockpit (deck pane plus the active session pane in one tmux/kitty layout, with a send box and inline approvals), then phone control through SSH into the same cockpit, ntfy notifications, and a small PWA over `crow serve` only for touch actions.
+- Summary: Make crow deck the place the owner works from, not a side dashboard: a terminal cockpit (deck pane plus the active session pane in one tmux/kitty layout, with a send box and inline approvals), then phone control through a touch-first PWA over `crow serve` with ntfy notifications, SSH into the cockpit as fallback.
 - Keywords: deck, hub, cockpit, tmux, layout, session, send, approvals, phone, ssh, termux, pwa, ntfy, crow serve
 - Use when: planning how the owner drives sessions and crow actions from the deck or from the phone.
 - Skip when: deck widget visuals (req_020) or the multi-machine sync design (req_016).
@@ -21,11 +21,11 @@
   - A send box in the deck that types into the focused session (`crow-focus --send` exists).
   - A session switcher (live sessions across accounts, with state: working, waiting for input, waiting for approval).
   - Inline approvals: a session waiting on a permission or an AskUserQuestion shows up in the deck, and the owner can jump to it or answer it from there.
-- Phone control (owner question 2026-11-05: web UI, Android app or SSH?). Decided order:
-  1. SSH into the cockpit: Termux or Termius over Tailscale, `tmux attach` to the same layout. Free once the layout exists; the deck is vertical-first already.
-  2. Notifications: ntfy (self-hosted on the home server, req_016) when a run finishes or a session waits on the owner.
-  3. A PWA over `crow serve` only for actions that are painful over SSH (approve, dispatch, open an MR, read a run report). Same API as req_016.
-  - No native Android app: PWA plus ntfy covers notifications. Chatting with a single Claude session from the phone already works with Claude Code Remote Control.
+- Phone control (owner question 2026-11-05: web UI, Android app or SSH?). Revised the same day: SSH on a phone is not a clean interface (small font, keyboard over half the screen, no touch), so it is only a fallback.
+  1. **Main phone interface: a PWA over `crow serve`** (same API as req_016), reached over Tailscale. Touch-first cards: sessions waiting on the owner, live runs, finished run reports, MRs and threads, today's items. Actions as buttons: approve, answer a question, dispatch, hand off, open an MR. Installable from the browser, no app store.
+  2. **Notifications: ntfy** (self-hosted on the home server, req_016) when a run finishes or a session waits on the owner; tapping opens the matching PWA card.
+  3. **Fallback: SSH** (Termux or Termius over Tailscale, `tmux attach` to the cockpit) for anything the PWA does not cover yet.
+  - No native Android app: PWA plus ntfy covers install and notifications. Chatting with a single Claude session from the phone already works with Claude Code Remote Control; the PWA links to it rather than rebuilding chat.
 
 # Context
 - `bin/crow_term.py` (item_031) already has kitty, tmux and print backends; `crow term`, `crow-focus` and `crow-relaunch` go through it.
@@ -37,9 +37,10 @@
 # Acceptance criteria
 - AC1: One command (`crow deck --cockpit` or similar) opens the layout in tmux or kitty: deck pane plus a session pane; selecting a session in the deck shows it in the session pane.
 - AC2: From the deck, the owner can send a prompt to the focused session and see sessions waiting on input or approval, without leaving the deck.
-- AC3: From the phone over Tailscale, `ssh` plus `tmux attach` reaches the same cockpit; a runbook covers the phone setup (Termux or Termius, keys, tmux binding).
-- AC4: A finished run or a session waiting on the owner sends an ntfy notification to the phone.
-- AC5: A list of the touch actions the PWA must cover exists, derived from real phone use over SSH, and is linked to req_016 before any PWA work starts.
+- AC3: On the phone, an installed PWA over Tailscale lists sessions waiting on the owner, live and finished runs, and open MRs, and can approve, dispatch and hand off with one tap each.
+- AC4: A finished run or a session waiting on the owner sends an ntfy notification that opens the matching PWA card.
+- AC5: SSH plus `tmux attach` reaches the full cockpit from the phone as a fallback; a runbook covers the phone setup.
+- AC6: The PWA design is shown as options and picked by the owner before it is built (visual decisions side by side).
 
 # Definition of Ready (DoR)
 - [ ] Problem statement is explicit and user impact is clear.
