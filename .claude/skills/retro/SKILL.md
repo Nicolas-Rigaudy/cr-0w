@@ -53,10 +53,11 @@ For each finding, choose one:
 | A review session (threads addressed, MR opened) | check the ledgers in `local/reviews/` were updated for every thread, and the `mr` pattern gate ran before opening; fill gaps yourself |
 | One-off, already fixed, or no lesson | ignore (list it in the report in one line) |
 
-**Apply directly** to: files git ignores in project repos, memories, and this hub's runbooks, skills and `local/` (left uncommitted for the user). Keep edits small and in the file's existing style. Never delete or rewrite content you didn't write, only add or sharpen.
+**Apply directly** to: files git ignores in project repos, memories, and this hub's runbooks, skills and `local/`. Keep edits small and in the file's existing style. Never delete or rewrite content you didn't write, only add or sharpen.
 **Propose** everything else (tracked files in project repos, CLAUDE.md, code): append to `local/state/retros/proposals.md` as `- [ ] YYYY-MM-DD <project> <file>: <change> (from <report>)`.
 
-Never commit, push, post or message anyone. Never add AI attribution anywhere.
+Commit your own hub edits at the end, one commit per repo: the hub repo for `runbooks/` and `.claude/skills/`, the private `local/` repo for `local/`. Stage only the files you edited (`git add <path>...`, never `-A`), keep the hub's commit format (`chg[MD]: add retro lessons to ...`), and list the commits in the report. If the pre-commit check rejects a private name, move that line to `local/runbooks/` and commit again. Leave files someone else changed alone.
+Never commit in project repos, never push, post or message anyone. Never add AI attribution anywhere.
 
 ## 4. Report
 Write `local/state/retros/YYYY-MM-DD-<project>-<session8>.md`, at most 30 lines:

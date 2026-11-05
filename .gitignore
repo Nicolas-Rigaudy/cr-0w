@@ -8,3 +8,5 @@ __pycache__/
 .pytest_cache/
 .claude/skills/daily
 .claude/skills/weekly
+.claude/skills/mgmt-weekly
+logics/context-pack.json
