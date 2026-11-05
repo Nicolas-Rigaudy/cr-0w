@@ -11,8 +11,8 @@
   crow-accounts hub-session <name> exit 1 when the account's provider cannot run a guarded hub session
   crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
   crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
-  crow-accounts pick [--on-busy ask|fail]   account for crow open/term/handoff: skips accounts with a
-                                   live session or no quota left, keeps the default while it has room,
+  crow-accounts pick [--on-busy ask|fail]   account for crow open/term/handoff: skips accounts with no quota
+                                   left, ranks accounts with a live session after free ones, keeps the default while it has room,
                                    else the one with the most room; an ask-first pick asks on a terminal
                                    (fail: never ask); exits 1 with the reasons when none fits
   crow-accounts json               every account with its policy, memory mode and tier (mine | team),
@@ -101,8 +101,9 @@ def pick(cfg, on_busy):
     if p["ask"] and not (on_busy == "ask" and ask(f"crow: use ask-first account '{name}' ({p['room']}% left; {skipped})?")):
         sys.exit(f"crow: only ask-first account '{name}' is free ({p['room']}% left; {skipped}). "
                  f"With the owner's OK: CROW_ACCOUNT={name} crow ...")
-    if name != default:
-        print(f"crow: using '{name}' ({p['room']}% left; {skipped})", file=sys.stderr)
+    if name != default or p["busy"]:
+        also = "; already has a live session" if p["busy"] else ""
+        print(f"crow: using '{name}' ({p['room']}% left{also}; {skipped})", file=sys.stderr)
     print(name)
 
 

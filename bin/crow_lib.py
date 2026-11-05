@@ -292,20 +292,24 @@ def launch_pick(state, busy, default):
     """Account for an interactive launch (crow open, term, handoff).
 
     state: pick_accounts output with no current account; busy: names with a live cdx session.
-    Returns {account, ask, skipped}: account is None when none is free and has room; ask is True
-    when it is an ask-first account the owner must OK. The default stays the pick while it is free,
-    policy use and under NEARLY_OUT_PCT; otherwise the free account with the most room, use first."""
-    skipped, free = [], []
+    Returns {account, ask, busy, skipped}: account is None when none has room; ask is True when it
+    is an ask-first account the owner must OK; busy is True when it already runs a session.
+    A live session is not a block (cdx runs several per account), only a lower rank: free accounts
+    come first to spread load, then busy policy-use accounts, then ask-first ones. The default stays
+    the pick while it is free, policy use and under NEARLY_OUT_PCT."""
+    skipped, ok = [], []
     for a in state["accounts"]:
-        why = ("live session" if a["name"] in busy else None) or a["blocked"]
+        why = a["blocked"]
         if not why and a["policy"] == "use" and (a["used_5h_pct"] or 0) >= NEARLY_OUT_PCT:
             why = f"5h {a['used_5h_pct']}% used"
-        (skipped.append({"name": a["name"], "why": why}) if why else free.append(a))
-    free.sort(key=lambda a: (a["policy"] != "use", not a["auto_ok"], -room(a), a["name"]))
-    dflt = next((a for a in free if a["name"] == default and a["policy"] == "use"), None)
-    top = dflt or (free[0] if free else None)
+        (skipped.append({"name": a["name"], "why": why}) if why else ok.append(a))
+    ok.sort(key=lambda a: (a["policy"] != "use", a["name"] in busy, not a["auto_ok"], -room(a), a["name"]))
+    dflt = next((a for a in ok if a["name"] == default and a["policy"] == "use" and a["name"] not in busy), None)
+    top = dflt or (ok[0] if ok else None)
     return {"account": top and top["name"], "ask": bool(top and not top["auto_ok"]),
-            "room": top and room(top), "skipped": skipped}
+            "busy": bool(top and top["name"] in busy), "room": top and room(top),
+            "skipped": skipped + [{"name": n, "why": "live session"} for n in sorted(busy)
+                                  if top and n != top["name"] and any(a["name"] == n for a in ok)]}
 
 
 def live_sessions():

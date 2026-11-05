@@ -1,4 +1,4 @@
-"""Account choice for crow open, term and handoff: live sessions and empty quotas are skipped."""
+"""Account choice for crow open, term and handoff: empty quotas are skipped, live sessions rank last."""
 import json
 import os
 import sys
@@ -51,13 +51,23 @@ def test_busy_default_moves_to_the_next_free_account():
     assert p["account"] == "spare" and {"name": "main", "why": "live session"} in p["skipped"]
 
 
-def test_only_ask_first_left_asks():
+def test_busy_use_account_beats_ask_first():
     p = pick([row("main", 0), row("spare", 50), row("big", 0, 50), row("shared", 60)], busy={"spare"})
+    assert (p["account"], p["ask"], p["busy"]) == ("spare", False, True)
+
+
+def test_busy_default_is_used_when_no_other_use_account_has_room():
+    p = pick([row("main", 57), row("spare", 0), row("big", 0), row("shared", 5)], busy={"main"})
+    assert (p["account"], p["busy"]) == ("main", True)
+
+
+def test_only_ask_first_left_asks():
+    p = pick([row("main", 0), row("spare", 0), row("big", 0, 50), row("shared", 60)])
     assert (p["account"], p["ask"]) == ("shared", True)
 
 
 def test_none_free_returns_no_account():
-    p = pick([row("main", 0), row("spare"), row("big", 50, 0), row("shared", 0)], busy={"spare"})
+    p = pick([row("main", 0), row("spare", 0), row("big", 50, 0), row("shared", 0)], busy={"spare"})
     assert p["account"] is None
     assert [s["name"] for s in p["skipped"]] == ["main", "spare", "big", "shared"]
 
@@ -133,7 +143,7 @@ def test_open_refuses_when_no_account_has_room(hub, fake):
 
 def test_handoff_refuses_on_ask_first_only_and_writes_no_note(hub, fake):
     env, set_state, launches = fake
-    set_state([row("main", 0), row("spare", 60), row("shared", 80)], busy={"spare"})
+    set_state([row("main", 0), row("spare", 0), row("shared", 80)])
     r = run(hub, "crow", "handoff", "demo", "--task", "fix it", "--end-state", "show the diff", env=env)
     assert r.returncode == 1 and "CROW_ACCOUNT=shared" in r.stderr
     assert launches() == [] and not (hub[0] / "local/state/handoffs").exists()
