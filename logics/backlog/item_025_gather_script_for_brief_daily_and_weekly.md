@@ -1,10 +1,10 @@
 ## item_025_gather_script_for_brief_daily_and_weekly - Gather script for brief, daily and weekly
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -27,7 +27,9 @@
 
 # Acceptance criteria
 - AC1: each skill has one pre-gathered JSON block and no file-reading steps.
+  - AC1 done 2026-11-05: brief, daily and weekly read one `bin/crow-gather` block (d35fb6d, 7c4617a, local ebc029c).
 - AC2: JSON stays under 15k tokens on a busy day.
+  - AC2 done 2026-11-05: 50k-char budget enforced by fit(); real run brief 36k, daily 31k, weekly 47k chars; tests/test_crow_gather.py passes.
 
 # AC Traceability
 - request-AC2 -> This backlog slice. Proof: AC1: each skill has one pre-gathered JSON block and no file-reading steps.
