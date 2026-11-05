@@ -129,7 +129,7 @@ func TestRunningApplyRefetchesSooner(t *testing.T) {
 func TestReviewStartPassesTheBranch(t *testing.T) {
 	calls := recordRuns(t, "review rv1 started", nil)
 	r := mrRow{Repo: "grp/atlas", Number: 6, Ref: "!6", Role: "AUTHOR", Branch: "feat/seed"}
-	reviewCmd(r)()
+	reviewCmd(r, nil)()
 	if fmt.Sprint((*calls)[0].args) != "[start grp/atlas 6 --mode self --branch feat/seed]" {
 		t.Errorf("got %v", *calls)
 	}

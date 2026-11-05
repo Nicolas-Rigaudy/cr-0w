@@ -204,13 +204,13 @@ func shellLine(cmd []string) string {
 }
 
 // reviewOverlay confirms a read-only review run on the selected MR.
-func (lk *look) reviewOverlay(w, h int, r *mrRow) []string {
+func (lk *look) reviewOverlay(w, h int, r *mrRow, d *mrDetail) []string {
 	sp := boxSpec{title: "Review", sel: -1}
 	if r == nil {
 		sp.rows = []line{{{"No MR selected.", lk.sub}}}
 		return lk.overlayBlock(sp, w, h)
 	}
-	sp.rows = []line{{{"Start a read-only review of " + r.Ref + " " + r.Name + " (" + reviewMode(r) + ", opus)?", lk.plain}}, nil}
+	sp.rows = []line{{{"Start a read-only review of " + r.Ref + " " + r.Name + " (" + reviewMode(r, d) + ", opus)?", lk.plain}}, nil}
 	for _, l := range wrap("The run cannot edit the repo. Findings land here; nothing is posted.", overlayWidth(w)-6) {
 		sp.rows = append(sp.rows, line{{l, lk.sub}})
 	}
@@ -248,10 +248,10 @@ func (lk *look) applyOverlay(w, h int, r *mrRow, d *mrDetail) []string {
 }
 
 // reviewMode is threads on the owner's own MR with open threads, self on another own MR,
-// peer otherwise.
-func reviewMode(r *mrRow) string {
+// peer otherwise. d is the loaded detail or nil; its threads count over the list row, which can predate them.
+func reviewMode(r *mrRow, d *mrDetail) string {
 	switch {
-	case r.Role == "AUTHOR" && r.ThreadsOpen > 0:
+	case r.Role == "AUTHOR" && (r.ThreadsOpen > 0 || d.openThreads() > 0):
 		return "threads"
 	case r.Role == "AUTHOR":
 		return "self"

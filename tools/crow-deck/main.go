@@ -530,7 +530,7 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.flash = "starting a review of " + r.Ref + "…"
-				return m, reviewCmd(*r)
+				return m, reviewCmd(*r, m.mrsView().detail())
 			}
 		case "esc", "n", "q":
 			m.overlay = ovNone
@@ -1131,7 +1131,7 @@ func (m model) View() string {
 	case m.overlay == ovHandoff:
 		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur(), m.findingsFile())
 	case m.overlay == ovReview:
-		body = lk.reviewOverlay(m.w, bh, m.mrsView().cur())
+		body = lk.reviewOverlay(m.w, bh, m.mrsView().cur(), m.mrsView().detail())
 	case m.overlay == ovApply:
 		body = lk.applyOverlay(m.w, bh, m.mrsView().cur(), m.mrsView().detail())
 	case m.overlay == ovPost:

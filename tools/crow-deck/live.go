@@ -139,9 +139,9 @@ type reviewStartedMsg struct {
 	failed    bool
 }
 
-func reviewCmd(r mrRow) tea.Cmd {
+func reviewCmd(r mrRow, d *mrDetail) tea.Cmd {
 	return func() tea.Msg {
-		args := []string{"start", r.Repo, strconv.Itoa(r.Number), "--mode", reviewMode(&r)}
+		args := []string{"start", r.Repo, strconv.Itoa(r.Number), "--mode", reviewMode(&r, d)}
 		if r.Branch != "" {
 			args = append(args, "--branch", r.Branch)
 		}

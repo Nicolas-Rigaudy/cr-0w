@@ -45,7 +45,7 @@ func TestReviewModeOnOwnMRWithThreads(t *testing.T) {
 		"peer":    {Role: "REVIEWER", ThreadsOpen: 2},
 	}
 	for want, r := range cases {
-		if got := reviewMode(&r); got != want {
+		if got := reviewMode(&r, nil); got != want {
 			t.Errorf("%+v: %s, want %s", r, got, want)
 		}
 	}
@@ -212,5 +212,39 @@ func TestThreadsShowPushedAtTheTop(t *testing.T) {
 		if !hasText(out, want) {
 			t.Errorf("unpushed: missing %q", want)
 		}
+	}
+}
+
+func TestReviewModeCountsThreadsFromTheLoadedDetail(t *testing.T) {
+	r := mrRow{Role: "AUTHOR"}
+	open := &mrDetail{Threads: []mrThread{{Body: "a"}, {Body: "b", Resolved: true}}}
+	done := &mrDetail{Threads: []mrThread{{Body: "b", Resolved: true}}}
+	if got := reviewMode(&r, open); got != "threads" {
+		t.Errorf("open thread in the detail: %s, want threads", got)
+	}
+	if got := reviewMode(&r, done); got != "self" {
+		t.Errorf("resolved threads only: %s, want self", got)
+	}
+}
+
+// !12 is the owner's MR with no open threads in the list; a thread posted since shows in the detail.
+func TestReviewConfirmAndStartUseThreadsPostedAfterTheListFetch(t *testing.T) {
+	calls := recordRuns(t, "review rv1 started", nil)
+	m, _ := liveMRModel(t)
+	for i, r := range visibleMRs(m.fx, m.mode) {
+		if r.Ref == "#12" {
+			m.selectMR(i)
+		}
+	}
+	m = send(m, detailMsg{key: "me/web#12", d: &mrDetail{Threads: []mrThread{{Author: "rev", Body: "why?"}}}, at: testNow()})
+	m = send(m, keyMsg("r"))
+	if !hasText(m.View(), "(threads, opus)") {
+		t.Fatal("the confirm must name threads mode from the loaded detail")
+	}
+	m2, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_ = m2
+	cmd()
+	if len(*calls) == 0 || !strings.Contains(fmt.Sprint((*calls)[0].args), "--mode threads") {
+		t.Errorf("the run must start in threads mode, got %v", *calls)
 	}
 }

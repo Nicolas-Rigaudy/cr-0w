@@ -136,6 +136,19 @@ type mrReview struct {
 	Mode                                string // peer, self, threads
 }
 
+// openThreads counts the unresolved threads of a loaded detail; 0 for nil.
+func (d *mrDetail) openThreads() int {
+	n := 0
+	if d != nil {
+		for _, t := range d.Threads {
+			if !t.Resolved {
+				n++
+			}
+		}
+	}
+	return n
+}
+
 type mrDetail struct {
 	Files    []mrFile
 	Threads  []mrThread

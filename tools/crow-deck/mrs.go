@@ -114,7 +114,7 @@ func (mv mrsView) answering() bool {
 func detailMode(r *mrRow, d *mrDetail) string {
 	switch {
 	case d == nil || d.Review == nil:
-		return reviewMode(r)
+		return reviewMode(r, d)
 	case d.Review.Mode != "":
 		return d.Review.Mode
 	case r.Role == "AUTHOR":
