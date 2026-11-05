@@ -4,6 +4,7 @@
 > Related product: (none yet)
 > Related request: `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`
 > Reminder: Update status, milestone scope, linked refs, risks, and success signals when you edit this doc.
+> Indicators reviewed: 2026-11-05 15:06:09
 
 # AI Context
 - Summary: Order for the remaining crow work: tidy, finish in-flight, safe runs, releases, design system, management deck, cockpit, side projects.
@@ -22,7 +23,7 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 
 ## 0.2 - Finish in-flight work
 - Goal: Everything already started is merged and closed.
-- Scope: req_000 (items 001, 002, 004, 005) and req_001 (006 AC2 owner check, 007-009; fold 009 into the deck if covered); req_008 via task_003 (apply 023, re-measure 029, build 025 gather scripts, then 024 batched retros); req_007 deck (017-022, 038).
+- Scope: req_000 (001 done 2026-11-05; 002 and 005 closed, crow watch folded into the deck) and req_001 (006 AC2 owner check, 007-009; fold 009 into the deck if covered); req_008 via task_003 (apply 023, re-measure 029, build 025 gather scripts, then 024 batched retros); req_007 deck (017-022, 038).
 - Exit signal: req_000, req_001, req_007 and req_008 are Done; brief, daily and weekly run from gather scripts.
 - Rule: no new deck features until this milestone closes.
 
@@ -39,7 +40,7 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 
 ## 0.5 - Design system core
 - Goal: The deck is rebuilt from shared widgets with a design review loop.
-- Scope: req_020 via task_010: 078 crow-compare v2 and decisions ledger, 079 shared kit repo, 080 components extracted from deck and lazytf, 082 widget contract with tabs rebuilt from widgets, 085 in-deck design picks; req_011 item 086 deck follow-ups.
+- Scope: req_020 via task_010: 078 crow-compare v2 and decisions ledger, 079 shared kit repo, 080 components extracted from deck and lazytf, 082 widget contract with tabs rebuilt from widgets, 085 in-deck design picks; req_011 item 086 deck follow-ups; then item_090 redesigns the archeotech crow modules (agents, usage panels) on the same widgets and tokens.
 - Exit signal: every deck tab renders from widgets declared in the user deck config.
 - Before 0.6 so the management features are not built twice.
 

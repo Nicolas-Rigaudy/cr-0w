@@ -1,10 +1,10 @@
 ## item_005_0_2_agents_board_improvements - 0.2 agents board improvements
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -48,3 +48,7 @@
 # Priority
 - Priority: Medium
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Closure (2026-11-05)
+- crow watch folded into crow deck (req_007: `crow watch` is an alias of the deck); its Agents and Usage tabs replace the watch board, so the remaining TUI work is superseded.
+- The agents bar panel per-session cost moves to `item_090_redesign_the_archeotech_crow_modules_to_the_deck_direction`.

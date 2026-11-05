@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Indicators reviewed: 2026-11-05 15:06:09
 
 # AI Context
 - Summary: Orchestrates the two-phase delivery of the crow UI/UX pass: 0.1 data fixes and quick wins, 0.2 layout, savings stats and agents board.
@@ -23,7 +24,7 @@
 - [x] 2. 0.1: quick UI wins in crow watch and both QML panels; render TUI and panels, show the owner, then commit.
 - [x] 3. 0.2: responsive usage overview with tabs and burn rate; show renders before finishing.
 - [x] 4. 0.2: tool effectiveness stats and the daily rollup store; Savings tab.
-- [ ] 5. 0.2: agents board improvements and the agents panel mirror.
+- [x] 5. 0.2: agents board improvements and the agents panel mirror (watch side superseded by the deck; panel cost moved to item_090 (module redesign)).
 - [x] 6. Update runbooks/archeotech-crow-*.md and module READMEs as behaviour changes.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] Keep commit creation under operator control; do not force one commit per micro-step.

@@ -1,10 +1,10 @@
 ## item_002_0_1_quick_ui_wins_in_crow_watch_and_both_panels - 0.1 quick UI wins in crow watch and both panels
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -54,3 +54,7 @@
 # Priority
 - Priority: High
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Closure (2026-11-05)
+- crow watch folded into crow deck (req_007: `crow watch` is an alias of the deck); its Agents and Usage tabs replace the watch board, so the remaining TUI work is superseded.
+- The open half-block gauge alignment choice is dropped with the watch TUI.
