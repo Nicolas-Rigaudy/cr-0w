@@ -1,10 +1,10 @@
 ## item_058_deck_theme_set_build_lazytf_soft_cyber_hud_per_the_theme_specs - Deck theme set build: lazytf, soft, cyber, hud per the theme specs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -70,6 +70,10 @@
 - HUD 80% tick is on every gauge, cost bars included (no policy cap data yet).
 - Tab badges keep the current style; the HUD ●N badge in ANSI slot 1 is not built.
 - Theme-specific empty, loading and error text and the ✕ glyph are not built.
+
+# Owner decisions 2026-11-05
+- HUD gauge fill keeps the ok/warn/bad slots. Soft: 2 columns apart, no blank row (runbook updated). Tick on every gauge, theme order lazytf, soft, cyber, hud: accepted as built.
+- HUD `●N` tab badges and per-theme empty/loading/error states go to a follow-up item.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

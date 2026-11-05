@@ -164,7 +164,7 @@ Identities:
 
 ### D2. soft (paper ledger, delimited)
 
-Delimitation comes from a full-width top rule with the title in it and a left spine on every body row. No right edge, no bottom edge. A blank row separates panels.
+Delimitation comes from a full-width top rule with the title in it and a left spine on every body row. No right edge, no bottom edge. Panels sit 2 columns apart with no blank row (owner, 2026-11-05).
 
 | Axis | Value |
 |---|---|
@@ -177,7 +177,7 @@ Delimitation comes from a full-width top rule with the title in it and a left sp
 | Title counter | dim count in slot 7 after the title |
 | Right label | at the rule end, slot 6, no brackets |
 | Bottom label | none; the `1 of 5` goes at the right end of the last row in slot 7 |
-| Padding | 2 columns after the spine, gap 3 columns between panels, 1 blank row between stacked panels |
+| Padding | 2 columns after the spine, gap 2 columns between panels, no blank row between stacked panels |
 | Brand | `Crow deck` slot 6 bold, then a short rule `╶──` slot 7 |
 | Tabs | active: name in slot 6 bold underline; inactive slot 7; tabs separated by 3 spaces; badge is a yellow 3 `●` before the name |
 | Rule under tabs | one blank row, then nothing |

@@ -1,10 +1,10 @@
 ## item_029_trim_hub_start_context_and_fix_per_model_usage - Trim hub start context and fix per-model usage
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 70%
+> Progress: 80%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -53,3 +53,8 @@
 # Priority
 - Priority: Low
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Owner decisions 2026-11-05
+- ui-ux-pro-max disabled in the main profile (unused).
+- claude-hud kept: the status line is a separate node process outside the model context; the plugin only adds two command descriptions (setup, configure). Atlassian MCP kept (Jira is part of the workflow).
+- Left: re-measure the start context with `bin/crow-cost-audit --days 3 --hub <hub path>` after a few sessions and record the after line. Per-session tool loading goes to its own request.

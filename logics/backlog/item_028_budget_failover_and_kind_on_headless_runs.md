@@ -1,10 +1,10 @@
 ## item_028_budget_failover_and_kind_on_headless_runs - Budget, failover and kind on headless runs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -53,3 +53,6 @@
 # Priority
 - Priority: Medium
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Owner decisions 2026-11-05
+- Fallback model set per account: `cdx set <account> --fallback-model sonnet` on every allowed account. cdx run has no per-run flag; the account setting covers every headless run on that account. AC1 holds.

@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-05 11:33:57
 
 # AI Context
 - Summary: Build the layout the owner picked in item_050: stage line, whose-move list states, badge, done state, refresh after actions.
@@ -64,6 +65,9 @@
 - Board: MRs R3 approved 2026-11-02 (req_011 round 3), supersedes the item_050 pick: local/state/shots/deck-rework/png/prop-mrs-R3-land.png and -port.png (scripts mrs_r3.py, mrs_r2.py, mrs_lib.py).
 - 3 columns: MR list | code scrolling in place (j k, J K by hunk, [ ] file, scrollbar + line position) | Your move panel (steps with current marked, finding, fix, big keycaps a x e c, Then: n next, A apply, P push). Commented line reversed with markers. Badge = count of MRs on the owner's move, dot only on a real problem.
 - Comparison page: local/state/shots/deck-rework/r2-compare.html
+
+# Owner decisions 2026-11-05
+- Portrait list key stays `tab` (m is the mode switch). Keycap detail stays on its own line. Home Blockers take the MRs priority order (review, red pipeline, threads) and keep their texts: follow-up item.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
