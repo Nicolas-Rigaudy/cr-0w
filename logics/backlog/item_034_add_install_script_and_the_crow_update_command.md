@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-05 22:34:37
 
 # AI Context
 - Summary: Install script and a crow update command that respects how crow was installed.
@@ -25,6 +26,8 @@
   - `install.sh` (Linux, macOS, WSL): installs a tagged release to a user prefix, verifies the release checksum, creates the data dir from `local.example` files, never overwrites existing data.
   - `crow update [--check] [--to VERSION]`: detects install method (package / script / git checkout), shows the changelog between versions, updates only the engine, refuses when the tree is dirty, never touches the data dir.
   - `crow version`.
+  - Owner restore on a new machine: `install.sh --restore <git url>` clones the owner's private data repo into the data dir (no generated or large files), then lists what git cannot carry: keyring tokens named in `tokens.yaml` (`crow secret set` per entry), cdx accounts and logins, the vault. Restore steps in a runbook.
+  - `crow doctor` warns when the data repo has no remote, uncommitted changes or unpushed commits.
 - Out:
   - Windows native installer (WSL is the Windows path).
   - Auto-update in the background.
@@ -34,6 +37,8 @@
 - AC2: `crow update` on each install method: script/git updates, package says to use the package manager, `--check` changes nothing.
 - AC3: A data dir with content survives an update byte for byte (tested).
 - AC4: Checksum mismatch aborts the install.
+- AC5: On a clean container, `install.sh --restore <url>` brings back the owner's data dir and prints the token and account steps left; the runbook covers them.
+- AC6: `crow doctor` flags a data repo with no remote, a dirty tree or unpushed commits.
 
 # AC Traceability
 - request-AC3 -> This backlog slice. Proof: bounded slice with testable criteria above.
