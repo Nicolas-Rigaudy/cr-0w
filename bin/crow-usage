@@ -26,6 +26,7 @@ model (CROW_TITLE_CMD, default Haiku via `claude -p`) for a 3-6 word title from 
 whole session (most edited files and recent prompts weigh more than the opening one),
 caches it by session id in local/state/session-titles.json and retitles when the session
 grew (4+ prompts and x1.5) or moved project. Dispatch labels and /rename win and are kept.
+/retro runs take "retro: <title of the reviewed session>" with no model call.
 Without a model the title is "project: most edited files" (else the first prompt).
 Bounded to CROW_TITLES_PER_DAY model calls (default 40, ~0.001 USD each on Haiku).
 
@@ -427,6 +428,15 @@ def fallback_title(meta):
     return None
 
 
+RETRO_RE = re.compile(r"^/retro\b.*?digests/([0-9a-f-]{36})\.md")
+
+
+def retro_target(meta):
+    """Session id a crow-retro run reviews, from its '/retro digest=.../<sid>.md' opening prompt."""
+    m = RETRO_RE.match((meta.get("prompts") or [""])[0])
+    return m[1] if m else None
+
+
 def title_context(meta):
     """What the titler sees: the main work (most edited files, recent prompts) ahead of the opening
     prompt, which is often a small errand."""
@@ -461,6 +471,13 @@ def session_title(sid, meta, account, titles):
     if t:
         return t
     have = titles.get(sid) or {}
+    target = retro_target(meta)
+    if target:  # retro runs are titled after the session they review, never by the model
+        t = "retro: " + clip(((titles.get(target) or {}).get("title") or target[:8]), 48)
+        if have.get("title") != t:
+            titles[sid] = {"title": t, "source": "rule", "prompts": 10 ** 6}
+            titles["_dirty"] = True
+        return t
     if have.get("source") != "prompt" and have.get("title"):
         return have["title"]
     t = fallback_title(meta)
@@ -476,7 +493,7 @@ def title_due(s, titles):
     """No generated title yet, or the session grew by 4+ prompts and half again since, or moved to
     another project (2+ new prompts). Dispatch labels and /rename titles are never regenerated."""
     n = s.get("user_messages") or 0
-    if not n or s.get("_renamed"):
+    if not n or s.get("_renamed") or s.get("_rule"):
         return False
     have = titles.get(s["id"])
     if not have or have.get("source") == "prompt":
@@ -532,7 +549,7 @@ def generate_titles():
             account = path.split(os.sep + "profiles" + os.sep, 1)[-1].split(os.sep, 1)[0]
             s = {"id": os.path.basename(path)[:-6], "user_messages": meta.get("user_messages"),
                  "project": dir_project({"cwd": meta.get("last_cwd")}) if meta.get("last_cwd") else None,
-                 "_renamed": bool(real_title(meta, account))}
+                 "_renamed": bool(real_title(meta, account)), "_rule": bool(retro_target(meta))}
             if title_due(s, titles):
                 todo.append((meta.get("end") or "", s["id"], meta))
         done = 0
@@ -722,7 +739,7 @@ def collect_sessions(days):
     except (OSError, json.JSONDecodeError):
         cache = {}
     fresh = {}
-    sessions = []
+    sessions, retros = [], []
     registry = load_registry()
     sig = registry_sig(registry)
     titles = load_titles()
@@ -762,8 +779,11 @@ def collect_sessions(days):
         tokens = sum(totals.values())
         sid = os.path.basename(path)[:-6]
         if not real_title(meta, account) and title_due({"id": sid, "user_messages": meta["user_messages"],
-                                                               "project": dir_project({"cwd": meta.get("last_cwd")}) if meta.get("last_cwd") else None}, titles):
+                                                               "project": dir_project({"cwd": meta.get("last_cwd")}) if meta.get("last_cwd") else None,
+                                                               "_rule": bool(retro_target(meta))}, titles):
             due = True
+        if retro_target(meta):
+            retros.append((len(sessions), sid, meta, account))
         sessions.append({
             "id": sid,
             "_mtime": st.st_mtime,
@@ -801,6 +821,8 @@ def collect_sessions(days):
             "files_edited": meta.get("files") or {},
             "hours": {h: figures(models)["cost_usd"] for h, models in (data.get("per_hour") or {}).items() if h >= HOUR_CUTOFF},
         })
+    for i, sid, meta, account in retros:  # their target may have been titled later in the loop
+        sessions[i]["title"] = session_title(sid, meta, account, titles)
     os.makedirs(STATE, exist_ok=True)
     with open(CACHE, "w", encoding="utf-8") as fh:
         json.dump(fresh, fh)
@@ -808,7 +830,7 @@ def collect_sessions(days):
     if titles.pop("_dirty", False):
         merged = load_titles()
         for sid, t in titles.items():
-            if not sid.startswith("_") and t != merged.get(sid) and (sid not in merged or merged[sid].get("source") == "prompt"):
+            if not sid.startswith("_") and t != merged.get(sid) and (sid not in merged or merged[sid].get("source") in ("prompt", "rule")):
                 merged[sid] = t
         save_titles(merged)
     if due and not os.environ.get("CROW_TITLES_OFF"):

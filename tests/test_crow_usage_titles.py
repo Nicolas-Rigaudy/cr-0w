@@ -105,3 +105,15 @@ def test_daily_budget_caps_model_calls(hub, tmp_path):
     run(hub, "crow-usage", "--titles", env=env)
     assert len((tmp_path / "calls").read_text().split("\n")) - 1 == 2
     assert sum(1 for k, v in stored(hub).items() if not k.startswith("_") and v["source"] == "haiku") == 2
+
+
+def test_retro_run_titled_after_its_target_without_model(hub, tmp_path):
+    env = titles_env(hub, tmp_path)
+    target = "877e9e9a-9a81-45b7-bbc9-690be84f9746"
+    session(hub, target, [user("explain the retry logic"), user("again")])
+    session(hub, "r", [user(f"/retro digest=/x/local/state/retros/digests/{target}.md transcript=/y/{target}.jsonl")])
+    got = sessions(hub, env)
+    assert got["r"]["title"] == "retro: proj: explain the retry logic"
+    run(hub, "crow-usage", "--titles", env=env)
+    assert stored(hub)["r"]["source"] == "rule"
+    assert "retro" not in (tmp_path / "last-input").read_text()  # the model titled the target only
