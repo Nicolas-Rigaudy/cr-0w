@@ -19,3 +19,13 @@ Method used on the hub's own README. Reuse it per repo, one repo session each (`
 15. **Handoff target.** Before `crow handoff`, ask where the repo is actually worked on (archeotech-shell is worked from archeotech-dotfiles). Keep generators (logo scripts) in the repo, not a scratchpad.
 
 Portfolio level: a profile README (`<user>/<user>` repo) and pinned repos link the projects together. See the owner's thread on the personal site.
+15. **Public-safe renders.** Public images must show no LAN/public IP, hostname or personal path: set the app's own option to hide the row (e.g. the dashboard notes setting) instead of blurring afterwards, and check btop/network boxes in terminal scenes. Check the wallpaper's license before it goes in a public README (a personal-desk wallpaper of unknown source stays out; use a CC0/Pexels one and credit it in `wallpapers/CREDITS.md`). Match the owner's real look: transparent terminals (btop `theme_background = false`). Archeotech session 2026-10-23 to 26.
+
+## Profile README (`<user>/<user>`), learned 2026-10-27
+- Flow that worked: 3 to 4 options, owner picks, then iterate by tweaks. Show 10+ real profiles as one sheet to let the owner name what to borrow.
+- Keep it restrained and professional on the public page. The owner cut the trading card and the animated widget as "too much" after building them; keep such extras in `assets/widgets/` with their generators, unlinked.
+- GitHub's profile column is narrower than a plain page (sidebar). Use percentage widths, never fixed pixels summing to ~800, and render at ~740 px before pushing. A fixed-width pair wrapped under each other on the real page.
+- Don't put the owner's photo in the repo: store the ASCII rows as text, generator in the repo.
+- Animated SVG for GitHub: SMIL/CSS inside an `<img>` works. A scheduled Action that commits a widget needs the bot identity noted; pause it if the widget is unlinked.
+- Tooling: no Chrome here, render with `/usr/lib/electron43/electron --ozone-platform=headless`. The RTK hook summarises curl JSON, use `rtk proxy curl` for raw bodies.
+- Handoff wording: "no work info" was overridden by the owner (company, role, work email wanted). Ask what to show about work instead of forbidding it.

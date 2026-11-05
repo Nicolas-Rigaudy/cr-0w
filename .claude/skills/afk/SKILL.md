@@ -42,3 +42,5 @@ Show the owner the queue as a short table (job, account, expected result, stops 
 - orchestrate per `runbooks/afk-runs.md`, rebuilding the morning page after every finished run.
 
 Whenever you ask the owner to run steps (install, merge, relogin), put the exact copy-pasteable commands in that same message. Never point at "the line above" or a report.
+
+In every job prompt, a paused visual or UX choice must ship with its options rendered to PNG (same framing, one per option, under the run's shots dir) before the run ends. "Paused, not rendered" is a miss (themes run 2026-11-04 left 5 choices unrendered). Cost is not a reason to skip: a cheap render of 2 options beats a text-only question.

@@ -17,3 +17,8 @@ Skipped after research (2026-10-20): caveman (telemetry on by default, ~4% over 
 - claude-hud: restore `statusLine` from `settings.json.bak.*` in the profile, `claude plugin uninstall claude-hud@claude-hud`.
 - graphify / ast-grep: `uv tool uninstall graphifyy` / `ast-grep-cli`.
 - codebase-memory: remove the `codebase-memory` entry from the repo's `.mcp.json`, delete the symlink and `~/.local/share/codebase-memory-mcp`; index cache lives in `<profile home>/.cache/codebase-memory-mcp`.
+
+## Session permission mode comes from cdx, not the profile
+- A session started in auto mode (classifier blocks `rm`, `gh issue create`, public posts) got its mode from the per-account setting: `cdx configs --json` shows `permission`; `cdx set <account> --permission full|auto` changes it. `full` maps to `--permission-mode bypassPermissions`.
+- Look there first. `settings.json` / `autoMode` in the profile do not set the mode. The change applies to sessions launched afterwards, and also to `crow dispatch` runs on that account.
+- A command denied by the classifier is not executed: a heredoc inside it never wrote its file. Write files with Write, then post.

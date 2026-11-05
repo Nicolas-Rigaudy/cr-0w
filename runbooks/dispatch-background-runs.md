@@ -74,3 +74,6 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 ## Cap and labels (cdx 0.22)
 - `crow dispatch` passes `--max-parallel 2` (`CROW_MAX_RUNS`) and `--label <project>/<label>` to `cdx run`; cdx refuses a third run with `too_many_runs`, race-free. `--force` passes 0 (no cap). The same-folder check stays in crow.
 - cdx 0.23: `running_runs()` is `cdx runs --running --json` (uncapped, no 7-day window) and `crow-runs report` takes `final_message` from `cdx run-report`. `/proc` scanning stays for sessions started outside cdx. Not adopted yet: `cdx sessions --all` for profile and transcript dirs (crow-sessions, crow-relaunch, crow-usage read the profile layout directly; tests use temp profiles).
+
+## Permission mode per account
+A cdx account's launch mode is its own setting: `cdx configs --json` shows `permission`, `cdx set <account> --permission auto|full` changes it (full = bypassPermissions). It is not in the profile's settings.json. A session in auto mode blocks external writes (gh issue create, posts); check this setting first when a headless run or session gets "denied by the auto mode classifier". Applies to sessions launched after the change.

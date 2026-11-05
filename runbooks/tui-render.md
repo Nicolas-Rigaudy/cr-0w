@@ -29,3 +29,5 @@ real monitor sizes, in the real terminal theme and font, instead of guessing.
 - QML panels and the bar: use archeotech-shell `scripts/shot.sh` (see archeotech-crow-*);
   `--exec 'wlr-randr --output HEADLESS-1 --custom-mode 1080x1920; sleep 3'` renders a vertical monitor.
 - Mockups shown to the owner live in the interactive session's scratchpad (`/tmp/claude-1000/.../scratchpad/mock`), which a later or overnight session can only find by grepping the old transcript. Copy the generator script and PNGs of any mockup the owner picks from into the repo's ignored scratch area.
+- Keep mockup scripts and the review page in `local/state/shots/<topic>/`, not the session scratchpad (/tmp is wiped; the first crow-watch mockup kit was lost).
+- Layout feedback to expect: no stretched or empty boxes on vertical screens, secondary text readable on the translucent theme, clear table headers. Check these in the renders before showing them.

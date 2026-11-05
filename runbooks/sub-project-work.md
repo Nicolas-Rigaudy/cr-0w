@@ -22,6 +22,7 @@ crow handoff <project> --task "<what>" --end-state "<what the owner's OK unlocks
   ask-first account, ask the owner, then rerun with `CROW_ACCOUNT=<name>`. `--on-busy fail` never prompts.
 - `CROW_ACCOUNT=<name>` always wins inside a session crow started, its own account included: the session sees
   its account as CROW_SESSION_ACCOUNT. A registry project with `planning: <other>` opens in that repo (open, term, handoff).
+- Hub work (cr-0w itself) is not a handoff target (`crow handoff` skips the hub path). Open a fresh hub session with `crow term cr-0w "<prompt>"` and put the item path, owner-prefs and end state in the prompt.
 
 ## Stay
 ```
@@ -41,3 +42,10 @@ and listed hooks as checks to run by hand (lint, gates). Git hooks still run.
 ## After a handoff
 - `crow handoff` already opens the kitty window (it calls `crow term`). Never say it "only saved the note" and never run `crow term` again with the same note: that starts a second session on the same task (two sessions racing on a prod release).
 - If the owner says the session crashed or nothing opened, check `pgrep -af "crow open"` / `crow runs` first, then ask before reopening.
+
+## Merging a worktree branch when the main tree is on another branch
+Fast-forward the default branch without checking it out: `git fetch -q . <branch>:main`.
+Then remove the worktree and delete the branch with `git branch -D` after checking `git rev-parse main` equals the branch tip (`-d` compares against the checked-out branch and refuses).
+The main tree's `bin/` stays on its own branch, so new hub scripts are missing there until it is rebased: say so in the report.
+Before writing a registry entry for an account (tokens, identities), confirm the account with the owner or the existing keyring entry; a handoff prompt can name the wrong one.
+Sessions started before 2026-11-05 still drop a CROW_ACCOUNT equal to their own account: there run `env -u CDX_SESSION_NAME CROW_ACCOUNT=<acct> bin/crow handoff ...`. Archeotech-shell is planned and built from archeotech-dotfiles (registry `planning:`), and crow opens it there.

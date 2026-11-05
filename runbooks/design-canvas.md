@@ -24,3 +24,7 @@ Each board keeps the `<script src="./support.js">` line and the `data-dc-script`
 ## Showing choices
 
 Draw every visual option as its own board beside the original, add a blue note naming the boards, then ask with AskUserQuestion. Say when the data is invented.
+
+## After decisions
+
+Update the spec, its vault mirror and the Logics items that cite it before reporting done. Keep names of private data (accounts, MR numbers) out of generic files: the pre-commit check rejects them.
