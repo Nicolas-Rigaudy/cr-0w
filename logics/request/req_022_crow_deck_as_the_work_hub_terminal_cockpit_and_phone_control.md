@@ -9,7 +9,7 @@
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
 
 # AI Context
-- Summary: Make crow deck the place the owner works from, not a side dashboard: a terminal cockpit (deck pane plus the active session pane in one tmux/kitty layout, with a send box and inline approvals), then one responsive web app over `crow serve` for the phone (touch session views, ntfy action notifications) and for the laptop's graphical views (charts, diffs, design picks, reports); SSH as fallback.
+- Summary: Make crow deck the place the owner works from, not a side dashboard: a terminal cockpit (deck pane plus the active session pane in one tmux/kitty layout, with a send box and inline approvals), then one responsive web app over the deck engine for the phone (touch session views, ntfy action notifications) and for the laptop's graphical views (charts, diffs, design picks, reports); SSH as fallback.
 - Keywords: deck, hub, cockpit, tmux, layout, session, send, approvals, phone, ssh, termux, pwa, ntfy, crow serve
 - Use when: planning how the owner drives sessions and crow actions from the deck or from the phone.
 - Skip when: deck widget visuals (req_020) or the multi-machine sync design (req_016).
@@ -24,9 +24,10 @@
 - Phone and graphics (discussed 2026-11-05, replaces the earlier SSH-first and PWA-only drafts):
   - **Claude Code Remote Control is not the phone path.** The owner works only in cdx terminal sessions across several accounts; the Claude mobile app is logged into one account and Remote Control is enabled per session, untested with cdx profiles.
   - **Sessions run in tmux** (item_031 backend), so the cockpit, SSH and the phone all see the same session.
-  - **`crow serve`** exposes per session: read (last screen via `tmux capture-pane`, or the transcript tail from the session .jsonl) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
+  - **Naming (owner, 2026-11-05): everything is "deck".** `crow deck` opens the TUI, `crow deck web` opens the same deck in the browser (laptop) or as the installed app (phone). The data service behind both is the deck's engine: a systemd user service started at login, with no command of its own (`crow deck status` / `restart` only if needed). The name the deck engine is dropped.
+  - **The deck engine** exposes per session: read (last screen via `tmux capture-pane`, or the transcript tail from the session .jsonl) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
   - **Phone step 1: ntfy notifications with action buttons** (approve, dispatch, open) when a run finishes or a session waits on the owner.
-  - **One responsive web app (PWA)** over `crow serve`:
+  - **Deck web: one responsive web app (PWA)** over the deck engine:
     - Phone: touch views of sessions (pane view, send box, approve buttons), runs, MRs, threads, today.
     - Laptop: the graphical side the TUI renders poorly: usage and cost charts, run timelines, full diffs, design picks with images, the Logics viewer (item_073), AFK and run reports. It replaces the scattered HTML pages (crow-afk-page, crow-night-page, crow-compare, run reports) over time.
   - **Split:** the TUI deck owns keyboard work (sessions, triage, actions); the web app owns graphics and the phone. A deck key opens the selected item in the web app (real browser, xdg-open with the real HOME).
@@ -37,14 +38,14 @@
 # Context
 - `bin/crow_term.py` (item_031) already has kitty, tmux and print backends; `crow term`, `crow-focus` and `crow-relaunch` go through it.
 - The deck already runs actions: handoff (main.go), mail session (today_data.go), MR review and posting, runs, usage.
-- req_016 plans Tailscale, `crow serve` (HTTP API over existing commands), the home server as aggregator, ntfy and a PWA. This request uses those pieces and does not redesign them.
+- req_016 plans Tailscale, the deck engine (HTTP API over existing commands), the home server as aggregator, ntfy and a PWA. This request uses those pieces and does not redesign them.
 - req_020 owns the deck's look and composable widgets; new deck surfaces here follow it.
 - Open spike: a Claude Code panel mod (plugin-authoring) could show deck widgets beside the chat. Check whether it makes the split layout unnecessary before building the layout.
 
 # Acceptance criteria
 - AC1: One command (`crow deck --cockpit` or similar) opens the layout in tmux or kitty: deck pane plus a session pane; selecting a session in the deck shows it in the session pane.
 - AC2: From the deck, the owner can send a prompt to the focused session and see sessions waiting on input or approval, without leaving the deck.
-- AC3: `crow serve` returns each live session's last screen and accepts a prompt for it, for sessions on every cdx account.
+- AC3: the deck engine returns each live session's last screen and accepts a prompt for it, for sessions on every cdx account.
 - AC4: A finished run or a session waiting on the owner sends an ntfy notification with action buttons; approve and dispatch work from the notification.
 - AC5: On the phone, the installed web app lists sessions waiting on the owner, live and finished runs, and open MRs; a session view shows its screen, takes a prompt and approves with one tap.
 - AC6: On the laptop, the same web app shows at least usage charts and full MR diffs, and a deck key opens the selected item there.
