@@ -1,0 +1,7 @@
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "Hand-off from the hub. Do not push."}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "ok"}]}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "no, use the other branch"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "done"}]}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "looks good, commit it"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "<system-reminder>no stop</system-reminder>"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "[Request interrupted by user]"}}

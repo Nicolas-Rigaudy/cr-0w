@@ -1,0 +1,6 @@
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "add a flag to the script"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "ok"}]}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "now the tests"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "ok"}]}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "great, commit it"}}
+{"type": "user", "isMeta": true, "message": {"content": "no stop wrong"}}

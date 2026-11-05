@@ -20,6 +20,24 @@ def profiles_dir(env=None):
     return os.path.join(os.path.expanduser(root), "profiles")
 
 
+def claude_transcripts(profiles=None):
+    """(account, path) for every top-level Claude transcript in every cdx profile."""
+    profiles = profiles or profiles_dir()
+    if not os.path.isdir(profiles):
+        return
+    for acct in sorted(os.listdir(profiles)):
+        base = os.path.join(profiles, acct, "claude-home", ".claude", "projects")
+        if acct.startswith(".") or not os.path.isdir(base):
+            continue
+        for slug in sorted(os.listdir(base)):
+            d = os.path.join(base, slug)
+            if not os.path.isdir(d):
+                continue
+            for f in sorted(os.listdir(d)):
+                if f.endswith(".jsonl"):
+                    yield acct, os.path.join(d, f)
+
+
 def _json_objects(text):
     """Objects from a JSON document, a JSON array or JSON lines; other lines are skipped."""
     try:
@@ -329,7 +347,7 @@ CLAUDE_MODEL_IDS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "h
 RUN_KINDS = {
     "task": {"model": "opus", "power": "medium", "budget": 25.0, "timeout_min": 120},
     "review": {"model": "opus", "power": "high", "budget": 10.0, "timeout_min": 60},
-    "retro": {"model": "sonnet", "power": "medium", "budget": 2.0, "timeout_min": 20},
+    "retro": {"model": "sonnet", "power": "low", "budget": 2.0, "timeout_min": 45},
     "oneshot": {"model": "opus", "power": "medium", "budget": 3.0, "timeout_min": 20},
 }
 # crow kinds that map to a cdx --kind (cdx knows assistant|code-review|retro; the rest keep its default).

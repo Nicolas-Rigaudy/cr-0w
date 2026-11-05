@@ -17,7 +17,7 @@ want to trigger it by name.
 - [archeotech-crow-usage](archeotech-crow-usage.md): test the crow usage bar/panel module (fixtures, render script, sandbox gotchas)
 - [sub-project-work](sub-project-work.md): hand repo work off with `crow handoff`, or `crow work` for lookups; the hub guard hook
 - [open-project-session](open-project-session.md): open a project session in a new kitty window from the hub (HOME + inherited Claude markers)
-- [session-retros](session-retros.md): automatic retrospective after every session (SessionEnd hook → queue → /retro on Sonnet)
+- [session-retros](session-retros.md): daily retro batch (Mon–Fri timer → no-model pre-filter → one /retro run → dated report with skipped list)
 - [agent-tooling](agent-tooling.md): third-party agent tools installed (code graph, graphify, ast-grep, claude-hud), pinned versions, verdicts, undo
 - [service-tokens](service-tokens.md): personal API tokens in the keyring via `crow secret` (store, read without printing, rotate, revoke), registry in local/tokens.yaml
 - [ci-secrets](ci-secrets.md): prod-scoped CI variables and secrets (owner runs the generator script; scope/protect rules)

@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Retrospective of one finished session. Finds where the user corrected, redirected or finished the work themselves, plus recurring tool friction. Applies the lessons to local-only files (runbooks, skills, memories), proposes anything tracked, and writes a short report. Runs automatically after each session via crow-retro; use it by hand with "/retro <transcript.jsonl>" or "retro the last session in <project>".
+description: Retrospective of one finished session. Finds where the user corrected, redirected or finished the work themselves, plus recurring tool friction. Applies the lessons to local-only files (runbooks, skills, memories), proposes anything tracked, and writes a short report. Runs as one daily batch from crow-retro (batch=<manifest>); use it by hand with "/retro <transcript.jsonl>" or "retro the last session in <project>".
 ---
 
 # Retro
@@ -11,6 +11,8 @@ Be selective: one real lesson beats five generic ones. Don't invent problems.
 ## Input
 `digest=<path> transcript=<path> cwd=<project dir> session=<id>`.
 Given only a transcript, run `bin/crow-digest <transcript>` to build the digest yourself.
+Batch mode: `batch=<manifest>` (written by `crow-retro run`). The manifest lists the window, the report path and one `### <project> <session8>` block per kept session (session, account, cwd, digest, transcript, pre-filter signals). Run steps 1–3 for each session in turn with its own digest, transcript and cwd, then write the batch report (step 4).
+
 Read the digest. Open the raw transcript only to check one specific moment (`rg` on it, never read it whole).
 
 ## 1. Find the signals
@@ -75,6 +77,8 @@ Outcome: <done / partly / abandoned, one line>
 ## Risks left
 - ... (only if any)
 ```
+
+Batch mode: write the single report path named in the manifest (`local/state/retros/YYYY-MM-DD-batch.md`) instead, titled `# Retro batch: <date>`, with one `## <project> <session8>` section per session holding the Task / Outcome / Findings / Hub handoff / Risks left lines above (at most 30 lines each). Don't write a skipped list: the script appends it. One activity line for the whole batch: `- HH:MM [retro] batch: <n> sessions, <n> applied, <n> proposed`.
 
 Then append `- HH:MM [retro] <project> <session8>: <n> applied, <n> proposed` to today's activity log (`local/state/activity/YYYY-MM-DD.md`).
 Final message: the report path and one line per applied change.

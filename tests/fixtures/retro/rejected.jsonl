@@ -1,0 +1,6 @@
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "rename the module"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "ok"}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "is_error": true, "content": "The user doesn't want to proceed with this tool use. The tool use was rejected"}]}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "keep the old name in the shim"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "fine"}}
+{"type": "user", "isSidechain": true, "message": {"content": "no wrong stop"}}

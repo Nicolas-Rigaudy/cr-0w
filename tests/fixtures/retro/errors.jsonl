@@ -1,0 +1,6 @@
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "build it"}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "is_error": true, "content": "Exit code 1: cdx: command not found"}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "is_error": true, "content": "Exit code 1: cdx: command not found"}]}}
+{"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "is_error": true, "content": "other error"}]}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "try again"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "thanks"}}

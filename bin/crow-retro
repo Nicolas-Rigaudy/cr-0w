@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""Session retrospectives: queue finished sessions and analyze them one at a time.
+"""Session retrospectives: one daily batch over the sessions a no-model pre-filter keeps.
 
-  crow-retro hook            SessionEnd hook entry point (reads the hook JSON on stdin)
-  crow-retro add <jsonl>     queue a transcript by hand, then start the worker
-  crow-retro work            process the queue (one worker at a time, holds a lock)
-  crow-retro retry           requeue retros that failed on a usage limit, then start the worker
-  crow-retro status          queue, running worker, last reports
+  crow-retro scan [--since ISO] [--json]     list the window's sessions, kept or skipped with the reason (no model)
+  crow-retro run [--since ISO] [--force] [--dry-run]
+                                             scan, digest the kept sessions, one /retro batch run, one dated report
+  crow-retro install-timer                   write and enable the systemd user timer (Mon-Fri evening)
+  crow-retro add <jsonl>                     retro one session by hand (queued, one worker at a time)
+  crow-retro work                            process the by-hand queue
+  crow-retro retry                           requeue by-hand retros that failed on a usage limit
+  crow-retro status                          last batch, queue, worker log
 
-Each queued session is condensed with crow-digest, then analyzed by a headless
-cdx run of the /retro skill. Runs started here carry CROW_RETRO=1 so their own
-SessionEnd never queues another retro.
+The window runs from the end of the last successful batch (default: 24 h ago) to 20 minutes ago,
+so Monday's run covers the weekend. One batch per day at most (--force overrides).
+Runs started here carry CROW_RETRO=1.
 """
+import argparse
+import collections
 import datetime as dt
 import fcntl
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -27,9 +33,11 @@ STATE = os.path.join(CROW_HOME, "local", "state", "retros")
 QUEUE = os.path.join(STATE, "queue")
 LOCK = os.path.join(STATE, ".worker.lock")
 LOG = os.path.join(STATE, "worker.log")
-ACCOUNT = os.environ.get("CROW_ACCOUNT") or os.environ.get("CROW_SESSION_ACCOUNT") or subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "default"], text=True).strip()
+BATCH_STATE = os.path.join(STATE, "batch.json")
+BIN = os.path.dirname(os.path.realpath(__file__))
+ACCOUNT = os.environ.get("CROW_ACCOUNT") or os.environ.get("CROW_SESSION_ACCOUNT") or subprocess.check_output([os.path.join(BIN, "crow-accounts"), "default"], text=True).strip()
 try:
-    PROVIDER = subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "provider", ACCOUNT], text=True, stderr=subprocess.DEVNULL).strip()
+    PROVIDER = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "provider", ACCOUNT], text=True, stderr=subprocess.DEVNULL).strip()
 except (OSError, subprocess.CalledProcessError):
     PROVIDER = "claude"  # no cdx or unknown account: the import must not fail, the run reports it
 # Claude default is sonnet; a Codex account runs on its own configured model unless CROW_RETRO_CODEX_MODEL names one.
@@ -37,7 +45,22 @@ MODEL = os.environ.get("CROW_RETRO_MODEL", "sonnet") if PROVIDER == "claude" els
 _bad_model = crow_lib.check_model(PROVIDER, MODEL)
 if _bad_model:
     sys.exit(f"crow-retro: {_bad_model}")
-MIN_USER_MESSAGES = 2
+
+MIN_USER_MESSAGES = 2          # by-hand add
+MIN_PROMPTS = 3                # batch pre-filter
+MAX_BATCH = 8                  # sessions per batch run, highest score first
+SETTLE_MIN = 20                # sessions touched more recently may still be live: next run
+DONE_KEEP_DAYS = 30
+AUTO_PREFIXES = ("/retro", "/brief", "/daily", "/weekly", "/eod", "/wrap")
+NOISE_PREFIXES = ("<system-reminder>", "<local-command", "Caveat:", "<task-notification", "<command-message>")
+INTERRUPT = "[Request interrupted"
+REJECTED = ("The user doesn't want to proceed", "User rejected tool use")
+# Correction words, English and French, matched on the start of each typed prompt (pasted text is long, its tail is noise).
+CORRECTION = re.compile(
+    r"\b(no|nope|non|wrong|not what|not that|instead|i said|i told you|already (?:told|said|asked)|why did you|"
+    r"don'?t|do not|stop|undo|revert|you forgot|should have|that'?s not|pas ça|pas comme ça|j'ai dit|"
+    r"pourquoi tu|ne fais pas|ne touche pas|arrête|annule|tu as oublié)\b", re.I)
+CORRECTION_SPAN = 400
 
 
 def log(msg):
@@ -46,30 +69,318 @@ def log(msg):
         fh.write(f"{dt.datetime.now():%F %T} {msg}\n")
 
 
-def user_message_count(path):
-    """Messages the user typed (not tool results, skill bodies or command wrappers)."""
-    count = 0
-    with open(path, encoding="utf-8") as fh:
+# ---------- pre-filter (deterministic, no model) ----------
+
+def _events(path):
+    with open(path, encoding="utf-8", errors="replace") as fh:
         for raw in fh:
             try:
                 ev = json.loads(raw)
-            except json.JSONDecodeError:
+            except ValueError:
                 continue
-            if ev.get("type") != "user":
-                continue
-            content = (ev.get("message") or {}).get("content")
-            if isinstance(content, list):
-                if not content or content[0].get("type") != "text":
+            if isinstance(ev, dict) and not ev.get("isSidechain"):
+                yield ev
+
+
+def _blocks(ev):
+    content = (ev.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return [{"type": "text", "text": content}]
+    return [c for c in content or [] if isinstance(c, dict)]
+
+
+def _result_text(block):
+    c = block.get("content")
+    if isinstance(c, list):
+        c = " ".join(x.get("text", "") for x in c if isinstance(x, dict))
+    return c if isinstance(c, str) else ""
+
+
+def _typed_prompt(text):
+    """The text when the user typed it, else None (wrappers, reminders, skill bodies, interrupts)."""
+    t = text.strip()
+    if not t or t.startswith(NOISE_PREFIXES) or t.startswith(INTERRUPT) or "Base directory for this skill:" in t:
+        return None
+    if "<command-name>" in t:
+        name = t.split("<command-name>", 1)[1].split("</command-name>", 1)[0]
+        if name == "/clear":
+            return None
+        args = t.split("<command-args>", 1)[1].split("</command-args>", 1)[0] if "<command-args>" in t else ""
+        return f"{name} {args}".strip()
+    return t
+
+
+def signals(path):
+    """Facts the pre-filter decides on, read from the main conversation only."""
+    out = {"prompts": 0, "first_prompt": None, "corrections": 0, "interrupts": 0, "rejected": 0,
+           "repeated_errors": 0, "entrypoint": None, "cwd": None, "session_id": None}
+    errors = collections.Counter()
+    for ev in _events(path):
+        out["entrypoint"] = out["entrypoint"] or ev.get("entrypoint")
+        out["session_id"] = out["session_id"] or ev.get("sessionId")
+        if isinstance(ev.get("cwd"), str):
+            out["cwd"] = out["cwd"] or ev["cwd"]
+        if ev.get("type") != "user":
+            continue
+        for b in _blocks(ev):
+            if b.get("type") == "tool_result":
+                text = _result_text(b)
+                if any(r in text for r in REJECTED):
+                    out["rejected"] += 1
+                elif b.get("is_error"):
+                    errors[" ".join(text.split())[:80]] += 1
+            elif b.get("type") == "text":
+                text = b.get("text", "")
+                if text.lstrip().startswith(INTERRUPT):
+                    out["interrupts"] += 1
                     continue
-                content = content[0].get("text", "")
-            if not isinstance(content, str) or not content.strip():
-                continue
-            if content.startswith(("<system-reminder>", "<local-command", "Caveat:", "[Request interrupted")):
-                continue
-            if "Base directory for this skill:" in content:
-                continue
-            count += 1
-    return count
+                if ev.get("isMeta"):
+                    continue
+                prompt = _typed_prompt(text)
+                if prompt is None:
+                    continue
+                out["prompts"] += 1
+                out["first_prompt"] = out["first_prompt"] or prompt[:200]
+                # The first prompt states the task (often a pasted hand-off); corrections come after it.
+                if out["prompts"] > 1 and CORRECTION.search(prompt[:CORRECTION_SPAN]):
+                    out["corrections"] += 1
+    out["repeated_errors"] = sum(1 for n in errors.values() if n >= 2)
+    return out
+
+
+def score(s):
+    return 2 * s["corrections"] + 2 * s["rejected"] + s["interrupts"] + s["repeated_errors"]
+
+
+def classify(s):
+    """(keep, reason). Skips: headless runs, automatic one-shots, short sessions, no signal."""
+    if s["entrypoint"] == "sdk-cli":
+        return False, "headless run (dispatch, retro, probe)"
+    if (s["first_prompt"] or "").startswith(AUTO_PREFIXES):
+        return False, f"one-shot {s['first_prompt'].split()[0]}"
+    if s["prompts"] < MIN_PROMPTS:
+        return False, f"{s['prompts']} prompt(s), under {MIN_PROMPTS}"
+    found = [f"{s[k]} {k.replace('_', ' ')}" for k in ("corrections", "rejected", "interrupts", "repeated_errors") if s[k]]
+    if not found:
+        return False, "no correction signal"
+    return True, ", ".join(found)
+
+
+# ---------- batch ----------
+
+def load_batch_state():
+    try:
+        with open(BATCH_STATE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_batch_state(st):
+    os.makedirs(STATE, exist_ok=True)
+    tmp = BATCH_STATE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(st, fh, indent=1)
+    os.replace(tmp, BATCH_STATE)
+
+
+def window(st, since=None, now=None):
+    now = now or time.time()
+    if since:
+        start = dt.datetime.fromisoformat(since).timestamp()
+    else:
+        start = st.get("last_end") or now - 86400
+    return start, now - SETTLE_MIN * 60
+
+
+def scan(since=None, now=None, transcripts=None):
+    """Sessions last touched inside the window: dicts with keep, reason, score, signals."""
+    st = load_batch_state()
+    start, end = window(st, since, now)
+    done = st.get("done") or {}
+    rows = []
+    for acct, path in transcripts if transcripts is not None else crow_lib.claude_transcripts():
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            continue
+        if not start < mtime <= end:
+            continue
+        sid = os.path.basename(path)[:-6]
+        s = signals(path)
+        if sid in done:
+            keep, reason = False, f"already analysed on {done[sid]}"
+        else:
+            keep, reason = classify(s)
+        rows.append({"session": sid, "account": acct, "transcript": path, "cwd": s["cwd"],
+                     "project": os.path.basename((s["cwd"] or "").rstrip("/")) or "unknown",
+                     "mtime": dt.datetime.fromtimestamp(mtime).isoformat(timespec="minutes"),
+                     "keep": keep, "reason": reason, "score": score(s) if keep else 0,
+                     "first_prompt": s["first_prompt"]})
+    kept = sorted((r for r in rows if r["keep"]), key=lambda r: -r["score"])
+    for r in kept[MAX_BATCH:]:
+        r["keep"], r["reason"] = False, f"over the cap of {MAX_BATCH} (score {r['score']}: {r['reason']})"
+    return {"start": start, "end": end, "rows": rows}
+
+
+def skipped_section(rows):
+    lines = ["## Skipped (pre-filter)", "| Session | Project | Reason |", "|---|---|---|"]
+    lines += [f"| {r['session'][:8]} | {r['project']} | {r['reason']} |"
+              for r in sorted(rows, key=lambda r: r["mtime"]) if not r["keep"]]
+    return "\n".join(lines) + "\n" if len(lines) > 3 else "## Skipped (pre-filter)\nnone\n"
+
+
+def report_path(day):
+    return os.path.join(STATE, f"{day}-batch.md")
+
+
+def write_manifest(day, scanned, digests):
+    d = os.path.join(STATE, "batches")
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, f"{day}.md")
+    fmt = lambda t: dt.datetime.fromtimestamp(t).isoformat(timespec="minutes")  # noqa: E731
+    lines = [f"# Retro batch {day}", f"Window: {fmt(scanned['start'])} to {fmt(scanned['end'])}",
+             f"Report: {report_path(day)}", "", "## Sessions"]
+    for r in (r for r in scanned["rows"] if r["keep"]):
+        lines += [f"### {r['project']} {r['session'][:8]}",
+                  f"- session={r['session']} account={r['account']} cwd={r['cwd']}",
+                  f"- digest={digests[r['session']]}", f"- transcript={r['transcript']}",
+                  f"- signals: {r['reason']}", ""]
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    return path
+
+
+def batch_budget(n):
+    env = os.environ.get("CROW_RETRO_BUDGET")
+    return float(env) if env else min(1.0 + 0.75 * n, 8.0)
+
+
+def run_batch(manifest, n):
+    prompt = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "prompt", ACCOUNT, "retro",
+                                      f"batch={manifest}"], text=True).strip()
+    permission = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "permission", ACCOUNT], text=True).strip()
+    flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL, budget=batch_budget(n))
+    out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags, "--label", "retro-batch",
+                          "--permission", permission, "--prompt", prompt, "--json"],
+                         capture_output=True, text=True, env={**crow_lib.run_env(env), "CROW_RETRO": "1"})
+    try:
+        return json.loads(out.stdout)
+    except json.JSONDecodeError:
+        return {"ok": False, "error": (out.stderr or out.stdout)[-400:]}
+
+
+def digest(row):
+    d = os.path.join(STATE, "digests")
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, f"{row['session']}.md")
+    with open(path, "w", encoding="utf-8") as fh:
+        subprocess.run([os.path.join(BIN, "crow-digest"), row["transcript"]], stdout=fh, check=True)
+    return path
+
+
+def cmd_scan(args):
+    scanned = scan(args.since)
+    if args.json:
+        print(json.dumps(scanned, indent=1))
+        return 0
+    fmt = lambda t: dt.datetime.fromtimestamp(t).strftime("%a %F %H:%M")  # noqa: E731
+    print(f"window {fmt(scanned['start'])} -> {fmt(scanned['end'])}: {len(scanned['rows'])} session(s)")
+    for r in sorted(scanned["rows"], key=lambda r: (not r["keep"], r["mtime"])):
+        mark = "KEEP" if r["keep"] else "skip"
+        print(f"{mark} {r['session'][:8]} {r['account']:<8} {r['project']:<24} {r['reason']}")
+    return 0
+
+
+def cmd_run(args, now=None, analyse=None):
+    """One batch. analyse(manifest, n) -> cdx result; injectable for tests."""
+    os.makedirs(STATE, exist_ok=True)
+    lock = open(LOCK, "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("crow-retro: another retro worker is running")
+        return 1
+    st = load_batch_state()
+    today = dt.date.fromtimestamp(now or time.time()).isoformat()
+    if st.get("last_day") == today and not args.force and not args.dry_run:
+        print(f"crow-retro: batch already ran today ({report_path(today)}); --force to run again")
+        return 0
+    scanned = scan(args.since, now)
+    kept = [r for r in scanned["rows"] if r["keep"]]
+    print(f"{len(scanned['rows'])} session(s) in the window, {len(kept)} kept")
+    if args.dry_run:
+        for r in kept:
+            print(f"  {r['session'][:8]} {r['project']} ({r['reason']})")
+        return 0
+    if not scanned["rows"]:
+        log("batch: no session in the window")
+        st["last_end"], st["last_day"] = scanned["end"], today
+        save_batch_state(st)
+        return 0
+    report = report_path(today)
+    if kept:
+        digests = {r["session"]: digest(r) for r in kept}
+        manifest = write_manifest(today, scanned, digests)
+        log(f"batch: analysing {len(kept)} session(s), manifest {manifest}")
+        result = (analyse or run_batch)(manifest, len(kept))
+        if not result.get("ok"):
+            log(f"batch: FAILED: {str(result.get('error'))[:300]}")
+            print(f"crow-retro: batch run failed, window kept for the next run: {result.get('error')}")
+            return 1
+        log(f"batch: done run {result.get('run_id')}")
+    if not os.path.exists(report):
+        with open(report, "w", encoding="utf-8") as fh:
+            fh.write(f"# Retro batch: {today}\nNo session passed the pre-filter.\n")
+    with open(report, "a", encoding="utf-8") as fh:
+        fh.write("\n" + skipped_section(scanned["rows"]))
+    done = {k: v for k, v in (st.get("done") or {}).items()
+            if v >= (dt.date.fromisoformat(today) - dt.timedelta(DONE_KEEP_DAYS)).isoformat()}
+    done.update({r["session"]: today for r in kept})
+    st.update(last_end=scanned["end"], last_day=today, done=done, last_report=report)
+    save_batch_state(st)
+    print(report)
+    return 0
+
+
+TIMER = """[Unit]
+Description=crow daily session retro batch
+
+[Timer]
+OnCalendar=Mon..Fri 19:00
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target
+"""
+SERVICE = """[Unit]
+Description=crow daily session retro batch
+
+[Service]
+Type=oneshot
+Environment=PATH={home}/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart={bin} run
+"""
+
+
+def cmd_install_timer():
+    d = os.path.join(crow_lib.real_home(), ".config", "systemd", "user")
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, "crow-retro.timer"), "w", encoding="utf-8") as fh:
+        fh.write(TIMER)
+    with open(os.path.join(d, "crow-retro.service"), "w", encoding="utf-8") as fh:
+        fh.write(SERVICE.format(home=crow_lib.real_home(), bin=os.path.realpath(__file__)))
+    for cmd in (["daemon-reload"], ["enable", "--now", "crow-retro.timer"]):
+        subprocess.run(["systemctl", "--user", *cmd], check=True)
+    subprocess.run(["systemctl", "--user", "list-timers", "crow-retro.timer", "--no-pager"])
+    return 0
+
+
+# ---------- by hand: one session ----------
+
+def user_message_count(path):
+    return signals(path)["prompts"]
 
 
 def enqueue(transcript, session_id, cwd, reason):
@@ -93,21 +404,6 @@ def spawn_worker():
                      cwd=CROW_HOME)
 
 
-def cmd_hook():
-    if os.environ.get("CROW_RETRO"):
-        return 0
-    try:
-        data = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        return 0
-    msg = enqueue(data.get("transcript_path"), data.get("session_id") or "unknown",
-                  data.get("cwd"), data.get("reason"))
-    log(f"hook: {msg}")
-    if msg.startswith("queued"):
-        spawn_worker()
-    return 0
-
-
 def cmd_add(path):
     session_id = os.path.splitext(os.path.basename(path))[0]
     msg = enqueue(os.path.realpath(path), session_id, None, "manual")
@@ -119,15 +415,10 @@ def cmd_add(path):
 
 def analyze(entry):
     sid = entry["session_id"]
-    digest_dir = os.path.join(STATE, "digests")
-    os.makedirs(digest_dir, exist_ok=True)
-    digest = os.path.join(digest_dir, f"{sid}.md")
-    with open(digest, "w", encoding="utf-8") as fh:
-        subprocess.run([os.path.join(CROW_HOME, "bin", "crow-digest"), entry["transcript"]],
-                       stdout=fh, check=True)
-    args = f"digest={digest} transcript={entry['transcript']} cwd={entry.get('cwd') or 'unknown'} session={sid}"
-    prompt = subprocess.check_output([os.path.join(CROW_HOME, "bin", "crow-accounts"), "prompt", ACCOUNT, "retro", args], text=True).strip()
-    permission = subprocess.check_output([os.path.join(CROW_HOME, "bin", "crow-accounts"), "permission", ACCOUNT], text=True).strip()
+    path = digest({"session": sid, "transcript": entry["transcript"]})
+    args = f"digest={path} transcript={entry['transcript']} cwd={entry.get('cwd') or 'unknown'} session={sid}"
+    prompt = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "prompt", ACCOUNT, "retro", args], text=True).strip()
+    permission = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "permission", ACCOUNT], text=True).strip()
     flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL)
     out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags,
                           "--permission", permission, "--prompt", prompt, "--json"],
@@ -214,6 +505,11 @@ def cmd_work():
 
 
 def cmd_status():
+    st = load_batch_state()
+    if st.get("last_day"):
+        print(f"last batch: {st['last_day']} ({st.get('last_report')})")
+    else:
+        print("last batch: never")
     queued = os.listdir(QUEUE) if os.path.isdir(QUEUE) else []
     print(f"queued: {len(queued)}")
     if os.path.exists(LOG):
@@ -223,19 +519,29 @@ def cmd_status():
 
 
 def main():
-    args = sys.argv[1:]
-    if not args:
+    argv = sys.argv[1:]
+    if not argv:
         print(__doc__.strip())
         return 1
-    if args[0] == "retry":
+    cmd, rest = argv[0], argv[1:]
+    if cmd in ("scan", "run"):
+        p = argparse.ArgumentParser(prog=f"crow-retro {cmd}")
+        p.add_argument("--since")
+        if cmd == "scan":
+            p.add_argument("--json", action="store_true")
+            return cmd_scan(p.parse_args(rest))
+        p.add_argument("--force", action="store_true")
+        p.add_argument("--dry-run", action="store_true")
+        return cmd_run(p.parse_args(rest))
+    if cmd == "install-timer" and not rest:
+        return cmd_install_timer()
+    if cmd == "retry":
         return cmd_retry()
-    if args[0] == "hook":
-        return cmd_hook()
-    if args[0] == "add" and len(args) == 2:
-        return cmd_add(args[1])
-    if args[0] == "work":
+    if cmd == "add" and len(rest) == 1:
+        return cmd_add(rest[0])
+    if cmd == "work":
         return cmd_work()
-    if args[0] == "status":
+    if cmd == "status":
         return cmd_status()
     print(__doc__.strip(), file=sys.stderr)
     return 1

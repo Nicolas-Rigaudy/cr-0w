@@ -1,10 +1,10 @@
 ## item_024_daily_retro_batch_with_a_no_model_pre_filter - Daily retro batch with a no-model pre-filter
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -36,6 +36,12 @@
 
 # AC Traceability
 - request-AC1 -> This backlog slice. Proof: AC1: pre-filter is deterministic and tested on fixture transcripts.
+
+# Delivery proof (2026-11-05)
+- AC1: `signals`/`classify` in `bin/crow-retro` read the transcript only; `tests/test_crow_retro.py` runs them on `tests/fixtures/retro/*.jsonl` and checks two passes give the same rows.
+- AC2: `crow-retro run` refuses a second run the same day (`batch.json` `last_day`, `--force` overrides); the report ends with a "Skipped (pre-filter)" table, one reason per session. Tested, plus a failed batch keeping the window.
+- AC3: `jq .hooks.SessionEnd` is empty in all four cdx profiles; the `hook` subcommand is gone.
+- Timer: `crow-retro.timer` Mon–Fri 19:00 installed and listed. Runbook: `runbooks/session-retros.md`.
 
 # Decision framing
 - Product framing: Not needed

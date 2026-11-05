@@ -1,0 +1,4 @@
+{"type": "user", "entrypoint": "sdk-cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "run the task"}}
+{"type": "user", "entrypoint": "sdk-cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "no"}}
+{"type": "user", "entrypoint": "sdk-cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "wrong"}}
+{"type": "user", "entrypoint": "sdk-cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "stop"}}

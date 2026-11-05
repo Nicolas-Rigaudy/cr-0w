@@ -1,0 +1,4 @@
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "<command-name>/brief</command-name><command-args></command-args>"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "no"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "no"}}
+{"type": "user", "entrypoint": "cli", "sessionId": "s", "cwd": "/work/proj", "message": {"role": "user", "content": "no"}}

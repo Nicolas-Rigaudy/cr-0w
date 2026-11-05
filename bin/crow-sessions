@@ -53,19 +53,7 @@ def project_of(cwd, projects):
 
 def transcripts():
     """(account, path) for every top-level Claude transcript in every profile."""
-    if not os.path.isdir(PROFILES):
-        return
-    for acct in sorted(os.listdir(PROFILES)):
-        base = os.path.join(PROFILES, acct, "claude-home", ".claude", "projects")
-        if acct.startswith(".") or not os.path.isdir(base):
-            continue
-        for slug in sorted(os.listdir(base)):
-            d = os.path.join(base, slug)
-            if not os.path.isdir(d):
-                continue
-            for f in sorted(os.listdir(d)):
-                if f.endswith(".jsonl"):
-                    yield acct, os.path.join(d, f)
+    yield from crow_lib.claude_transcripts(PROFILES)
 
 
 def events(lines):
