@@ -11,7 +11,9 @@
   crow-retro status                          last batch, queue, worker log
 
 The window runs from the end of the last successful batch (default: 24 h ago) to 20 minutes ago,
-so Monday's run covers the weekend. One batch per day at most (--force overrides).
+so Monday's run covers the weekend. One batch per Mon-Fri 19:00 slot (--force overrides): the timer
+ticks hourly 08-23h, so a slot missed with the lid closed or offline runs at the next tick that has
+network. Offline ticks change nothing; a slot gives up after 3 failed model runs.
 Runs started here carry CROW_RETRO=1.
 """
 import argparse
@@ -21,6 +23,7 @@ import fcntl
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -292,6 +295,27 @@ def cmd_scan(args):
     return 0
 
 
+SLOT_HOUR = 19        # the evening slot, Mon-Fri
+MAX_ATTEMPTS = 3      # failed model runs per slot before giving up until the next slot
+PROBE = ("api.anthropic.com", 443)
+
+
+def last_slot(now):
+    """Timestamp of the latest Mon-Fri SLOT_HOUR:00 at or before now."""
+    t = dt.datetime.fromtimestamp(now).replace(hour=SLOT_HOUR, minute=0, second=0, microsecond=0)
+    while t.weekday() > 4 or t.timestamp() > now:
+        t -= dt.timedelta(days=1)
+    return t.timestamp()
+
+
+def online():
+    try:
+        socket.create_connection(PROBE, timeout=5).close()
+        return True
+    except OSError:
+        return False
+
+
 def cmd_run(args, now=None, analyse=None):
     """One batch. analyse(manifest, n) -> cdx result; injectable for tests."""
     os.makedirs(STATE, exist_ok=True)
@@ -302,10 +326,17 @@ def cmd_run(args, now=None, analyse=None):
         print("crow-retro: another retro worker is running")
         return 1
     st = load_batch_state()
-    today = dt.date.fromtimestamp(now or time.time()).isoformat()
-    if st.get("last_day") == today and not args.force and not args.dry_run:
-        print(f"crow-retro: batch already ran today ({report_path(today)}); --force to run again")
-        return 0
+    now = now or time.time()
+    today = dt.date.fromtimestamp(now).isoformat()
+    slot = last_slot(now)
+    if not args.force and not args.dry_run:
+        if st.get("last_ok_at", 0) >= slot:
+            print(f"crow-retro: batch already ran for this slot ({st.get('last_report')}); --force to run again")
+            return 0
+        fail = st.get("fail") or {}
+        if fail.get("slot") == slot and fail.get("n", 0) >= MAX_ATTEMPTS:
+            print(f"crow-retro: {MAX_ATTEMPTS} failed attempts for this slot, waiting for the next one")
+            return 0
     scanned = scan(args.since, now)
     kept = [r for r in scanned["rows"] if r["keep"]]
     print(f"{len(scanned['rows'])} session(s) in the window, {len(kept)} kept")
@@ -315,17 +346,24 @@ def cmd_run(args, now=None, analyse=None):
         return 0
     if not scanned["rows"]:
         log("batch: no session in the window")
-        st["last_end"], st["last_day"] = scanned["end"], today
+        st.update(last_end=scanned["end"], last_day=today, last_ok_at=now)
         save_batch_state(st)
         return 0
     report = report_path(today)
     if kept:
         digests = {r["session"]: digest(r) for r in kept}
         manifest = write_manifest(today, scanned, digests)
+        if analyse is None and not online():
+            log("batch: offline, retrying at the next hourly tick")
+            print("crow-retro: offline, window kept for the next tick")
+            return 0
         log(f"batch: analysing {len(kept)} session(s), manifest {manifest}")
         result = (analyse or run_batch)(manifest, len(kept))
         if not result.get("ok"):
-            log(f"batch: FAILED: {str(result.get('error'))[:300]}")
+            fail = st.get("fail") or {}
+            st["fail"] = {"slot": slot, "n": (fail.get("n", 0) if fail.get("slot") == slot else 0) + 1}
+            save_batch_state(st)
+            log(f"batch: FAILED ({st['fail']['n']}/{MAX_ATTEMPTS}): {str(result.get('error'))[:300]}")
             print(f"crow-retro: batch run failed, window kept for the next run: {result.get('error')}")
             return 1
         log(f"batch: done run {result.get('run_id')}")
@@ -337,7 +375,8 @@ def cmd_run(args, now=None, analyse=None):
     done = {k: v for k, v in (st.get("done") or {}).items()
             if v >= (dt.date.fromisoformat(today) - dt.timedelta(DONE_KEEP_DAYS)).isoformat()}
     done.update({r["session"]: today for r in kept})
-    st.update(last_end=scanned["end"], last_day=today, done=done, last_report=report)
+    st.pop("fail", None)
+    st.update(last_end=scanned["end"], last_day=today, last_ok_at=now, done=done, last_report=report)
     save_batch_state(st)
     print(report)
     return 0
@@ -347,9 +386,11 @@ TIMER = """[Unit]
 Description=crow daily session retro batch
 
 [Timer]
-OnCalendar=Mon..Fri 19:00
+# Hourly ticks; the script runs one batch per Mon-Fri 19:00 slot and no-ops otherwise.
+# Ticks before 19:00 catch up a slot missed the evening before (lid closed, offline).
+OnCalendar=Mon..Fri *-*-* 08..23:00:00
 Persistent=true
-RandomizedDelaySec=10m
+RandomizedDelaySec=5m
 
 [Install]
 WantedBy=timers.target

@@ -4,7 +4,9 @@ Sessions worth a look get a short retrospective, so lessons land in skills, runb
 One batch a day, over the sessions a no-model pre-filter keeps.
 
 ## Pipeline
-1. **Timer**: `crow-retro.timer` (systemd user unit) runs `bin/crow-retro run` Mon–Fri at 19:00, `Persistent=true`. No weekend runs: Monday's window covers the weekend.
+1. **Timer**: `crow-retro.timer` (systemd user unit) ticks `bin/crow-retro run` hourly Mon–Fri 08–23h, `Persistent=true` (a tick missed while suspended fires on wake). The script runs one batch per Mon–Fri 19:00 slot and no-ops on the other ticks, so a slot missed with the lid closed runs at the next tick, that evening or the next weekday morning. No weekend ticks: Monday covers the weekend.
+   - Offline (no TCP to the API): the tick logs and changes nothing; the next tick retries.
+   - A failed model run counts against the slot; after 3 the slot waits for the next one (`fail` in `batch.json`).
 2. **Window**: from the end of the last successful batch (`local/state/retros/batch.json`, `last_end`; default 24 h ago) to 20 minutes ago, so live sessions settle first. A failed batch keeps the window for the next run.
 3. **Pre-filter** (no model, deterministic): every Claude transcript in every cdx profile, modified in the window. Skipped with a reason:
    - headless runs (`entrypoint` `sdk-cli`: dispatch, retro, probes)
@@ -22,7 +24,7 @@ One batch a day, over the sessions a no-model pre-filter keeps.
 ## Operate
 - `bin/crow-retro scan [--since ISO]`: what the next run would keep and skip, no model, a few seconds.
 - `bin/crow-retro run --dry-run`: scan, digests and manifest, no model call, no state change.
-- `bin/crow-retro run`: refuses a second run the same day; `--force` overrides.
+- `bin/crow-retro run`: no-op when this slot already ran (`last_ok_at`); `--force` overrides.
 - `bin/crow-retro install-timer`: (re)writes and enables the units in the real home's `~/.config/systemd/user/`. Check with `systemctl --user list-timers crow-retro.timer`; logs with `journalctl --user -u crow-retro`.
 - `bin/crow-retro status`: last batch, by-hand queue, worker log.
 - `bin/crow-retro add <transcript.jsonl>`: retro one session by hand (queue + worker, one report `YYYY-MM-DD-<project>-<session8>.md`). Transcripts: `<profile>/.claude/projects/<cwd-slug>/<session>.jsonl`.

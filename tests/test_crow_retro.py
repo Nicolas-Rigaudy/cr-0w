@@ -138,7 +138,45 @@ def test_failed_batch_keeps_the_window(tmp_path, monkeypatch):
     args = types.SimpleNamespace(since=None, force=False, dry_run=False)
     assert mod.cmd_run(args, now=now, analyse=lambda m, n: {"ok": False, "error": "usage limit"}) == 1
     st = mod.load_batch_state()
-    assert st["last_end"] == now - 86400 and "last_day" not in st
+    assert st["last_end"] == now - 86400 and "last_day" not in st and st["fail"]["n"] == 1
+    # two more failures, then the slot gives up until the next one
+    fails = []
+    for i in range(3):
+        mod.cmd_run(args, now=now + 3600 * (i + 1), analyse=lambda m, n: fails.append(1) or {"ok": False, "error": "x"})
+    assert len(fails) == 2
+    # next evening slot tries again
+    ok = []
+    mod.cmd_run(args, now=now + 86400, analyse=lambda m, n: ok.append(1) or {"ok": True})
+    assert ok == [1] and "fail" not in mod.load_batch_state()
+
+
+def test_last_slot_skips_weekends_and_waits_for_the_evening(tmp_path):
+    mod = load(tmp_path)
+    ts = lambda *a: dt.datetime(*a).timestamp()
+    assert mod.last_slot(ts(2026, 11, 10, 18, 59)) == ts(2026, 11, 9, 19)   # Tue before 19h -> Mon
+    assert mod.last_slot(ts(2026, 11, 10, 19, 0)) == ts(2026, 11, 10, 19)
+    assert mod.last_slot(ts(2026, 11, 16, 8, 0)) == ts(2026, 11, 13, 19)    # Mon morning -> Fri
+
+
+def test_missed_slot_catches_up_next_morning_once_online(tmp_path, monkeypatch):
+    mod = load(tmp_path)
+    mod.LOCK, mod.LOG = str(tmp_path / ".lock"), str(tmp_path / "log")
+    mod.BATCH_STATE = str(tmp_path / "batch.json")
+    fri_eve = dt.datetime(2026, 11, 13, 17, 0).timestamp()
+    files = _profile(tmp_path, ["corrected"], fri_eve)
+    monkeypatch.setattr(mod.crow_lib, "claude_transcripts", lambda profiles=None: iter(files))
+    mod.digest = lambda row: "d.md"
+    mod.save_batch_state({"last_end": fri_eve - 86400})
+    calls = []
+    monkeypatch.setattr(mod, "run_batch", lambda m, n: calls.append(n) or {"ok": True})
+    args = types.SimpleNamespace(since=None, force=False, dry_run=False)
+    mon_8 = dt.datetime(2026, 11, 16, 8, 0).timestamp()
+    monkeypatch.setattr(mod, "online", lambda: False)
+    assert mod.cmd_run(args, now=mon_8) == 0 and calls == []          # offline tick: nothing changes
+    assert mod.load_batch_state()["last_end"] == fri_eve - 86400
+    monkeypatch.setattr(mod, "online", lambda: True)
+    assert mod.cmd_run(args, now=mon_8 + 3600) == 0 and calls == [1]  # Friday slot caught up
+    assert mod.cmd_run(args, now=mon_8 + 7200) == 0 and calls == [1]  # same slot: no-op
 
 
 def test_batch_budget_scales_and_caps(tmp_path, monkeypatch):
