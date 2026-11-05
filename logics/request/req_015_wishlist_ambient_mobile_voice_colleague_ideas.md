@@ -18,6 +18,7 @@
 1. **Ambient screensaver.** When the machine idles, show a full-screen screensaver. Reference: Antonin's Ultron screensaver. Decided 2026-11-03:
    - The engine lives in **archeotech-shell**: picker in Settings, preview, shuffle, screensaver sources as plugins (terminal animation, QML scene, web page). Easy to add new ones.
    - Source ideas: cmatrix/unimatrix, pipes.sh, asciiquarium, cbonsai, tty-clock, ASCII Star Wars (asciimation, local copy since the telnet server is unreliable), plus original QML scenes.
+   - ascii-magic (ascii-magic.com/ascii, added 2026-11-05): 734 MIT-licensed animated ASCII pieces, playable in a terminal with `npx ascii-magic-art` or exported as GIF/video; also has an image/video to ASCII converter for original scenes.
    - **archeotech-dotfiles**: swayidle calls the shell's screensaver before the lock; package list gains the animation tools.
    - **crow** ships a screensaver plugin (like `integrations/archeotech/crow-agents`): a "CR-0W is working" card with run bars. Setting with three modes (overlay, take over, off), default overlay on top of the chosen animation.
    - Order: shell engine scoped in its repo first, then the dotfiles hook, then the crow plugin.
