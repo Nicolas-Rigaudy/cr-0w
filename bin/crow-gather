@@ -1,0 +1,341 @@
+#!/usr/bin/env python3
+"""One JSON per routine (brief, daily, weekly): everything the skill would gather with files and commands.
+
+Usage: crow-gather brief|daily|weekly [--json] [--since DATE]
+
+The brief, daily and weekly skills read this through one `!` block instead of spending
+tool turns on files and scripts. Tracker and mail calls (MCP) stay in the model.
+Every source is capped; a source that fails becomes {"error": "..."} and the rest still runs.
+Side effects: `brief` runs `crow-tidy --apply --brief` (safe cleanups only, as the brief always did).
+"""
+import argparse
+import datetime as dt
+import json
+import os
+import re
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from crow_vault import INBOX, WORK, daily_path, vault_path  # noqa: E402
+
+import yaml  # noqa: E402
+
+BIN = Path(__file__).resolve().parent
+ROOT = Path(os.environ.get("CROW_HOME") or BIN.parent)
+LOCAL = ROOT / "local"
+# AC: the JSON stays under 15k tokens. ~3.5 chars per token for this mixed EN/FR text.
+BUDGET_CHARS = int(os.environ.get("CROW_GATHER_BUDGET", "50000"))
+OFFLINE = os.environ.get("CROW_GATHER_OFFLINE") == "1"  # tests: skip every command source
+TODAY = dt.date.today()
+THREAD = re.compile(r"^- \[( |x)\] (\d{4}-\d{2}-\d{2}) (\[[^\]]+\])? ?(.*)$")
+DUE = re.compile(r"(?:📅\s*|due:\s*)(\d{4}-\d{2}-\d{2})")
+STALE_DAYS = 14
+
+
+def cap(text, limit):
+    text = (text or "").rstrip()
+    if len(text) <= limit:
+        return text
+    return text[:limit] + f"\n… [cut at {limit} chars of {len(text)}]"
+
+
+def run(cmd, limit=6000, timeout=120, as_json=False):
+    """Run one source; never raise."""
+    if OFFLINE:
+        return {"skipped": "offline"}
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=ROOT)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"error": f"{cmd[0]}: {exc}"}
+    text = out.stdout if out.stdout.strip() else out.stderr
+    if out.returncode and not out.stdout.strip():
+        return {"error": cap(f"{Path(cmd[0]).name} exit {out.returncode}: {text}", 400)}
+    if as_json:
+        try:
+            return json.loads(out.stdout)
+        except ValueError:
+            return {"error": f"{Path(cmd[0]).name}: no JSON", "raw": cap(text, 400)}
+    return cap(text, limit)
+
+
+def registry():
+    try:
+        return yaml.safe_load((LOCAL / "projects.yaml").read_text()) or {}
+    except OSError:
+        return {}
+
+
+def work_tags():
+    """Thread tags that belong to the work scope: "work" plus every work project's name and aliases."""
+    tags = {"work"}
+    for proj in registry().get("projects") or []:
+        if proj.get("scope") == "work":
+            tags.update([proj.get("name"), *(proj.get("aliases") or [])])
+    return tags
+
+
+def state_dir():
+    crow_dir = (registry().get("vault") or {}).get("crow_dir")
+    return Path(crow_dir) if crow_dir else LOCAL / "state"
+
+
+def read(path, limit=4000):
+    try:
+        return cap(Path(path).read_text(), limit)
+    except OSError:
+        return None
+
+
+def tracker_ids():
+    """Tracker ids from local/context.md (cloud id, project key, daily page id); null when absent."""
+    text = read(LOCAL / "context.md", 50000) or ""
+    found = lambda rx: (m.group(1) if (m := re.search(rx, text)) else None)  # noqa: E731
+    return {
+        "cloud_id": found(r"cloudId[^\n]*?([0-9a-f]{8}-[0-9a-f-]{27})"),
+        "jira_project": found(r"Jira project ([A-Z][A-Z0-9]+)"),
+        "daily_page_id": found(r"daily page[^\n]*?page id (\d+)"),
+    }
+
+
+def threads(state, sections=None, width=None, tags=None):
+    """Open threads per section as compact lines: "<age>d [tag] text", stale ones prefixed STALE.
+
+    sections keeps only those sections (others are counted), tags keeps only those tags,
+    width cuts each text to that many characters.
+    """
+    text = read(state / "open-threads.md", 100000) or ""
+    out, skipped, section = {}, {}, None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip()
+            continue
+        m = THREAD.match(line)
+        if not m or m.group(1) == "x" or section is None:
+            continue
+        tag = (m.group(3) or "").strip("[]")
+        if (sections and section not in sections) or (tags and tag not in tags):
+            skipped[section] = skipped.get(section, 0) + 1
+            continue
+        age = (TODAY - dt.date.fromisoformat(m.group(2))).days
+        body = m.group(4)
+        if width and len(body) > width:
+            body = body[:width] + "…"
+        mark = "STALE " if age >= STALE_DAYS else ""
+        out.setdefault(section, []).append(f"{mark}{age}d [{tag}] {body}")
+    if skipped:
+        out["_skipped_counts"] = skipped
+    return out
+
+
+def activity_logs(state, since, per_day=4000):
+    out = {}
+    for path in sorted((state / "activity").glob("*.md")):
+        if path.stem >= since.isoformat():
+            out[path.stem] = read(path, per_day)
+    return out
+
+
+def decisions_since(state, since):
+    text = read(state / "decisions.md", 200000) or ""
+    keep = []
+    for block in re.split(r"(?m)^(?=## )", text):
+        m = re.match(r"## (\d{4}-\d{2}-\d{2})", block)
+        if m and m.group(1) >= since.isoformat():
+            keep.append(cap(block.strip(), 500))
+    return keep
+
+
+def last_brief(state):
+    for path in sorted((state / "activity").glob("*.md"), reverse=True):
+        if "[hub] brief" in (read(path, 50000) or ""):
+            return path.stem
+    return None
+
+
+def retros(state, since):
+    root = state / "retros"
+    reports = sorted(p.name for p in root.glob("20*.md") if p.name[:10] >= since)
+    proposals = [line for line in (read(root / "proposals.md", 100000) or "").splitlines()
+                 if line.startswith("- [ ]")]
+    return {"reports_since": since, "reports": reports, "pending_proposals": proposals,
+            "status": run([str(BIN / "crow-retro"), "status"], 1500)}
+
+
+def afk(state):
+    """Last AFK run: its summary when it started since yesterday, else only the log tail."""
+    root = state / "afk"
+    summaries = sorted(root.glob("summary-*.json"))
+    reports = sorted(root.glob("report-*.html"))
+    out = {"log_tail": cap("\n".join((read(root / "log.md", 200000) or "").splitlines()[-10:]), 3000) or None,
+           "latest_report": str(reports[-1]) if reports else None, "summary": None}
+    if summaries:
+        try:
+            data = json.loads(summaries[-1].read_text())
+        except (OSError, ValueError):
+            return out
+        if str(data.get("start", ""))[:10] >= (TODAY - dt.timedelta(1)).isoformat():
+            out["summary"] = {"title": data.get("title"), "start": data.get("start"), "end": data.get("end"),
+                              "notes": data.get("notes"),
+                              "projects": [p.get("tldr") for p in data.get("projects") or []]}
+    return out
+
+
+def vault_tasks(vault):
+    if not vault or not vault.is_dir():
+        return {"error": "no vault configured"}
+    dirs = [vault / d for d in (INBOX, WORK, "20 Personal") if (vault / d).is_dir()]
+    due = []
+    try:
+        out = subprocess.run(["rg", "-n", r"^\s*- \[ \]", *map(str, dirs)],
+                             capture_output=True, text=True, timeout=30).stdout
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"error": f"rg: {exc}"}
+    for line in out.splitlines():
+        m = DUE.search(line)
+        if m and m.group(1) <= TODAY.isoformat():
+            due.append(line.replace(str(vault) + "/", ""))
+    inbox = vault / INBOX
+    return {"due": due[:40], "inbox_files": len(list(inbox.glob("*.md"))) if inbox.is_dir() else 0}
+
+
+def runs_today():
+    data = run(["cdx", "runs", "--since", "today", "--json"], as_json=True, timeout=60)
+    if "runs" not in data:
+        return data
+    keep = ("run_id", "status", "project", "model", "started_at", "ended_at", "error", "cost_usd")
+    rows = [{k: r.get(k) for k in keep} for r in data["runs"]
+            if r.get("status") not in ("succeeded", "completed")]
+    return {"total": len(data["runs"]), "not_succeeded": rows[:15]}
+
+
+def fit(data, budget):
+    """Halve the longest string until the JSON fits the budget; return the cut paths."""
+    cuts = []
+    while len(json.dumps(data, ensure_ascii=False)) > budget:
+        best, best_len = None, 0
+        stack = [(data, None, [])]
+        while stack:
+            node, _, path = stack.pop()
+            items = node.items() if isinstance(node, dict) else enumerate(node) if isinstance(node, list) else ()
+            for key, val in items:
+                if isinstance(val, str) and len(val) > best_len:
+                    best, best_len = (node, key, path + [key]), len(val)
+                elif isinstance(val, (dict, list)):
+                    stack.append((val, key, path + [key]))
+        if best is None or best_len < 200:
+            break
+        node, key, path = best
+        node[key] = cap(node[key], best_len // 2)
+        cuts.append("/".join(map(str, path)))
+    return sorted(set(cuts))
+
+
+def gather(jobs):
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {k: pool.submit(fn) for k, fn in jobs.items()}
+        return {k: f.result() for k, f in futures.items()}
+
+
+def brief(state, vault, apply=True):
+    today_md = read(state / "today.md", 3000)
+    dated = bool(today_md and TODAY.isoformat() in today_md.splitlines()[0])
+    since_brief = last_brief(state) or (TODAY - dt.timedelta(1)).isoformat()
+    parent = str(ROOT.parent)
+    sources = gather({
+        "activity": lambda: run([str(BIN / "crow-activity"), "--since", "yesterday"], 9000, 180),
+        "notes": lambda: run([str(BIN / "crow-notes"), "--since", "3d"], as_json=True),
+        "releases": lambda: run([str(BIN / "crow-releases")], 2500),
+        "tidy": lambda: run([str(BIN / "crow-tidy"), *(["--apply"] if apply else []), "--brief"], 3000, 300),
+        "fleet": lambda: run(["logics-manager", "fleet", "brief", "--root", parent,
+                              "--no-reviews", "--limit", "5"], 1500),
+        "long_sessions": lambda: run([str(BIN / "crow-ctx"), "--brief"], 1000),
+        "accounts": lambda: run(["cdx", "status", "--small", "--cached"], 1200),
+        "usage_split": lambda: run([str(BIN / "crow-usage"), "--split"], 300),
+        "runs": runs_today,
+        "vault_tasks": lambda: vault_tasks(vault),
+        "retros": lambda: retros(state, since_brief),
+    })
+    return {
+        "today_priorities": today_md if dated else None,
+        "afk": afk(state),
+        "open_threads": threads(state, {"Me", "Waiting"}),
+        "status": read(state / "status.md", 4000),
+        **sources,
+        "targets": {"activity_log": str(state / "activity" / f"{TODAY}.md")},
+    }
+
+
+def daily(state, vault, since):
+    last = read(state / "last-daily", 100)
+    if since is None:
+        since = (dt.date.fromisoformat(last.strip()) + dt.timedelta(1)) if last else TODAY - dt.timedelta(1)
+    sources = gather({
+        "activity": lambda: run([str(BIN / "crow-activity"), "--since", since.isoformat(),
+                                 "--scope", "work"], 30000, 180),
+        "notes": lambda: run([str(BIN / "crow-notes"), "--since", since.isoformat()], as_json=True),
+    })
+    return {
+        "since": since.isoformat(),
+        "since_source": "--since" if last is None else "last-daily (check the Confluence page first)",
+        "last_daily": last.strip() if last else None,
+        "tracker": tracker_ids(),
+        **sources,
+        "activity_logs": activity_logs(state, since),
+        "open_threads_work": threads(state, tags=work_tags(), width=300),
+        "targets": {"daily_note": str(daily_path(vault, TODAY)) if vault else None,
+                    "template": str(vault / "90 Templates" / "Daily Note.md") if vault else None,
+                    "last_daily": str(state / "last-daily"),
+                    "activity_log": str(state / "activity" / f"{TODAY}.md")},
+    }
+
+
+def weekly(state, since):
+    monday = since or TODAY - dt.timedelta(TODAY.weekday())
+    year, week, _ = TODAY.isocalendar()
+    sources = gather({
+        "activity": lambda: run([str(BIN / "crow-activity"), "--since", monday.isoformat(),
+                                 "--scope", "all", "--limit", "50"], 30000, 240),
+        "notes": lambda: run([str(BIN / "crow-notes"), "--since", monday.isoformat()], as_json=True),
+    })
+    prev = sorted((state / "weekly").glob("*.md"))
+    return {
+        "monday": monday.isoformat(),
+        "iso_week": f"{year}-W{week:02d}",
+        "tracker": tracker_ids(),
+        **sources,
+        "activity_logs": activity_logs(state, monday, 3000),
+        "decisions": decisions_since(state, monday),
+        "carry_over": threads(state, width=200),
+        "targets": {"rollup": str(state / "weekly" / f"{year}-W{week:02d}.md"),
+                    "previous_rollup": str(prev[-1]) if prev else None},
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("routine", choices=("brief", "daily", "weekly"))
+    ap.add_argument("--json", action="store_true", help="compact JSON (default: indented)")
+    ap.add_argument("--since", type=dt.date.fromisoformat, help="override the start date (daily, weekly)")
+    ap.add_argument("--no-apply", action="store_true", help="brief: report tidy only, no safe cleanups")
+    args = ap.parse_args()
+    state, vault = state_dir(), vault_path()
+    if args.routine == "brief":
+        data = brief(state, vault, not args.no_apply)
+    elif args.routine == "daily":
+        data = daily(state, vault, args.since)
+    else:
+        data = weekly(state, args.since)
+    data = {"routine": args.routine, "today": TODAY.isoformat(),
+            "weekday": TODAY.strftime("%A"), "state_dir": str(state), **data}
+    cuts = fit(data, BUDGET_CHARS)
+    if cuts:
+        data["_cut_to_fit"] = cuts
+    json.dump(data, sys.stdout, ensure_ascii=False, indent=None if args.json else 1)
+    print()
+
+
+if __name__ == "__main__":
+    main()
