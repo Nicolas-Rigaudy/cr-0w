@@ -3,7 +3,7 @@
 > Schema version: 1.0
 > Status: Done
 > Understanding: 90%
-> Confidence: 80%
+> Confidence: 90%
 > Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
@@ -39,7 +39,7 @@
 # AC Traceability
 - AC1 -> `todayKey` "o" runs `crow-open <webLink>`; webLink comes from Graph (`bin/crow-today json`). Proof: TestTodayKeysRunTheirCommands.
 - AC2 -> `crow-today done|snooze` + `awake()` filter. Proof: live snooze 2026-11-03 (mail left the picker, came back with until Wed 08:00, flag cleared after), TestSnoozedFlagsHideUntilTheyReturn.
-- AC3 -> enter runs `crow handoff cr-0w` with the thread/draft task; `crow-today thread` checked live, `draft` uses createReply/createReplyAll. Proof: TestTodayKeysRunTheirCommands; first live run by the owner.
+- AC3 -> enter runs `crow handoff cr-0w` with the thread/draft task; `crow-today thread` checked live, `draft` uses createReply/createReplyAll. Proof: TestTodayKeysRunTheirCommands; live 2026-11-05 by the owner: enter on a real flagged mail left a reply draft in Outlook Drafts, nothing sent (after fix 45241b4; owner deleted the test draft).
 - AC4 -> today_test.go (cursor on mail rows, key mapping, snooze filter, mock rows run nothing); `go test ./...` passes.
 
 # Decision framing
