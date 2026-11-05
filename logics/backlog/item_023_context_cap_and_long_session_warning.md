@@ -1,10 +1,10 @@
 ## item_023_context_cap_and_long_session_warning - Context cap and long-session warning
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 100%
 > Complexity: Low
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -35,7 +35,7 @@
 
 # Delivery notes
 - AC2, AC3 done: `bin/crow-ctx`, `context_tokens`/`context_level` in crow-usage, crow-watch Usage row mark, brief section, CLAUDE.md rule, `runbooks/long-sessions.md`.
-- AC1 pending: `bin/crow-ctx cap apply` writes the setting into profiles outside the repo; the owner runs it once and checks `bin/crow-ctx cap check`.
+- AC1 done 2026-11-05: `bin/crow-ctx cap apply` set 150000 in every profile; `cap check` confirms it.
 
 # AC Traceability
 - request-AC5 -> This backlog slice. Proof: AC1: the chosen cap is set in every allowed profile and documented.
