@@ -162,16 +162,35 @@ def watchdog(row, now=None):
     last = now - max(f.stat().st_mtime for f in files) if files else started
     if min(last, started) < STUCK_MIN * 60:
         return False
-    sid = row.get("conversation_id") or ""
-    pids = [x["pid"] for x in agent_procs() if sid and sid in " ".join(x["argv"])]
-    for pid in pids + ([row["pid"]] if row.get("pid") else []):
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except OSError:
-            pass
+    kill_run(row)
     STUCK.parent.mkdir(parents=True, exist_ok=True)
     STUCK.write_text(json.dumps(sorted(stuck_ids() | {row["run_id"]})))
     return True
+
+
+def kill_run(row):
+    """SIGTERM the run's cdx process and the agent behind it. Returns the pids signalled."""
+    sid = row.get("conversation_id") or ""
+    pids = [x["pid"] for x in agent_procs() if sid and sid in " ".join(x["argv"])]
+    hit = []
+    for pid in pids + ([row["pid"]] if row.get("pid") else []):
+        try:
+            os.kill(pid, signal.SIGTERM)
+            hit.append(pid)
+        except OSError:
+            pass
+    return hit
+
+
+def stop(run_id):
+    """Stop one running background run (`crow runs stop <id>`, a run id or its prefix)."""
+    rows = [r for r in running_runs() if r.get("run_id", "").startswith(run_id)]
+    if len(rows) != 1:
+        sys.exit(f"crow: {len(rows)} running runs match {run_id!r}; give one running run id")
+    hit = kill_run(rows[0])
+    if not hit:
+        sys.exit(f"crow: run {rows[0]['run_id']} has no live process")
+    print(f"stopped {rows[0]['run_id']} (pid {', '.join(map(str, hit))})")
 
 
 def seen_ids():
@@ -755,6 +774,7 @@ def main():
     fp.add_argument("stdout_path")
     fp.add_argument("provider", nargs="?", default="claude")
     sub.add_parser("wait").add_argument("run_ids", nargs="+")
+    sub.add_parser("stop").add_argument("run_id")
     sub.add_parser("notify").add_argument("run_ids", nargs="+")
     ib = sub.add_parser("inbox")
     ib.add_argument("--hook", action="store_true"); ib.add_argument("--peek", action="store_true")
@@ -768,6 +788,8 @@ def main():
         dispatch(a)
     elif a.cmd == "wait":
         wait(a.run_ids)
+    elif a.cmd == "stop":
+        stop(a.run_id)
     elif a.cmd == "notify":
         notify(a.run_ids)
     elif a.cmd == "inbox":

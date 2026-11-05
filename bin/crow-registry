@@ -107,7 +107,7 @@ def road_info(path, roadmap):
     nxt = next((m for m in miles if not m["done"]), None)
     return {"done": sum(m["done"] for m in miles), "total": len(miles), "current": nxt["title"] if nxt else "",
             "exit": nxt["exit"] if nxt else "", "start": start.group(1) if start else "",
-            "target": nxt["date"] if nxt else "", "miles": miles}
+            "target": nxt["date"] if nxt else "", "miles": miles, "doc": str(doc.resolve())}
 
 
 def load():

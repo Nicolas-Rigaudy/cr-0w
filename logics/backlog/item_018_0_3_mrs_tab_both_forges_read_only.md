@@ -1,10 +1,10 @@
 ## item_018_0_3_mrs_tab_both_forges_read_only - 0.3 MRs tab: both forges, read only
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -48,3 +48,6 @@
 
 # Tasks
 - `task_006_0_3_mrs_tab_both_forges_read_only`
+
+# Notes
+- Task `task_006_0_3_mrs_tab_both_forges_read_only` was finished via `logics-manager flow finish task` on 2026-11-05.

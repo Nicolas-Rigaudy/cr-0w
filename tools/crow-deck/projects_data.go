@@ -49,6 +49,7 @@ type projCard struct {
 	Dirty, Ahead  int
 	Stale         int
 	Work          map[string]int // owner commits per day, YYYY-MM-DD
+	Doc           string         // the roadmap doc, absolute
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
@@ -160,7 +161,7 @@ func projectCardsOf(now time.Time, reg *registry, agents []agentRow, next []next
 		c := projCard{Name: p.Name, Short: p.Short, Scope: p.Scope, Forge: p.Forge,
 			Dirty: p.Git.Dirty, Ahead: p.Git.Ahead, Stale: p.Git.StaleTrees, Work: p.Work}
 		if r := p.Road; r != nil {
-			c.Done, c.Of, c.Mile, c.Exit = r.Done, r.Total, r.Current, r.Exit
+			c.Done, c.Of, c.Mile, c.Exit, c.Doc = r.Done, r.Total, r.Current, r.Exit, r.Doc
 			c.Start, c.Target = parseDay(r.Start, loc), parseDay(r.Target, loc)
 			for _, m := range r.Miles {
 				if d := parseDay(m.Date, loc); !d.IsZero() {

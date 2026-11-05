@@ -1,10 +1,10 @@
 ## task_009_0_7_crow_command_map_and_doctor - 0.7 crow command map and doctor
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -16,10 +16,10 @@
 - Skip when: the change is outside the CLI.
 
 # Definition of Done (DoD)
-- [ ] The backlog scope is implemented.
-- [ ] Acceptance criteria are covered.
-- [ ] Validation passes.
-- [ ] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
+- [x] The backlog scope is implemented.
+- [x] Acceptance criteria are covered.
+- [x] Validation passes.
+- [x] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
 
 # Backlog
 - `item_022_0_7_crow_command_map_and_doctor`
@@ -32,20 +32,28 @@
 - [x] `crow projects`, `crow runs sessions`, `crow runs relaunch`, `crow doctor`.
 - [x] Old names print a hint on stderr and still run.
 - [x] README, runbook, hub CLAUDE.md, widget default and messages use the new names.
-- [ ] `crow watch` as an alias of `crow deck` (paused: the deck has no actions yet).
-- [ ] `crow runs stop` (no stop exists in crow-runs).
+- [x] `crow watch` as an alias of `crow deck`.
+- [x] `crow runs stop`.
 
 # Validation
 - `python3 -m pytest tests -q`: 125 passed, including tests/test_crow_cli.py (five groups, hints on stderr only, new names silent) and tests/test_crow_doctor.py (identity mismatch fails, merged worktree warns, default account, text and bad argument).
 - `cd tools/crow-watch && go vet ./... && go test ./...` pass after the relaunch hint text changed.
 - Live: `crow doctor` read the real registry and accounts; `crow releases`, `crow sessions` and `crow relaunch status` printed the hint and ran.
 - Renders of `crow --help` and `crow doctor` under local/state/afk/shots/deck-final/png/.
+- Finish workflow executed on 2026-11-05.
+- Linked backlog/request close verification passed.
 
 # Report
 - `crow doctor` reuses crow-registry for identity and crow-accounts for the policy. It fails on an identity mismatch, a missing cdx or a default account that crow may not target, and warns on merged worktrees. It fixes nothing; `crow tidy --apply` stays the cleanup.
 - `crow runs` takes `sessions` and `relaunch` as subcommands. The scripts keep their names, so the widget, tests and old calls work.
 - Not done: `crow watch` stays the older board, not an alias of `crow deck`, until the deck has the actions. `crow runs stop` does not exist.
 - Not edited: runbooks/dispatch-background-runs.md and bin/crow-runs carry uncommitted owner changes in the main checkout and were left alone.
+- 2026-11-05 closeout: `crow watch` now runs `crow deck` (the deck has the actions). `crow runs stop <run_id>` stops a running background run: SIGTERM to the cdx process and its agent, prefix match, refuses an ambiguous id. Help lists both. Tests: test_crow_cli (help, alias), test_stop_kills_one_running_run_and_refuses_ambiguity.
+- tools/crow-watch stays in the repo as source of the README screenshots; nothing calls it any more.
+- Known red on main, unrelated: test_crow_launch_pick inherited-account test and test_crow_relaunch status test fail with and without this change.
+- Finished on 2026-11-05.
+- Linked backlog item(s): `item_022_0_7_crow_command_map_and_doctor`
+- Related request(s): `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`
 
 # Links
 - Request: `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`

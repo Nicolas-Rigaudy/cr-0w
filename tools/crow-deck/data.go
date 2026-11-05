@@ -230,6 +230,7 @@ type regRoad struct {
 	Start   string    `json:"start"`  // the roadmap doc date
 	Target  string    `json:"target"` // the current milestone's date
 	Miles   []regMile `json:"miles"`
+	Doc     string    `json:"doc"` // the roadmap doc, absolute; `e` opens it
 }
 
 type regMile struct {

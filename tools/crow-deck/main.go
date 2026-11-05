@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -439,6 +440,11 @@ func (m model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case actionMsg:
 		m.flash = msg.text
+	case roadmapEditedMsg:
+		m.flash = "roadmap of " + msg.name + " saved"
+		if m.live != nil {
+			return m, fetchCmd(srcRegistry)
+		}
 	case mailActMsg:
 		m.flash = msg.text
 		if m.live != nil {
@@ -702,6 +708,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.mrKeyPress(k)
 		}
 		if m.page == 3 {
+			if k == "e" {
+				return m, m.editRoadmap()
+			}
 			m.flash = m.projectKey(k)
 			return m, nil
 		}
@@ -714,7 +723,7 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 var azertyTabs = map[string]int{"&": 0, "é": 1, "\"": 2, "'": 3, "(": 4}
 
 // projectKey explains an action key on the Projects page: it needs a selected project, and
-// the actions themselves arrive with the actions slice.
+// the actions themselves (but e) arrive with the actions slice.
 func (m model) projectKey(k string) string {
 	c := m.projectsView().cur()
 	if c == nil {
@@ -727,6 +736,35 @@ func (m model) projectKey(k string) string {
 	}
 	return k + ": no action on this key"
 }
+
+// editRoadmap opens the selected project's roadmap doc in $EDITOR (vi without one). The
+// deck reloads the registry when the editor exits, so the card shows the edit.
+func (m model) editRoadmap() tea.Cmd {
+	c := m.projectsView().cur()
+	if c == nil {
+		return func() tea.Msg { return actionMsg{"no project selected"} }
+	}
+	if c.Doc == "" {
+		return func() tea.Msg { return actionMsg{c.Name + " has no roadmap doc (release.roadmap in the registry)"} }
+	}
+	return tea.ExecProcess(editorCmd(c.Doc), func(err error) tea.Msg {
+		if err != nil {
+			return actionMsg{"editor failed: " + err.Error()}
+		}
+		return roadmapEditedMsg{c.Name}
+	})
+}
+
+// editorCmd runs $EDITOR on path; $EDITOR may carry flags ("code -w").
+func editorCmd(path string) *exec.Cmd {
+	ed := strings.Fields(os.Getenv("EDITOR"))
+	if len(ed) == 0 {
+		ed = []string{"vi"}
+	}
+	return exec.Command(ed[0], append(ed[1:], path)...)
+}
+
+type roadmapEditedMsg struct{ name string }
 
 // curAgent is the selected lane's agent. A lane that ended today gets a stand-in row
 // so enter can resume it.

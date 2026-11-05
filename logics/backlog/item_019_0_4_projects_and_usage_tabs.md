@@ -1,10 +1,10 @@
 ## item_019_0_4_projects_and_usage_tabs - 0.4 Projects and Usage tabs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -50,3 +50,6 @@
 
 # Tasks
 - `task_007_0_4_projects_and_usage_tabs`
+
+# Notes
+- Task `task_007_0_4_projects_and_usage_tabs` was finished via `logics-manager flow finish task` on 2026-11-05.

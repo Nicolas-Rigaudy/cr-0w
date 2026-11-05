@@ -89,7 +89,7 @@ func TestProjectsModeFilter(t *testing.T) {
 
 func TestProjectsLiveFromRegistry(t *testing.T) {
 	reg := &registry{Projects: []regProject{
-		{Name: "alpha", Short: "alpha", Scope: "work", Road: &regRoad{Done: 2, Total: 5, Current: "0.3 - Next", Exit: "tests pass"},
+		{Name: "alpha", Short: "alpha", Scope: "work", Road: &regRoad{Done: 2, Total: 5, Current: "0.3 - Next", Exit: "tests pass", Doc: "/r/alpha.md"},
 			Work: map[string]int{"2026-10-27": 3}},
 		{Name: "beta", Short: "beta", Scope: "personal"},
 		{Name: "gamma", Short: "gamma", Scope: "work"},
@@ -108,7 +108,7 @@ func TestProjectsLiveFromRegistry(t *testing.T) {
 		by[c.Name] = c
 	}
 	a, b, g := by["alpha"], by["beta"], by["gamma"]
-	if a.Group != pgNeeds || a.Glyph != "needs" || a.Done != 2 || a.Of != 5 || a.Health != "no date" || len(a.MRs) != 1 || a.Work["2026-10-27"] != 3 {
+	if a.Group != pgNeeds || a.Glyph != "needs" || a.Done != 2 || a.Of != 5 || a.Health != "no date" || len(a.MRs) != 1 || a.Work["2026-10-27"] != 3 || a.Doc != "/r/alpha.md" {
 		t.Errorf("alpha %+v", a)
 	}
 	if n := a.lead(); n == nil || n.What != "write the notes" {
@@ -209,5 +209,34 @@ func TestProjectsTimelineWeeks(t *testing.T) {
 	m.mode = "work"
 	if out := m.View(); strings.Contains(out, "more in the open threads") {
 		t.Error("work mode still truncates the next actions")
+	}
+}
+
+func TestProjectsEditOpensTheRoadmapDoc(t *testing.T) {
+	t.Setenv("EDITOR", "nvim -p")
+	if c := editorCmd("/r/a.md"); strings.Join(c.Args, " ") != "nvim -p /r/a.md" {
+		t.Errorf("editor args %v", c.Args)
+	}
+	t.Setenv("EDITOR", "")
+	if c := editorCmd("/r/a.md"); strings.Join(c.Args, " ") != "vi /r/a.md" {
+		t.Errorf("fallback args %v", c.Args)
+	}
+	m := projModel(235, 62)
+	m.fx.Cards[m.prjSel].Doc = ""
+	nm, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
+	if cmd == nil {
+		t.Fatal("e returned no command")
+	}
+	if msg, ok := cmd().(actionMsg); !ok || !strings.Contains(msg.text, "no roadmap doc") {
+		t.Errorf("e without a doc: %#v", msg)
+	}
+	m = nm.(model)
+	m.fx.Cards[m.prjSel].Doc = "/r/a.md"
+	if _, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")}); cmd == nil {
+		t.Fatal("e with a doc returned no command")
+	}
+	nm, _ = m.Update(roadmapEditedMsg{"alpha"})
+	if f := nm.(model).flash; f != "roadmap of alpha saved" {
+		t.Errorf("flash %q", f)
 	}
 }

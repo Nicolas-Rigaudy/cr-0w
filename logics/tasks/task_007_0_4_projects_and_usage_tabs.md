@@ -1,10 +1,10 @@
 ## task_007_0_4_projects_and_usage_tabs - 0.4 Projects and Usage tabs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -16,10 +16,10 @@
 - Skip when: the change is outside the deck.
 
 # Definition of Done (DoD)
-- [ ] The backlog scope is implemented.
-- [ ] Acceptance criteria are covered.
-- [ ] Validation passes.
-- [ ] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
+- [x] The backlog scope is implemented.
+- [x] Acceptance criteria are covered.
+- [x] Validation passes.
+- [x] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
 
 # Backlog
 - `item_019_0_4_projects_and_usage_tabs`
@@ -29,14 +29,16 @@
 - AC2: Cost per session matches `cdx stats` within rounding.
 
 # Plan
-- [ ] Use `python3 -m logics_manager flow progress task task_007_0_4_projects_and_usage_tabs.md --progress <n>%` during multi-wave work.
-- [ ] Run `python3 -m logics_manager flow finish task task_007_0_4_projects_and_usage_tabs.md` after implementation.
+- [x] Use `python3 -m logics_manager flow progress task task_007_0_4_projects_and_usage_tabs.md --progress <n>%` during multi-wave work.
+- [x] Run `python3 -m logics_manager flow finish task task_007_0_4_projects_and_usage_tabs.md` after implementation.
 
 # Validation
 - `cd tools/crow-deck && go vet ./... && go test ./...` pass: Usage sections, single-pane walk, keys (d, p, j, r), loading and empty states, `usageViewOf` on a payload; Projects cards, actions on the selected card only, keys (j, c, z), mode filter, live cards without dates, registry road decoding, timeline window; fit tests for every theme and size on both pages.
 - `python3 -m pytest tests/test_crow_registry.py`: 5 passed (roadmap docs invented: milestones counted, current milestone and exit signal, absolute path, no roadmap).
 - Live check: `bin/crow-registry json` returned a `road` block for the four registry projects that name a roadmap doc. Output not recorded here.
 - Renders of both tabs in 4 themes (default, selected card, zoom, work mode, portrait, single panes, states) under local/state/afk/shots/deck-tabs/.
+- Finish workflow executed on 2026-11-05.
+- Linked backlog/request close verification passed.
 
 # Report
 - Shipped the Usage tab (accounts and policy gauges with resets, forecast, daily spend 7 or 14 days, savings, cost today in three columns), fed by crow-usage and crow-accounts, and the Projects tab (cards, ROAD and MILE from the roadmap docs through crow-registry, timeline, repos without a roadmap on one line). Home's Projects box now reads the same cards.
@@ -44,6 +46,13 @@
 - AC2 is not verified: costs are API-equivalent dollars from crow-usage and the tab says so. Compare a session with `cdx stats` by hand.
 - Open: the roadmap docs carry milestones but no target dates, so live cards show "no date" and the timeline shows only a note. Dated cards and the timeline exist in mock data only. A date format is a product decision.
 - Open: the Forecast box has no "afk tonight" line (no source), the policy keys p l [ ] and the card keys c r s e o only flash.
+- 2026-11-05 closeout: AC1 met. `crow-registry` returns the roadmap doc path (`road.doc`), the card carries it and `e` on the Projects tab opens it in `$EDITOR` (vi without one), then reloads the registry. Test: TestProjectsEditOpensTheRoadmapDoc, test_crow_registry road_info tests.
+- AC2 verified: `cdx runs --since 3d` costs summed per conversation match crow-usage `sessions[].cost_usd` for 41 of 42 sessions within $0.005. The one gap (run efac437e) is a run cdx recorded with 0 tokens; crow-usage reads $0.147 from its transcript.
+- Dates: roadmap docs now carry `- Target:` lines per milestone, so live cards and the timeline show dates.
+- Left for item_020 (0.5 actions): card keys c r s o and the policy keys p l [ ] still only flash.
+- Finished on 2026-11-05.
+- Linked backlog item(s): `item_019_0_4_projects_and_usage_tabs`
+- Related request(s): `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`
 
 # Links
 - Request: `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`

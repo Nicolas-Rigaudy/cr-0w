@@ -86,6 +86,7 @@ def test_road_info_counts_milestones_and_names_the_current_one(tmp_path):
         "done": 2, "total": 4, "current": "0.3 - Any layout", "exit": "Three sample repos plan with config only.",
         "start": "2026-01-01", "target": "2026-03-01"}
     assert [m["date"] for m in road["miles"]] == ["", "", "2026-03-01", ""]
+    assert road["doc"] == str((tmp_path / "road.md").resolve())
 
 
 def test_road_info_accepts_an_absolute_path_and_all_done(tmp_path):
@@ -94,6 +95,7 @@ def test_road_info_accepts_an_absolute_path_and_all_done(tmp_path):
     doc.write_text("# Milestones\n## 1.0 - Done (delivered)\n- Exit signal: Met.\n")
     road = mod.road_info("/nowhere", str(doc))
     assert (road["done"], road["total"], road["current"], road["exit"], road["target"]) == (1, 1, "", "", "")
+    assert road["doc"] == str(doc.resolve())
 
 
 def test_road_info_is_none_without_a_readable_roadmap(tmp_path):

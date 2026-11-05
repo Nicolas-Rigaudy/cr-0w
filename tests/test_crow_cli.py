@@ -8,7 +8,7 @@ def test_help_shows_the_five_groups(hub):
     lines = out.stdout.splitlines()
     groups = [l for l in lines if l in ("Start", "See", "Delegate", "Rituals", "Data")]
     assert groups == ["Start", "See", "Delegate", "Rituals", "Data"]
-    for name in ("crow projects", "crow doctor", "crow runs sessions", "crow runs relaunch"):
+    for name in ("crow projects", "crow doctor", "crow runs sessions", "crow runs relaunch", "crow runs stop", "alias crow watch"):
         assert name in out.stdout
     assert "set -euo" not in out.stdout
 
@@ -25,3 +25,9 @@ def test_new_names_print_no_hint(hub):
     for args in (("runs", "sessions", "--help"), ("projects",)):
         out = run(hub, "crow", *args)
         assert "is now" not in out.stderr
+
+
+def test_watch_is_an_alias_of_the_deck(hub):
+    import pathlib
+    text = (pathlib.Path(__file__).parent.parent / "bin/crow").read_text()
+    assert 'watch)    exec "$CROW_HOME/bin/crow" deck "$@"' in text

@@ -86,12 +86,12 @@ no merges, drafts before any mail. Edit them to match how you work. Everything y
 2. Clone this repo and put `bin/` on your PATH.
 3. Create your private `local/` folder: `mkdir local && git -C local init`, then add `context.md`, `projects.yaml` and `accounts.yaml`
    (start from [`docs/accounts.example.yaml`](docs/accounts.example.yaml)).
-4. Run `crow brief`, then `crow watch`.
+4. Run `crow brief`, then `crow deck`.
 
 Requirements: Linux. Crow reads `/proc` to find live agents. Session windows (`crow term`, `crow focus`) go
 through a terminal backend: kitty, tmux, or printing the command to run (`CROW_TERMINAL`, see
 [`docs/terminal-backends.md`](docs/terminal-backends.md), which also lists what each platform supports). Python 3 with PyYAML, `jq`, `git`, `gh` or `glab`
-for forge activity, and Go to build `crow watch`. Tests (`python3 -m pytest`) need only Python and PyYAML: they
+for forge activity, and Go to build `crow deck`. Tests (`python3 -m pytest`) need only Python and PyYAML: they
 create their own `accounts.yaml` and cdx profiles dir in a temp folder. The `ansi-shot` test also needs Pillow and
 fonttools and is skipped without them or without the default font.
 

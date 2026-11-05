@@ -1,10 +1,10 @@
 ## item_021_0_6_remaining_pages_in_all_themes - 0.6 remaining pages in all themes
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 75%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -46,3 +46,6 @@
 
 # Tasks
 - `task_008_0_6_remaining_pages_in_all_themes`
+
+# Notes
+- Task `task_008_0_6_remaining_pages_in_all_themes` was finished via `logics-manager flow finish task` on 2026-11-05.

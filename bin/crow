@@ -12,8 +12,7 @@
 #   term, focus and relaunch open windows through CROW_TERMINAL=kitty|tmux|print (unset: kitty, else tmux, else print).
 #   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
 # See
-#   crow deck [--theme t] control room: 5 tabs, 4 themes (? for keys)
-#   crow watch           older live board: 1 agents · 2 usage (? for keys)
+#   crow deck [--theme t] control room: 5 tabs, 4 themes (? for keys); alias crow watch
 #   crow runs [--all]    background runs: status, task, commits so far
 #   crow runs sessions [...]   sessions cut off by a usage limit (see crow-sessions)
 #   crow ls              list registered projects
@@ -22,6 +21,7 @@
 # Delegate
 #   crow dispatch <project> <label> --prompt-file F [--model opus]   start a tracked background run
 #   crow runs relaunch <id> <account> [--dry-run] [--here]   continue a cut-off session on another allowed account; relaunch status
+#   crow runs stop <run_id>   stop a running background run (SIGTERM to cdx and its agent)
 #   crow rescue <account> [--to T] [--dry-run]   move every session the account lost in its last 5h window, one OK
 #   crow focus --pid P --account A --cwd D   focus a session's window, or resume it
 # Rituals
@@ -181,18 +181,14 @@ for p in yaml.safe_load(open('$REGISTRY'))['projects']:
   runs)     case "${1:-}" in
               sessions) shift; exec "$CROW_HOME/bin/crow-sessions" "$@" ;;
               relaunch) shift; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
+              stop)     shift; exec "$CROW_HOME/bin/crow-runs" stop "$@" ;;
               *)        exec "$CROW_HOME/bin/crow-runs" list "$@" ;;
             esac ;;
   rescue)   exec "$CROW_HOME/bin/crow-relaunch" rescue "$@" ;;
   dispatch) exec "$CROW_HOME/bin/crow-runs" dispatch "$@" ;;
   json)     exec "$CROW_HOME/bin/crow-runs" json "$@" ;;
   report)   exec "$CROW_HOME/bin/crow-runs" report "$@" ;;
-  watch)    # rebuild the Go board when its source is newer than the binary
-            src="$CROW_HOME/tools/crow-watch"; bin="$src/crow-watch"
-            if [[ ! -x "$bin" || -n "$(find "$src" -name '*.go' -newer "$bin" -o -name go.mod -newer "$bin")" ]]; then
-              (cd "$src" && go build -o crow-watch .) || exit 1
-            fi
-            exec "$bin" "$@" ;;
+  watch)    exec "$CROW_HOME/bin/crow" deck "$@" ;;   # alias of the deck (req_007)
   deck)     # the control room (skeleton): rebuild when its source is newer than the binary
             src="$CROW_HOME/tools/crow-deck"; bin="$src/crow-deck"
             if [[ ! -x "$bin" || -n "$(find "$src" -name '*.go' -newer "$bin" -o -name go.mod -newer "$bin")" ]]; then

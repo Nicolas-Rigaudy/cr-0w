@@ -84,3 +84,17 @@ def test_every_run_carries_failover_and_retro_kind():
 def test_per_run_budget_overrides_kind_and_env():
     args, _ = crow_lib.run_flags("task", "claude", env={"CROW_TASK_BUDGET": "9"}, budget=1.5)
     assert opt(args, "--budget") == "1.5"
+
+
+def test_stop_kills_one_running_run_and_refuses_ambiguity(monkeypatch, capsys):
+    import pytest
+    monkeypatch.setattr(cr, "agent_procs", lambda: [])
+    p = subprocess.Popen(["sleep", "60"])
+    monkeypatch.setattr(cr, "running_runs", lambda: [{"run_id": "abc123", "pid": p.pid}, {"run_id": "abd456"}])
+    with pytest.raises(SystemExit):
+        cr.stop("ab")
+    cr.stop("abc")
+    assert p.wait(timeout=5) < 0
+    assert f"stopped abc123 (pid {p.pid})" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        cr.stop("abd")
