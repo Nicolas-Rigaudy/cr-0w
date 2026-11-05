@@ -15,7 +15,7 @@ Cache reads on a long context are most of the spend: Opus turns above 150k token
 ## Where the warning shows
 - `bin/crow-ctx` (text), `--json`, `--brief` (one line per live session, empty when none).
 - `crow-usage --json`: `context_tokens` and `context_level` (`ok` | `warn` | `over`) per session.
-- `crow-watch` Usage view: a live session today past the warning gets a yellow `▲` (red past the cap) and `NNNk ctx` before its title.
+- `crow deck` Usage tab: a live session today past the warning gets a yellow `▲` (red past the cap) and `NNNk ctx` before its title.
 - The brief lists them under "Needs you".
 
 ## Compact only when it pays (levers 9, 10)

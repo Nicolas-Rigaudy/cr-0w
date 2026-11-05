@@ -112,7 +112,8 @@ which is ignored by this repo and meant to be its own private repo.
 | `bin/crow-retro`, `bin/crow-digest` | automatic retrospective after every session |
 | `bin/crow-tidy`, `bin/crow-releases`, `bin/crow-doctor` | repo hygiene report with safe cleanup, release-track progress (`crow projects`), read-only checks of identity, accounts and stale worktrees (`crow doctor`) |
 | `bin/ansi-shot` | render any terminal output to a PNG in your own theme or the bundled one (how the screenshots here are made) |
-| `tools/crow-watch` | the terminal board (Go, Bubble Tea) |
+| `tools/crow-deck` | the terminal deck (Go, Bubble Tea), `crow deck` or `crow watch` |
+| `tools/crow-watch` | the previous board, kept as a fallback (not built by `crow`) |
 | `integrations/` | optional desktop-shell widgets |
 | `skills/`, `.claude/skills/` | brief, review, review-threads, mr, wrap, afk, retro |
 | `examples/skills/` | starting points for your own routines (daily, weekly) |
@@ -125,7 +126,7 @@ which is ignored by this repo and meant to be its own private repo.
 <summary><b>Develop</b></summary>
 
 - Tests for the helpers: `python3 -m pytest tests`
-- Board tests: `cd tools/crow-watch && go test ./...`
+- Deck tests: `cd tools/crow-deck && go test ./...`
 - Regenerate the screenshots: [`docs/screenshots.md`](docs/screenshots.md)
 - Procedures: [`runbooks/`](runbooks/README.md)
 

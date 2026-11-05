@@ -98,3 +98,17 @@ def test_stop_kills_one_running_run_and_refuses_ambiguity(monkeypatch, capsys):
     assert f"stopped abc123 (pid {p.pid})" in capsys.readouterr().out
     with pytest.raises(SystemExit):
         cr.stop("abd")
+
+
+def test_stop_refuses_an_empty_id_and_records_the_stopped_run(monkeypatch, tmp_path):
+    import pytest
+    monkeypatch.setattr(cr, "STOPPED", tmp_path / "stopped.json")
+    monkeypatch.setattr(cr, "agent_procs", lambda: [])
+    p = subprocess.Popen(["sleep", "60"])
+    monkeypatch.setattr(cr, "running_runs", lambda: [{"run_id": "abc123", "pid": p.pid}])
+    with pytest.raises(SystemExit):
+        cr.stop("")
+    assert p.poll() is None
+    cr.stop("abc")
+    p.wait(timeout=5)
+    assert cr.run_state({"run_id": "abc123", "exit_code": -15}) == "stopped"

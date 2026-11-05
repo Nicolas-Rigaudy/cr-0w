@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Token usage, cost and limits across cdx accounts, for crow watch, the bar and the brief.
+"""Token usage, cost and limits across cdx accounts, for crow deck, the bar and the brief.
 
   crow-usage            short text summary
   crow-usage --json     full payload (schema below)

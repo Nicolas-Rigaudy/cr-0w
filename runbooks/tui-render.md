@@ -1,13 +1,12 @@
 # See a TUI: render terminal output to PNG
 
-Use before showing or shipping any TUI change (crow watch, mockups): look at it at
+Use before showing or shipping any TUI change (crow deck, mockups): look at it at
 real monitor sizes, in the real terminal theme and font, instead of guessing.
 
 ## Pipeline
-1. Produce ANSI at a fixed size. For crow watch:
-   `SHOTS=<dir> [RUNS=runs.json USAGE=usage.json] go test -run TestShots ./tools/crow-watch`
-   writes `<view>-<size>.ans` for vertical 118x95, laptop 160x45, wide 240x62, small 90x30
-   (fixtures by default; pass `crow-runs json` / `crow-usage --json` dumps for live data).
+1. Produce ANSI at a fixed size. For crow deck:
+   `SHOTS=<dir> go test -run TestShots ./tools/crow-deck`
+   writes `<theme>-<page>-<size>[-<state>].ans` from the fixtures (sizes listed in `shots_test.go`).
    Any other tool: dump its View() string (force colour, e.g. lipgloss
    `SetColorProfile(termenv.ANSI)`), or write mockups as ANSI directly.
 2. Render: `bin/ansi-shot in.ans out.png --glass 1b5b70`

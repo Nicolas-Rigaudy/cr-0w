@@ -10,7 +10,7 @@
   crow-runs wait <run_id>...                         block until the runs finish (run in background to get notified)
   crow-runs inbox [--hook] [--peek]                  finished runs not reported yet (the hook runs it on every prompt)
   crow-runs notify <run_id>...                       wait, then desktop-notify (dispatch starts it detached)
-  (live view: tools/crow-watch, via `crow watch`)
+  (live view: tools/crow-deck, via `crow deck` or `crow watch`)
 
 Every dispatch is recorded in <state>/runs.jsonl (run id, project, label, start
 commit). Running background runs come from `cdx runs --json`. Live agents come from the
@@ -117,10 +117,13 @@ SEEN = STATE / "runs-seen.json"
 
 
 def run_state(r):
-    """done / budget / stuck / limit / failed for a finished cdx run row (budget: cdx stopped it at --budget;
-    stuck: the watchdog killed it or it hit --timeout-seconds; limit: the stdout or stderr tail names a usage limit)."""
+    """done / budget / stopped / stuck / limit / failed for a finished cdx run row (budget: cdx stopped it at --budget;
+    stopped: `crow runs stop`; stuck: the watchdog killed it or it hit --timeout-seconds;
+    limit: the stdout or stderr tail names a usage limit)."""
     if r.get("exit_code") == 0:
         return "done"
+    if r.get("run_id") in stopped_ids():
+        return "stopped"
     if ((r.get("error") or {}).get("code") or "").startswith("budget_"):
         return "budget"
     if r.get("run_id") in stuck_ids() or r.get("status") == "timed_out":
@@ -133,7 +136,15 @@ def run_state(r):
 
 
 STUCK = STATE / "runs-stuck.json"
+STOPPED = STATE / "runs-stopped.json"
 STUCK_MIN = int(os.environ.get("CROW_STUCK_MIN", "20"))  # no transcript write for this long = stuck
+
+
+def stopped_ids():
+    try:
+        return set(json.loads(STOPPED.read_text()))
+    except (OSError, ValueError):
+        return set()
 
 
 def stuck_ids():
@@ -184,12 +195,16 @@ def kill_run(row):
 
 def stop(run_id):
     """Stop one running background run (`crow runs stop <id>`, a run id or its prefix)."""
+    if not run_id.strip():
+        sys.exit("crow: give a run id")
     rows = [r for r in running_runs() if r.get("run_id", "").startswith(run_id)]
     if len(rows) != 1:
         sys.exit(f"crow: {len(rows)} running runs match {run_id!r}; give one running run id")
     hit = kill_run(rows[0])
     if not hit:
         sys.exit(f"crow: run {rows[0]['run_id']} has no live process")
+    STOPPED.parent.mkdir(parents=True, exist_ok=True)
+    STOPPED.write_text(json.dumps(sorted(stopped_ids() | {rows[0]["run_id"]})))
     print(f"stopped {rows[0]['run_id']} (pid {', '.join(map(str, hit))})")
 
 
@@ -686,7 +701,7 @@ def dispatch(a):
 C = {"dim": "\033[2m", "b": "\033[1m", "g": "\033[32m", "y": "\033[33m", "r": "\033[31m", "c": "\033[36m", "m": "\033[35m", "0": "\033[0m"}
 STATE_STYLE = {"working": ("●", "g"), "quiet": ("◌", "y"), "waiting": ("◆", "m"), "idle": ("○", "dim")}
 PAST_STYLE = {"done": ("✓", "g"), "failed": ("✗", "r"), "limit": ("⏸", "y"), "lost": ("?", "dim"),
-              "budget": ("$", "y"), "stuck": ("!", "r")}
+              "budget": ("$", "y"), "stuck": ("!", "r"), "stopped": ("■", "dim")}
 
 
 def render(data, color=True, width=None):

@@ -29,7 +29,7 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 - **Get notified:** right after dispatching, start `bin/crow-runs wait <run_id>` as a *background* Bash command (one per run).
   It exits when the run finishes, and that exit wakes the session, so there's no need to ask the owner "tell me when it's done".
   The waiter only lives as long as the session. A run that finishes while no session is open shows up in `crow runs` / `crow watch`.
-- `crow watch`: a live two-pane board (Go + Bubble Tea in `tools/crow-watch`, rebuilt on demand; reads `crow-runs json`). Tall terminals stack the panes. Every agent row shows its state, project, task, last activity, context, commits and current action; the right pane shows the selected agent's timeline, commits and final report.
+- `crow deck` (alias `crow watch`): the live deck (Go + Bubble Tea in `tools/crow-deck`, rebuilt on demand; reads `crow-runs json`). The Agents tab lists every run with its state, project, task, last activity, context and commits; the detail pane shows the selected run's timeline, commits and final report. `crow runs stop <run_id>` stops one running run.
 - `crow runs`: the same view, printed once. `crow-runs json` gives the same data as JSON for widgets.
 - States: ● working / ◌ quiet (a run with no transcript writes for 20s or more) / ◆ waiting (a session whose last message is text, i.e. it is waiting on the user) / ○ idle.
   Finished: ✓ done / ✗ failed / ⏸ usage limit / $ budget cap / ! stuck (killed by the watchdog or its timeout) / ? lost.

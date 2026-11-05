@@ -4,10 +4,10 @@ The shots use the sample fixtures, so they contain no real data.
 
 ```sh
 S=$(mktemp -d)
-(cd tools/crow-watch && SHOTS=$S go test -run TestShots .)
-for v in agents usage; do
-  bin/ansi-shot $S/$v-laptop.ans $S/$v.png
-  magick $S/$v.png -colors 128 PNG8:docs/img/watch-$v.png
+(cd tools/crow-deck && SHOTS=$S go test -run TestShots .)
+for v in Agents Usage; do
+  bin/ansi-shot $S/lazytf-$v-wide.ans $S/$v.png
+  magick $S/$v.png -colors 128 PNG8:docs/img/watch-${v,,}.png
 done
 ```
 
