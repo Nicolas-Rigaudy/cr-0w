@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub orchestration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-05 15:23:56
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -49,3 +50,6 @@
 # Priority
 - Priority: High
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Notes
+- Task `task_002_deliver_account_switching_and_session_resume_in_three_steps` was finished via `logics-manager flow finish task` on 2026-11-05.

@@ -420,32 +420,56 @@ func TestAttachAndFailureFlash(t *testing.T) {
 	}
 }
 
-func TestRelaunchNeedsConfirm(t *testing.T) {
+func testRel() *relStatus {
+	return &relStatus{Recommended: "box", Accounts: []relAcct{
+		{Name: "main", Policy: "use", Left5h: 0, LeftWeek: 40},
+		{Name: "box", Policy: "use", Left5h: 70, LeftWeek: 60},
+		{Name: "spare", Policy: "ask-first", Left5h: 90, LeftWeek: 50},
+		{Name: "lab", Policy: "use", Blocked: "5h 96% used", Left5h: 4, LeftWeek: 70},
+	}}
+}
+
+func TestRelaunchPickerPicksAndPassesPicked(t *testing.T) {
 	m := liveModel(t)
 	resets := time.Date(2026, 10, 29, 16, 30, 0, 0, time.Local).Unix()
 	m = send(m, srcMsg{src: srcSessions, at: testNow(), val: []intrSession{
-		{ID: "paused-1", Account: "main", Project: "atlas", LastEvent: iso(13, 0), Limit: "five_hour", ResetsAt: resets}}})
+		{ID: "paused-1", Account: "main", Project: "atlas", LastEvent: iso(13, 0), Limit: "five_hour", ResetsAt: resets}}},
+		srcMsg{src: srcRelay, at: testNow(), val: testRel()})
 	m = send(m, keyMsg("R"))
 	if m.overlay == ovConfirm {
 		t.Fatal("R on a running agent must not open the confirm")
 	}
 	selectLane(&m, func(l laneRow) bool { return l.State == lsPaused })
 	calls := recordRuns(t, "", nil)
-	old := relaunchTarget
-	relaunchTarget = func() (string, error) { return "spare", nil }
-	defer func() { relaunchTarget = old }()
 	m = send(m, keyMsg("R"))
 	if m.overlay != ovConfirm || len(*calls) != 0 {
 		t.Fatalf("overlay %d calls %d: nothing may run before the confirm", m.overlay, len(*calls))
 	}
-	if !hasText(m.View(), "Relaunch") {
-		t.Error("confirm overlay not drawn")
+	if m.relSel != 1 {
+		t.Fatalf("preselected %d, want the recommended box", m.relSel)
+	}
+	out := m.View()
+	for _, want := range []string{"Relaunch", "main: the session's own account", "lab: 5h 96% used", "week left"} {
+		if !hasText(out, want) {
+			t.Errorf("overlay misses %q", want)
+		}
+	}
+	m = send(m, keyMsg("k"))
+	if m.relSel != 1 {
+		t.Errorf("k moved to %d: main is the session's own account", m.relSel)
+	}
+	m = send(m, keyMsg("j"), keyMsg("j"))
+	if m.relSel != 2 {
+		t.Errorf("j j moved to %d: lab is blocked, spare is the last pickable", m.relSel)
+	}
+	if !hasText(m.View(), "enter counts as your yes") {
+		t.Error("ask-first note missing")
 	}
 	m = send(m, keyMsg("esc"))
 	if m.overlay != ovNone || len(*calls) != 0 {
 		t.Fatalf("esc: overlay %d calls %d", m.overlay, len(*calls))
 	}
-	m = send(m, keyMsg("R"))
+	m = send(m, keyMsg("R"), keyMsg("j"))
 	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = next.(model)
 	if cmd == nil {
@@ -454,8 +478,60 @@ func TestRelaunchNeedsConfirm(t *testing.T) {
 	if msg := cmd().(actionMsg); msg.text != "relaunched on spare" {
 		t.Errorf("flash %q", msg.text)
 	}
-	if c := (*calls)[0]; c.name != "crow-relaunch" || strings.Join(c.args, " ") != "paused-1 spare --yes" {
+	if c := (*calls)[0]; c.name != "crow-relaunch" || strings.Join(c.args, " ") != "paused-1 spare --picked" {
 		t.Errorf("call %+v", c)
+	}
+}
+
+func TestRelaunchPickerWithNoFreeAccount(t *testing.T) {
+	st := &relStatus{Accounts: []relAcct{{Name: "main", Policy: "use"}, {Name: "lab", Policy: "use", Blocked: "5h 96% used"}}}
+	if i := relPreselect(st, "main"); i != -1 {
+		t.Errorf("preselect %d with no pickable account", i)
+	}
+}
+
+func TestNoTokens(t *testing.T) {
+	now := time.Date(2026, 11, 5, 14, 0, 0, 0, time.Local)
+	at := func(h, mi int) string { return time.Date(2026, 11, 5, h, mi, 0, 0, time.Local).Format(time.RFC3339) }
+	st := &relStatus{Accounts: []relAcct{
+		{Name: "main", Policy: "use", Blocked: "5h 91% used", Reset5hISO: at(15, 20)},
+		{Name: "spare", Policy: "ask-first", Blocked: "week 50% used, crow's cap is 50%", Reset5hISO: at(14, 30), ResetWeekISO: time.Date(2026, 11, 10, 7, 0, 0, 0, time.Local).Format(time.RFC3339)},
+		{Name: "team", Policy: "never"},
+	}}
+	if b, until := noTokens(st, now); !b || until != "15:20" {
+		t.Errorf("blocked %v until %q, want true 15:20 (spare waits for its week reset)", b, until)
+	}
+	st.Accounts[1].Blocked = ""
+	if b, _ := noTokens(st, now); b {
+		t.Error("one free account means tokens are left")
+	}
+	if b, _ := noTokens(nil, now); b {
+		t.Error("no status must not claim no tokens")
+	}
+}
+
+func TestHomeNoModelGroup(t *testing.T) {
+	m := liveModel(t)
+	m.page = 0
+	resets := time.Date(2026, 10, 29, 16, 30, 0, 0, time.Local).Unix()
+	blocked := &relStatus{Accounts: []relAcct{{Name: "main", Policy: "use", Blocked: "5h 99% used",
+		Reset5hISO: testNow().Add(80 * time.Minute).Format(time.RFC3339)}}}
+	m = send(m, srcMsg{src: srcSessions, at: testNow(), val: []intrSession{
+		{ID: "paused-1", Account: "main", Project: "atlas", LastEvent: iso(13, 0), Limit: "five_hour", ResetsAt: resets}}},
+		srcMsg{src: srcRelay, at: testNow(), val: blocked})
+	if len(m.fx.NoModel) == 0 {
+		t.Fatal("no no-model rows while every account is blocked")
+	}
+	gs := m.homeView().groups()
+	if !strings.HasPrefix(gs[0].name, "No tokens until ") {
+		t.Errorf("first group %q", gs[0].name)
+	}
+	if !hasText(m.View(), "No tokens until") {
+		t.Error("Home does not draw the no-model group")
+	}
+	m = send(m, srcMsg{src: srcRelay, at: testNow(), val: testRel()})
+	if len(m.fx.NoModel) != 0 {
+		t.Error("no-model rows stay while an account is free")
 	}
 }
 
@@ -463,11 +539,11 @@ func TestRefreshSchedule(t *testing.T) {
 	if n := len(refreshCmds(1)); n != 2 {
 		t.Errorf("tick 1: %d fetches, want runs and sessions", n)
 	}
-	if n := len(refreshCmds(usageTicks)); n != 4 {
-		t.Errorf("usage tick: %d, want 4", n)
+	if n := len(refreshCmds(usageTicks)); n != 5 {
+		t.Errorf("usage tick: %d, want 5 (adds usage, accounts and relaunch status)", n)
 	}
-	if n := len(refreshCmds(registryTicks)); n != 7 {
-		t.Errorf("registry tick: %d, want 7 (adds registry, MRs and Today)", n)
+	if n := len(refreshCmds(registryTicks)); n != 8 {
+		t.Errorf("registry tick: %d, want 8 (adds registry, MRs and Today)", n)
 	}
 }
 

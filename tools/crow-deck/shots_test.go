@@ -75,6 +75,11 @@ func TestShots(t *testing.T) {
 		m.page, m.overlay = 1, ovConfirm
 		selectLane(&m, func(l laneRow) bool { return l.State == lsPaused })
 		write(fmt.Sprintf("%s-overlay-relaunch", th.name), m)
+		nm := newModel(defaultConfig())
+		nm.th, nm.w, nm.h = ti, sizes["wide"][0], sizes["wide"][1]
+		nm.fx.NoModel, nm.fx.NoModelUntil = noModelRows(nm.fx.Decide, nil, nm.fx.Agents), "15:20"
+		nm.fx.Decide = nil
+		write(fmt.Sprintf("%s-home-wide-nomodel", th.name), nm)
 	}
 }
 

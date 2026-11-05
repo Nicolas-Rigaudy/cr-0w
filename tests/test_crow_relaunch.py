@@ -161,6 +161,13 @@ def test_ask_first_ignores_yes_flag_without_a_terminal(hub, cdx, session):
     assert handoffs(cdx) == []
 
 
+def test_ask_first_hands_off_when_picked_in_the_deck(hub, cdx, session):
+    r = relaunch(hub, cdx, "abc", "shared", "--picked", "--here")
+    assert r.returncode == 0, r.stderr
+    (h,) = handoffs(cdx)
+    assert h["argv"] == ["handoff", "main", "shared", "--source-conversation", "abc-123"]
+
+
 def on_tty(hub, cdx, answer, *args):
     """Run crow-relaunch on a pseudo-terminal and type an answer at its prompt."""
     home, profiles = hub

@@ -5,7 +5,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -37,6 +36,7 @@ var fetchers = map[string]func() (any, error){
 	srcRegistry: func() (any, error) { return fetchRegistry() },
 	srcMRs:      func() (any, error) { return fetchMRs() },
 	srcToday:    func() (any, error) { return fetchToday() },
+	srcRelay:    func() (any, error) { return fetchRelStatus() },
 }
 
 func fetchCmd(src string) tea.Cmd {
@@ -51,14 +51,14 @@ func tickCmd() tea.Cmd {
 }
 
 func allSources() []string {
-	return []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry, srcMRs, srcToday}
+	return []string{srcRuns, srcSessions, srcUsage, srcAccounts, srcRegistry, srcMRs, srcToday, srcRelay}
 }
 
 // refreshCmds picks the sources due at this tick.
 func refreshCmds(tick int) []tea.Cmd {
 	cmds := []tea.Cmd{fetchCmd(srcRuns), fetchCmd(srcSessions)}
 	if tick%usageTicks == 0 {
-		cmds = append(cmds, fetchCmd(srcUsage), fetchCmd(srcAccounts))
+		cmds = append(cmds, fetchCmd(srcUsage), fetchCmd(srcAccounts), fetchCmd(srcRelay))
 	}
 	if tick%registryTicks == 0 {
 		cmds = append(cmds, fetchCmd(srcRegistry), fetchCmd(srcMRs), fetchCmd(srcToday))
@@ -98,38 +98,6 @@ func attachCmd(a agentRow) tea.Cmd {
 		return func() tea.Msg { return actionMsg{"cannot jump: no workspace or account known"} }
 	}
 	return actionCmd("jump", "crow-focus", "--pid", strconv.Itoa(a.PID), "--account", a.Account, "--cwd", a.Cwd)
-}
-
-// relaunchTarget is the account crow-relaunch recommends.
-var relaunchTarget = func() (string, error) {
-	out, err := runBin("crow-relaunch", "status", "--json")
-	if err != nil {
-		return "", err
-	}
-	var st struct {
-		Recommended string `json:"recommended"`
-	}
-	if err := json.Unmarshal([]byte(out), &st); err != nil {
-		return "", err
-	}
-	if st.Recommended == "" {
-		return "", fmt.Errorf("no account is free")
-	}
-	return st.Recommended, nil
-}
-
-func relaunchCmd(a agentRow) tea.Cmd {
-	return func() tea.Msg {
-		target, err := relaunchTarget()
-		if err != nil {
-			return actionMsg{"relaunch failed: " + err.Error()}
-		}
-		out, err := runBin("crow-relaunch", a.Session, target, "--yes")
-		if err != nil {
-			return actionMsg{"relaunch failed: " + firstLine(cmpOr(out, err.Error()))}
-		}
-		return actionMsg{"relaunched on " + target}
-	}
 }
 
 // reviewStartedMsg ends a review start: the MR's detail is fetched again to show the run.

@@ -309,6 +309,7 @@ type liveState struct {
 	reg   *registry
 	mrs   *mrsSnap
 	today *todaySnap
+	rel   *relStatus
 	at    map[string]time.Time
 	err   map[string]string
 	// MR diffs and threads, fetched when an MR is selected.
@@ -358,6 +359,8 @@ func (ls *liveState) apply(msg srcMsg) {
 		ls.mrs = v
 	case *todaySnap:
 		ls.today = v
+	case *relStatus:
+		ls.rel = v
 	}
 }
 
@@ -890,6 +893,11 @@ func buildFixtures(in liveInput) *fixtures {
 		if e.err != "" {
 			fx.MRErrs[k] = e.err
 		}
+	}
+	fx.Rel = ls.rel
+	if blocked, until := noTokens(ls.rel, now); blocked {
+		fx.NoModel, fx.NoModelUntil = noModelRows(fx.Decide, ls.reg, fx.Agents), until
+		fx.Decide = nil
 	}
 	fx.Sync = state
 	return fx

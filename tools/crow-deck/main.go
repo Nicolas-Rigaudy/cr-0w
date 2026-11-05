@@ -26,6 +26,7 @@ type model struct {
 	overlay int
 	query   string
 	palSel  int
+	relSel  int // Relaunch picker: index into fx.Rel.Accounts
 	flash   string
 	cfgPath string
 
@@ -378,7 +379,7 @@ func (m *model) exec(c string) tea.Cmd {
 		}
 	case "relaunch":
 		if a := m.curAgent(); a != nil && a.Interrupted {
-			m.overlay = ovConfirm
+			return m.openRelaunch()
 		} else {
 			m.flash = "relaunch needs a session paused on a limit"
 		}
@@ -496,17 +497,7 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	switch m.overlay {
 	case ovConfirm:
-		switch k {
-		case "enter", "y":
-			m.overlay = ovNone
-			if a := m.curAgent(); a != nil {
-				m.flash = "relaunching…"
-				return m, relaunchCmd(*a)
-			}
-		case "esc", "n":
-			m.overlay = ovNone
-		}
-		return m, nil
+		return m.relaunchKey(k)
 	case ovHandoff:
 		switch k {
 		case "enter":
@@ -1012,7 +1003,7 @@ func (m model) agentKeyPress(k string) (tea.Model, tea.Cmd) {
 			m.flash = "r relaunches a session paused on a limit"
 			return m, nil
 		}
-		m.overlay = ovConfirm
+		return m, m.openRelaunch()
 	default:
 		m.flash = k + ": not an Agents action"
 	}
@@ -1127,7 +1118,7 @@ func (m model) View() string {
 	case m.overlay == ovTheme:
 		body = lk.themeOverlay(m.w, bh, m.th)
 	case m.overlay == ovConfirm:
-		body = lk.confirmOverlay(m.w, bh, m.curAgent())
+		body = lk.confirmOverlay(m.w, bh, m.curAgent(), m.fx.Rel, m.relSel)
 	case m.overlay == ovHandoff:
 		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur(), m.findingsFile())
 	case m.overlay == ovReview:

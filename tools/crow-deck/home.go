@@ -77,6 +77,20 @@ type nextGroup struct {
 func (hv homeView) groups() []nextGroup {
 	lk := hv.lk
 	g := []nextGroup{{"You decide", seg{"●", lk.warn}, nil}, {"Crow works", seg{"◆", lk.cyan}, nil}, {"Waiting on others", seg{"○", lk.sub}, nil}}
+	var nm nextGroup
+	if len(hv.fx.NoModel) > 0 {
+		// Every account is blocked: work that needs no model comes first, crow's own waits.
+		nm = nextGroup{"No tokens, work without a model", seg{"●", lk.warn}, nil}
+		if hv.fx.NoModelUntil != "" {
+			nm.name = "No tokens until " + hv.fx.NoModelUntil + ", work without a model"
+		}
+		for _, r := range hv.fx.NoModel {
+			if hv.inMode(r.Perso) {
+				nm.rows = append(nm.rows, r)
+			}
+		}
+		g[1] = nextGroup{"Crow works, paused", seg{"◆", lk.dim}, nil}
+	}
 	for _, r := range hv.fx.Decide {
 		if hv.inMode(r.Perso) {
 			g[0].rows = append(g[0].rows, r)
@@ -93,6 +107,9 @@ func (hv homeView) groups() []nextGroup {
 		}
 	}
 	var out []nextGroup
+	if len(nm.rows) > 0 {
+		out = append(out, nm)
+	}
 	for _, x := range g {
 		if len(x.rows) > 0 {
 			out = append(out, x)

@@ -78,7 +78,7 @@ func (lk *look) helpOverlay(w, h int, page int) []string {
 		{"/", "Agents: history and search; esc back to live"},
 		{"p a d M s x", "History: filter project, account, date, model, status; clear"}, {"a x e c", "Agents: answer yes, no, edit, chat"},
 		{"enter", "Agents: open the lane's session; send a typed answer"},
-		{"r", "Agents: relaunch a paused run"}, {"< > w", "Agents: move the hour range; full day"},
+		{"R", "Agents: relaunch a paused run on an account you pick"}, {"< > w", "Agents: move the hour range; full day"},
 		{"d", "Agents: Detail full screen"},
 		{"o enter x s", "Home Today: open the mail in Outlook, crow session drafts a reply, done, snooze to tomorrow"},
 		{"q", "quit"},
@@ -127,21 +127,6 @@ func (lk *look) accentFor(theme) int {
 		return lk.custom
 	}
 	return defaultAccent
-}
-
-func (lk *look) confirmOverlay(w, h int, a *agentRow) []string {
-	sp := boxSpec{title: "Relaunch", sel: -1}
-	name := "this session"
-	if a != nil {
-		name = cmpOr(a.Short, a.Name)
-	}
-	sp.rows = []line{
-		{{"Continue " + name + " on the account crow-relaunch recommends?", lk.plain}},
-		{{"It opens a new window and uses that account's limits.", lk.sub}},
-		nil,
-		{{"enter", lk.key}, spc(1), {"relaunch", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}},
-	}
-	return lk.overlayBlock(sp, w, h)
 }
 
 // postOverlay shows one push or comment: its exact text and command. enter runs that one

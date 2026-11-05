@@ -1,7 +1,7 @@
 ## req_001_crow_account_switching_and_session_resume - crow account switching and session resume
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High

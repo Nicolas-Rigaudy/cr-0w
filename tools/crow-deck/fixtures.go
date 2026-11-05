@@ -114,9 +114,12 @@ type fixtures struct {
 	Today               []todayRow
 	Mail                []string
 	Next                []nextRow
-	Decide              []nextRow // MRs that need the owner, on top of You decide
-	Done                []doneRow // today's activity log, newest first
-	Team                []gauge   // tier team accounts, one compact Pulse line
+	Decide              []nextRow  // MRs that need the owner, on top of You decide
+	Rel                 *relStatus // crow-relaunch status: the Relaunch picker and no-model mode
+	NoModel             []nextRow  // set only while every account is blocked
+	NoModelUntil        string     // earliest time an account frees up, "" unknown
+	Done                []doneRow  // today's activity log, newest first
+	Team                []gauge    // tier team accounts, one compact Pulse line
 	Projects            []projRow
 	Cards               []projCard // Projects tab, every active project
 	Repos, Dirty, Ahead int
@@ -188,6 +191,11 @@ func mockFixtures() *fixtures {
 			{Project: "atlas", What: "review !220 after the rebase", Perso: false, Actor: "Sam", Since: "2026-10-29", Why: "!220"},
 			{Project: "vault", What: "answers on legal notices", Perso: false, Actor: "Lee", Since: "2026-10-18", Why: "mail"},
 		},
+		Rel: &relStatus{Recommended: "main", Accounts: []relAcct{
+			{Name: "main", Policy: "use", Left5h: 60, LeftWeek: 63, Reset5h: "Nov 5 16:10", ResetWeek: "Nov 9 17:00"},
+			{Name: "spare", Policy: "ask-first", Left5h: 40, LeftWeek: 31, Reset5h: "Nov 5 19:30", ResetWeek: "Nov 8 07:00"},
+			{Name: "lab", Policy: "use", Blocked: "5h 96% used", Left5h: 4, LeftWeek: 70, Reset5h: "Nov 5 15:40", ResetWeek: "Nov 10 09:00"},
+		}},
 		Decide: []nextRow{
 			{Project: "atlas", What: "!214 pipeline failed", Actor: "me", Why: "MR", Age: "2h"},
 			{Project: "atlas", What: "!220 Sam waits for your review", Actor: "me", Why: "MR", Age: "1d"},

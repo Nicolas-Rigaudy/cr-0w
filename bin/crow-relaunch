@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crow-relaunch: continue a session on another allowed cdx account, always by conversation id.
 
-  crow-relaunch <conversation-id> <target> [--dry-run] [--yes] [--here]
+  crow-relaunch <conversation-id> <target> [--dry-run] [--yes] [--picked] [--here]
   crow-relaunch status [--json]     allowed accounts, which are blocked, the recommended target
   crow-relaunch rescue <account> [--to T] [--dry-run]
                                     every session the account lost in its last 5h window
@@ -16,7 +16,9 @@ full id of any top-level transcript. The relaunch refuses when:
   - none of the workspaces the transcript worked in still exists;
   - `cdx can-resume <target>` says no, or `cdx status` shows the target blocked.
 Then it asks: a `use` account takes y (or --yes); an `ask-first` account needs a typed "yes"
-on a terminal every time, --yes does not count. --dry-run runs only the read-only checks
+on a terminal every time, --yes does not count. --picked is that yes from an interactive picker
+(crow-deck's Relaunch table): the owner chose this account for this session, so it counts for
+both policies. --dry-run runs only the read-only checks
 (can-resume, status) and prints the handoff it would run; nothing is launched or prepared.
 
 The handoff is `cdx handoff <source> <target> --source-conversation <id>`, run from the
@@ -156,7 +158,9 @@ def workspace(path, cid):
     return ws
 
 
-def confirm(policy, yes):
+def confirm(policy, yes, picked=False):
+    if picked:
+        return True
     if policy == "ask-first":
         if not sys.stdin.isatty():
             die("an ask-first account needs a typed yes on a terminal (--yes does not count)")
@@ -171,11 +175,11 @@ def confirm(policy, yes):
 def relaunch(argv):
     flags = {a for a in argv if a.startswith("--")}
     args = [a for a in argv if not a.startswith("--")]
-    known = {"--dry-run", "--yes", "--here"}
+    known = {"--dry-run", "--yes", "--here", "--picked"}
     if flags - known:
         die(f"unknown option {sorted(flags - known)[0]}")
     if len(args) != 2:
-        die("usage: crow-relaunch <conversation-id> <target> [--dry-run] [--yes]  (an id is required)")
+        die("usage: crow-relaunch <conversation-id> <target> [--dry-run] [--yes] [--picked]  (an id is required)")
     ref, target = args
     accts = accounts()
     tpol = accts.get(target, {}).get("policy", "never")
@@ -202,7 +206,7 @@ def relaunch(argv):
     if "--dry-run" in flags:
         print("dry run: checks passed, nothing launched")
         return 0
-    if not confirm(tpol, "--yes" in flags):
+    if not confirm(tpol, "--yes" in flags, "--picked" in flags):
         die("cancelled")
 
     record(cid, source, target, ws)
