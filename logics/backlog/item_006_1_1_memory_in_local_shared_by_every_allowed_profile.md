@@ -1,10 +1,10 @@
 ## item_006_1_1_memory_in_local_shared_by_every_allowed_profile - 1.1 memory in local, shared by every allowed profile
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 75%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub orchestration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -31,6 +31,9 @@
 - AC1: after the move the main profile loads the same memories as before, verified by listing them from a session.
 - AC2: a session launched on the shared account reads the same files from local/ and leaves no copy in its profile once it ends.
 - AC3: a memory written from any profile appears in local/ and is committed.
+
+# Validation
+- 2026-11-05: owner confirmed shared memory works across accounts. The main profile memory dir links to local/memory (permanent); a session-mode profile keeps an empty dir once its sessions end (no copy left); local/ autocommits memory changes.
 
 # AC Traceability
 - request-AC8 -> This backlog slice. Proof: AC1: after the move the main profile loads the same memories as before, verified by listing them from a session.
