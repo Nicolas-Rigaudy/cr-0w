@@ -1,10 +1,10 @@
 ## item_038_re_sync_deck_spec_vault_mirror_spec_artifact_v3_merged_boards - Re-sync deck spec: vault mirror, spec artifact v3, merged boards
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Low
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -52,3 +52,8 @@
 
 # Notes
 - Generated locally by logics-manager.
+
+# Delivery notes
+- 2026-11-05: 29 board files checked against the canvas, cmp clean in the canvas copy, the repo and the vault.
+- Spec updated: section 5 names the `_merge` boards as the build reference (AC2). Vault mirror diff clean.
+- Spec artifact v3 published with the merged boards inline (AC1).
