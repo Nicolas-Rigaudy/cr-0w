@@ -1,10 +1,10 @@
 ## item_087_work_prose_ai_writing_checklist - Work prose AI-writing checklist from humanizer
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -33,9 +33,9 @@
 - AC3: One real draft run through the checklist shows it catches at least one tell the current rules miss.
 
 # AC Traceability
-- AC1 -> this item. Proof: to record at closeout.
-- AC2 -> this item. Proof: to record at closeout.
-- AC3 -> this item. Proof: to record at closeout.
+- AC1 -> this item. Proof: local/owner-prefs.md, Writing, "AI-writing tells": 18 tells plus 2 header lines, each with a one-line fix, French and English examples (local file, gitignored).
+- AC2 -> this item. Proof: skills/mr/SKILL.md (Prepare), .claude/skills/daily, weekly and mgmt-weekly SKILL.md, and the AI-sounding row of local/reviews/common.md point to the checklist.
+- AC3 -> this item. Proof: run on the owner's open lambda MR descriptions (2026-11-05). The Sonar MR gives every list item a bold label ("**Type hints:**", "**Python:**", ...), a formatting tell no earlier rule covered. The booking schedules MR has a hidden actor ("the conflict was only logged"), weak alone.
 
 # Decision framing
 - Product framing: Not needed
@@ -57,4 +57,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
