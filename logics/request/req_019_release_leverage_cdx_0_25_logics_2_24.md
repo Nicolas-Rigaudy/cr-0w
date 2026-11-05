@@ -1,13 +1,14 @@
 ## req_019_release_leverage_cdx_0_25_logics_2_24 - Use what cdx 0.25 and logics-manager 2.24 added
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-03 17:33:36
+> Indicators reviewed: 2026-11-05 14:15:08
+> Owner: crow
 
 # AI Context
 - Summary: Four small slices that put cdx 0.24-0.25 and logics-manager 2.24 features to use in crow.

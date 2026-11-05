@@ -1,12 +1,14 @@
 ## req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map - crow deck: interface redesign (tabbed TUI, 4 themes, command map)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-05 14:15:08
 
 # AI Context
 - Summary: Build crow deck, the tabbed TUI hub (Home, Agents, MRs, Projects, Usage) with 4 themes and a regrouped crow command map, from the approved designs.

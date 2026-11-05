@@ -1,12 +1,14 @@
 ## req_020_terminal_design_system_and_design_review_workflow - Terminal design system and design review workflow
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High
 > Theme: design
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-05 14:15:09
 
 # AI Context
 - Summary: Replace mixed design channels with a code-rendered review loop and a shared Go terminal kit; crow deck pilots, lazytf and archeotech follow.
@@ -78,4 +80,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

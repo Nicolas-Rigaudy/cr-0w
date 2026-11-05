@@ -1,7 +1,7 @@
 ## item_015_cdx_cli_wishlist - List what crow still needs from the cdx CLI (#6)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Progress: 100%

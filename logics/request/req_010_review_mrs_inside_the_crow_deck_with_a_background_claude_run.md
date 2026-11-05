@@ -1,12 +1,14 @@
 ## req_010_review_mrs_inside_the_crow_deck_with_a_background_claude_run - Review MRs inside the crow deck with a background Claude run
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-05 14:15:08
 
 # AI Context
 - Summary: Review an MR from the crow deck only: a background Claude run reviews, the deck shows findings and takes the owner's decisions, a second phase applies them. No terminal Claude needed.
@@ -53,4 +55,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

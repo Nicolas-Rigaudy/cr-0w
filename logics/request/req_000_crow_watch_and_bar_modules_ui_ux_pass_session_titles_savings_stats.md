@@ -1,13 +1,14 @@
 ## req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats - crow watch and bar modules: UI/UX pass, session titles, savings stats
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-10-20 17:47:34
+> Indicators reviewed: 2026-11-05 14:15:07
+> Owner: crow
 
 # AI Context
 - Summary: Fix crow usage data (synthetic pricing, account-named titles, split rtk databases), give every session a Haiku title, surface per-tool savings, and lay the usage view out responsively with tabs; mirror it in the archeotech bar panels.

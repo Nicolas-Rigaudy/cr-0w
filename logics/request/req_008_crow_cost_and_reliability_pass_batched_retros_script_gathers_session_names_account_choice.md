@@ -1,13 +1,14 @@
 ## req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice - crow cost and reliability pass: batched retros, script gathers, session names, account choice
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-10-29 17:14:15
+> Indicators reviewed: 2026-11-05 14:15:08
+> Owner: crow
 
 # AI Context
 - Summary: Cost and reliability pass from the 2026-10-29 audit: long Opus contexts, per-session retros, gather turns, model titles, busy-account launches, unprotected headless runs.

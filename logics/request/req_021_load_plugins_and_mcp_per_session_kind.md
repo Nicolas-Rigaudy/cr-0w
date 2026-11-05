@@ -1,12 +1,14 @@
 ## req_021_load_plugins_and_mcp_per_session_kind - Load heavy plugins and MCP servers per session kind
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
 > Theme: Hub cost
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-05 14:15:09
 
 # AI Context
 - Summary: Plugins, skills and MCP servers load per session kind (hub, repo, background run) instead of all of them in every profile session.
@@ -49,4 +51,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

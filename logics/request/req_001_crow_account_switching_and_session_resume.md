@@ -1,13 +1,14 @@
 ## req_001_crow_account_switching_and_session_resume - crow account switching and session resume
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High
 > Theme: Hub orchestration
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-10-20 17:47:35
+> Indicators reviewed: 2026-11-05 14:15:08
+> Owner: crow
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)

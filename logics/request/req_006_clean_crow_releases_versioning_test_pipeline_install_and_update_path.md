@@ -1,12 +1,14 @@
 ## req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path - Clean crow releases: versioning, test pipeline, install and update path
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-05 14:15:08
 
 # AI Context
 - Summary: Give crow versioned releases people can install and update cleanly, with a test pipeline, modelled on how cdx-manager and logics release.

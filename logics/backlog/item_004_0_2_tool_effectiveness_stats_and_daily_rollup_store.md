@@ -1,7 +1,7 @@
 ## item_004_0_2_tool_effectiveness_stats_and_daily_rollup_store - 0.2 tool effectiveness stats and daily rollup store
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Progress: 100%
