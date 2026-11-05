@@ -20,12 +20,12 @@ type todayEvent struct {
 }
 
 type todaySnap struct {
-	Events   []todayEvent `json:"events"`
-	Tomorrow []todayEvent `json:"tomorrow"`
-	Unread   int          `json:"unread"`
-	Flagged   []todayFlag `json:"flagged"`
-	Drafts    int         `json:"drafts"`
-	Important []todayMail `json:"important"`
+	Events    []todayEvent `json:"events"`
+	Tomorrow  []todayEvent `json:"tomorrow"`
+	Unread    int          `json:"unread"`
+	Flagged   []todayFlag  `json:"flagged"`
+	Drafts    int          `json:"drafts"`
+	Important []todayMail  `json:"important"`
 }
 
 type todayFlag struct {
@@ -157,7 +157,7 @@ func mailCmd(verb string, r todayRow) tea.Cmd {
 	return func() tea.Msg {
 		out, err := runBin("crow-today", verb, r.ID)
 		if err != nil {
-			return mailActMsg{verb + " failed: " + firstLine(cmpOr(out, err.Error()))}
+			return mailActMsg{verb + " failed: " + lastLine(cmpOr(out, err.Error()))}
 		}
 		return mailActMsg{fit(r.What, 40) + ": " + firstLine(cmpOr(out, "done"))}
 	}

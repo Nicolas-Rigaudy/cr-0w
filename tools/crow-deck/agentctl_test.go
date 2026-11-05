@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -40,5 +42,17 @@ func TestPauseAndStopAskFirst(t *testing.T) {
 		if len(calls) != 1 || calls[0].name != "crow-focus" || strings.Join(calls[0].args, " ") != "--pid 4242 "+tc.flag {
 			t.Fatalf("%s: calls %+v", tc.act, calls)
 		}
+	}
+}
+
+func TestFailedActionShowsTheLastLine(t *testing.T) {
+	old := runBin
+	defer func() { runBin = old }()
+	runBin = func(name string, args ...string) (string, error) {
+		return "crow: using 'main' (30% left)\ncrow: unknown project 'x'", errors.New("exit 1")
+	}
+	msg := actionCmd("mail session", "crow", "handoff", "x")().(actionMsg)
+	if !strings.Contains(fmt.Sprint(msg), "unknown project") {
+		t.Fatalf("flash hides the error: %v", msg)
 	}
 }

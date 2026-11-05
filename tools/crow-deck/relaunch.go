@@ -103,7 +103,7 @@ func relaunchCmd(a agentRow, target string) tea.Cmd {
 	return func() tea.Msg {
 		out, err := runBin("crow-relaunch", a.Session, target, "--picked")
 		if err != nil {
-			return actionMsg{"relaunch failed: " + firstLine(cmpOr(out, err.Error()))}
+			return actionMsg{"relaunch failed: " + lastLine(cmpOr(out, err.Error()))}
 		}
 		return actionMsg{"relaunched on " + target}
 	}

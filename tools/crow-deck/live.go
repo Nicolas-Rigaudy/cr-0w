@@ -78,7 +78,7 @@ func actionCmd(label string, name string, args ...string) tea.Cmd {
 	return func() tea.Msg {
 		out, err := runBin(name, args...)
 		if err != nil {
-			return actionMsg{label + " failed: " + firstLine(cmpOr(out, err.Error()))}
+			return actionMsg{label + " failed: " + lastLine(cmpOr(out, err.Error()))}
 		}
 		return actionMsg{label + ": " + firstLine(cmpOr(out, "done"))}
 	}
@@ -183,7 +183,7 @@ func actCmd(r mrRow, a postAction) tea.Cmd {
 	return func() tea.Msg {
 		out, err := runBin("crow-review-run", "act", r.Repo, strconv.Itoa(r.Number), a.ID, "--hash", a.Hash)
 		if err != nil {
-			return postDoneMsg{r.key(), a.ID + " failed: " + firstLine(cmpOr(out, err.Error())), false}
+			return postDoneMsg{r.key(), a.ID + " failed: " + lastLine(cmpOr(out, err.Error())), false}
 		}
 		return postDoneMsg{r.key(), firstLine(cmpOr(out, a.ID+" done")), true}
 	}

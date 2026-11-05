@@ -483,6 +483,15 @@ func firstLine(s string) string {
 	return strings.TrimSpace(s)
 }
 
+// lastLine is the error a failed command ends on; notices (account picks) come first.
+func lastLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.LastIndex(s, "\n"); i >= 0 {
+		s = s[i+1:]
+	}
+	return strings.TrimSpace(s)
+}
+
 func tokensK(n int) string {
 	if n >= 1000 {
 		return fmt.Sprintf("%dk", n/1000)

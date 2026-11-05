@@ -160,3 +160,11 @@ def test_handoff_for_a_planning_project_goes_to_its_planning_repo(hub, repos):
     assert "Project: shell, code in " in r.stdout and "planned and built from this repo" in r.stdout
     assert "follow AGENTS.md." in r.stdout
     assert list((home / "local/state/handoffs").glob("*-side.md"))
+
+
+def test_handoff_to_the_hub_itself_opens_a_fresh_hub_session(hub, repos):
+    home, _, _ = repos
+    r = run(hub, "crow-project", "handoff", "hub", "--task", "Draft a reply to the flagged mail",
+            "--end-state", "A reply draft; nothing sent.")
+    assert r.returncode == 0, r.stderr
+    assert any((home / "local/state/handoffs").glob("*-hub.md"))
