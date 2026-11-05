@@ -1,7 +1,7 @@
 ## req_012_owner_todos_and_open_work_model - Rework how crow tracks the owner's to-dos and unfinished work (open threads)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Complexity: Medium

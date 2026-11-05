@@ -1,7 +1,7 @@
 ## req_002_sub_project_work_from_the_hub_with_the_repo_s_own_tools - Sub-project work from the hub with the repo's own tools
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
