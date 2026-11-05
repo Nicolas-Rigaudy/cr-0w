@@ -1,14 +1,14 @@
 ## item_017_0_2_real_data_on_home_and_agents - 0.2 real data on Home and Agents
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-10-29 18:27:41
+> Indicators reviewed: 2026-11-05 16:15:07
 
 # AI Context
 - Summary: Home and Agents fed by cdx and crow-runs: right now, needs you, running, background runs, finished, who-worked-when timeline, live tail with agent questions.
@@ -43,7 +43,7 @@
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
 - Request: `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`
-- Primary task(s): (none yet)
+- Primary task(s): `task_005_0_2_real_data_on_home_and_agents`
 
 # Priority
 - Priority: Medium
@@ -51,3 +51,6 @@
 
 # Tasks
 - `task_005_0_2_real_data_on_home_and_agents`
+
+# Notes
+- Task `task_005_0_2_real_data_on_home_and_agents` was finished via `logics-manager flow finish task` on 2026-11-05.

@@ -8,7 +8,7 @@
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-05 14:15:08
+> Indicators reviewed: 2026-11-05 16:15:07
 
 # AI Context
 - Summary: Build crow deck, the tabbed TUI hub (Home, Agents, MRs, Projects, Usage) with 4 themes and a regrouped crow command map, from the approved designs.
@@ -38,7 +38,7 @@
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
 - [x] Acceptance criteria are testable.
-- [ ] Dependencies and known risks are listed: roadmap format, cost accounting check, Jira token open.
+- [x] Dependencies and known risks are listed: roadmap format, cost accounting check, Jira token open.
 
 # Companion docs
 - Product brief(s): (none yet)
