@@ -3,7 +3,7 @@
 Every finished session gets a short retrospective, so lessons land in skills, runbooks and memories without the user repeating them.
 
 ## Pipeline
-1. **Hook**: `SessionEnd` in the cdx profile's `.claude/settings.json` runs `bin/crow-retro hook`.
+1. **Hook**: removed 2026-11-05 (one Sonnet run per session end was too many). Retros run by hand with `crow-retro add <jsonl>` until item_024 (daily batch) lands. The hook was `SessionEnd` in the cdx profile's `.claude/settings.json` running `bin/crow-retro hook`.
    It skips sessions with fewer than 2 user messages and any session started with `CROW_RETRO=1` (the retros themselves).
 2. **Queue**: `local/state/retros/queue/<session>.json`. One worker at a time (`flock`), started detached by the hook.
 3. **Digest**: `bin/crow-digest <transcript.jsonl>` cuts a multi-MB transcript to ~25 KB: user messages in full, trimmed assistant prose, one line per tool call, tool errors.
