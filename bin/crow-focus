@@ -3,6 +3,8 @@
 
   crow-focus --pid PID --account ACCOUNT --cwd DIR [--dry-run]
   crow-focus --pid PID --send TEXT [--dry-run]
+  crow-focus --pid PID --interrupt [--dry-run]
+  crow-focus --pid PID --stop [--dry-run]
 
 Goes through the terminal backend (crow_term: CROW_TERMINAL=kitty|tmux|print).
 Focus: finds the window (kitty) or pane (tmux) running PID, matching its own process or any
@@ -11,17 +13,47 @@ process is gone or runs elsewhere), opens a new window in DIR running `cdx ACCOU
 the print backend prints that command instead.
 --send types TEXT and Enter into the window holding PID (the deck's answer to an agent question) and
 never resumes: it exits 1 when no window holds the session (always, on the print backend).
+--interrupt presses Escape in the window holding PID (pauses the agent's turn; the session stays open).
+--stop sends SIGTERM to PID, only when PID runs the claude CLI; the session can be resumed later.
 --dry-run prints what it would do and does nothing.
 """
-import os, subprocess, sys
+import os, signal, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_term  # noqa: E402
 
 
+def interrupt(pid, backend, dry):
+    if dry:
+        print(f"press Escape in the {backend} window holding pid {pid}")
+        return 0
+    if crow_term.send_escape(pid, backend):
+        print("paused")
+        return 0
+    print(f"crow-focus: no {backend} window holds pid {pid}", file=sys.stderr)
+    return 1
+
+
+def stop(pid, dry):
+    if not crow_term.is_claude(pid):
+        print(f"crow-focus: pid {pid} is not a claude session, not stopping it", file=sys.stderr)
+        return 1
+    if dry:
+        print(f"send SIGTERM to claude pid {pid}")
+        return 0
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError as e:
+        print(f"crow-focus: could not stop pid {pid} ({e})", file=sys.stderr)
+        return 1
+    print("stopped")
+    return 0
+
+
 def main(argv):
-    opts, dry = {}, "--dry-run" in argv
-    args = [a for a in argv if a != "--dry-run"]
+    flags = {f for f in ("--dry-run", "--interrupt", "--stop") if f in argv}
+    dry = "--dry-run" in flags
+    opts, args = {}, [a for a in argv if a not in flags]
     for i in range(0, len(args) - 1, 2):
         opts[args[i].lstrip("-")] = args[i + 1]
     try:
@@ -29,6 +61,10 @@ def main(argv):
         backend = crow_term.choose()
     except ValueError:
         sys.exit(__doc__)
+    if "--interrupt" in flags or "--stop" in flags:
+        if not pid:
+            sys.exit(__doc__)
+        return interrupt(pid, backend, dry) if "--interrupt" in flags else stop(pid, dry)
     if "send" in opts:
         if not pid:
             sys.exit(__doc__)

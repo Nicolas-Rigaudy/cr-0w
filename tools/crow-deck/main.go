@@ -28,6 +28,7 @@ type model struct {
 	palSel  int
 	relSel  int // Relaunch picker: index into fx.Rel.Accounts
 	flash   string
+	pending string // "pause" or "stop" waiting for y on the selected agent
 	cfgPath string
 
 	live  *liveState // nil in mock mode
@@ -377,6 +378,14 @@ func (m *model) exec(c string) tea.Cmd {
 		if a := m.curAgent(); a != nil {
 			return attachCmd(*a)
 		}
+	case "pause", "stop":
+		a := m.curAgent()
+		if a == nil || a.PID == 0 {
+			m.flash = f[0] + " needs a running session"
+			break
+		}
+		m.pending = f[0]
+		m.flash = f[0] + " " + cmpOr(a.Short, a.Name) + "? y confirms, any other key cancels"
 	case "relaunch":
 		if a := m.curAgent(); a != nil && a.Interrupted {
 			return m.openRelaunch()
@@ -483,6 +492,15 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.flash = ""
 	if k == "ctrl+c" {
 		return m, tea.Quit
+	}
+	if m.pending != "" {
+		act := m.pending
+		m.pending = ""
+		if a := m.curAgent(); k == "y" && a != nil {
+			return m, agentCtlCmd(*a, act)
+		}
+		m.flash = act + " cancelled"
+		return m, nil
 	}
 	if m.overlay == ovNone && m.page == 1 && m.typing {
 		return m.typingKey(msg)

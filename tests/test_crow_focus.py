@@ -22,6 +22,14 @@ def test_window_found_by_ancestor_or_foreground_process():
     assert ct.kitty_find_window(LS, 999, chain=[999, 1]) is None
 
 
+def test_nearest_window_wins_over_an_ancestor_window():
+    # pid 999 runs in window 7 on socket b; its ancestor 100 holds window 1 on socket a
+    other = [{"tabs": [{"windows": [{"id": 7, "pid": 400, "foreground_processes": [{"pid": 999}]}]}]}]
+    assert ct.kitty_nearest([("a", LS), ("b", other)], 999, chain=[999, 400, 100]) == ("b", 7)
+    assert ct.kitty_nearest([("a", LS), ("b", other)], 5, chain=[5, 100]) == ("a", 1)
+    assert ct.tmux_find_pane("%1 100\n%2 400", [999, 400, 100]) == "%2"
+
+
 def test_ancestors_stop_at_init(tmp_path):
     for pid, ppid in ((30, 20), (20, 10), (10, 1)):
         d = tmp_path / str(pid)
@@ -121,3 +129,20 @@ def test_ancestors_use_ps_without_proc(tmp_path, monkeypatch):
             self.stdout = out
     monkeypatch.setattr(ct.subprocess, "run", lambda cmd, **_: R(parents.get(int(cmd[-1]), "")))
     assert ct.ancestors(30, proc=str(tmp_path / "no-proc")) == [30, 20]
+
+
+def test_interrupt_and_stop_dry_run(hub, tmp_path):
+    ok = run(hub, "crow-focus", "--pid", "5", "--interrupt", "--dry-run", env={"CROW_TERMINAL": "kitty"})
+    assert ok.returncode == 0 and "Escape" in ok.stdout
+    # pid 1 is never a claude session: stop refuses it, dry run or not
+    no = run(hub, "crow-focus", "--pid", "1", "--stop", "--dry-run")
+    assert no.returncode == 1 and "not a claude session" in no.stderr
+
+
+def test_is_claude_reads_the_command_line(tmp_path):
+    for pid, argv in ((10, [b"/usr/bin/claude", b"--resume"]), (11, [b"node", b"/opt/x/claude-code/cli.js"]),
+                      (12, [b"bash", b"-c", b"claude"])):
+        (tmp_path / str(pid)).mkdir()
+        (tmp_path / str(pid) / "cmdline").write_bytes(b"\0".join(argv) + b"\0")
+    assert ct.is_claude(10, proc=str(tmp_path)) and ct.is_claude(11, proc=str(tmp_path))
+    assert not ct.is_claude(12, proc=str(tmp_path)) and not ct.is_claude(99, proc=str(tmp_path))

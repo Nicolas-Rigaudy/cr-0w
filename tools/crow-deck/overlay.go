@@ -36,7 +36,7 @@ func paletteCommands() []command {
 	for _, s := range syncStates {
 		cs = append(cs, command{"mock " + s, "show the " + s + " state (invented data)"})
 	}
-	cs = append(cs, command{"history", "search the session history (Agents)"}, command{"live", "back to the live agents"}, command{"attach", "jump to the selected agent's window"}, command{"relaunch", "continue the selected paused session on another account"})
+	cs = append(cs, command{"history", "search the session history (Agents)"}, command{"live", "back to the live agents"}, command{"attach", "jump to the selected agent's window"}, command{"pause", "interrupt the selected agent's turn (Escape, asks first)"}, command{"stop", "end the selected claude session (SIGTERM, asks first)"}, command{"relaunch", "continue the selected paused session on another account"})
 	return append(cs, command{"quit", "leave the deck"})
 }
 

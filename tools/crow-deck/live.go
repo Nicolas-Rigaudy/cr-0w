@@ -92,6 +92,15 @@ func sendCmd(a agentRow, text string) tea.Cmd {
 	return actionCmd("sent", "crow-focus", "--pid", strconv.Itoa(a.PID), "--send", text)
 }
 
+// agentCtlCmd pauses (Escape in the window) or stops (SIGTERM to the claude process) a session.
+func agentCtlCmd(a agentRow, act string) tea.Cmd {
+	flag := map[string]string{"pause": "--interrupt", "stop": "--stop"}[act]
+	if a.PID == 0 || flag == "" {
+		return func() tea.Msg { return actionMsg{"no running session to " + act} }
+	}
+	return actionCmd(act, "crow-focus", "--pid", strconv.Itoa(a.PID), flag)
+}
+
 // attachCmd focuses the agent's window, or resumes the session when no window holds it.
 func attachCmd(a agentRow) tea.Cmd {
 	if a.Cwd == "" || a.Account == "" {

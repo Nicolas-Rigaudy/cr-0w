@@ -89,15 +89,24 @@ def detach(argv, env, cwd=None):
 # ---------- kitty ----------
 
 def kitty_find_window(kitty_ls, pid, chain=None):
-    """Id of the kitty window holding pid (its own process, a foreground process or an ancestor), else None."""
+    """Id of the kitty window holding pid, else None. The nearest process wins: pid itself (own or
+    foreground process), then its parent, and so on, so a child an agent spawns never resolves to
+    the agent's window while its own window exists."""
+    hit = kitty_nearest([(None, kitty_ls)], pid, chain)
+    return hit[1] if hit else None
+
+
+def kitty_nearest(listings, pid, chain=None):
+    """(socket, window id) over several `kitty @ ls` results, nearest process in chain first."""
     chain = chain if chain is not None else ancestors(pid)
-    for osw in kitty_ls:
-        for tab in osw.get("tabs", []):
-            for win in tab.get("windows", []):
-                pids = {win.get("pid")} | {p.get("pid") for p in win.get("foreground_processes", [])}
-                if pids & set(chain):
-                    return win["id"]
-    return None
+    owner = {}
+    for sock, kitty_ls in listings:
+        for osw in kitty_ls:
+            for tab in osw.get("tabs", []):
+                for win in tab.get("windows", []):
+                    for p in {win.get("pid")} | {f.get("pid") for f in win.get("foreground_processes", [])}:
+                        owner.setdefault(p, (sock, win["id"]))
+    return next((owner[p] for p in chain if p in owner), None)
 
 
 def kitty_send_args(sock, wid, text):
@@ -111,16 +120,16 @@ def kitty_sockets():
 
 
 def kitty_locate(pid):
-    """(socket, window id) of the window holding pid, else None."""
+    """(socket, window id) of the window holding pid, else None. Reads every socket first so the
+    nearest match wins across kitty instances."""
+    listings = []
     for sock in kitty_sockets():
         try:
             r = subprocess.run(["kitten", "@", "--to", sock, "ls"], capture_output=True, text=True, timeout=5)
-            wid = kitty_find_window(json.loads(r.stdout) if r.returncode == 0 else [], pid)
+            listings.append((sock, json.loads(r.stdout) if r.returncode == 0 else []))
         except (OSError, ValueError, subprocess.TimeoutExpired):
             continue
-        if wid is not None:
-            return sock, wid
-    return None
+    return kitty_nearest(listings, pid)
 
 
 def kitty_open_args(argv, title, cwd=None):
@@ -130,12 +139,13 @@ def kitty_open_args(argv, title, cwd=None):
 # ---------- tmux ----------
 
 def tmux_find_pane(panes, chain):
-    """Pane id from `list-panes -F '#{pane_id} #{pane_pid}'` lines whose shell is in chain, else None."""
+    """Pane id from `list-panes -F '#{pane_id} #{pane_pid}'` lines holding the nearest process in chain, else None."""
+    owner = {}
     for line in panes.splitlines():
         parts = line.split()
-        if len(parts) == 2 and parts[1].isdigit() and int(parts[1]) in chain:
-            return parts[0]
-    return None
+        if len(parts) == 2 and parts[1].isdigit():
+            owner.setdefault(int(parts[1]), parts[0])
+    return next((owner[p] for p in chain if p in owner), None)
 
 
 def tmux_locate(pid):
@@ -207,6 +217,30 @@ def send(pid, text, backend=None):
             subprocess.run(cmd, check=True, timeout=5)
         return True
     return False
+
+
+def send_escape(pid, backend=None):
+    """Press Escape in the window holding pid (interrupts a Claude turn). True when a window took it."""
+    backend = backend or choose()
+    if backend == "kitty" and (hit := kitty_locate(pid)):
+        subprocess.run(["kitten", "@", "--to", hit[0], "send-key", "--match", f"id:{hit[1]}", "escape"],
+                       check=True, timeout=5)
+        return True
+    if backend == "tmux" and (pane := tmux_locate(pid)):
+        subprocess.run(["tmux", "send-keys", "-t", pane, "Escape"], check=True, timeout=5)
+        return True
+    return False
+
+
+def is_claude(pid, proc="/proc"):
+    """True when pid runs the claude CLI (its command line names it)."""
+    try:
+        with open(f"{proc}/{pid}/cmdline", "rb") as fh:
+            argv = fh.read().split(b"\0")
+    except OSError:
+        return False
+    return any(os.path.basename(a.decode(errors="replace")) == "claude" or a.endswith(b"/claude")
+               or b"claude-code" in a for a in argv[:2])
 
 
 def main(argv):
