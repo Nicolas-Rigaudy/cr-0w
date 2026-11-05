@@ -341,7 +341,7 @@ def model_id(model):
 
 def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None, budget=None):
     """cdx run arguments and environment every headless launch carries.
-    With continue_run, cdx pins the parent's model and effort, so neither is passed.
+    With continue_run, cdx pins the parent's model, effort and account, so none of them nor --failover is passed.
     --failover moves a run stopped by a usage limit to another allowed account. cdx run has no --fallback-model
     flag: the fallback model is a per-account setting (`cdx set <account> --fallback-model M`).
     budget (USD) overrides the kind's budget for this run; Claude only."""
@@ -353,7 +353,7 @@ def run_flags(kind, provider="claude", model=None, power=None, continue_run=None
     if not continue_run:
         m = model or (k["model"] if provider == "claude" else None)
         args += (["--model", model_id(m) if provider == "claude" else m] if m else []) + ["--power", power or k["power"]]
-    args += ["--timeout-seconds", str(timeout * 60), "--failover"]
+    args += ["--timeout-seconds", str(timeout * 60)] + ([] if continue_run else ["--failover"])
     if kind in CDX_KINDS:
         args += ["--kind", CDX_KINDS[kind]]
     if provider == "claude":  # cdx measures spend from Claude usage; Codex budgets fail as unverifiable without model evidence

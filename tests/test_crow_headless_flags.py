@@ -39,6 +39,7 @@ def test_alias_maps_to_exact_id():
 def test_continue_run_passes_no_model_or_effort():
     args, _ = crow_lib.run_flags("review", "claude", model="opus", power="high", continue_run="r1", env={})
     assert "--model" not in args and "--power" not in args and "--budget" in args
+    assert "--failover" not in args  # cdx refuses --failover with --continue-run
 
 
 def test_env_overrides_budget_and_timeout():
