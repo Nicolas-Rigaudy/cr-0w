@@ -80,7 +80,7 @@ func (lk *look) helpOverlay(w, h int, page int) []string {
 		{"enter", "Agents: open the lane's session; send a typed answer"},
 		{"R", "Agents: relaunch a paused run on an account you pick"}, {"< > w", "Agents: move the hour range; full day"},
 		{"d", "Agents: Detail full screen"},
-		{"o enter x s", "Home Today: open the mail in Outlook, crow session drafts a reply, done, snooze to tomorrow"},
+		{"o enter x s r", "Home Today: open the mail in Outlook, crow session drafts a reply, done, snooze to tomorrow, refresh"},
 		{"q", "quit"},
 	}
 	sp := boxSpec{title: "Keys", sel: -1}

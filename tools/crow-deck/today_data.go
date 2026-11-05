@@ -63,6 +63,15 @@ func fetchToday() (*todaySnap, error) {
 	return &s, runJSON(60*time.Second, nil, &s, "crow-today", "json")
 }
 
+// refreshTodayCmd skips crow-today's 5-minute cache: a mail flagged in Outlook shows at once.
+func refreshTodayCmd() tea.Cmd {
+	return func() tea.Msg {
+		var s todaySnap
+		err := runJSON(60*time.Second, nil, &s, "crow-today", "json", "-f")
+		return srcMsg{src: srcToday, val: &s, err: err, at: time.Now()}
+	}
+}
+
 // todayRows lays out the rail: today's events (the next one marked with its countdown),
 // then the mail crow picked as worth a look, then tomorrow. mail is the pane's right label.
 func todayRows(s *todaySnap, now time.Time) (rows []todayRow, mail []string) {
@@ -173,6 +182,14 @@ func mailTask(r todayRow) (task, end string) {
 
 // todayKey runs a mail action on the selected Today row.
 func (m model) todayKey(k string) (tea.Model, tea.Cmd) {
+	if k == "r" {
+		if m.live == nil {
+			m.flash = "mock deck: nothing to refresh"
+			return m, nil
+		}
+		m.flash = "refreshing Today from Outlook…"
+		return m, refreshTodayCmd()
+	}
 	r := m.homeView().curMail()
 	if r == nil {
 		m.flash = "no mail selected"
@@ -201,6 +218,6 @@ func (m model) todayKey(k string) (tea.Model, tea.Cmd) {
 		m.flash = "opening a hub session on the mail…"
 		return m, actionCmd("mail session", "crow", "handoff", "cr-0w", "--task", task, "--end-state", end)
 	}
-	m.flash = k + ": not a Today action (o open, enter session, x done, s snooze)"
+	m.flash = k + ": not a Today action (o open, enter session, x done, s snooze, r refresh)"
 	return m, nil
 }

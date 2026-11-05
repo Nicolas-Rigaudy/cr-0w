@@ -1111,7 +1111,7 @@ func (m model) context() []keyHint {
 		return []keyHint{{"1-5 & é\" ' (", "tab"}, {"j k", "move"}}
 	}
 	if m.focus == pToday {
-		return []keyHint{{"j k", "mail"}, {"o", "open in Outlook"}, {"enter", "crow session"}, {"x", "done"}, {"s", "snooze"}, {"tab", "pane"}}
+		return []keyHint{{"j k", "mail"}, {"o", "open in Outlook"}, {"r", "refresh"}, {"enter", "crow session"}, {"x", "done"}, {"s", "snooze"}, {"tab", "pane"}}
 	}
 	ctx := []keyHint{{"1-5 & é\" ' (", "tab"}}
 	if layoutFor(m.w) == laySingle {
