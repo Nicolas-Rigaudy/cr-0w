@@ -37,6 +37,11 @@ message. They can continue on another allowed account through a cdx handoff.
    (`can-resume`, `status`) and prints the exact handoff. Nothing is prepared or launched.
 2. `crow runs relaunch <id> <account>`: asks first. A `use` account takes `y` (or `--yes`); an `ask-first`
    account needs a typed `yes` on a terminal every time, and `--yes` does not count for it.
+   From crow-deck: `R` on a paused Agents row opens a table of every account (policy, 5h and week
+   headroom, why one is blocked), the recommended one preselected. Picking one and pressing enter is the
+   owner's yes, so the deck passes `--picked`, which counts for both policies. Only an interactive
+   picker may pass it. When every account is blocked, Home Next opens with "No tokens until HH:MM":
+   work that needs no model (red pipelines, reviews, threads, dirty repos, stale worktrees, paused runs).
 3. After the confirmation it opens a new kitty window (detached, real HOME, no inherited Claude/cdx
    variables) that runs `cdx handoff <source> <target> --source-conversation <id>` from the session's
    workspace. `--here` runs it in the current terminal instead.
