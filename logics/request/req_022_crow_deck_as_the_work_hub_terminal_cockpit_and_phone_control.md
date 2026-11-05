@@ -10,7 +10,7 @@
 
 # AI Context
 - Summary: Make crow deck the place the owner works from, not a side dashboard: a terminal cockpit (deck pane plus the active session pane in one tmux/kitty layout, with a send box and inline approvals), then one responsive web app over the deck engine for the phone (touch session views, ntfy action notifications) and for the laptop's graphical views (charts, diffs, design picks, reports); SSH as fallback.
-- Keywords: deck, hub, cockpit, tmux, layout, session, send, approvals, phone, ssh, termux, pwa, ntfy, crow serve
+- Keywords: deck, hub, cockpit, tmux, layout, session, send, approvals, phone, ssh, termux, pwa, ntfy, deck web, deck engine
 - Use when: planning how the owner drives sessions and crow actions from the deck or from the phone.
 - Skip when: deck widget visuals (req_020) or the multi-machine sync design (req_016).
 
@@ -24,7 +24,7 @@
 - Phone and graphics (discussed 2026-11-05, replaces the earlier SSH-first and PWA-only drafts):
   - **Claude Code Remote Control is not the phone path.** The owner works only in cdx terminal sessions across several accounts; the Claude mobile app is logged into one account and Remote Control is enabled per session, untested with cdx profiles.
   - **Sessions run in tmux** (item_031 backend), so the cockpit, SSH and the phone all see the same session.
-  - **Naming (owner, 2026-11-05): everything is "deck".** `crow deck` opens the TUI, `crow deck web` opens the same deck in the browser (laptop) or as the installed app (phone). The data service behind both is the deck's engine: a systemd user service started at login, with no command of its own (`crow deck status` / `restart` only if needed). The name the deck engine is dropped.
+  - **Naming (owner, 2026-11-05): everything is "deck".** `crow deck` opens the TUI, `crow deck web` opens the same deck in the browser (laptop) or as the installed app (phone). The data service behind both is the deck's engine: a systemd user service started at login, with no command of its own (`crow deck status` / `restart` only if needed). The earlier name `crow serve` is dropped.
   - **The deck engine** exposes per session: read (last screen via `tmux capture-pane`, or the transcript tail from the session .jsonl) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
   - **Phone step 1: ntfy notifications with action buttons** (approve, dispatch, open) when a run finishes or a session waits on the owner.
   - **Deck web: one responsive web app (PWA)** over the deck engine:
