@@ -78,7 +78,8 @@ FAKE_CDX = r"""#!/usr/bin/env python3
 import json, os, sys
 argv = sys.argv[1:]
 with open(os.environ["FAKE_LOG"], "a") as f:
-    f.write(json.dumps({"argv": argv, "account": os.environ.get("CROW_ACCOUNT")}) + "\n")
+    f.write(json.dumps({"argv": argv, "account": os.environ.get("CROW_ACCOUNT"),
+                        "session": os.environ.get("CROW_SESSION_ACCOUNT")}) + "\n")
 state = json.load(open(os.environ["FAKE_STATE"]))
 if argv[:1] == ["status"]:
     print(json.dumps({"rows": state["rows"]}))
@@ -176,6 +177,51 @@ def test_the_inherited_account_of_the_calling_session_is_not_a_choice(hub, fake)
     r = run(hub, "crow", "term", "demo", env={**env, "CROW_ACCOUNT": "main", "CDX_SESSION_NAME": "main"})
     assert r.returncode == 0, r.stderr
     assert launches()[0]["argv"][0] == "spare"
+
+
+def test_an_explicit_own_account_wins_in_a_session_crow_started(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare", 60)], busy={"main"})
+    r = run(hub, "crow", "term", "demo", env={**env, "CROW_ACCOUNT": "main", "CDX_SESSION_NAME": "main",
+                                              "CROW_SESSION_ACCOUNT": "main"})
+    assert r.returncode == 0, r.stderr
+    assert launches()[0]["argv"][0] == "main"
+
+
+def test_the_session_gets_its_account_as_crow_session_account_only(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare")])
+    r = run(hub, "crow", "open", "demo", env=env)
+    assert r.returncode == 0, r.stderr
+    (call,) = launches()
+    assert (call["argv"][0], call["account"], call["session"]) == ("main", None, "main")
+
+
+def test_handoff_in_an_older_session_picks_the_account_once(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare")])
+    r = run(hub, "crow", "handoff", "demo", "--task", "t", "--end-state", "e", env={**env, "CDX_SESSION_NAME": "main"})
+    assert r.returncode == 0, r.stderr
+    assert r.stderr.count("crow: using") <= 1
+    assert launches()[0]["argv"][0] == "main"
+
+
+def test_a_planning_project_opens_in_its_planning_repo(hub, fake, tmp_path):
+    env, set_state, launches = fake
+    home, _ = hub
+    plan = tmp_path / "plan"
+    plan.mkdir()
+    reg = yaml.safe_load((home / "local/projects.yaml").read_text())
+    reg["projects"] += [{"name": "shell", "aliases": ["sh"], "planning": "dots", "scope": "personal",
+                         "path": str(tmp_path / "shell"), "forge": "none"},
+                        {"name": "dots", "scope": "personal", "path": str(plan), "forge": "none"}]
+    (home / "local/projects.yaml").write_text(yaml.safe_dump(reg))
+    set_state([row("main"), row("spare")])
+    r = run(hub, "crow", "open", "sh", env=env)
+    assert r.returncode == 0, r.stderr
+    assert "shell is worked from dots" in r.stderr
+    argv = launches()[0]["argv"]
+    assert argv[argv.index("--dir") + 1] == str(plan)
 
 
 def test_term_without_kitty_prints_the_command_and_launches_nothing(hub, fake):

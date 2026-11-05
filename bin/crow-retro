@@ -27,7 +27,7 @@ STATE = os.path.join(CROW_HOME, "local", "state", "retros")
 QUEUE = os.path.join(STATE, "queue")
 LOCK = os.path.join(STATE, ".worker.lock")
 LOG = os.path.join(STATE, "worker.log")
-ACCOUNT = os.environ.get("CROW_ACCOUNT") or subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "default"], text=True).strip()
+ACCOUNT = os.environ.get("CROW_ACCOUNT") or os.environ.get("CROW_SESSION_ACCOUNT") or subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "default"], text=True).strip()
 try:
     PROVIDER = subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), "crow-accounts"), "provider", ACCOUNT], text=True, stderr=subprocess.DEVNULL).strip()
 except (OSError, subprocess.CalledProcessError):

@@ -159,6 +159,9 @@ def print_index(ix):
 
 
 def handoff(p, task, end_state, context, now=None):
+    code = None
+    if p.get("planning"):  # planned and built from another repo (registry `planning:`)
+        code, p = p, project(p["planning"])
     ix = index(p)
     now = now or datetime.now()
     lines = [
@@ -167,6 +170,8 @@ def handoff(p, task, end_state, context, now=None):
         f"Task: {task}",
         f"End state: {end_state}",
     ]
+    if code:
+        lines += ["", f"Project: {code['name']}, code in {code['path']}. It is planned and built from this repo."]
     if context:
         lines += ["", f"Context from the hub: {context}"]
     docs = [Path(f).relative_to(ix["path"]).as_posix() for f in ix["instructions"]]

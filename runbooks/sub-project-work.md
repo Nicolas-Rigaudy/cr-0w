@@ -20,6 +20,8 @@ crow handoff <project> --task "<what>" --end-state "<what the owner's OK unlocks
 - Account: open, term and handoff pick a free allowed account with quota left (`crow-accounts pick`) and print
   `crow: using '<name>'` when it is not the default. A refusal lists why each account was skipped; for an
   ask-first account, ask the owner, then rerun with `CROW_ACCOUNT=<name>`. `--on-busy fail` never prompts.
+- `CROW_ACCOUNT=<name>` always wins inside a session crow started, its own account included: the session sees
+  its account as CROW_SESSION_ACCOUNT. A registry project with `planning: <other>` opens in that repo (open, term, handoff).
 
 ## Stay
 ```

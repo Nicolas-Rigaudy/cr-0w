@@ -79,8 +79,8 @@ def account_status(current):
 
 
 def current_account():
-    return (os.environ.get("CDX_SESSION_NAME") or os.environ.get("CROW_ACCOUNT")
-            or helper("crow-accounts", "default").strip())
+    return (os.environ.get("CDX_SESSION_NAME") or os.environ.get("CROW_SESSION_ACCOUNT")
+            or os.environ.get("CROW_ACCOUNT") or helper("crow-accounts", "default").strip())
 
 
 def status(argv):

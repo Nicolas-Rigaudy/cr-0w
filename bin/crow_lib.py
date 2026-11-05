@@ -273,7 +273,7 @@ def account_state(current=None, cached=False):
     bin_dir = os.path.dirname(os.path.realpath(__file__))
     accts = json.loads(subprocess.run([os.path.join(bin_dir, "crow-accounts"), "json"], capture_output=True,
                                       text=True, timeout=30).stdout)
-    current = current or os.environ.get("CDX_SESSION_NAME") or os.environ.get("CROW_ACCOUNT") or accts.get("default")
+    current = current or os.environ.get("CDX_SESSION_NAME") or os.environ.get("CROW_SESSION_ACCOUNT") or os.environ.get("CROW_ACCOUNT") or accts.get("default")
     try:
         out = subprocess.run(["cdx", "status", *(["--cached"] if cached else []), "--json"],
                              capture_output=True, text=True, timeout=30).stdout

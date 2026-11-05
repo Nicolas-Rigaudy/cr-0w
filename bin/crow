@@ -42,37 +42,45 @@
 set -euo pipefail
 
 CROW_HOME="${CROW_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
-# Inside a cdx session CROW_ACCOUNT is inherited and names that busy session's own account: not a choice.
+# launch() gives a session its account as CROW_SESSION_ACCOUNT, so a CROW_ACCOUNT seen here is a choice.
+# Sessions started before that inherit CROW_ACCOUNT: there it is dropped when it names the session's own
+# account, unless crow itself passed it down (CROW_ACCOUNT_PICKED).
 CROW_ACCOUNT_GIVEN="${CROW_ACCOUNT:-}"
-[[ -n "${CDX_SESSION_NAME:-}" && "$CROW_ACCOUNT_GIVEN" == "$CDX_SESSION_NAME" ]] && CROW_ACCOUNT_GIVEN=""
+[[ -z "${CROW_SESSION_ACCOUNT:-}" && -z "${CROW_ACCOUNT_PICKED:-}" && -n "${CDX_SESSION_NAME:-}" \
+   && "$CROW_ACCOUNT_GIVEN" == "$CDX_SESSION_NAME" ]] && CROW_ACCOUNT_GIVEN=""
 CROW_ACCOUNT="${CROW_ACCOUNT:-$("$CROW_HOME/bin/crow-accounts" default)}"
 REGISTRY="$CROW_HOME/local/projects.yaml"
 export CROW_HOME
 
+# project_path <name|alias>: the folder sessions open in; a `planning:` project opens in its planning repo.
 project_path() {
   python3 - "$REGISTRY" "$1" <<'EOF'
 import sys, yaml
-reg = yaml.safe_load(open(sys.argv[1]))
-for p in reg["projects"]:
-    if p["name"] == sys.argv[2]:
-        print(p["path"]); break
-else:
-    sys.exit(f"crow: unknown project '{sys.argv[2]}' (see: crow ls)")
+reg = yaml.safe_load(open(sys.argv[1]))["projects"]
+find = lambda n: next((p for p in reg if p["name"] == n or n in p.get("aliases", [])), None)
+p = find(sys.argv[2]) or sys.exit(f"crow: unknown project '{sys.argv[2]}' (see: crow ls)")
+if p.get("planning"):
+    home = find(p["planning"]) or sys.exit(f"crow: {p['name']}: unknown planning project '{p['planning']}'")
+    print(f"crow: {p['name']} is worked from {home['name']} (registry planning:)", file=sys.stderr)
+    p = home
+print(p["path"])
 EOF
 }
 
 # Start an interactive cdx session. On a shared account the memory is linked from local/memory
 # for the session only (no copy stays in the profile), then unlinked and committed.
+# The session sees its account as CROW_SESSION_ACCOUNT, never as CROW_ACCOUNT.
 launch() {
   local dir="$1"; shift
+  local run=(env -u CROW_ACCOUNT -u CROW_ACCOUNT_PICKED CROW_SESSION_ACCOUNT="$CROW_ACCOUNT" cdx)
   "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
   [[ "$dir" == "$CROW_HOME" ]] && "$CROW_HOME/bin/crow-accounts" hub-session "$CROW_ACCOUNT"
   if [[ "$("$CROW_HOME/bin/crow-accounts" memory "$CROW_ACCOUNT")" == session ]]; then
     "$CROW_HOME/bin/crow-memory" link "$CROW_ACCOUNT"
     trap '"$CROW_HOME/bin/crow-memory" unlink "$CROW_ACCOUNT"; "$CROW_HOME/bin/crow-memory" commit' EXIT
-    cdx "$CROW_ACCOUNT" --dir "$dir" "$@"
+    "${run[@]}" "$CROW_ACCOUNT" --dir "$dir" "$@"
   else
-    exec cdx "$CROW_ACCOUNT" --dir "$dir" "$@"
+    exec "${run[@]}" "$CROW_ACCOUNT" --dir "$dir" "$@"
   fi
 }
 
@@ -165,7 +173,7 @@ case "$cmd" in
             pick_account
             task="$("$CROW_HOME/bin/crow-project" handoff --for-cdx "$@")"
             end=""; prev=""; for a in "$@"; do [[ "$prev" == --end-state ]] && end="$a"; [[ "$a" == --end-state=* ]] && end="${a#--end-state=}"; prev="$a"; done
-            CROW_ACCOUNT="$CROW_ACCOUNT" exec "$CROW_HOME/bin/crow" term "$1" --task "$task" --end-state "$end" ;;
+            CROW_ACCOUNT="$CROW_ACCOUNT" CROW_ACCOUNT_PICKED=1 exec "$CROW_HOME/bin/crow" term "$1" --task "$task" --end-state "$end" ;;
   ls)       python3 -c "
 import yaml
 for p in yaml.safe_load(open('$REGISTRY'))['projects']:

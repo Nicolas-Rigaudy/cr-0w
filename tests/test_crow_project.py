@@ -37,6 +37,8 @@ def repos(hub, tmp_path):
          "reviewers": ["rev1"], "aliases": ["be"]},
         {"name": "side", "scope": "personal", "path": str(side), "forge": "github"},
         {"name": "notes", "scope": "personal", "path": str(tmp_path / "notes"), "forge": "none"},
+        {"name": "shell", "scope": "personal", "path": str(tmp_path / "shell"), "forge": "github",
+         "planning": "side"},
         {"name": "old", "scope": "personal", "path": str(tmp_path / "old"), "forge": "github", "status": "dormant"},
     ]}))
     return home, work, side
@@ -149,3 +151,12 @@ def test_guard_can_be_turned_off(hub, repos):
     home, work, _ = repos
     r = run(hub, "crow-hub-guard", input=json.dumps(bash(home, f"git -C {work} push")), env={"CROW_HUB_GUARD": "off"})
     assert r.returncode == 0 and r.stdout == ""
+
+
+def test_handoff_for_a_planning_project_goes_to_its_planning_repo(hub, repos):
+    home, _, side = repos
+    r = run(hub, "crow-project", "handoff", "shell", "--task", "t", "--end-state", "e")
+    assert r.returncode == 0, r.stderr
+    assert "Project: shell, code in " in r.stdout and "planned and built from this repo" in r.stdout
+    assert "follow AGENTS.md." in r.stdout
+    assert list((home / "local/state/handoffs").glob("*-side.md"))
