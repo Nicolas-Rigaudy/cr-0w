@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 75%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -21,7 +21,7 @@
 - Orchestrate the scaffolded request chain and keep sibling implementation slices linked.
 
 # Plan
-- [ ] 1. 1.1: move memory into local/, wire profile access without copies, verify on the main and the shared account (ask first).
+- [x] 1. 1.1: move memory into local/, wire profile access without copies, verify on the main and the shared account (ask first).
 - [x] 2. 1.2: accounts file, helper and registry scanner with tests.
 - [x] 3. 1.3: guarded relaunch command and block detection; verify with a dry run against cdx.
 - [ ] 4. 1.4: crow watch view and no-model mode; render and show the owner before finishing.

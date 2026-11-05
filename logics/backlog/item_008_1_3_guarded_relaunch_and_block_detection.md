@@ -1,10 +1,10 @@
 ## item_008_1_3_guarded_relaunch_and_block_detection - 1.3 guarded relaunch and block detection
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 75%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub orchestration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -27,6 +27,9 @@
 # Acceptance criteria
 - AC1: the command refuses to run without a conversation id or with a never account.
 - AC2: an ask-first account needs an explicit yes every time.
+
+# Validation
+- 2026-11-05: AC1 and AC2 proven in task_002 (2026-10-20): bin/crow-relaunch refuses no id, bad ids, never or unknown targets; ask-first needs a typed yes on a terminal, --yes and piped input refused. `crow relaunch status` recommends an unblocked account. Full suite re-run: 273 tests pass.
 
 # AC Traceability
 - request-AC3 -> This backlog slice. Proof: AC1: the command refuses to run without a conversation id or with a never account.
