@@ -5,7 +5,7 @@ context: fork
 model: sonnet
 effort: medium
 background: false
-allowed-tools: Bash(bin/crow-activity:*)
+allowed-tools: Bash(bin/crow-gather:*)
 ---
 
 # Weekly (example)
@@ -15,13 +15,15 @@ Copy this folder to `local/hub-skills/weekly/` and adapt it, then link it:
 
 Runs in its own context. Write the rollup file, then return a short summary and the outline.
 
-## Gather
-1. Week = Monday to today (ISO week `YYYY-Www`).
-2. `bin/crow-activity --since <monday> --scope all --limit 50`
-3. All `<state>/activity/*.md` files for this week, and `decisions.md` entries from this week.
-4. Optional: your tracker through its MCP server.
+## Pre-gathered
+One JSON from `bin/crow-gather weekly`: `monday`, `iso_week`, `activity` (all scopes), `notes`,
+`activity_logs`, `decisions`, `carry_over` (open threads) and `targets`. Don't read the files again.
+!`"${CLAUDE_PROJECT_DIR}/bin/crow-gather" weekly --json 2>&1 || true`
 
-## Rollup to `<state>/weekly/YYYY-Www.md`
+## Gather
+Optional: your tracker through its MCP server, from `monday`.
+
+## Rollup to `targets.rollup`
 ```
 # Week YYYY-Www
 ## Shipped

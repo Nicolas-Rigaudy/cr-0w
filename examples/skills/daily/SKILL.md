@@ -5,7 +5,7 @@ context: fork
 model: sonnet
 effort: low
 background: false
-allowed-tools: Bash(bin/crow-activity:*)
+allowed-tools: Bash(bin/crow-gather:*)
 ---
 
 # Daily (example)
@@ -15,11 +15,13 @@ Copy this folder to `local/hub-skills/daily/` and adapt it to your team's format
 
 Runs in its own context and only drafts. Return the draft, never post it.
 
+## Pre-gathered
+One JSON from `bin/crow-gather daily`: `since` (day after `<state>/last-daily`), `activity` (work scope),
+`notes`, `activity_logs`, `open_threads_work`, `tracker` ids and `targets`. Don't read the files again.
+!`"${CLAUDE_PROJECT_DIR}/bin/crow-gather" daily --json 2>&1 || true`
+
 ## Gather
-1. Since = date in `<state>/last-daily` if present, otherwise the previous working day.
-2. `bin/crow-activity --since <since> --scope work`
-3. Open items in `<state>/open-threads.md`.
-4. Optional: your tracker (Jira, Linear, GitHub issues) through its MCP server.
+Optional: your tracker (Jira, Linear, GitHub issues) through its MCP server, from `since`.
 
 ## Draft
 A short flat list. One line per topic, a few words each. No ticket keys, no commit hashes.
@@ -37,4 +39,4 @@ broken CI, something stuck for 2+ days. Leave the section out when there are non
 
 ## Post
 Show the draft and wait for an explicit OK or edits. Posting (chat, wiki, tracker) is your routine's last step:
-put the target and the exact steps here. Then write today's date to `<state>/last-daily`.
+put the target and the exact steps here. Then write today's date to `targets.last_daily`.

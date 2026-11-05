@@ -105,6 +105,7 @@ which is ignored by this repo and meant to be its own private repo.
 |---|---|
 | `bin/crow` | launcher, grouped as Start, See, Delegate, Rituals, Data (`crow --help`): hub session, one-shot briefs, project sessions, runs, `crow deck` |
 | `bin/crow-runs`, `bin/crow-usage`, `bin/crow-activity` | background runs, usage and cost across accounts, git/MR activity |
+| `bin/crow-gather` | one JSON per routine (brief, daily, weekly) so the skills skip file reads |
 | `bin/crow-accounts`, `bin/crow-memory` | account policy, and memory stored once in `local/memory` and linked into allowed profiles |
 | `bin/crow-sessions`, `bin/crow-relaunch` | registry of sessions cut off by a usage limit, and the guarded relaunch |
 | `bin/crow_term.py` | terminal backends (kitty, tmux, print) behind `crow term`, `crow focus` and relaunch |
