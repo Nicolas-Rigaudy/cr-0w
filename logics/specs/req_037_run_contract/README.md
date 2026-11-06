@@ -80,13 +80,15 @@ One version counter per mission. Plan, report and mockup share it. `answers.vN.m
 
 ## Validation record
 
-- `ok` (and `go` or `approve` where they publish) writes one `validation` event. Schema: `validation-event.schema.json`.
-- The event holds the file, the version, the verb, the surface and `publish_sha256`.
-- `publish_sha256` is the SHA-256 of the canonical JSON of the block's `publish` list: keys sorted, separators `,` and `:`, UTF-8, no ASCII escaping.
-- Before each publish action core recomputes the hash from the file on disk. A mismatch refuses the publish and parks the mission.
+Same record as req_030 Need 5 and item_099: `{mission, version, action, target, payload_sha256, owner_event, ts}`, chained by hash. Schema: `validation-event.schema.json`.
+
+- `ok` (and `go` or `approve` where they publish) writes one `validation` event per entry of the block's `publish` list.
+- `payload_sha256` is the SHA-256 of the canonical JSON of that entry: keys sorted, separators `,` and `:`, UTF-8, no ASCII escaping.
+- `owner_event` is the ts of the owner's answer event. `prev_sha256` is the SHA-256 of the previous validation line of the mission as stored, 64 zeros for the first. A replayed or edited record breaks the chain.
+- Before each action core recomputes the hash from the file on disk. A mismatch refuses that action and parks the mission.
 - Any owner message after the validation writes `validation_dropped`. core publishes nothing until a new `ok`.
 - Only the owner validates. A chat surface, the butler or a run never writes a validation.
-- Each publish writes a `publish` event that names the validation it used.
+- Each publish writes a `publish` event that names the validation it used. The example mission has two (push, then MR).
 
 ## Outbox
 

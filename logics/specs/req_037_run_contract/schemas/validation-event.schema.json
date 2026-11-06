@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "crow/validation-event.schema.json",
   "title": "validation event",
-  "description": "Event-log line written when the owner answers ok (or go on a plan-gate kind whose go publishes). core checks the latest one before every publish.",
+  "description": "Event-log line written for each publish action the owner validates with ok (or go or approve where they publish). Same record as req_030 Need 5: {mission, version, action, target, payload_sha256, owner_event, ts}, chained by hash. core checks it before that action.",
   "type": "object",
   "additionalProperties": false,
   "required": ["ts", "mission", "type", "actor", "data"],
@@ -10,18 +10,22 @@
     "ts": {"type": "string", "format": "date-time"},
     "mission": {"type": "string"},
     "type": {"enum": ["validation", "validation_dropped"]},
-    "actor": {"enum": ["owner"], "description": "Only the owner validates; never a chat tool, the butler or a run."},
+    "actor": {"enum": ["owner"], "description": "Only the owner validates; never a chat surface, the butler or a run."},
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["file", "version", "verb", "publish_sha256", "surface"],
+      "required": ["file", "version", "verb", "action", "target", "payload_sha256", "owner_event", "prev_sha256", "surface"],
       "properties": {
         "file": {"type": "string", "pattern": "^(plan|report|mockup)\\.v[0-9]+\\.md$"},
         "version": {"type": "integer", "minimum": 1},
         "verb": {"enum": ["ok", "go", "approve"]},
-        "publish_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Hash of the canonical JSON of the block's publish list; publish is refused when it no longer matches."},
+        "action": {"enum": ["commit-docs", "push", "merge", "mr", "post-comments", "reply-resolve", "page", "mail-draft", "vault-note", "next-mission"]},
+        "target": {"type": "string"},
+        "payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the canonical JSON of this action's entry in the block's publish list."},
+        "owner_event": {"type": "string", "description": "ts of the owner's answer event that carried the verb."},
+        "prev_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the previous validation line of the mission as stored, 64 zeros for the first. Breaks on a replayed or edited record."},
         "surface": {"enum": ["nest", "deck", "cli"]},
-        "dropped_by": {"type": "string", "description": "Event id of the message that dropped it (validation_dropped only)."}
+        "dropped_by": {"type": "string", "description": "ts of the owner message that dropped it (validation_dropped only)."}
       }
     }
   }
