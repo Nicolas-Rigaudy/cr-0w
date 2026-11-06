@@ -62,6 +62,20 @@ type finishedRun struct {
 	DurationS int      `json:"duration_s"`
 	EndedAt   string   `json:"ended_at"`
 	Commits   []string `json:"commits"`
+	CostUSD   *float64 `json:"cost_usd"`   // nil: cdx has no figure, show nothing
+	BudgetUSD *float64 `json:"budget_usd"` // the run's --budget cap
+}
+
+// runCost renders "$0.71" or "$0.71 of $25"; empty when the run has no cost.
+func runCost(cost, budget *float64) string {
+	if cost == nil {
+		return ""
+	}
+	s := fmt.Sprintf("$%.2f", *cost)
+	if budget != nil && *budget > 0 {
+		s += fmt.Sprintf(" of $%g", *budget)
+	}
+	return s
 }
 
 type runsSnap struct {
@@ -591,10 +605,16 @@ func agentRows(now time.Time, runs *runsSnap, intr []intrSession, reg *registry)
 		if n := len(f.Commits); n > 0 {
 			doing += fmt.Sprintf(", %d %s", n, plural(n, "commit", "commits"))
 		}
+		meta := f.Status + " · " + shortAge(time.Duration(f.DurationS)*time.Second)
+		tail := []tailLine{{At: clock(t), Text: doing}}
+		if c := runCost(f.CostUSD, f.BudgetUSD); c != "" {
+			meta += " · " + c
+			tail = append(tail, tailLine{Text: "cost " + c})
+		}
 		rows = append(rows, agentRow{
 			Group: gDone, State: "done", Name: name, Short: name + " " + cmpOr(f.Label, short4(f.RunID)), Account: "",
-			Doing: doing, Since: clock(t), Session: f.RunID, Meta: f.Status + " · " + shortAge(time.Duration(f.DurationS)*time.Second),
-			Tail: []tailLine{{At: clock(t), Text: doing}},
+			Doing: doing, Since: clock(t), Session: f.RunID, Meta: meta,
+			Tail: tail,
 		})
 	}
 	sort.SliceStable(rows, func(i, j int) bool { return rows[i].Group < rows[j].Group })

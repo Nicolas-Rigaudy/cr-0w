@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -35,7 +36,7 @@ func testRuns() *runsSnap {
 		{Kind: "run", PID: 14, Account: "spare", Project: "atlas", RunID: "abcd1234", Label: "lint", State: "working", StartedAt: iso(14, 1)},
 	}
 	r.Finished = []finishedRun{
-		{RunID: "ffff0001", Project: "atlas", Label: "tests", Status: "ok", DurationS: 600, EndedAt: iso(11, 5), Commits: []string{"a", "b"}},
+		{RunID: "ffff0001", Project: "atlas", Label: "tests", Status: "ok", DurationS: 600, EndedAt: iso(11, 5), Commits: []string{"a", "b"}, CostUSD: fp(0.7084), BudgetUSD: fp(25)},
 		{RunID: "ffff0002", Project: "atlas", Label: "old", Status: "ok", EndedAt: time.Date(2026, 10, 28, 11, 0, 0, 0, time.Local).UTC().Format(time.RFC3339)},
 	}
 	return r
@@ -599,5 +600,35 @@ func selectLane(m *model, ok func(laneRow) bool) {
 			m.selectAgent(i)
 			return
 		}
+	}
+}
+
+func fp(v float64) *float64 { return &v }
+
+func TestFinishedRunCost(t *testing.T) {
+	if got := runCost(fp(0.7084), fp(25)); got != "$0.71 of $25" {
+		t.Errorf("with budget: %q", got)
+	}
+	if got := runCost(fp(1.5), nil); got != "$1.50" {
+		t.Errorf("no budget: %q", got)
+	}
+	if got := runCost(nil, fp(25)); got != "" {
+		t.Errorf("no cost must show nothing: %q", got)
+	}
+	var f finishedRun
+	if err := json.Unmarshal([]byte(`{"run_id":"x","cost_usd":null}`), &f); err != nil || f.CostUSD != nil {
+		t.Errorf("null cost parsed as %v (%v)", f.CostUSD, err)
+	}
+	if err := json.Unmarshal([]byte(`{"run_id":"x","cost_usd":0.4}`), &f); err != nil || f.CostUSD == nil || *f.CostUSD != 0.4 {
+		t.Errorf("cost parsed as %v (%v)", f.CostUSD, err)
+	}
+	var done agentRow
+	for _, r := range agentRows(testNow(), testRuns(), nil, testReg()) {
+		if r.Group == gDone && strings.Contains(r.Short, "tests") {
+			done = r
+		}
+	}
+	if !strings.HasSuffix(done.Meta, "$0.71 of $25") {
+		t.Errorf("meta %q lacks cost", done.Meta)
 	}
 }
