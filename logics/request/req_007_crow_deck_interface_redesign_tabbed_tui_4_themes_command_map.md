@@ -1,7 +1,7 @@
 ## req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map - crow deck: interface redesign (tabbed TUI, 4 themes, command map)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High
