@@ -1,10 +1,10 @@
 ## item_075_runs_cost_per_run - crow runs shows cost per run
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -52,7 +52,11 @@
 # Notes
 - Check the exact field name and where cdx writes it (runs --json vs run-report) before building.
 
+# Delivery
+- Done 2026-11-06. cdx `runs --json` carries a top-level `cost_usd` (null when unknown); `crow runs` shows `$0.71 of $25` per finished run (budget from the ledger, stored at dispatch) and a `background runs cost $N` footer; unknown cost shows nothing, never 0.
+- Deck Agents page: finished run Meta and detail tail show the same figure (`tools/crow-deck/data.go`).
+- Proof: tests/test_crow_runs_logics_cost.py and TestFinishedRunCost; pytest 303 passed, Go 141 passed.
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
