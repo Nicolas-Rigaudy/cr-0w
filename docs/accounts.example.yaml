@@ -1,10 +1,16 @@
 # cdx accounts crow may use. policy: use | ask-first | never.
 # memory: permanent = the profile's memory dirs stay symlinked into local/memory;
 #         session   = linked when a crow session starts, unlinked when it ends (shared accounts).
+# scopes: rank per scope (registry scope work | personal, or hub), 1 = first choice. Once any account has a `scopes` map,
+#         an account without a rank for a scope is never auto-picked for it (CROW_ACCOUNT still overrides).
+#         The order is: usable now, then rank, then cdx priority (`cdx set <name> --priority N`), then room.
+#         Without any `scopes` key the pick follows the cdx order (usability, priority, room).
+# scope_min_room: per scope, skip the account when its smaller window has less than N% left.
 # tier: mine (default) = full rows on the deck Pulse; team = one compact line (teammates' accounts).
 default: main
 accounts:
-  - {name: main, policy: use,       memory: permanent}
-  - {name: shared,   policy: ask-first, memory: session}
+  - {name: main, policy: use,       memory: permanent, scopes: {work: 1, hub: 1, personal: 2}, scope_min_room: {personal: 40}}
+  - {name: home, policy: use,       memory: permanent, scopes: {personal: 1, hub: 1, work: 2}}
+  - {name: shared,   policy: ask-first, memory: session, scopes: {work: 3}}
   - {name: teammate-a, policy: never, tier: team}
   - {name: teammate-b, policy: never, tier: team}

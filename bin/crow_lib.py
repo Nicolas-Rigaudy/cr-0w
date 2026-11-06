@@ -250,19 +250,33 @@ def cap_block(acct, row, now):
     return None
 
 
-def pick_accounts(accts, rows, current, now):
+def pick_accounts(accts, rows, current, now, scope=None):
     """Every allowed account with its state and the targets crow may pick.
+
+    scope (registry scope or `hub`): when any account carries a `scopes` map, an account without a rank
+    for it, or under its `scope_min_room` for it, gets a `scope_skip` reason and is never picked.
 
     accts: crow-accounts json entries; rows: cdx status rows by name. Returns
     {current, current_blocked, accounts[], auto_target, recommended}: auto_target needs no OK
     (policy use, or `fallback: auto` once every use account is blocked or past AUTO_FALLBACK_PCT);
     recommended is the best unblocked account, ask-first included."""
     out = []
+    scoped = bool(scope) and any(a.get("scopes") for a in accts)
     for a in accts:
         if a["policy"] == "never":
             continue
         row = rows.get(a["name"])
+        rank, skip = 0, None
+        if scoped:
+            rank = (a.get("scopes") or {}).get(scope)
+            left = min((row or {}).get("remaining_5h_pct") or 0, (row or {}).get("remaining_week_pct") or 0)
+            floor = (a.get("scope_min_room") or {}).get(scope)
+            if rank is None:
+                skip = f"no rank for scope {scope}"
+            elif floor is not None and left < floor:
+                skip = f"{left}% left, under the {floor}% minimum for scope {scope}"
         out.append({"name": a["name"], "policy": a["policy"], "fallback": a.get("fallback"),
+                    "priority": a.get("priority") or 0, "rank": rank, "scope_skip": skip,
                     "current": a["name"] == current,
                     "blocked": hard_block(row) or cap_block(a, row, now),
                     "used_5h_pct": used_pct(row, "remaining_5h_pct"), "used_week_pct": used_pct(row, "remaining_week_pct"),
@@ -274,8 +288,8 @@ def pick_accounts(accts, rows, current, now):
     uses_spent = all(a["blocked"] or (a["used_5h_pct"] or 0) >= AUTO_FALLBACK_PCT for a in uses)
     for a in out:
         a["auto_ok"] = a["policy"] == "use" or (a["fallback"] == "auto" and a["policy"] == "ask-first" and uses_spent)
-    usable = [a for a in out if not a["blocked"] and not a["current"]]
-    usable.sort(key=lambda a: (a["policy"] != "use", not a["auto_ok"],
+    usable = [a for a in out if not a["blocked"] and not a["current"] and not a["scope_skip"]]
+    usable.sort(key=lambda a: (a["policy"] != "use", a["rank"], not a["auto_ok"], -a["priority"],
                                -min(a["remaining_5h_pct"] or 0, a["remaining_week_pct"] or 0)))
     cur = next((a for a in out if a["current"]), None)
     nearly_out = bool(cur and (cur["used_5h_pct"] or 0) >= NEARLY_OUT_PCT)
@@ -285,7 +299,7 @@ def pick_accounts(accts, rows, current, now):
             "recommended": usable[0]["name"] if usable else None}
 
 
-def account_state(current=None, cached=False):
+def account_state(current=None, cached=False, scope=None):
     """pick_accounts on live data: crow-accounts json and `cdx status` (--cached for hooks)."""
     from datetime import datetime
     bin_dir = os.path.dirname(os.path.realpath(__file__))
@@ -298,7 +312,7 @@ def account_state(current=None, cached=False):
         rows = {r["session_name"]: r for r in json.loads(out).get("rows") or [] if r.get("session_name")}
     except (OSError, ValueError, subprocess.TimeoutExpired):
         rows = {}
-    return pick_accounts(accts["accounts"], rows, current, datetime.now().astimezone())
+    return pick_accounts(accts["accounts"], rows, current, datetime.now().astimezone(), scope)
 
 
 def room(a):
@@ -306,26 +320,43 @@ def room(a):
     return min(a["remaining_5h_pct"] or 0, a["remaining_week_pct"] or 0)
 
 
+PICK_FACTORS = ("policy", "scope rank", "live session", "policy", "priority", "room", "name")
+
+
 def launch_pick(state, busy, default):
     """Account for an interactive launch (crow open, term, handoff).
 
     state: pick_accounts output with no current account; busy: names with a live cdx session.
-    Returns {account, ask, busy, skipped}: account is None when none has room; ask is True when it
-    is an ask-first account the owner must OK; busy is True when it already runs a session.
-    A live session is not a block (cdx runs several per account), only a lower rank: free accounts
-    come first to spread load, then busy policy-use accounts, then ask-first ones. The default stays
-    the pick while it is free, policy use and under NEARLY_OUT_PCT."""
+    Returns {account, ask, busy, skipped, factor}: account is None when none has room; ask is True when
+    it is an ask-first account the owner must OK; busy is True when it already runs a session; factor
+    names what decided the pick. Order (same as `cdx select` without a scope): policy use first, scope
+    rank (state built with a scope), free before live-session accounts to spread load, ask-first last,
+    cdx priority, room. A live session is not a block (cdx runs several per account), only a lower rank.
+    The default stays the pick while it is free, policy use, under NEARLY_OUT_PCT and not outranked by
+    scope rank or cdx priority."""
     skipped, ok = [], []
     for a in state["accounts"]:
-        why = a["blocked"]
+        why = a["blocked"] or a.get("scope_skip")
         if not why and a["policy"] == "use" and (a["used_5h_pct"] or 0) >= NEARLY_OUT_PCT:
             why = f"5h {a['used_5h_pct']}% used"
         (skipped.append({"name": a["name"], "why": why}) if why else ok.append(a))
-    ok.sort(key=lambda a: (a["policy"] != "use", a["name"] in busy, not a["auto_ok"], -room(a), a["name"]))
-    dflt = next((a for a in ok if a["name"] == default and a["policy"] == "use" and a["name"] not in busy), None)
+
+    def parts(a):
+        return (a["policy"] != "use", a.get("rank") or 0, a["name"] in busy, not a["auto_ok"],
+                -(a.get("priority") or 0), -room(a), a["name"])
+    ok.sort(key=parts)
+    dflt = next((a for a in ok if a["name"] == default and a["policy"] == "use" and a["name"] not in busy
+                 and parts(a)[:2] == parts(ok[0])[:2] and parts(a)[4] == parts(ok[0])[4]), None)
     top = dflt or (ok[0] if ok else None)
+    factor = None
+    if dflt:
+        factor = "default"
+    elif top:
+        nxt = ok[1] if len(ok) > 1 else None
+        factor = "only candidate" if not nxt else next(
+            (PICK_FACTORS[i] for i, (x, y) in enumerate(zip(parts(top), parts(nxt))) if x != y), "name")
     return {"account": top and top["name"], "ask": bool(top and not top["auto_ok"]),
-            "busy": bool(top and top["name"] in busy), "room": top and room(top),
+            "busy": bool(top and top["name"] in busy), "room": top and room(top), "factor": factor,
             "skipped": skipped + [{"name": n, "why": "live session"} for n in sorted(busy)
                                   if top and n != top["name"] and any(a["name"] == n for a in ok)]}
 

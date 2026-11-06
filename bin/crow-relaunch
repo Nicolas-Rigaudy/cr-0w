@@ -76,8 +76,31 @@ def blocked_reason(row):
     return crow_lib.hard_block(row)
 
 
-def account_status(current):
-    return crow_lib.pick_accounts(list(accounts().values()), limits(), current, datetime.now().astimezone())
+def account_status(current, scope=None):
+    return crow_lib.pick_accounts(list(accounts().values()), limits(), current, datetime.now().astimezone(), scope)
+
+
+def scope_of(items):
+    """Registry scope shared by the sessions' folders (a worktree counts for its repo); None when mixed or unknown."""
+    try:
+        import yaml
+        reg = yaml.safe_load(open(os.path.join(HOME, "local", "projects.yaml")))["projects"]
+    except (OSError, ValueError, KeyError, ImportError):
+        return None
+    scopes = set()
+    for o in items:
+        cwd = (o.get("cwd") or "").rstrip("/")
+        if cwd == HOME.rstrip("/"):
+            scopes.add("hub")
+            continue
+        best = None
+        for p in reg:
+            base = (p.get("path") or "").rstrip("/")
+            if base and ((cwd + "/").startswith(base + "/") or (cwd + "/").startswith(base + ".wt/")) \
+                    and (not best or len(base) > len(best["path"].rstrip("/"))):
+                best = p
+        scopes.add(best.get("scope") if best else None)
+    return scopes.pop() if len(scopes) == 1 else None
 
 
 def current_account():
@@ -356,7 +379,9 @@ def rescue(argv):
         die("usage: crow-relaunch rescue <account> [--to <target>] [--dry-run]")
     source = args[0]
     accts = accounts()
-    st = account_status(source)
+    items = stranded(source, datetime.now().astimezone())
+    scope = scope_of(items)
+    st = account_status(source, scope) if scope else account_status(source)  # ranks in accounts.yaml route the pick by the sessions' scope
     target = to or st["auto_target"] or st["recommended"]
     if not target:
         die("no allowed account is usable")
@@ -366,7 +391,6 @@ def rescue(argv):
     tstate = next((a for a in st["accounts"] if a["name"] == target), {})
     if tstate.get("blocked"):
         die(f"target '{target}' is blocked: {tstate['blocked']}")
-    items = stranded(source, datetime.now().astimezone())
     if not items:
         print(f"nothing to rescue on {source} in the last {WINDOW_H}h")
         return 0

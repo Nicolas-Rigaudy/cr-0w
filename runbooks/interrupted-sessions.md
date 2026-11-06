@@ -17,6 +17,9 @@ message. They can continue on another allowed account through a cdx handoff.
   `fallback: auto` in `local/accounts.yaml` once every `use` account is out. That one needs no OK while under its caps
   (`max_5h_pct`, `max_week_pct`; past the 5h cap it stays usable when its window resets within `free_5h_min`).
   Any other `ask-first` target needs a typed `yes`.
+- With `scopes` in `local/accounts.yaml` (docs/accounts.example.yaml) the target also follows the sessions' scope: when
+  all stranded sessions sit in projects of one registry scope, accounts with no rank for it are not offered, a rank
+  beats the cdx priority, and `scope_min_room` keeps a low-rank account from being drained. Mixed scopes use the plain order.
 - `cdx rescue` moves only the latest conversation of an account and reads policies from `cdx set --policy`.
   Without cdx policies it treats every account as `use`, so prefer `crow rescue`.
 - `crow runs sessions` and `crow runs relaunch` cover older stops and a single session.

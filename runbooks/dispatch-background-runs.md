@@ -46,6 +46,9 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
   committed or uncommitted and which steps not to redo.
 - **Account choice:** `crow dispatch` uses the default account, or the auto fallback when the default is blocked or
   past 95% of its 5h window. It refuses a plain `ask-first` account: get the owner's OK, then pass `--account <name>`.
+  When `local/accounts.yaml` has `scopes`, dispatch picks by the project's registry scope instead: usable now, then
+  the account's rank for that scope, then cdx priority, then room (same pick as `crow-accounts pick --scope <scope>`,
+  which prints the deciding factor). An ask-first pick is never taken unasked. `--failover` is on every run.
   Two medium runs launched together can exhaust a session window in about 90 seconds. Stagger them if the window was recently used.
 - **Deletions in auto mode**: the permission classifier blocks deleting files with real content, so the run stops and reports.
   If the prompt already expects deletions, name the exact files in it, or plan for the owner to approve them afterwards.

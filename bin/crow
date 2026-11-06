@@ -84,10 +84,23 @@ launch() {
   fi
 }
 
-# pick_account: a free allowed account with quota left, unless CROW_ACCOUNT names one.
+# project_scope <project>: registry scope (work | personal) of a project, empty when unknown.
+project_scope() {
+  python3 - "$REGISTRY" "$1" <<'PYEOF'
+import sys, yaml
+reg = yaml.safe_load(open(sys.argv[1]))["projects"]
+p = next((p for p in reg if p["name"] == sys.argv[2] or sys.argv[2] in p.get("aliases", [])), None)
+if p and p.get("planning"):
+    p = next((q for q in reg if q["name"] == p["planning"]), p)
+print(p.get("scope", "") if p else "")
+PYEOF
+}
+
+# pick_account [scope]: a free allowed account with quota left, unless CROW_ACCOUNT names one.
+# The scope (registry scope of the project, `hub` for the hub) routes by the ranks in accounts.yaml.
 pick_account() {
   [[ -n "$CROW_ACCOUNT_GIVEN" ]] && return 0
-  CROW_ACCOUNT="$("$CROW_HOME/bin/crow-accounts" pick --on-busy "$on_busy")" || exit 1
+  CROW_ACCOUNT="$("$CROW_HOME/bin/crow-accounts" pick --on-busy "$on_busy" ${1:+--scope "$1"})" || exit 1
   CROW_ACCOUNT_GIVEN="$CROW_ACCOUNT"
 }
 
@@ -144,14 +157,16 @@ hint() { echo "crow: '$1' is now '$2' (the old name still works)" >&2; }
 cmd="${1:-hub}"
 shift || true
 case "$cmd" in
-  hub)      launch "$CROW_HOME" ;;
+  hub)      # With ranks in accounts.yaml the hub is routed like any scope; otherwise the default account.
+            if [[ -z "$CROW_ACCOUNT_GIVEN" ]] && "$CROW_HOME/bin/crow-accounts" scoped 2>/dev/null; then pick_account hub; fi
+            launch "$CROW_HOME" ;;
   brief)    oneshot brief ;;
   daily)    oneshot daily "Draft only: write the draft where the skill says and print it. Do not post anything." ;;
   weekly)   oneshot weekly ;;
   open)     launch_opts "$@"; shift "$n"
             [[ ${#model[@]} -gt 0 ]] && export ANTHROPIC_MODEL="${model[1]}"
             dir="$(project_path "${1:?usage: crow open [--model M] <project> [prompt | --task T --end-state E]}")"
-            pick_account
+            pick_account "$(project_scope "$1")"
             if [[ "${2:-}" == --task ]]; then launch "$dir" --on-busy "$on_busy" "${@:2}"
             else launch "$dir" --on-busy "$on_busy" ${2:+--prompt "$2"}; fi ;;
   term)     # A new terminal window (crow_term backend: kitty, tmux, or print the command), detached
@@ -159,7 +174,7 @@ case "$cmd" in
             # The account is picked here, where the caller sees a refusal, and passed down.
             launch_opts "$@"; shift "$n"
             dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt | --task T --end-state E]}")"
-            pick_account
+            pick_account "$(project_scope "$1")"
             line=$(python3 "$CROW_HOME/bin/crow_term.py" open --title "crow · $1 · $CROW_ACCOUNT" --set CROW_ACCOUNT="$CROW_ACCOUNT" \
                    -- "$CROW_HOME/bin/crow" open ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$@")
             if [[ -n "$line" ]]; then
@@ -170,7 +185,7 @@ case "$cmd" in
             fi ;;
   work)     exec "$CROW_HOME/bin/crow-project" work "$@" ;;
   handoff)  # Pick before writing the note: a refusal leaves no orphan note.
-            pick_account
+            pick_account "$(project_scope "$1")"
             task="$("$CROW_HOME/bin/crow-project" handoff --for-cdx "$@")"
             end=""; prev=""; for a in "$@"; do [[ "$prev" == --end-state ]] && end="$a"; [[ "$a" == --end-state=* ]] && end="${a#--end-state=}"; prev="$a"; done
             CROW_ACCOUNT="$CROW_ACCOUNT" CROW_ACCOUNT_PICKED=1 exec "$CROW_HOME/bin/crow" term "$1" --task "$task" --end-state "$end" ;;

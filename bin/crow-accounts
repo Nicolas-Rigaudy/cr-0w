@@ -11,7 +11,8 @@
   crow-accounts hub-session <name> exit 1 when the account's provider cannot run a guarded hub session
   crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
   crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
-  crow-accounts pick [--on-busy ask|fail]   account for crow open/term/handoff: skips accounts with no quota
+  crow-accounts scoped             exit 0 when accounts.yaml ranks accounts per scope
+  crow-accounts pick [--scope S] [--on-busy ask|fail]   account for crow open/term/handoff: skips accounts with no quota
                                    left, ranks accounts with a live session after free ones, keeps the default while it has room,
                                    else the one with the most room; an ask-first pick asks on a terminal
                                    (fail: never ask); exits 1 with the reasons when none fits
@@ -42,21 +43,37 @@ def load():
 POLICIES = ("use", "ask-first", "never")
 
 
-def cdx_policies():
-    """Policy each account carries in cdx (`cdx set <name> --policy`); empty when cdx does not say."""
+def cdx_launch():
+    """Launch settings each account carries in cdx (`cdx set <name> --policy/--priority`), by name."""
     try:
         r = subprocess.run(["cdx", "configs", "--json"], capture_output=True, text=True, timeout=20)
-        return {s["name"]: s["policy"] for s in json.loads(r.stdout).get("sessions", []) if s.get("policy")}
+        return {s["name"]: s.get("launch") or {k: s[k] for k in ("policy", "priority") if k in s}
+                for s in json.loads(r.stdout).get("sessions", [])}
     except (OSError, ValueError, subprocess.TimeoutExpired):
         return {}
 
 
+def cdx_policies():
+    """Policy each account carries in cdx; empty when cdx does not say."""
+    return {n: l["policy"] for n, l in cdx_launch().items() if l.get("policy")}
+
+
+def scope_map(raw, kind):
+    """{scope: int} from a yaml map; entries that are not whole numbers are dropped."""
+    return {str(k): v for k, v in (raw or {}).items() if isinstance(v, int) and not isinstance(v, bool)} \
+        if isinstance(raw, dict) else {}
+
+
 def accounts(cfg):
     out = []
-    cdx = cdx_policies()
+    cdx = cdx_launch()
     for a in cfg.get("accounts") or []:
-        pol = cdx.get(a["name"]) or a.get("policy")
+        launch = cdx.get(a["name"]) or {}
+        pol = launch.get("policy") or a.get("policy")
+        prio = launch.get("priority")
         row = {"name": a["name"], "policy": pol if pol in POLICIES else "never",
+               "priority": prio if isinstance(prio, int) and not isinstance(prio, bool) else 0,
+               "scopes": scope_map(a.get("scopes"), "rank"), "scope_min_room": scope_map(a.get("scope_min_room"), "room"),
                "memory": a.get("memory", "none"), "tier": a.get("tier") if a.get("tier") == "team" else "mine"}
         if a.get("fallback") == "auto":  # shared account crow may pick alone, within its caps
             row.update(fallback="auto", **{k: a[k] for k in ("max_5h_pct", "max_week_pct", "free_5h_min") if k in a})
@@ -88,22 +105,23 @@ def ask(question):
         return False
 
 
-def pick(cfg, on_busy):
+def pick(cfg, on_busy, scope=None):
     from datetime import datetime
     default = cfg.get("default")
-    st = crow_lib.pick_accounts(accounts(cfg), status_rows(), None, datetime.now().astimezone())
+    st = crow_lib.pick_accounts(accounts(cfg), status_rows(), None, datetime.now().astimezone(), scope)
     p = crow_lib.launch_pick(st, crow_lib.live_sessions(), default)
     skipped = "; ".join(f"{s['name']}: {s['why']}" for s in p["skipped"])
     name = p["account"]
     if not name:
-        sys.exit(f"crow: no allowed account is free with quota left ({skipped}). "
+        sys.exit(f"crow: no allowed account is free with quota left{f' for scope {scope}' if scope else ''} ({skipped}). "
                  "Wait for a reset or pick one: CROW_ACCOUNT=<name> crow ...")
     if p["ask"] and not (on_busy == "ask" and ask(f"crow: use ask-first account '{name}' ({p['room']}% left; {skipped})?")):
         sys.exit(f"crow: only ask-first account '{name}' is free ({p['room']}% left; {skipped}). "
                  f"With the owner's OK: CROW_ACCOUNT={name} crow ...")
-    if name != default or p["busy"]:
+    if name != default or p["busy"] or scope:
         also = "; already has a live session" if p["busy"] else ""
-        print(f"crow: using '{name}' ({p['room']}% left{also}; {skipped})", file=sys.stderr)
+        sc = f", scope {scope}" if scope else ""
+        print(f"crow: using '{name}' ({p['room']}% left{also}; decided by {p['factor']}{sc}; {skipped})", file=sys.stderr)
     print(name)
 
 
@@ -140,8 +158,21 @@ def main(argv):
         why = crow_lib.check_model(crow_lib.provider_of(argv[1]), argv[2])
         if why:
             sys.exit(f"crow: {why}")
-    elif cmd == "pick" and argv[1:] in ([], ["--on-busy", "ask"], ["--on-busy", "fail"]):
-        pick(cfg, argv[2] if len(argv) == 3 else "ask")
+    elif cmd == "pick":
+        rest, scope, busy = argv[1:], None, "ask"
+        while rest and rest[0] in ("--on-busy", "--scope") and len(rest) >= 2:
+            if rest[0] == "--scope":
+                scope = rest[1]
+            elif rest[1] in ("ask", "fail"):
+                busy = rest[1]
+            else:
+                break
+            rest = rest[2:]
+        if rest:
+            sys.exit(__doc__)
+        pick(cfg, busy, scope)
+    elif cmd == "scoped":  # exit 0 when any account has a scopes map
+        sys.exit(0 if any(a["scopes"] for a in accounts(cfg)) else 1)
     elif cmd == "json":
         print(json.dumps({"default": cfg.get("default"), "accounts": accounts(cfg)}))
     else:

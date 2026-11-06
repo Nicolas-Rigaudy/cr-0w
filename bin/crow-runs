@@ -620,8 +620,16 @@ def pick_account(a):
     if a.continue_run:
         parent = next((r for r in ledger() if r["run_id"].startswith(a.continue_run)), {})
         return parent.get("account") or ACCOUNT
+    scope = next((p.get("scope") for p in REG["projects"] if p["name"] == getattr(a, "project", None)), None)
     try:
-        st = crow_lib.account_state(ACCOUNT)
+        st = crow_lib.account_state(ACCOUNT, **({"scope": scope} if scope else {}))
+        if scope and any(x.get("scope_skip") is not None or x.get("rank") for x in st["accounts"]):
+            # ranks in accounts.yaml: the scope pick, as for an interactive launch (policy use only, no asking)
+            p = crow_lib.launch_pick(st, set(), ACCOUNT)
+            if p["account"] and not p["ask"]:
+                if p["account"] != ACCOUNT:
+                    print(f"crow: dispatching on {p['account']} (scope {scope}, decided by {p['factor']})", file=sys.stderr)
+                return p["account"]
     except Exception:  # no usable account data: dispatch as before, cdx still refuses a blocked account
         return ACCOUNT
     if not st["current_blocked"]:

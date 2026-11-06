@@ -84,7 +84,13 @@ def accounts(acc):
     if acc is None:
         return check("accounts", "fail", "crow-accounts did not answer")
     allowed = [a["name"] for a in acc["accounts"] if a["policy"] in ("use", "ask-first")]
-    details = [f"{a['name']}: {a['policy']}, memory {a['memory']}" for a in acc["accounts"]]
+    def line(a):
+        prio = f", cdx priority {a['priority']}" if a.get('priority') else ""
+        sc = ", scopes " + " ".join(f"{k}={v}" for k, v in sorted(a.get("scopes", {}).items(), key=lambda kv: kv[1])) \
+            if a.get("scopes") else ""
+        mr = ", min room " + " ".join(f"{k}={v}%" for k, v in a["scope_min_room"].items()) if a.get("scope_min_room") else ""
+        return f"{a['name']}: {a['policy']}, memory {a['memory']}{prio}{sc}{mr}"
+    details = [line(a) for a in acc["accounts"]]
     if not shutil.which("cdx"):
         return check("accounts", "fail", "cdx is not on PATH", details)
     default = next((a for a in acc["accounts"] if a["name"] == acc["default"]), None)

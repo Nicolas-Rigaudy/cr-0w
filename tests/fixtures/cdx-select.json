@@ -1,0 +1,11 @@
+{
+  "note": "Recorded 2026-11-06 from `cdx select --provider claude --json`, `cdx status --json` and `cdx configs --json`; account names replaced. Account a (priority 80) has its week used up, so cdx falls to b by usability.",
+  "configs": {"a": {"policy": "use", "priority": 80}, "b": {"policy": "use", "priority": 60}, "c": {"policy": "ask-first", "priority": 20}},
+  "rows": [
+    {"session_name": "a", "enabled": true, "auth_status": "authenticated", "remaining_5h_pct": 100, "remaining_week_pct": 0, "reset_5h_at": "Nov 7 01:40", "reset_week_at": "Nov 9 17:00"},
+    {"session_name": "b", "enabled": true, "auth_status": "authenticated", "remaining_5h_pct": 83, "remaining_week_pct": 89, "reset_5h_at": "Nov 7 01:30", "reset_week_at": "Nov 13 14:00"},
+    {"session_name": "c", "enabled": true, "auth_status": "authenticated", "remaining_5h_pct": 100, "remaining_week_pct": 21, "reset_5h_at": "Nov 7 01:40", "reset_week_at": "Nov 10 07:00"}
+  ],
+  "select": {"session": "b", "deciding_factor": "usability", "priority": 60, "available_pct": 83,
+             "usable_order": ["usability", "priority", "credits", "availability", "reset", "reasoning_effort", "name"]}
+}

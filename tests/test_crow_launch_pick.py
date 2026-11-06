@@ -240,3 +240,60 @@ def test_term_refuses_an_unknown_backend(hub, fake):
     r = run(hub, "crow", "term", "demo", env={**env, "CROW_TERMINAL": "xterm"})
     assert r.returncode != 0 and "not a backend" in r.stderr
     assert launches() == []
+
+
+# ---------- scope routing (req_025) ----------
+
+def ranked(home, tmp_path):
+    (home / "local/accounts.yaml").write_text(yaml.safe_dump({"default": "main", "accounts": [
+        {"name": "main", "policy": "use", "scopes": {"work": 1, "hub": 1, "personal": 2}, "scope_min_room": {"personal": 40}},
+        {"name": "spare", "policy": "use", "scopes": {"personal": 1, "hub": 2}},
+        {"name": "shared", "policy": "ask-first", "scopes": {"work": 2}}]}))
+    reg = yaml.safe_load((home / "local/projects.yaml").read_text())
+    reg["projects"].append({"name": "job", "scope": "work", "path": str(tmp_path / "repo"), "forge": "none"})
+    (home / "local/projects.yaml").write_text(yaml.safe_dump(reg))
+
+
+def test_a_personal_project_goes_to_the_personal_rank(hub, fake, tmp_path):
+    env, set_state, launches = fake
+    ranked(hub[0], tmp_path)
+    set_state([row("main"), row("spare"), row("shared")])
+    r = run(hub, "crow", "open", "demo", env=env)
+    assert r.returncode == 0, r.stderr
+    assert launches()[0]["argv"][0] == "spare"
+    assert "scope personal" in r.stderr and "decided by scope rank" in r.stderr
+
+
+def test_a_work_project_goes_to_the_work_rank_and_overflows(hub, fake, tmp_path):
+    env, set_state, launches = fake
+    ranked(hub[0], tmp_path)
+    set_state([row("main"), row("spare"), row("shared")])
+    assert run(hub, "crow", "open", "job", env=env).returncode == 0
+    assert launches()[-1]["argv"][0] == "main"
+    set_state([row("main", 0), row("spare"), row("shared", 50)])
+    r = run(hub, "crow", "open", "--on-busy", "fail", "job", env=env)
+    assert r.returncode == 1 and "CROW_ACCOUNT=shared" in r.stderr and "spare: no rank for scope work" in r.stderr
+
+
+def test_the_hub_passes_the_hub_scope(hub, fake, tmp_path):
+    env, set_state, launches = fake
+    ranked(hub[0], tmp_path)
+    set_state([row("main", 0), row("spare"), row("shared")])
+    r = run(hub, "crow", "hub", env=env)
+    assert r.returncode == 0, r.stderr
+    assert launches()[0]["argv"][0] == "spare" and "scope hub" in r.stderr
+
+
+def test_an_explicit_account_beats_the_scope(hub, fake, tmp_path):
+    env, set_state, launches = fake
+    ranked(hub[0], tmp_path)
+    set_state([row("main"), row("spare"), row("shared")])
+    assert run(hub, "crow", "open", "job", env={**env, "CROW_ACCOUNT": "spare"}).returncode == 0
+    assert launches()[0]["argv"][0] == "spare"
+
+
+def test_the_hub_keeps_the_default_without_scopes(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare", 90)])
+    assert run(hub, "crow", "hub", env=env).returncode == 0
+    assert launches()[0]["argv"][0] == "main"
