@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestTodayRows(t *testing.T) {
@@ -109,7 +111,15 @@ func TestTodayKeysRunTheirCommands(t *testing.T) {
 	}
 	for k, want := range cases {
 		calls := recordRuns(t, "ok", nil)
-		_, cmd := todayModel(t).Update(keyMsg(k))
+		m := todayModel(t)
+		next, cmd := m.Update(keyMsg(k))
+		if k != "o" {
+			// Actions open the confirm overlay first; nothing runs before its OK.
+			if next.(model).overlay != ovAct || len(*calls) != 0 {
+				t.Fatalf("%s: overlay %d calls %d", k, next.(model).overlay, len(*calls))
+			}
+			_, cmd = next.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		}
 		if cmd == nil {
 			t.Fatalf("%s: no command", k)
 		}

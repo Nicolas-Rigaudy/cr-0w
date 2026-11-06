@@ -390,10 +390,14 @@ func TestAgentAnswerKeysSendThroughFocus(t *testing.T) {
 		t.Errorf("x input %q", m.input)
 	}
 	m = send(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("!")})
+	m = send(m, tea.KeyMsg{Type: tea.KeyEnter})
+	if m.typing || m.input != "" || m.overlay != ovAct || len(*calls) != 0 || !hasText(m.View(), "no!") {
+		t.Fatalf("enter: typing %v input %q overlay %d calls %d", m.typing, m.input, m.overlay, len(*calls))
+	}
 	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = next.(model)
-	if m.typing || m.input != "" || cmd == nil {
-		t.Fatalf("enter: typing %v input %q cmd %v", m.typing, m.input, cmd != nil)
+	if cmd == nil || m.overlay != ovNone {
+		t.Fatal("the second enter must run the send")
 	}
 	msg := cmd().(actionMsg)
 	if len(*calls) != 1 || (*calls)[0].name != "crow-focus" || strings.Join((*calls)[0].args, " ") != "--pid 11 --send no!" {

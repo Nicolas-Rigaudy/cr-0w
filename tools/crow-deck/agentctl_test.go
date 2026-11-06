@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Pause and stop from the palette ask first; only y runs crow-focus, any other key cancels.
+// Pause and stop from the palette ask first; the overlay runs crow-focus once on y or enter, n cancels.
 func TestPauseAndStopAskFirst(t *testing.T) {
 	var calls []call
 	old := runBin
@@ -27,11 +27,11 @@ func TestPauseAndStopAskFirst(t *testing.T) {
 		}
 		calls = nil
 		_ = m.exec(tc.act)
-		if m.pending != tc.act || !strings.Contains(m.flash, "y confirms") {
-			t.Fatalf("%s: pending %q flash %q", tc.act, m.pending, m.flash)
+		if m.overlay != ovAct || m.act == nil || m.act.Label != tc.act || len(calls) != 0 {
+			t.Fatalf("%s: overlay %d act %+v calls %d", tc.act, m.overlay, m.act, len(calls))
 		}
 		c := send(m, keyMsg("n"))
-		if c.pending != "" || !strings.Contains(c.flash, "cancelled") {
+		if c.act != nil || c.overlay != ovNone || !strings.Contains(c.flash, "cancelled") {
 			t.Fatalf("%s: n did not cancel: %q", tc.act, c.flash)
 		}
 		_, cmd := m.Update(keyMsg("y"))

@@ -101,7 +101,7 @@ func relStep(st *relStatus, source string, cur, d int) int {
 
 func relaunchCmd(a agentRow, target string) tea.Cmd {
 	return func() tea.Msg {
-		out, err := runBin("crow-relaunch", a.Session, target, "--picked")
+		out, err := runGated(kSession, "", "crow-relaunch", a.Session, target, "--picked")
 		if err != nil {
 			return actionMsg{"relaunch failed: " + lastLine(cmpOr(out, err.Error()))}
 		}

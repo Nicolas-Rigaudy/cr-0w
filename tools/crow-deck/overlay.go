@@ -15,9 +15,9 @@ const (
 	ovTheme
 	ovConfirm
 	ovPost
-	ovHandoff
 	ovReview
 	ovApply
+	ovAct
 )
 
 type command struct{ name, desc string }
@@ -257,25 +257,6 @@ func handoffTask(r *mrRow, findings string) (task, end string) {
 	}
 	return "Address the " + strconv.Itoa(r.ThreadsOpen) + " open review threads on " + r.Ref + " (" + r.Title + ") with the review-threads skill." + note,
 		"Fixes committed locally with the decision table shown to me. No push, no reply, no resolve without my OK."
-}
-
-// handoffOverlay shows the exact text before the repo session opens.
-func (lk *look) handoffOverlay(w, h int, r *mrRow, findings string) []string {
-	sp := boxSpec{title: "Handoff", sel: -1}
-	if r == nil {
-		sp.rows = []line{{{"No MR selected.", lk.sub}}}
-		return lk.overlayBlock(sp, w, h)
-	}
-	task, end := handoffTask(r, findings)
-	sp.rows = []line{{{"Open a repo session on " + r.Project + " for " + r.Ref + ".", lk.plain}}, nil}
-	for _, l := range wrap("task: "+task, overlayWidth(w)-6) {
-		sp.rows = append(sp.rows, line{{l, lk.plain}})
-	}
-	for _, l := range wrap("end: "+end, overlayWidth(w)-6) {
-		sp.rows = append(sp.rows, line{{l, lk.sub}})
-	}
-	sp.rows = append(sp.rows, nil, line{{"enter", lk.key}, spc(1), {"open the session", lk.sub}, spc(2), {"esc", lk.key}, spc(1), {"cancel", lk.sub}})
-	return lk.overlayBlock(sp, w, h)
 }
 
 // postVerb is what enter does on one pending action.

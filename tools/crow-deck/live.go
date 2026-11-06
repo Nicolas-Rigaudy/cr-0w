@@ -84,23 +84,6 @@ func actionCmd(label string, name string, args ...string) tea.Cmd {
 	}
 }
 
-// sendCmd types text into the agent's window (crow-focus terminal backend) and presses enter.
-func sendCmd(a agentRow, text string) tea.Cmd {
-	if a.PID == 0 {
-		return func() tea.Msg { return actionMsg{"no running session to send to"} }
-	}
-	return actionCmd("sent", "crow-focus", "--pid", strconv.Itoa(a.PID), "--send", text)
-}
-
-// agentCtlCmd pauses (Escape in the window) or stops (SIGTERM to the claude process) a session.
-func agentCtlCmd(a agentRow, act string) tea.Cmd {
-	flag := map[string]string{"pause": "--interrupt", "stop": "--stop"}[act]
-	if a.PID == 0 || flag == "" {
-		return func() tea.Msg { return actionMsg{"no running session to " + act} }
-	}
-	return actionCmd(act, "crow-focus", "--pid", strconv.Itoa(a.PID), flag)
-}
-
 // attachCmd focuses the agent's window, or resumes the session when no window holds it.
 func attachCmd(a agentRow) tea.Cmd {
 	if a.Cwd == "" || a.Account == "" {
@@ -122,7 +105,7 @@ func reviewCmd(r mrRow, d *mrDetail) tea.Cmd {
 		if r.Branch != "" {
 			args = append(args, "--branch", r.Branch)
 		}
-		out, err := runBin("crow-review-run", args...)
+		out, err := runGated(kMR, r.Scope, "crow-review-run", args...)
 		if err != nil {
 			return reviewStartedMsg{r.key(), "review failed to start: " + firstLine(cmpOr(out, err.Error())), false, true}
 		}
@@ -133,7 +116,7 @@ func reviewCmd(r mrRow, d *mrDetail) tea.Cmd {
 // applyCmd resumes the review session to act on the decisions; the answer refetches the detail.
 func applyCmd(r mrRow) tea.Cmd {
 	return func() tea.Msg {
-		out, err := runBin("crow-review-run", "apply", r.Repo, strconv.Itoa(r.Number))
+		out, err := runGated(kCommit, r.Scope, "crow-review-run", "apply", r.Repo, strconv.Itoa(r.Number))
 		if err != nil {
 			return reviewStartedMsg{r.key(), "apply failed to start: " + firstLine(cmpOr(out, err.Error())), true, true}
 		}
@@ -181,7 +164,7 @@ func postActionsCmd(r mrRow) tea.Cmd {
 // actCmd runs one action; the hash makes crow-review-run refuse it when it changed since shown.
 func actCmd(r mrRow, a postAction) tea.Cmd {
 	return func() tea.Msg {
-		out, err := runBin("crow-review-run", "act", r.Repo, strconv.Itoa(r.Number), a.ID, "--hash", a.Hash)
+		out, err := runGated(postKind(a.Kind), r.Scope, "crow-review-run", "act", r.Repo, strconv.Itoa(r.Number), a.ID, "--hash", a.Hash)
 		if err != nil {
 			return postDoneMsg{r.key(), a.ID + " failed: " + lastLine(cmpOr(out, err.Error())), false}
 		}

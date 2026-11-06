@@ -161,17 +161,6 @@ func untilLabel(d time.Duration) string {
 // mailActMsg ends a done or snooze: the result flashes and Today is fetched again.
 type mailActMsg struct{ text string }
 
-// mailCmd runs crow-today on one mail (done, snooze).
-func mailCmd(verb string, r todayRow) tea.Cmd {
-	return func() tea.Msg {
-		out, err := runBin("crow-today", verb, r.ID)
-		if err != nil {
-			return mailActMsg{verb + " failed: " + lastLine(cmpOr(out, err.Error()))}
-		}
-		return mailActMsg{fit(r.What, 40) + ": " + firstLine(cmpOr(out, "done"))}
-	}
-}
-
 // mailTask is the hand-off for enter: a hub session reads the thread and drafts the reply.
 func mailTask(r todayRow) (task, end string) {
 	task = fmt.Sprintf("Mail from %s: %q (Graph message id %s). Read the thread with `bin/crow-today thread %s`, "+
@@ -208,15 +197,14 @@ func (m model) todayKey(k string) (tea.Model, tea.Cmd) {
 		m.flash = "opening in Outlook…"
 		return m, actionCmd("open", "crow-open", r.Link)
 	case "x":
-		m.flash = "marking done…"
-		return m, mailCmd("done", *r)
+		return m.propose(mailAction("done", *r))
 	case "s":
-		m.flash = "snoozing to tomorrow…"
-		return m, mailCmd("snooze", *r)
+		return m.propose(mailAction("snooze", *r))
 	case "enter":
 		task, end := mailTask(*r)
-		m.flash = "opening a hub session on the mail…"
-		return m, actionCmd("mail session", "crow", "handoff", "cr-0w", "--task", task, "--end-state", end)
+		a := m.handoffAction("Mail session", "cr-0w", "Open a hub session on this mail.", task, end)
+		a.Label = "mail session"
+		return m.propose(a)
 	}
 	m.flash = k + ": not a Today action (o open, enter session, x done, s snooze, r refresh)"
 	return m, nil

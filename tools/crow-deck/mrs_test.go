@@ -230,7 +230,7 @@ func TestHandoffOverlayThenRun(t *testing.T) {
 	m := newModel(defaultConfig())
 	m.page = 2
 	m = send(m, keyMsg("h"))
-	if m.overlay != ovHandoff || !hasText(m.View(), "Open a repo session") {
+	if m.overlay != ovAct || !hasText(m.View(), "Open a repo session") {
 		t.Fatalf("h must open the handoff overlay, overlay %d", m.overlay)
 	}
 	if len(*calls) != 0 {
@@ -263,9 +263,9 @@ func TestHandoffTaskRolesAndFindings(t *testing.T) {
 func TestHandoffOverlayShowsFindingsFile(t *testing.T) {
 	m := newModel(defaultConfig())
 	m.page = 2
-	m = send(m, keyMsg("h"))
 	r := m.mrsView().cur()
 	m.fx.MRDetails[r.key()] = &mrDetail{FindingsFile: "/s/reviews/x-1.json"}
+	m = send(m, keyMsg("h"))
 	if !hasText(m.View(), "/s/reviews/x-1.json") {
 		t.Error("overlay must show the findings file before enter")
 	}

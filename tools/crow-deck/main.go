@@ -29,7 +29,7 @@ type model struct {
 	palSel  int
 	relSel  int // Relaunch picker: index into fx.Rel.Accounts
 	flash   string
-	pending string // "pause" or "stop" waiting for y on the selected agent
+	act     *deckAction // the action the confirm overlay shows
 	cfgPath string
 
 	live  *liveState // nil in mock mode
@@ -385,8 +385,9 @@ func (m *model) exec(c string) tea.Cmd {
 			m.flash = f[0] + " needs a running session"
 			break
 		}
-		m.pending = f[0]
-		m.flash = f[0] + " " + cmpOr(a.Short, a.Name) + "? y confirms, any other key cancels"
+		nm, cmd := m.proposeAgentCtl(*a, f[0])
+		*m = nm
+		return cmd
 	case "relaunch":
 		if a := m.curAgent(); a != nil && a.Interrupted {
 			return m.openRelaunch()
@@ -499,15 +500,6 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if k == "ctrl+c" {
 		return m, tea.Quit
 	}
-	if m.pending != "" {
-		act := m.pending
-		m.pending = ""
-		if a := m.curAgent(); k == "y" && a != nil {
-			return m, agentCtlCmd(*a, act)
-		}
-		m.flash = act + " cancelled"
-		return m, nil
-	}
 	if m.overlay == ovNone && m.page == 1 && m.typing {
 		return m.typingKey(msg)
 	}
@@ -522,19 +514,8 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.overlay {
 	case ovConfirm:
 		return m.relaunchKey(k)
-	case ovHandoff:
-		switch k {
-		case "enter":
-			m.overlay = ovNone
-			if r := m.mrsView().cur(); r != nil {
-				task, end := handoffTask(r, m.findingsFile())
-				m.flash = "opening a session on " + r.Name + "…"
-				return m, actionCmd("handoff", "crow", "handoff", r.Name, "--task", task, "--end-state", end)
-			}
-		case "esc", "n", "q":
-			m.overlay = ovNone
-		}
-		return m, nil
+	case ovAct:
+		return m.actKey(k)
 	case ovReview:
 		switch k {
 		case "enter":
@@ -909,10 +890,10 @@ func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 	case "M":
 		m.flash = k + ": opening goes through the mr skill, not wired here"
 	case "h":
-		if mv.cur() == nil {
+		if r := mv.cur(); r == nil {
 			m.flash = "no MR selected"
 		} else {
-			m.overlay = ovHandoff
+			return m.propose(mrHandoff(*r, m.findingsFile()))
 		}
 	case "g", "R", "s":
 		if mv.cur() == nil {
@@ -1008,7 +989,8 @@ func (m model) decide(state, note string) (tea.Model, tea.Cmd) {
 	if note != "" {
 		args = append(args, "--note", note)
 	}
-	return m, actionCmd("finding "+f.ID, "crow-review-run", args...)
+	// A decision is a line in the local findings file: it runs without the overlay, through the gate.
+	return m, runAction(deckAction{Kind: kLocal, Scope: r.Scope, Label: "finding " + f.ID, Cmd: append([]string{"crow-review-run"}, args...)})
 }
 
 // mrTypingKey edits the edit or chat text of the current finding; enter saves it, esc drops it.
@@ -1078,7 +1060,7 @@ func (m model) typingKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.typing, m.input = false, ""
-		return m, sendCmd(*a, text)
+		return m.proposeSend(*a, text)
 	case tea.KeyBackspace:
 		if r := []rune(m.input); len(r) > 0 {
 			m.input = string(r[:len(r)-1])
@@ -1175,8 +1157,8 @@ func (m model) View() string {
 		body = lk.themeOverlay(m.w, bh, m.th)
 	case m.overlay == ovConfirm:
 		body = lk.confirmOverlay(m.w, bh, m.curAgent(), m.fx.Rel, m.relSel)
-	case m.overlay == ovHandoff:
-		body = lk.handoffOverlay(m.w, bh, m.mrsView().cur(), m.findingsFile())
+	case m.overlay == ovAct:
+		body = lk.actOverlay(m.w, bh, m.act)
 	case m.overlay == ovReview:
 		body = lk.reviewOverlay(m.w, bh, m.mrsView().cur(), m.mrsView().detail())
 	case m.overlay == ovApply:
