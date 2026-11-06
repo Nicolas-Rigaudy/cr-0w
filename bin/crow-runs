@@ -2,7 +2,7 @@
 """crow-runs: dispatch background runs and see what every agent is doing.
 
   crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--kind task|review|retro] [--power P] [--model M]
-                     [--permission review] [--dry-run]   every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
+                     [--permission review] [--logics REF] [--dry-run]   every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
   crow-runs json                                     same data as JSON (for widgets)
   crow-runs report <run_id>                          final report of a finished run
@@ -114,6 +114,19 @@ def wait(run_ids, poll=20):
 
 
 SEEN = STATE / "runs-seen.json"
+
+
+def run_cost(r):
+    """USD a finished cdx run cost, or None when cdx has no figure (never 0 for unknown)."""
+    c = (r or {}).get("cost_usd")
+    return round(float(c), 4) if isinstance(c, (int, float)) and not isinstance(c, bool) else None
+
+
+def fmt_cost(cost, budget=None):
+    """'$0.71' or '$0.71 of $25'; empty when the run has no cost."""
+    if cost is None:
+        return ""
+    return f"${cost:.2f}" + (f" of ${budget:g}" if budget else "")
 
 
 def run_state(r):
@@ -246,6 +259,58 @@ def inbox(hook=False, peek=False):
         mark_seen(*(r["run_id"] for r, _ in fresh))
 
 
+LOGICS_STATE = {"running": "running", "done": "succeeded", "failed": "failed", "budget": "failed",
+                "stuck": "failed", "limit": "failed", "stopped": "cancelled"}
+EVENTS = STATE / "runs-events.jsonl"
+
+
+def record_run_cmd(ref, run_id, state, title="", notes=""):
+    """The logics-manager command that writes a run into a Logics doc's Executions table.
+    Same run id = same row, so the final state updates the row dispatch added. Never --progress."""
+    cmd = ["logics-manager", "flow", "record-run", ref, "--runner", "cdx", "--run-id", run_id,
+           "--state", LOGICS_STATE.get(state, "failed")]
+    if title:
+        cmd += ["--title", title]
+    if notes or state not in ("running", "done"):
+        cmd += ["--notes", notes or state]
+    return cmd
+
+
+def log_event(rec, etype, data):
+    """Core-shaped event ({ts, mission, type, actor, data}, adr_001), so the core store can import the file."""
+    ev = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"), "mission": rec.get("logics_ref"),
+          "type": etype, "actor": "crow", "data": {"run_id": rec["run_id"], "project": rec.get("project"), **data}}
+    try:
+        STATE.mkdir(parents=True, exist_ok=True)
+        with EVENTS.open("a") as f:
+            f.write(json.dumps(ev) + "\n")
+    except OSError:
+        pass
+
+
+def record_run(rec, state):
+    """Record a run in its linked Logics doc. A warning at most: it never fails a dispatch or a notify.
+    Work repos are skipped: the doc write would be an uncommitted change in someone's checkout."""
+    ref = rec.get("logics_ref")
+    if not ref:
+        return
+    log_event(rec, "run." + state, {"label": rec.get("label"), "state": state})
+    try:
+        proj = next((p for p in REG["projects"] if p["name"] == rec.get("project")), {})
+        if proj.get("scope") == "work":
+            print(f"crow: warning: {ref} not updated, '{rec.get('project')}' is a work repo", file=sys.stderr)
+            return
+        if not shutil.which("logics-manager"):
+            print("crow: warning: logics-manager not found, run not recorded in the Logics doc", file=sys.stderr)
+            return
+        r = subprocess.run(record_run_cmd(ref, rec["run_id"], state, rec.get("label", "")), cwd=rec["cwd"],
+                           capture_output=True, text=True, timeout=60)
+        if r.returncode:
+            print(f"crow: warning: record-run {ref} failed: {(r.stderr or r.stdout).strip()[:160]}", file=sys.stderr)
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"crow: warning: record-run {ref} failed: {e}", file=sys.stderr)
+
+
 def notify(run_ids, poll=20, max_hours=12):
     """Wait for the runs, then raise a desktop notification for each. Survives the session that started it.
     Gives up after `max_hours` so a lost run does not leave a poller behind."""
@@ -261,6 +326,7 @@ def notify(run_ids, poll=20, max_hours=12):
             if rid in done:
                 rec = recs.get(rid, {})
                 st = run_state(done[rid])
+                record_run(rec, st)
                 msg = requeue(rec, deadline) if st == "limit" and rec else ""
                 subprocess.run(["notify-send", "-a", "crow", "-u", "normal" if st == "done" else "critical",
                                 f"Run {st}: {rec.get('project', '')}", " ".join(x for x in (rec.get("label", rid[:8]), msg) if x)])
@@ -294,7 +360,7 @@ def requeue(rec, deadline):
     acct = rec.get("account") or ACCOUNT
     st = crow_lib.account_state(acct)
     base = [sys.executable, os.path.realpath(__file__), "dispatch", rec["project"], rec["label"],
-            "--resumes", rec["run_id"]]
+            "--resumes", rec["run_id"], *(["--logics", rec["logics_ref"]] if rec.get("logics_ref") else [])]
     if rec.get("cwd") and rec["cwd"] != project(rec["project"])["path"]:
         base += ["--cwd", rec["cwd"]]
     target = st["auto_target"] if st["current_blocked"] else None
@@ -588,6 +654,7 @@ def collect(since="today", include_unledgered=False):
             "run_id": rec["run_id"], "project": rec["project"], "label": rec["label"], "status": st,
             "duration_s": int(r["duration_seconds"]) if r and r.get("duration_seconds") else None,
             "ended_at": r.get("ended_at") if r else None,
+            "cost_usd": run_cost(r), "budget_usd": rec.get("budget_usd"),
             "resumed_from": [k for k, v in superseded.items() if v == rec["run_id"]],
             "commits": commits_since(rec["cwd"], rec.get("start_sha"), r.get("ended_at") if r else None),
         })
@@ -597,7 +664,8 @@ def collect(since="today", include_unledgered=False):
             if rid not in known:
                 past.append({"run_id": rid, "project": project_name(r["cwd"]), "label": "(not dispatched by crow)",
                              "status": "done" if r.get("exit_code") == 0 else "failed",
-                             "duration_s": int(r.get("duration_seconds") or 0), "ended_at": r.get("ended_at"), "commits": []})
+                             "duration_s": int(r.get("duration_seconds") or 0), "ended_at": r.get("ended_at"), "commits": [],
+                             "cost_usd": run_cost(r), "budget_usd": None})
 
     busy = len(running_runs())
     pu = project_usage()
@@ -693,6 +761,10 @@ def dispatch(a):
         "account": acct, "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
         "kind": a.kind,
     }
+    if a.logics:
+        rec["logics_ref"] = a.logics
+    if "--budget" in flags:
+        rec["budget_usd"] = float(flags[flags.index("--budget") + 1])
     if a.continue_run:
         rec["continues"] = a.continue_run
     if a.resumes:
@@ -700,6 +772,7 @@ def dispatch(a):
     STATE.mkdir(parents=True, exist_ok=True)
     with LEDGER.open("a") as f:
         f.write(json.dumps(rec) + "\n")
+    record_run(rec, "running")
     subprocess.Popen([sys.executable, os.path.realpath(__file__), "notify", rec["run_id"]],
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"dispatched {rec['run_id'][:8]}  {p['name']}  {a.label}" + ("" if acct == ACCOUNT else f"  on {acct}"))
@@ -710,6 +783,12 @@ C = {"dim": "\033[2m", "b": "\033[1m", "g": "\033[32m", "y": "\033[33m", "r": "\
 STATE_STYLE = {"working": ("●", "g"), "quiet": ("◌", "y"), "waiting": ("◆", "m"), "idle": ("○", "dim")}
 PAST_STYLE = {"done": ("✓", "g"), "failed": ("✗", "r"), "limit": ("⏸", "y"), "lost": ("?", "dim"),
               "budget": ("$", "y"), "stuck": ("!", "r"), "stopped": ("■", "dim")}
+
+
+def day_cost(finished_rows):
+    """Sum of the known run costs, or None when no run has a figure."""
+    costs = [f["cost_usd"] for f in finished_rows if f.get("cost_usd") is not None]
+    return round(sum(costs), 2) if costs else None
 
 
 def render(data, color=True, width=None):
@@ -764,9 +843,14 @@ def render(data, color=True, width=None):
             ended = f" · ended {fmt_age(iso_age(f['ended_at']))} ago" if f.get("ended_at") else ""
             resumed = f" · resumed {len(f['resumed_from'])}×" if f.get("resumed_from") else ""
             out.append(clip(f"{c[col]}{sym}{c['0']} {f['project']:<20} {f['label']}"))
-            out.append(clip(f"    {c['dim']}{f['status']} after {d}{ended} · {len(f['commits'])} commits{resumed} · {f['run_id'][:8]}{c['0']}"))
+            cost = fmt_cost(f.get("cost_usd"), f.get("budget_usd"))
+            cost = f" · {cost}" if cost else ""
+            out.append(clip(f"    {c['dim']}{f['status']} after {d}{ended}{cost} · {len(f['commits'])} commits{resumed} · {f['run_id'][:8]}{c['0']}"))
         if len(data["finished"]) > FINISHED_SHOWN:
             out.append(f"  {c['dim']}… {len(data['finished']) - FINISHED_SHOWN} older (crow runs --all){c['0']}")
+        total = day_cost(data["finished"])
+        if total is not None:
+            out.append(f"  {c['dim']}background runs cost ${total:.2f}{c['0']}")
     return out
 
 
@@ -788,6 +872,7 @@ def main():
     d.add_argument("--dry-run", action="store_true", help="print the cdx command and env, start nothing")
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
+    d.add_argument("--logics", metavar="REF", help="Logics doc (item_074, req_019...) to record the run in; skipped in work repos")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     d.add_argument("--cwd", help="run in this worktree of the project (<path>.wt/...) instead of the main checkout")
     d.add_argument("--account", help="run on this account (an ask-first account needs the owner's OK first)")
