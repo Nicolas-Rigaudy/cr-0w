@@ -22,6 +22,7 @@ want to trigger it by name.
 - [service-tokens](service-tokens.md): personal API tokens in the keyring via `crow secret` (store, read without printing, rotate, revoke), registry in local/tokens.yaml
 - [ci-secrets](ci-secrets.md): prod-scoped CI variables and secrets (owner runs the generator script; scope/protect rules)
 - [interrupted-sessions](interrupted-sessions.md): quota warning before a usage limit, `crow rescue` for every session it stopped, relaunch one by id
+- [new-account](new-account.md): bring a fresh cdx profile up to crow parity (memory links, env, hooks, skills, MCP); `crow doctor` checks it
 - [memory](memory.md): memory lives in local/memory, linked into allowed cdx profiles (never copied)
 - [design-canvas](design-canvas.md): add or change boards in a Design canvas artifact without losing the owner's layout (live index merge, one file per publish)
 - [tui-render](tui-render.md): render a TUI (or ANSI mockup) to PNG in the kitty theme at real monitor sizes; fallback-glyph and contrast checks

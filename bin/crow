@@ -35,7 +35,7 @@
 #   crow notes [--since 7d]  vault notes of the last days as compact JSON (recap input)
 #   crow projects [...]  release tracks: roadmap progress toward public releases
 #   crow release propose  draft the next version and notes from commits since the last tag (no tagging)
-#   crow doctor [--json] identity, accounts, stale worktrees (read only)
+#   crow doctor [--json] identity, accounts, profiles, stale worktrees (read only)
 #   crow secret set|get|list|rm <service> [--user U]   service tokens in the keyring (see runbooks/service-tokens.md)
 #
 # Old names still work and print a hint: sessions, relaunch (now under runs), releases (now projects).

@@ -8,6 +8,8 @@ identity   git user.email of each registered repo against the registry identity 
 accounts   default account, accounts crow may target, cdx on PATH
 quota      warn when every `use` account is blocked or past 90% of its 5h window (cdx status --cached)
 worktrees  <repo>.wt/* trees already merged into the default branch (crow tidy --apply removes them)
+profiles   each claude `use` account with permanent memory: memory links into local/memory, crow env and hooks,
+           empty commit/PR attribution, crow skills/ linked (fix: crow-memory link <account>, copy settings from the default)
 
 Exit 1 when a check fails, 0 otherwise (warnings do not fail).
 """
@@ -93,6 +95,62 @@ def accounts(acc):
     return check("accounts", "ok", f"default {default['name']}, {len(allowed)} of {len(acc['accounts'])} allowed", details)
 
 
+CROW_ENV = ("CROW_HOME", "CLAUDE_CODE_AUTO_COMPACT_WINDOW")
+CROW_HOOKS = ("crow-ctx idle-hook", "rtk-rewrite")
+
+
+def profile_gaps(account, home, profiles):
+    """What a profile lacks to run crow like the default one, as short strings."""
+    claude = Path(profiles) / account / "claude-home" / ".claude"
+    if not claude.is_dir():
+        return []
+    gaps, store = [], (Path(home) / "local" / "memory").resolve()
+    if store.is_dir():
+        for slug in sorted(d.name for d in store.iterdir() if d.is_dir()):
+            m = claude / "projects" / slug / "memory"
+            if not (m.is_symlink() and m.resolve() == store / slug):
+                gaps.append(f"memory not linked: {slug}")
+    try:
+        settings = json.loads((claude / "settings.json").read_text())
+    except (OSError, ValueError):
+        settings = {}
+    env = settings.get("env") or {}
+    gaps += [f"env {k} missing" for k in CROW_ENV if k not in env]
+    hooks = json.dumps(settings.get("hooks") or {})
+    gaps += [f"hook {h} missing" for h in CROW_HOOKS if h not in hooks]
+    att = settings.get("attribution") or {}
+    if att.get("commit") != "" or att.get("pr") != "":
+        gaps.append("attribution commit/pr not empty")
+    skills = Path(home) / "skills"
+    for sk in sorted(d.name for d in skills.iterdir() if d.is_dir()) if skills.is_dir() else []:
+        link = claude / "skills" / sk
+        if not (link.is_symlink() and link.resolve() == (skills / sk).resolve()):
+            gaps.append(f"skill {sk} not linked")
+    return gaps
+
+
+def provider(name):
+    r = subprocess.run([os.path.join(HERE, "crow-accounts"), "provider", name], capture_output=True, text=True)
+    return r.stdout.strip() or "claude"
+
+
+def profiles(acc):
+    if acc is None:
+        return check("profiles", "ok", "no account data")
+    sys.path.insert(0, HERE)
+    import crow_lib
+    home = os.environ.get("CROW_HOME") or os.path.dirname(HERE)
+    root = crow_lib.profiles_dir()
+    names = [a["name"] for a in acc["accounts"] if a["policy"] == "use" and a["memory"] == "permanent"
+             and provider(a["name"]) == "claude"
+             and (Path(root) / a["name"] / "claude-home" / ".claude").is_dir()]
+    details = [f"{n}: {g}" for n in names for g in profile_gaps(n, home, root)]
+    if details:
+        return check("profiles", "warn", f"{len({d.split(':')[0] for d in details})} of {len(names)} "
+                     "use profiles miss crow setup", details)
+    return check("profiles", "ok", f"{len(names)} use profiles set up for crow")
+
+
 def stale_worktrees(reg, mod):
     found = []
     for p in reg["projects"]:
@@ -116,7 +174,8 @@ def main(argv):
     mod = load_registry()
     reg = mod.load()
     acc = accounts_json()
-    checks = [identity(reg), accounts(acc), quota((acc or {}).get("default")), stale_worktrees(reg, mod)]
+    checks = [identity(reg), accounts(acc), quota((acc or {}).get("default")), profiles(acc),
+              stale_worktrees(reg, mod)]
     ok = all(c["level"] != "fail" for c in checks)
     if argv:
         json.dump({"ok": ok, "checks": checks}, sys.stdout)

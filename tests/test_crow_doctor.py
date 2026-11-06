@@ -73,3 +73,39 @@ def test_doctor_text_and_bad_argument(hub, tmp_path):
     out = run(hub, "crow-doctor")
     assert out.stdout.startswith(("ok", "warn", "FAIL")) and "identity" in out.stdout
     assert run(hub, "crow-doctor", "--nope").returncode != 0
+
+
+def make_profile(home, profiles, name="main", complete=True):
+    claude = profiles / name / "claude-home" / ".claude"
+    (claude / "skills").mkdir(parents=True)
+    (home / "skills" / "wrap").mkdir(parents=True)
+    (home / "local" / "memory" / "-proj").mkdir(parents=True)
+    if not complete:
+        (claude / "settings.json").write_text("{}")
+        return
+    (claude / "projects" / "-proj").mkdir(parents=True)
+    (claude / "projects" / "-proj" / "memory").symlink_to(home / "local" / "memory" / "-proj")
+    (claude / "skills" / "wrap").symlink_to(home / "skills" / "wrap")
+    (claude / "settings.json").write_text(json.dumps({
+        "env": {"CROW_HOME": str(home), "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "150000"},
+        "hooks": {"Stop": [{"hooks": [{"command": "crow-ctx idle-hook"}]}],
+                  "PreToolUse": [{"hooks": [{"command": "rtk-rewrite.sh"}]}]},
+        "attribution": {"commit": "", "pr": ""}}))
+
+
+def test_doctor_passes_a_set_up_profile(hub, tmp_path):
+    home, profiles = hub
+    registry(home, tmp_path / "missing")
+    make_profile(home, profiles)
+    assert checks(run(hub, "crow-doctor", "--json"))["profiles"]["level"] == "ok"
+
+
+def test_doctor_lists_what_a_bare_profile_misses(hub, tmp_path):
+    home, profiles = hub
+    registry(home, tmp_path / "missing")
+    make_profile(home, profiles, complete=False)
+    prof = checks(run(hub, "crow-doctor", "--json"))["profiles"]
+    assert prof["level"] == "warn"
+    for gap in ("memory not linked: -proj", "env CROW_HOME missing", "hook rtk-rewrite missing",
+                "attribution commit/pr not empty", "skill wrap not linked"):
+        assert f"main: {gap}" in prof["details"]
