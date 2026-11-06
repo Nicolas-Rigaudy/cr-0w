@@ -1,0 +1,23 @@
+# Any text that goes out: doc, wiki page, mail draft, daily, weekly, management weekly, personal review.
+name: write
+schema_version: 1
+phase: 2
+purpose: Draft a text artifact; core publishes it after `ok`.
+absorbs: [document, report]
+skill: {name: null, status: missing, fallbacks: [daily, weekly, mgmt-weekly]}
+key: {format: schedule, pattern: "^([a-z0-9][a-z0-9-]{2,40}|[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2})$", example: daily-2026-11-09}
+scopes: [work, personal, crow]
+data_classes: [work, personal, private]
+gates: [report]
+autonomy: notify
+account: {route: scope, model: sonnet, subagent_model: haiku}
+effort: medium
+caps: {time_min: 45, budget_usd: 4, resumes: 2, rounds: 4, outbox_file_mb: 20, outbox_total_mb: 50}
+permission: read-only
+worktree: false
+outputs: [report.vN.md]
+publish: {actions: [page, mail-draft, vault-note], needs_validation: true}
+preflight:
+  - {id: audience, text: "Who reads it?", safest: the owner only}
+  - {id: language, text: "Language?", choices: [French, English], safest: "French for work scope, English otherwise"}
+  - {id: target, text: "Where does it land?", safest: vault draft only}

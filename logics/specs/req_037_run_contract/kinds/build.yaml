@@ -1,0 +1,26 @@
+# Code change end to end in a worktree. Gates come from the project's scope. Phase 3, after the sandbox.
+name: build
+schema_version: 1
+phase: 3
+purpose: Write code in a worktree, test, commit, self-review.
+absorbs: [ship, personal-code, crow]
+skill: {name: implement-task, status: bundled, fallbacks: [review, mr]}
+key: {format: ticket, pattern: "^([A-Z][A-Z0-9]+-[0-9]+|item_[0-9]{3}|[a-z0-9][a-z0-9-]{2,40})$", example: item_095}
+scopes: [work, personal, crow]
+data_classes: [work, personal]
+gates: [plan, report]
+autonomy: ask
+account: {route: scope, model: opus, subagent_model: sonnet, overflow: [antigravity]}
+effort: high
+caps: {time_min: 120, budget_usd: 25, resumes: 3, rounds: 3, outbox_file_mb: 20, outbox_total_mb: 100}
+permission: workspace-write
+worktree: true
+outputs: [plan.vN.md, report.vN.md, outbox/diff.patch]
+publish: {actions: [push, mr], needs_validation: true}
+preflight:
+  - {id: base, text: "Base branch?", safest: the default branch}
+  - {id: tests, text: "Which checks gate the report?", safest: the repo's full check command}
+by_scope:
+  work: {gates: [plan, report], autonomy: ask, publish: {actions: [push, mr], needs_validation: true}}
+  personal: {gates: [], autonomy: auto, publish: {actions: [merge], needs_validation: false}, sensitive_paths_ask: true}
+  crow: {gates: [plan], autonomy: ask, publish: {actions: [merge], needs_validation: false}, sensitive_paths_ask: true}

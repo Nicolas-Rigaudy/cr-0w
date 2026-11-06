@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/kind.schema.json",
+  "title": "crow mission kind",
+  "description": "One file per kind (kinds/<name>.yaml). core reads it; a new kind needs no engine change. Scope-dependent values sit under by_scope and override the top-level ones.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "schema_version", "phase", "purpose", "skill", "key", "scopes", "gates", "autonomy", "account", "effort", "caps", "outputs", "publish", "preflight"],
+  "properties": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z-]*$"},
+    "schema_version": {"const": 1},
+    "phase": {"type": "integer", "minimum": 1, "maximum": 3, "description": "Roadmap phase that enables the kind (1 = 0.3b, 2 = J1, 3 = J2 after the sandbox)."},
+    "purpose": {"type": "string", "description": "One sentence shown on the New mission sheet."},
+    "absorbs": {"type": "array", "items": {"type": "string"}, "description": "Earlier kind names that map to this one."},
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": ["string", "null"], "description": "Skill the run invokes; null while no skill exists (the brief then carries the instructions)."},
+        "mode": {"type": "string", "description": "Argument passed to the skill (for example self or peer)."},
+        "fallbacks": {"type": "array", "items": {"type": "string"}, "description": "Other skills the run may call."},
+        "status": {"enum": ["exists", "local", "bundled", "missing"], "description": "exists = tracked in this repo; local = private copy in local/; bundled = shipped by logics-manager; missing = to write."}
+      }
+    },
+    "key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "pattern"],
+      "properties": {
+        "format": {"enum": ["slug", "mr", "ticket", "logics", "schedule"]},
+        "pattern": {"type": "string", "description": "Regex the key must match; the mission id is YYYYMMDD-<kind>-<key slug>."},
+        "example": {"type": "string"}
+      }
+    },
+    "scopes": {"type": "array", "minItems": 1, "items": {"enum": ["work", "personal", "crow"]}},
+    "data_classes": {"type": "array", "items": {"enum": ["work", "personal", "private"]}},
+    "gates": {"$ref": "#/$defs/gates"},
+    "autonomy": {"enum": ["ask", "notify", "auto"]},
+    "account": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route", "model"],
+      "properties": {
+        "route": {"enum": ["scope", "any-allowed"], "description": "scope = the scope-aware pick (per-scope ranks from the private accounts file); any-allowed = any allowed account with room. Account names never appear in a kind file."},
+        "model": {"enum": ["opus", "sonnet", "haiku", "fable"]},
+        "subagent_model": {"enum": ["opus", "sonnet", "haiku", "fable"]},
+        "overflow": {"type": "array", "items": {"enum": ["other-scope", "antigravity", "local"]}, "description": "Where the router may overflow; work data never leaves Claude."}
+      }
+    },
+    "effort": {"enum": ["minimal", "low", "medium", "high", "xhigh"]},
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["time_min", "budget_usd", "resumes"],
+      "properties": {
+        "time_min": {"type": "integer", "minimum": 5, "description": "Wall-clock cap per run (cdx --timeout-seconds)."},
+        "budget_usd": {"type": "number", "minimum": 0, "description": "Per run (cdx --budget)."},
+        "resumes": {"type": "integer", "minimum": 0, "description": "Resumes in a row before core asks the owner."},
+        "rounds": {"type": "integer", "minimum": 1, "description": "Owner rounds (change or msg) before core asks to extend or abandon."},
+        "outbox_file_mb": {"type": "number"},
+        "outbox_total_mb": {"type": "number"}
+      }
+    },
+    "permission": {"enum": ["read-only", "review", "workspace-write", "default"], "description": "cdx --permission the run starts with."},
+    "worktree": {"type": "boolean", "description": "True when the run works in its own worktree under <repo>.wt/."},
+    "outputs": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "Files the run must leave in the mission dir (relative paths, vN = version)."},
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actions"],
+      "properties": {
+        "actions": {"type": "array", "items": {"enum": ["none", "commit-docs", "push", "merge", "mr", "post-comments", "reply-resolve", "page", "mail-draft", "vault-note", "next-mission"]}},
+        "needs_validation": {"type": "boolean", "description": "True when core refuses to publish without a valid validation record."}
+      }
+    },
+    "preflight": {
+      "type": "array",
+      "description": "Questions asked before dispatch. Skipped questions take their safest default, which the run states in its plan or report.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "safest"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "text": {"type": "string"},
+          "choices": {"type": "array", "items": {"type": "string"}},
+          "safest": {"type": "string", "description": "Value used when the owner skips the question."}
+        }
+      }
+    },
+    "by_scope": {
+      "type": "object",
+      "propertyNames": {"enum": ["work", "personal", "crow"]},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "gates": {"$ref": "#/$defs/gates"},
+          "autonomy": {"enum": ["ask", "notify", "auto"]},
+          "publish": {"$ref": "#/properties/publish"},
+          "effort": {"enum": ["minimal", "low", "medium", "high", "xhigh"]},
+          "sensitive_paths_ask": {"type": "boolean", "description": "Changes under CI, sandbox, units or policy paths always ask, whatever the gates."}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "gates": {
+      "type": "array",
+      "description": "Ordered gate steps. [] = straight through, [report] = report gate, [plan] = plan gate, [plan, report] = two-gate, [mockup] = mockup loop.",
+      "items": {"enum": ["plan", "report", "mockup"]},
+      "uniqueItems": true
+    }
+  }
+}

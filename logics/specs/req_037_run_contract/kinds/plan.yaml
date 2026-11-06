@@ -1,0 +1,24 @@
+# Idea, memos or a news pick become Logics work: request, backlog items, ACs, order. No code.
+name: plan
+schema_version: 1
+phase: 1
+purpose: Turn an idea into a groomed Logics request and backlog items.
+absorbs: [notes]
+skill: {name: corpus, status: bundled, fallbacks: [lifecycle-ops, roadmap-deliver]}
+key: {format: slug, pattern: "^([a-z0-9][a-z0-9-]{2,40}|req_[0-9]{3})$", example: discord-bot}
+scopes: [work, personal, crow]
+data_classes: [work, personal]
+gates: [plan]
+autonomy: ask
+account: {route: scope, model: opus, subagent_model: sonnet}
+effort: medium
+caps: {time_min: 60, budget_usd: 8, resumes: 2, rounds: 3, outbox_file_mb: 20, outbox_total_mb: 100}
+permission: workspace-write
+worktree: true
+outputs: [plan.vN.md]
+publish: {actions: [commit-docs], needs_validation: true}
+preflight:
+  - {id: milestone, text: "Roadmap milestone to place it under?", safest: none (left unplaced)}
+  - {id: ready, text: "May items be set Ready when nothing waits on you?", choices: ["yes", "no"], safest: "no"}
+by_scope:
+  work: {publish: {actions: [commit-docs], needs_validation: true}}

@@ -1,0 +1,20 @@
+# Review a colleague's MR or PR with the review ledgers. Nothing is posted before `ok`.
+name: review
+schema_version: 1
+phase: 1
+purpose: Draft review comments on someone else's MR.
+skill: {name: review, mode: peer, status: exists}
+key: {format: mr, pattern: "^[a-z0-9-]+[!#][0-9]+$", example: "api!412"}
+scopes: [work, personal]
+data_classes: [work, personal]
+gates: [report]
+autonomy: notify
+account: {route: scope, model: opus, subagent_model: sonnet}
+effort: high
+caps: {time_min: 60, budget_usd: 10, resumes: 2, rounds: 3, outbox_file_mb: 5, outbox_total_mb: 20}
+permission: review
+worktree: false
+outputs: [report.vN.md]
+publish: {actions: [post-comments], needs_validation: true}
+preflight:
+  - {id: focus, text: "Anything to focus on or skip?", safest: full ledger pass}
