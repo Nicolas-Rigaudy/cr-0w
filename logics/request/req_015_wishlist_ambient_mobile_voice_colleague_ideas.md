@@ -7,6 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 17:29:18
 
 # AI Context
 - Summary: Owner wishlist for crow from 2026-11-03, inspired by two colleagues' systems (Ultron, Jarvis). Four tracks: ambient screensaver of live runs, full mobile control, voice and visual agents, automated report pipelines. Capture only; nothing is scoped or committed.
@@ -24,7 +25,7 @@
    - Order: shell engine scoped in its repo first, then the dotfiles hook, then the crow plugin.
 2. **Mobile control.** Split out to req_016 (crow everywhere: multi-machine and mobile control).
 3. **Voice and visual agents.** Voice commands and spoken replies; "drones" in the UI that visibly carry out actions; browser automation (claude-browser). Reference: Ultron.
-4. **Automated report pipelines.** Weekly slides, daily reports and similar produced with little owner effort. Reference: Alex's Jarvis. Alex will send a design document of Jarvis features; ingest it here before scoping this track.
+4. **Automated report pipelines.** Weekly slides, daily reports and similar produced with little owner effort. Reference: Alex's Jarvis. The Jarvis design doc arrived 2026-11-06 and is ingested in prod_005; reports now live in req_034, screensaver in req_036, voice in req_032.
 
 # Context
 - Existing building blocks:
@@ -68,4 +69,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

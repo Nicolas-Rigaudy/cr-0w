@@ -1,7 +1,7 @@
 ## road_001_crow_roadmap_after_the_deck_pass - Crow roadmap after the deck pass
 > Date: 2026-11-05
 > Status: Proposed
-> Related product: (none yet)
+> Related product: `prod_005_crow_jarvis_layer`
 > Related request: `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`, `req_025_account_routing_by_scope`, `req_026_personal_butler`, `req_027_conversations_feed_for_core_deck_nest`
 > Reminder: Update status, milestone scope, linked refs, risks, and success signals when you edit this doc.
 > Indicators reviewed: 2026-11-05 15:24:06
@@ -43,6 +43,12 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 - Scope: req_028 slices 1-5 (mission model, inbox with park and resume, core API, human summaries, autonomy dial), with thin deck and nest views of the inbox. Slices 6-9 (deck views, nest MVP, butler chat, model router) follow and feed 0.7.
 - Exception (owner, 2026-11-06): ahead of 0.4 because the owner wants to steer from the interface and run more hands off. Needs 0.3 (deny-by-default runs) first.
 - Exit signal: a mission asks a question, exits, and resumes from an answer given in deck or nest.
+- Before it: spikes req_029 (hosts, models), req_030 (safety), req_031 (stack), req_032 (butler engine) run alongside 0.3. Brief: prod_005; architecture: adr_001.
+
+## J - Jarvis tracks (after 0.3b)
+- Goal: nest becomes the daily interface, then the feature tracks land.
+- Scope: req_028 slices 6-9 with req_031 and req_032 (nest MVP, butler); then req_034 work views, req_035 forge ops, req_026 personal, req_033 Android extras, req_036 fun layer, in that order.
+- Exit signal: a full work day runs from nest with no terminal opened except deep repo sessions.
 
 ## 0.4 - Release path
 - Goal: crow is installable and updatable by someone else.
@@ -87,7 +93,7 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 - Version labels are planning targets, not release promises.
 
 # References
-- Product brief(s): (none yet)
+- Product brief(s): `prod_005_crow_jarvis_layer`
 - Request(s): `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`, `req_025_account_routing_by_scope`, `req_026_personal_butler`, `req_027_conversations_feed_for_core_deck_nest`
 - Backlog item(s): (none yet)
 - Task(s): `task_003_deliver_the_crow_cost_and_reliability_pass`, `task_010_orchestrate_terminal_design_system`

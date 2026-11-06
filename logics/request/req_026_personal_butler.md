@@ -7,7 +7,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-06 16:13:51
+> Indicators reviewed: 2026-11-06 17:29:18
 
 # AI Context
 - Summary: Grow crow from a work chief of staff into a personal butler on the personal account: personal mail, calendar, budget and banking, health, home admin. Draft: needs grooming into slices before any build.
@@ -21,6 +21,7 @@
 - Budget and banking: import the bank's CSV export, categorise, monthly budget vs actual, alerts.
 - Health: appointment reminders and follow-ups, global only.
 - Same autonomy model as work: read and draft freely, send or pay only with explicit OK.
+- Memos and notes (owner, 2026-11-06): a quick memo journal scoped work or personal, fed from chat, voice or phone; an "act on it" action turns a note into a mission (prod_005).
 
 # Context
 - Depends on req_025 (personal scope routes to the personal account).

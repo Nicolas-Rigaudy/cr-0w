@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 70
-> Confidence: 60
+> Understanding: 80
+> Confidence: 65
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -28,6 +28,7 @@
 - **Park and resume.** A run that needs a decision writes an inbox item and exits; core parks the mission; the answer resumes it with `cdx run --continue-run`. No tokens or sessions held while waiting.
 - **Free and local models for cheap tasks and private data.** Gemini Flash free API key or local Gemma for triage, summaries, classification and private personal data (bank, health). Antigravity free tier as optional overflow for side-project code. Claude for everything that matters. Work data never leaves Claude accounts.
 - Plan here, build later in fresh sessions from backlog docs.
+- Product brief round (2026-11-06): see `prod_005_crow_jarvis_layer` for every decision (gates per kind, preflight plus park and resume, laptop first, Web Push with digest and quiet hours, one scope-aware butler with focus mode, auto-merge on green CI for personal repos, scripts-first jobs, repair catalogue, failover, watchdog, incident log). Architecture in `adr_001_core_missions_and_inbox_architecture`.
 
 # Context
 - Builds on: req_022 (core, deck, nest, comlink), req_027 (conversation feed), req_025 (scope routing), req_026 (personal butler), req_016 (multi-machine, tailnet), req_015 (wishlist: voice, screensaver, reports), req_019/item_077 (deny-by-default runs), req_020 (terminal kit, decisions widget, crow-compare v2).
@@ -70,10 +71,10 @@
 10. **Later.** Voice in and out, mission screensaver (req_015), multi-machine routing (req_016), report pipelines.
 
 # Open questions (grooming)
-- Butler chat: one chat across scopes, or one per scope (work account, personal account)?
-- Mission store: SQLite in core, or files under the vault / `local/state/`?
-- Which machine hosts core and Ollama: laptop, homelab, tower (GPU check)?
-- Verify the Gemini CLI free tier and Antigravity headless use before slice 9 counts on them.
+- Butler: one scope-aware butler with a focus mode (decided); engine in req_032.
+- Mission store: SQLite proposed in adr_001; confirm with req_031.
+- Hosts and local models: req_029 (laptop first).
+- Gemini and Antigravity free usage: req_029 (Antigravity via cdx is the Google path; terms check first).
 
 # Acceptance criteria
 - AC1: The owner can dispatch a mission, leave, answer its question from the phone, and find the result as a review item, without opening a terminal.
@@ -88,8 +89,8 @@
 - [x] Dependencies and known risks are listed.
 
 # Companion docs
-- Product brief(s): (none yet)
-- Architecture decision(s): (none yet)
+- Product brief(s): `prod_005_crow_jarvis_layer`
+- Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 
 # References
 - `logics/request/req_015_wishlist_ambient_mobile_voice_colleague_ideas.md`
@@ -99,6 +100,8 @@
 - `logics/request/req_026_personal_butler.md`
 - `logics/request/req_027_conversations_feed_for_core_deck_nest.md`
 - `logics/roadmap/road_001_crow_roadmap_after_the_deck_pass.md`
+- Spikes: `logics/request/req_029_spike_hosts_model_sources_and_local_ai_benchmarks.md`, `logics/request/req_030_spike_mission_safety_and_sandbox.md`, `logics/request/req_031_spike_nest_stack_and_app_shape.md`, `logics/request/req_032_spike_butler_engine_and_persona.md`, `logics/request/req_033_spike_android_extras_for_nest.md`
+- Tracks: `logics/request/req_034_work_views_in_nest.md`, `logics/request/req_035_forge_ops_in_nest.md`, `logics/request/req_036_fun_layer_for_crow.md`
 
 # Backlog
 - none
