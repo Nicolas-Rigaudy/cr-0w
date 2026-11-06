@@ -28,7 +28,7 @@ func TestShots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	sizes := map[string][2]int{"wide": {170, 46}, "portrait": {118, 60}, "narrow": {120, 40}, "small": {90, 30}, "board": {235, 62}}
+	sizes := map[string][2]int{"wide": {170, 46}, "portrait": {118, 60}, "narrow": {120, 40}, "small": {90, 30}, "board": {235, 62}, "laptop": {172, 48}, "tall": {118, 95}}
 	write := func(name string, m model) {
 		f := filepath.Join(dir, name+".ans")
 		if err := os.WriteFile(f, []byte(m.View()), 0o644); err != nil {
@@ -53,6 +53,7 @@ func TestShots(t *testing.T) {
 		usageShots(write, ti, sizes)
 		histShots(write, ti, sizes)
 		projectShots(write, ti, sizes)
+		actionShots(t, write, ti, sizes)
 		for _, st := range []string{stEmpty, stError, stLoading, stStale} {
 			for _, sn := range []string{"wide", "small"} {
 				m := newModel(defaultConfig())
@@ -240,6 +241,57 @@ func projectShots(write func(string, model), ti int, sizes map[string][2]int) {
 		m = base("wide")
 		m.setSync(st)
 		write(fmt.Sprintf("%s-Projects-wide-%s", name, st), m)
+	}
+}
+
+// actionShots: the confirm overlay on each new action, and a live History row with its
+// transcript preview. Sample rows refuse actions, so the History row gets a live id.
+func actionShots(t *testing.T, write func(string, model), ti int, sizes map[string][2]int) {
+	name := themes[ti].name
+	tr := filepath.Join(t.TempDir(), "s.jsonl")
+	lines := `{"type":"user","timestamp":"2026-11-05T21:02:00Z","message":{"content":"retry the upload with backoff, keep the old path behind a flag"}}
+{"type":"assistant","timestamp":"2026-11-05T21:09:00Z","message":{"content":[{"type":"text","text":"Backoff is in, the flag defaults to off. Tests pass."}]}}
+{"type":"user","timestamp":"2026-11-05T21:11:00Z","message":{"content":"good, write the open threads and stop"}}
+`
+	if err := os.WriteFile(tr, []byte(lines), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	hist := func(sn string) model {
+		m := newModel(defaultConfig())
+		m.th, m.page, m.w, m.h, m.mode, m.hist = ti, 1, sizes[sn][0], sizes[sn][1], "all", true
+		m.histSel = 1
+		s := m.histView().cur(m.histView().rows())
+		for i := range m.fx.Hist {
+			if m.fx.Hist[i].ID == s.ID {
+				h := &m.fx.Hist[i]
+				h.ID, h.Active, h.Detail = "5f3c9a1e", false, false
+				h.Cwd, h.Path = "/home/me/Projects/"+h.Project, tr
+				h.Files = map[string]int{"upload.go": 6, "upload_test.go": 3, "README.md": 1}
+			}
+		}
+		return m
+	}
+	for _, sn := range []string{"laptop", "tall"} {
+		m := hist(sn)
+		write(fmt.Sprintf("%s-History-%s-live", name, sn), m)
+		for _, k := range []string{"enter", "r", "h"} {
+			n, _ := m.histAction(k)
+			write(fmt.Sprintf("%s-History-%s-act-%s", name, sn, map[string]string{"enter": "resume", "r": "retro", "h": "handoff"}[k]), n)
+		}
+		p := newModel(defaultConfig())
+		p.th, p.page, p.w, p.h, p.mode = ti, 3, sizes[sn][0], sizes[sn][1], "all"
+		for _, k := range []string{"c", "h"} {
+			n, _ := p.projectAction(k)
+			write(fmt.Sprintf("%s-Projects-%s-act-%s", name, sn, k), n.(model))
+		}
+		a := newModel(defaultConfig())
+		a.th, a.page, a.w, a.h = ti, 1, sizes[sn][0], sizes[sn][1]
+		if rows := a.fx.Agents; len(rows) > 0 {
+			r := rows[0]
+			r.PID = 4242
+			n, _ := a.proposeSend(r, "yes, ship it")
+			write(fmt.Sprintf("%s-Agents-%s-act-send", name, sn), n)
+		}
 	}
 }
 
