@@ -144,8 +144,8 @@
 | [item_071_compaction_thresholds_and_idle_rule](backlog/item_071_compaction_thresholds_and_idle_rule.md) | Compaction thresholds and idle rule | Done |  | 100% | backlog/item_071_compaction_thresholds_and_idle_rule.md |
 | [item_072_token_baseline_cache_split](backlog/item_072_token_baseline_cache_split.md) | Token baseline with cache split | Done |  | 100% | backlog/item_072_token_baseline_cache_split.md |
 | [item_073_deck_logics_viewer_keys](backlog/item_073_deck_logics_viewer_keys.md) | Deck v and V keys open the Logics viewer | Ready |  | 0% | backlog/item_073_deck_logics_viewer_keys.md |
-| [item_074_dispatch_records_logics_runs](backlog/item_074_dispatch_records_logics_runs.md) | crow dispatch records runs in the linked Logics doc | Ready |  | 0% | backlog/item_074_dispatch_records_logics_runs.md |
-| [item_075_runs_cost_per_run](backlog/item_075_runs_cost_per_run.md) | crow runs shows cost per run | Ready |  | 0% | backlog/item_075_runs_cost_per_run.md |
+| [item_074_dispatch_records_logics_runs](backlog/item_074_dispatch_records_logics_runs.md) | crow dispatch records runs in the linked Logics doc | Done |  | 100% | backlog/item_074_dispatch_records_logics_runs.md |
+| [item_075_runs_cost_per_run](backlog/item_075_runs_cost_per_run.md) | crow runs shows cost per run | Done |  | 100% | backlog/item_075_runs_cost_per_run.md |
 | [item_076_review_runs_isolated_workspace](backlog/item_076_review_runs_isolated_workspace.md) | Review runs use cdx isolated workspaces | Ready |  | 0% | backlog/item_076_review_runs_isolated_workspace.md |
 | [item_077_sandboxed_background_runs](backlog/item_077_sandboxed_background_runs.md) | Background runs start with no authorisation and whitelist tools | Ready |  | 0% | backlog/item_077_sandboxed_background_runs.md |
 | [item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook](backlog/item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook.md) | Design review workflow: crow-compare v2, decisions ledger, runbook | Ready |  | 0% | backlog/item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook.md |
@@ -169,6 +169,11 @@
 | [item_096_personal_brief_from_mail_and_calendar](backlog/item_096_personal_brief_from_mail_and_calendar.md) | Personal brief from personal mail and calendar on the personal account | Ready |  | 0% | backlog/item_096_personal_brief_from_mail_and_calendar.md |
 | [item_097_appointment_reminders_and_followups](backlog/item_097_appointment_reminders_and_followups.md) | Appointment reminders and follow-ups in the personal vault | Ready |  | 0% | backlog/item_097_appointment_reminders_and_followups.md |
 | [item_098_monthly_budget_from_bank_exports](backlog/item_098_monthly_budget_from_bank_exports.md) | Monthly budget from bank CSV exports in the personal vault | Ready |  | 0% | backlog/item_098_monthly_budget_from_bank_exports.md |
+| [item_099_core_publishes_and_holds_every_forge_credential](backlog/item_099_core_publishes_and_holds_every_forge_credential.md) | Core publishes and holds every forge credential | Draft |  | 0% | backlog/item_099_core_publishes_and_holds_every_forge_credential.md |
+| [item_100_isolated_mission_runs_through_cdx_workspace_isolation](backlog/item_100_isolated_mission_runs_through_cdx_workspace_isolation.md) | Isolated mission runs through cdx workspace isolation | Draft |  | 0% | backlog/item_100_isolated_mission_runs_through_cdx_workspace_isolation.md |
+| [item_101_personal_auto_merge_gate_for_mission_branches](backlog/item_101_personal_auto_merge_gate_for_mission_branches.md) | Personal auto-merge gate for mission branches | Draft |  | 0% | backlog/item_101_personal_auto_merge_gate_for_mission_branches.md |
+| [item_102_mission_guard_hook_for_runs_that_cannot_be_isolated](backlog/item_102_mission_guard_hook_for_runs_that_cannot_be_isolated.md) | Mission guard hook for runs that cannot be isolated | Draft |  | 0% | backlog/item_102_mission_guard_hook_for_runs_that_cannot_be_isolated.md |
+| [item_103_take_control_of_a_mission_as_a_logged_manual_gesture](backlog/item_103_take_control_of_a_mission_as_a_logged_manual_gesture.md) | Take control of a mission as a logged manual gesture | Draft |  | 0% | backlog/item_103_take_control_of_a_mission_as_a_logged_manual_gesture.md |
 
 ## Tasks
 

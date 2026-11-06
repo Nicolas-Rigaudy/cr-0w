@@ -7,6 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 21:04:50
 
 # AI Context
 - Summary: Research spike. Pick the layered safety model for unattended missions from the two colleague designs and current Claude Code features: guard hook and validation records (Ultron), OS sandbox with egress rules and an engine that holds every key (Jarvis), native sandbox and permission modes, item_077 deny-by-default runs. Define the personal auto-merge gate.
@@ -174,7 +175,12 @@ core runs these in order on a mission branch and stops at the first failure, whi
 - `logics/architecture/adr_001_core_missions_and_inbox_architecture.md`
 
 # Backlog
-- none
+- Core publishes and holds every forge credential: `item_099_core_publishes_and_holds_every_forge_credential` (Draft)
+- Isolated mission runs through cdx workspace isolation: `item_100_isolated_mission_runs_through_cdx_workspace_isolation` (Draft, needs pasta)
+- Personal auto-merge gate for mission branches: `item_101_personal_auto_merge_gate_for_mission_branches` (Draft)
+- Mission guard hook for runs that cannot be isolated: `item_102_mission_guard_hook_for_runs_that_cannot_be_isolated` (Draft)
+- Take control of a mission as a logged manual gesture: `item_103_take_control_of_a_mission_as_a_logged_manual_gesture` (Draft)
+- Deny-by-default background runs: `item_077` stays the run-config layer, unchanged by this spike.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
