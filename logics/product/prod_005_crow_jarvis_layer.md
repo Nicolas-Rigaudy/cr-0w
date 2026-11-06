@@ -1,7 +1,7 @@
 ## prod_005_crow_jarvis_layer - Crow Jarvis layer
 > Date: 2026-11-06
 > Status: Proposed
-> Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_029_spike_hosts_model_sources_and_local_ai_benchmarks`, `req_030_spike_mission_safety_and_sandbox`, `req_031_spike_nest_stack_and_app_shape`, `req_032_spike_butler_engine_and_persona`, `req_033_spike_android_extras_for_nest`, `req_034_work_views_in_nest`, `req_035_forge_ops_in_nest`, `req_036_fun_layer_for_crow`, `req_037_mission_kinds_and_run_contract`, `req_038_nest_design_rules`, `req_026_personal_butler`
+> Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_029_spike_hosts_model_sources_and_local_ai_benchmarks`, `req_030_spike_mission_safety_and_sandbox`, `req_031_spike_nest_stack_and_app_shape`, `req_032_spike_butler_engine_and_persona`, `req_033_spike_android_extras_for_nest`, `req_034_work_views_in_nest`, `req_035_forge_ops_in_nest`, `req_036_fun_layer_for_crow`, `req_037_mission_kinds_and_run_contract`, `req_038_nest_design_rules`, `req_026_personal_butler`, `req_039_news_board_for_tech_news_and_repos`
 > Related backlog: (none yet)
 > Related task: (none yet)
 > Related architecture: `adr_001_core_missions_and_inbox_architecture`
@@ -56,7 +56,7 @@ Both colleagues already use cdx and Logics, so most of their ideas port with lit
 | Front end | React 19 + Vite, xterm, OKLCH tokens, dark only | Vanilla ES modules, hash routes, tokens, dark/light, per-user accent | React (req_031), tokens shared with the terminal kit (req_038) |
 | Server | Node `node:http`, ws, node-pty, `node:sqlite` | Python stdlib `ThreadingHTTPServer`, ETags, CSP | Go or Python (req_031) |
 | Live updates | Polling 3 s, long-poll for chat, WebSocket terminal | Polling 30 s / 2.5 s during actions, ETags, 304 | To decide (req_031); ETags from day one |
-| Push | Declarative Web Push, no service worker (iOS) | Web Push VAPID, 5 min digest, quiet hours, 12 h no-repeat | Web Push with full service worker (Android allows more) |
+| Push | Declarative Web Push, no service worker (iOS) | Web Push VAPID, 5 min digest, quiet hours, 12 h no-repeat | Web Push with full service worker (Android allows more); ntfy only as fallback |
 | Hosts | One Mac | Main, worker, office hosts over Tailscale | Laptop first; homelab and tower later (req_029) |
 | Scheduling | launchd tick every 5 min, no LLM | ~30 no-LLM jobs, systemd timers | systemd user timers, scripts first |
 | Reports | Task report with verdict; recap; weekly; incidents; cost | Morning brief, digests, weekly narrated, Sunday local review | Existing skills fed by gather scripts, narrate-only (req_034) |
@@ -97,44 +97,42 @@ Both colleagues already use cdx and Logics, so most of their ideas port with lit
 # Decisions (owner, 2026-11-06)
 | Topic | Decision |
 | --- | --- |
-| Surfaces | One core API; nest and deck are thin views. Both get the inbox first. |
+| Surfaces | One core API. nest is the main surface; deck gets an inbox pane and keeps the MR pane and agents panel. The 0.7 cockpit milestone folds into the Jarvis tracks. |
 | nest home | Dashboard with inbox and today. The butler chat is reachable from every screen. |
+| Phone | Galaxy Z Fold 6. nest handles the cover screen (narrow phone), the inner screen (near square, tablet width) and the fold and unfold switch without losing state (req_038). |
 | Views wanted | Mission detail, mockup loop, live terminal, groups nav. |
 | Gates | Per mission kind (two-gate, mockup loop, or straight through). |
 | Questions | Preflight before dispatch; a mid-run question parks the mission and the answer resumes it with `--continue-run`. |
 | Hosts | Laptop first. Homelab as control later, only if req_029 shows it pays. Tower only as an idle worker that never takes performance while the owner plays. |
 | Safety | Decided by research (req_030), stealing from both. |
 | Stack | React front end (the work team's stack, strong UI ecosystem). Go or Python backend. App shape (PWA, web app, phone app) by req_031. |
-| Notifications | Web Push. Asks push at once with action buttons. FYIs and finished missions go in a digest every few minutes. Quiet hours 22:00 to 08:00 except prod incidents. Work items silent outside work hours; personal items silent in work focus. |
+| Notifications | Web Push (proven by both colleagues). ntfy only if Web Push falls short. Asks push at once with action buttons. FYIs and finished missions go in a digest every few minutes. Quiet hours 22:00 to 08:00 except prod incidents. Work items silent outside work hours; personal items silent in work focus. |
 | Android | Explore everything a tinkerer can do beyond iOS colleagues: widgets, tiles, Tasker, NFC, Wear OS, old phone display, assistant (req_033). |
-| Butler | One scope-aware butler with a focus mode (work only, personal only). Full character persona. Engine by research (req_032). Surfaces: nest, deck pane, voice, Discord or Telegram, Android assistant. |
+| Butler | One scope-aware butler with a focus mode (work only, personal only). Full character persona. Engine by research (req_032). Surfaces: nest, deck pane, voice, a Discord bot (free-text chat, personal data only), Android assistant. Built after core; the req_026 butler items become core jobs. |
 | Personal repos | Code missions auto-merge on green CI and a secret scan. |
 | Work repos | Hard rules unchanged: never merge, push and MR only after the owner's OK on the exact text. |
 | Scheduled jobs | Scripts first; narrate-only model step. |
 | Failures | Repair catalogue (2 rounds then ask), account failover with a quota probe, silent-run watchdog, incident log with a weekly pass. |
-| Models | Claude for anything that matters and all work data. Google free usage through the Antigravity provider in cdx on the owner's Gmail accounts, terms checked first. Local Ollama for private data and summaries after benchmarks on laptop, tower and homelab. |
+| Models | Claude for anything that matters and all work data. Google free usage through the Antigravity provider in cdx on one Google account, terms checked first. Local Ollama for private data and summaries after benchmarks on laptop, tower and homelab. |
 | Feature tracks | All work, forge, personal and fun features below. Home automation later. |
 | Logics shape | This brief + an architecture doc + research requests + feature requests; grooming later in fresh sessions. |
 
 # Mission model
 Detailed in req_037; summary here.
 
-**Proposed kinds** (defaults to confirm when grooming req_037):
-| Kind | What it does | Gates | Default autonomy | Account and model |
-| --- | --- | --- | --- | --- |
-| `ship` | Work ticket end to end in a worktree | plan go, report ok, then core publishes | ask | Work Claude, high effort |
-| `review` | Review a colleague's MR with ledgers | report ok before posting | notify | Work Claude |
-| `review-fix` | Address review threads on the owner's MR | report ok before push | full auto up to local commit when every thread matches a ledger pattern | Work Claude |
-| `rebase` | Rebase a branch, rerun tests | none until push | notify | Work Claude, medium effort |
-| `design` | Mockup pages for a visual change | mockup loop: approve, change (up to 5), abandon | ask | Claude; pages land in nest |
-| `research` | Read-only study, writes a report | report only | full auto, FYI | Any allowed account; cheap model for gathering |
-| `document` | Doc or Confluence draft | report ok, then core publishes | ask | Claude |
-| `report` | Daily, weekly, management weekly, personal review | draft review, then core publishes | notify | Scripts + narrate-only model |
-| `ci-repair` | Fix a red pipeline from the catalogue | none for personal repos (2 rounds), ask for work | auto on personal | Claude or Antigravity on personal |
-| `personal-code` | Change on a personal repo | none; auto-merge on green CI + secret scan | full auto | Personal account, Antigravity overflow |
-| `crow` | Change to crow itself | plan go | notify | Personal account |
-| `notes` | Turn a batch of memos into actions | plan go | ask | Cheap model |
-| `admin` | Mail triage, agenda, bank sorting | drafts only; sending needs approval | full auto for drafts | Local model for private data |
+**Kinds** (owner, 2026-11-06: 13 proposed kinds merged into 8; `admin` became butler jobs). Kinds are data files read by core, so adding one needs no engine change. Gates inside a kind are set by scope.
+| Kind | What it does | Absorbs | Gates | Default autonomy | Account and model | Phase |
+| --- | --- | --- | --- | --- | --- | --- |
+| `research` | Read-only study, writes a report | | report only | full auto, FYI | Any allowed account; cheap model for gathering | 1 |
+| `plan` | Turns a goal, a batch of memos or a news pick into Logics items | `notes` | plan go | ask | Personal or work Claude by scope | 1 |
+| `review` | Review a colleague's MR with ledgers | | report ok before posting | notify | Work Claude | 1 |
+| `design` | Mockup pages for a visual change | | mockup loop: approve, change (up to 5), abandon | ask | Claude; pages land in nest | 1 |
+| `review-fix` | Address review threads on the owner's MR | | report ok before push | full auto up to local commit when every thread matches a ledger pattern | Work Claude | 2 |
+| `write` | Doc, Confluence draft, or report (daily, weekly, management weekly, personal review); reports are started by a schedule | `document`, `report` | draft review, then core publishes | notify | Scripts + narrate-only model; Claude for docs | 2 |
+| `build` | Code change end to end in a worktree | `ship`, `personal-code`, `crow` | work: plan go, report ok, core publishes. personal: none, auto-merge on green CI + secret scan. crow: plan go | ask (work), full auto (personal) | Work Claude high effort; personal account with Antigravity overflow | 3, after the sandbox |
+| `repair` | Rebase a branch or fix a red pipeline from the catalogue | `rebase`, `ci-repair` | none until push; 2 rounds then ask | notify (work), auto (personal) | Claude, medium effort | 3 |
+
+Each report carries proof of work in its `crow` block (tests run, commands, links). A reconciler in the core tick checks that state on disk, cdx and the forge matches the store.
 
 **States:** `preflight → queued → running → waiting → review → publishing → done | failed | cancelled`, with `parked` as a waiting sub-state that holds no session.
 
@@ -145,6 +143,17 @@ Detailed in req_037; summary here.
 **Answer verbs:** `go` (start work), `dig` (more research on the plan), `no` (drop), `ok` (validate the report, unlocks publish), `msg` (comment without validating), `approve` / `change` / `abandon` (mockups), `pick` (choice item). A message after `ok` reopens the mission and drops the validation, so an old OK never lets a push through.
 
 **Stop and cleanup:** `stop` signals the run, `cancel` removes a queued mission, `hide` takes it off lists. Worktrees are pruned once their branch merged (squash included), never with uncommitted changes or stacked branches. Earlier runs of a restarted mission are shelved in history.
+
+# A day with crow
+- **Morning, cover screen.** One push: the brief. Home shows asks first, then today and the Discover top three. Answers go in place with verbs.
+- **Work hours, laptop.** nest beside the editor, deck inbox pane in the terminal. Missions start from Work (Today) or the New mission sheet. Design picks open on the inner screen or the desktop.
+- **Away from the desk.** Asks arrive as pushes with buttons. An answer given while the laptop sleeps shows "queued, resumes when the laptop wakes".
+- **Before leaving.** An AFK batch from the New mission sheet: preflight answered up front, go.
+- **Next morning.** The batch digest in Missions, one card per mission.
+
+**deck vs nest:** the deck answers and dispatches; nest does everything; the deck never shows artifacts heavier than a diff. The persona speaks in chat and personal surfaces; anything that becomes a work artifact uses a neutral voice.
+
+**Retires once nest ships:** `crow-afk-page`, the night HTML pages, the Crow HQ research (2026-10-29), the terminal cockpit layout from req_022.
 
 # Human in the loop
 **Inbox item types:** choice (options with previews), approval (exact draft of push, MR, mail, post), review (report, diff, pages, mockups, proofs), FYI. A "who must act" view splits what waits on the owner from what waits on a machine or a person.
@@ -163,48 +172,49 @@ Detailed in req_037; summary here.
 
 **Confirmations:** any costly or outward action exposed to the chat first returns a preview and runs only on a second call after the owner's explicit yes. Heavy buttons in nest ask for a second click. Mockup approval only from the logged-in nest page, never from a chat tool.
 
-**Notification policy:** asks push at once with action buttons and deep links. FYIs, finished missions and digests go out grouped every few minutes. Quiet hours 22:00 to 08:00 except prod incidents. Work items are silent outside work hours; personal items are silent during work focus. The same text is not repeated for 12 h. An ask older than a day is not pushed again. An ask seen in an open tab is pushed only if still open after the owner leaves. A failed push is retried once, then flagged in nest.
+**Notification policy:** asks push at once with action buttons and deep links. FYIs, finished missions and digests go out grouped every few minutes. Quiet hours 22:00 to 08:00 except prod incidents. Work items are silent outside work hours; personal items are silent during work focus. The same text is not repeated for 12 h. An ask older than a day is not pushed again. An ask seen in an open tab is pushed only if still open after the owner leaves. A failed push is retried once, then flagged in nest. One push per mission state change, grouped when several land within 10 minutes; news picks never push.
 
 # Surfaces
 ## nest (web app and phone)
-**Navigation:** groups (proposed): Forge (missions, agents, runs), Work, Tech (machines, code, releases), Personal, Fun; chat everywhere. Desktop: three columns (nav or list, content, chat panel). Phone: single column with a bottom bar; the "more" item shows the worst status of what it hides. Keyboard shortcuts and a command palette on desktop; deep links from every notification.
+**Navigation:** 7 screens and 3 overlays (owner, 2026-11-06; the first draft had 22 screens). Phone bar: Home, Missions, Work, Personal, More (System, Logics); "More" shows the worst status of what it hides. Desktop: three columns (nav or list, content, chat panel). Keyboard shortcuts and a command palette on desktop; deep links from every notification.
+
+**Fold 6 layouts:** the owner's phone is a Galaxy Z Fold 6. Cover screen: one column with the bottom bar. Inner screen: two panes (list and detail, or content and chat) like a small desktop. Folding or unfolding keeps the open screen, scroll and draft answer. Half-folded (Flex mode): content on top, actions or composer below, if the browser exposes the fold (Viewport Segments API, to verify in req_031). Every screen is checked on both screens before it ships (req_038).
 
 **Screens:**
-| Screen | What it shows | Source |
-| --- | --- | --- |
-| Home | Inbox (asks first), today, running missions as one-liners, machines at a glance, alerts, quick actions | J, U, O |
-| Inbox | All open items by type and scope; answer in place | O |
-| Missions | Paged history, "to decide" block, card per mission with summary, PR and delivery state | J |
-| Mission detail | Steps, plan, report, live, diff tabs; answer composer with attachments; version history | U, J |
-| Mockup loop | Pages and screenshots side by side, flip and zoom, approve, change, abandon | J, crow-compare |
-| Live terminal | Attach to a run read-only; "take control" explicitly | U, J |
-| New mission | Kind, scope, project, account (auto by default), instruction, attachments | U |
-| Chat | Butler with stream view, tool calls as one-line summaries, cost per turn | U |
-| Today | Next tickets by priority and blockers, MRs and reviews waiting, one tap launch | U |
-| Sprint and team | Board by status, velocity, who is blocked | U, O |
-| Reports | Drafts to retouch and publish (daily, weekly, management weekly) | J, U |
-| Incidents | Grouped incidents and manual gestures, propose to roadmap | U |
-| FU registry | Deferred follow-ups per project | U |
-| Notes | Memo journal, "act on it" | U, J |
-| Agents and accounts | Runs with summaries, cdx profiles, quota gauges, ETA | J, U |
-| Machines and tools | Hosts, CPU, memory, disk, tool versions vs main, credential expiry | J |
-| Releases | Release trains for the owner's tools | J |
-| Jobs | Scheduled jobs with run, pause, resume | J |
-| Cost | Spend per kind and per validated mission, cache share, compactions | U |
-| Logics | Views over project corpora (reuse the deck viewer, item_073) | J |
-| Personal | Agenda, personal mail drafts, budget page, personal memos | J, O |
-| Fun | Screensaver, avatar, achievements, drones | U, O |
+| Screen | What it shows | Absorbs | Phase |
+| --- | --- | --- | --- |
+| Home | Inbox (asks first, answer in place), today, running missions as one-liners, alerts, quick note capture, Discover card | Inbox, Notes capture | 1 |
+| Missions | Paged history, "to decide" block, card per mission with summary, PR and delivery state; AFK batches as one group with a digest | Reports | 1 |
+| Mission detail | Tabs: Plan/report, Mockups (side by side, flip and zoom, approve, change, abandon), Diff, Live (read-only attach, explicit "take control"), History (versions and owner words) | Mockup loop, Live terminal | 1 |
+| Work | Today (next tickets, MRs and reviews waiting, one tap launch), Sprint (board, velocity, who is blocked) | Today, Sprint and team | 2 |
+| Personal | Agenda, mail drafts, budget, memos, Discover (news board) | | 2 |
+| System | Accounts (quota gauges, ETA), Machines and tools, Jobs (run, pause, resume, and a "pause all publishing" kill switch), Releases, Cost | Agents and accounts, Machines, Jobs, Releases, Cost | 2 to 3 |
+| Logics | Corpora (reuse the deck viewer, item_073), Follow-ups, Incidents | FU registry, Incidents | 3 |
+
+| Overlay | What it does |
+| --- | --- |
+| Butler chat | Side panel on desktop and on the inner screen, full sheet on the cover screen; stream view, tool calls as one-line summaries |
+| New mission sheet | Kind, scope, project, account (auto), instruction, attachments; batch mode for AFK runs |
+| Command palette | Jump to any screen, mission or action |
+
+Fun is a later layer over these screens (req_036), not a screen of its own.
 
 **Header:** quota gauges per account, live runs count, disk, focus mode switch.
 
 ## deck (terminal)
-Same core API. Inbox and mission board widgets on the terminal kit (req_020). The MR pane stays the detail view reached from an item. The agents panel shows one human sentence per run; the trail is one key away. A butler pane.
+Same core API. deck gets an inbox pane on the terminal kit (req_020); nest is the main surface. The MR pane stays the detail view reached from an item. The agents panel shows one human sentence per run; the trail is one key away.
 
 ## Phone and Android
-Web Push with a full service worker (Android allows actions, grouping, badges). Install as a PWA first; a TWA or native shell only if req_033 shows widgets, tiles or assistant hooks need it.
+Galaxy Z Fold 6, layouts above. Web Push with a full service worker (Android allows actions, grouping, badges). ntfy only as a fallback. Install as a PWA first, with a share target so a link or post shared from any app (Instagram included) lands in nest. A TWA or native shell only if req_033 shows widgets, tiles or assistant hooks need it.
 
 ## Chat bots and voice
-One of Discord or Telegram (Jarvis kept Discord only, Ultron dropped both: one channel is enough). Voice through local speech to text and text to speech.
+A Discord bot for butler free-text chat, personal data only (Jarvis kept Discord; the owner has no Telegram). Work data never goes through it. Voice through local speech to text and text to speech.
+
+## AFK runs in nest
+An AFK run (night, afternoon away) becomes a batch of missions. The New mission sheet in batch mode gathers the jobs, asks every preflight question up front (from the `afk` skill and `crow-afk-preflight`), and core runs the batch. The morning report becomes the batch digest in Missions: one card per mission with its report, and a digest at the top. It is the basis for mission reports in general. This retires `crow-afk-page` and the night HTML pages once it ships.
+
+## News board (Discover)
+A scheduled scout job collects tech news and repos: the TLDR newsletter from personal Gmail, GitHub trending, Hacker News, Lobsters, release feeds of tools in use. Scripts gather and dedupe; a cheap model ranks against the owner's interests (projects, vault repo note, past likes). Instagram has no API: the owner shares a post or link to nest through the PWA share target. Each pick has like and dismiss (feeds the ranking) and three actions: save to the vault note "Github repos and websites", start a `research` mission, plan a trial (`plan` mission). A Discover card on Home shows the top three; the full board sits in Personal. Personal scope only (req_039).
 
 # Butler
 - **Job:** knows everything going on, answers, dispatches missions, forwards messages to a mission, summarises. It does no deep work itself.
@@ -228,7 +238,7 @@ One of Discord or Telegram (Jarvis kept Discord only, Ultron dropped both: one c
 
 - **Room** is the lower of the 5-hour and weekly windows with at least 20 % left. Interactive quota is kept for the owner's own sessions.
 - **Failover** on usage limit: the run ends (no auto-continue), core resumes it on the next allowed account; after N resumes in a row the owner decides. Reviews and continued runs keep their constraints (another author for an AI review).
-- **Compaction** at 200k. Effort per kind.
+- **Compaction** at 150k, the hub cap (`bin/crow-ctx`). Effort per kind.
 
 # Scheduled jobs and reports
 | When | What | How |
@@ -241,6 +251,9 @@ One of Discord or Telegram (Jarvis kept Discord only, Ultron dropped both: one c
 | Monday | Management weekly draft; incidents pass | Skills + event log |
 | Friday | Weekly rollup and slides draft | Existing skill |
 | Sunday evening | Personal weekly review | Local model only |
+| Morning and evening | News scout: gather, dedupe, rank picks for Discover | Scripts + cheap model rank |
+| On the owner's "go" | AFK batch: preflight answered, missions queued, digest at the end | Missions |
+| Every tick | Reconciler: store vs disk, cdx and forge | Script |
 | Nightly | Health: tests on main of personal tools, tool updates, backups; failing test queues a repair mission | Script + missions |
 | Daily | Backup of config, state and agent homes; alert if older than 36 h | Script |
 
@@ -289,25 +302,30 @@ Source: U Ultron, J Jarvis, O owner. Effort from the colleagues' rebuild tables 
 | Core | Human summaries from `cdx conversation` | O | S | req_028 | 1 |
 | Core | Autonomy dial, gates per kind | U, J, O | M | req_028, req_037 | 1 |
 | Core | Quota probe, failover, admission ETA | U, J | M | req_028, req_029 | 2 |
+| Core | MCP server over the core API (butler, sessions, bots) | J | S | adr_001 | 1 |
+| Core | Kinds as data files, proof of work, reconciler | O | S | req_037, adr_001 | 1 |
 | Core | Repair catalogue, watchdog | J, U | M | req_035 | 3 |
-| Safety | Guard, sandbox or engine-publishes | U, J | M | req_030 | 1 |
-| nest | Shell, groups nav, home, inbox, missions | J, U, O | L | req_031, req_038 | 2 |
-| nest | Mission detail, mockup loop, live terminal | U, J | M | req_031 | 2 |
+| Safety | Guard, sandbox or engine-publishes; "pause all publishing" switch | U, J | M | req_030 | 1 |
+| nest | Shell, Home with inbox, Missions, Mission detail (mockups, live) | J, U, O | L | req_031, req_038 | 1 |
+| nest | Fold 6 layouts: cover, inner, fold switch | O | S | req_038 | 1 |
 | nest | Web Push, digest, quiet hours, focus split | J, O | S | req_031 | 2 |
+| nest | AFK batches: batch mode, preflight, digest view | O | M | req_028 | 2 |
 | Butler | Engine, tools, transcript search | U, J | M | req_032 | 2 |
-| Butler | Persona, focus mode, voice, bot, assistant | O, J | M | req_032, req_033 | 3 |
-| Work | Today, sprint and team, reports, incidents, FU registry | U, J, O | M | req_034 | 3 |
-| Forge | Machines and tools, nightly health, releases, cost and quota, jobs | J, U, O | M | req_035 | 3 |
-| Personal | Agenda and mail, budget, memos | J, O | M | req_026 | 3 |
+| Butler | Persona, focus mode, voice, Discord bot, assistant | O, J | M | req_032, req_033 | 3 |
+| Work | Work screen (Today, Sprint), write kind for reports | U, J, O | M | req_034 | 2 |
+| Forge | System screen, nightly health | J, U, O | M | req_035 | 2 to 3 |
+| Logics | Corpora, follow-ups, incidents | U, J | M | req_034 | 3 |
+| Personal | Agenda and mail, budget, memos as core jobs | J, O | M | req_026 | 2 |
+| Personal | News board: scout job, share target, Discover | O | M | req_039 | 2 |
 | Android | Widgets, tiles, Tasker, NFC, Wear OS, old phone display | O | M | req_033 | 4 |
 | Fun | Screensaver, avatar, achievements, drones | U, O | M | req_036 | 4 |
 | Later | Home automation, music, multi-host workers | J | L | req_015, req_016 | 5 |
 
 # Phasing
 1. **Phase 0, research** alongside roadmap 0.3: req_029, req_030, req_031, req_032, and the req_037 / req_038 design docs.
-2. **Phase 1, core** (roadmap 0.3b): mission store, run contract, event log, inbox with park and resume, core API, summaries, autonomy dial, safety baseline. Thin deck and nest inbox views. Exit: a mission asks, exits, and resumes from an answer given on the phone.
-3. **Phase 2, daily interface** (roadmap J): nest shell and main screens, Web Push, butler engine, quota probe and failover. Exit: a work day runs from nest.
-4. **Phase 3, tracks:** work views, forge ops, personal, persona and voice.
+2. **Phase 1, core** (roadmap 0.3b): mission store, run contract, event log, inbox with park and resume, core API and MCP server, summaries, reconciler, safety baseline. Kinds `research`, `plan`, `review`, `design`. nest Home, Missions and Mission detail on both Fold 6 screens; deck inbox pane. Exit: a mission asks, exits, and resumes from an answer given on the phone.
+3. **Phase 2, daily interface** (roadmap J): Web Push, butler engine, quota probe and failover, kinds `review-fix` and `write`, Work and Personal screens, AFK batches, news board, butler items as core jobs. Exit: a work day runs from nest.
+4. **Phase 3, tracks:** kinds `build` and `repair` after the sandbox, System and Logics screens, persona, voice, Discord bot.
 5. **Phase 4, delight:** Android extras, fun layer.
 6. **Phase 5, later:** home, multi-host workers.
 
@@ -324,7 +342,8 @@ Source: U Ultron, J Jarvis, O owner. Effort from the colleagues' rebuild tables 
 - **Scope.** Both reference systems took weeks of full-time work. Mitigation: phases with exit signals; core before UI (Jarvis lesson 1).
 - **Safety drift.** Full auto on the wrong kind could push or post. Mitigation: hard rules in core, validation records, req_030.
 - **Quota.** Background missions compete with interactive sessions. Mitigation: probe, admission caps, interactive reserve, Google and local offload.
-- **Google terms.** Several Gmail accounts may count as quota circumvention. Mitigation: check in req_029 before counting on more than one.
+- **Google terms.** Several Gmail accounts count as quota circumvention. Mitigation: one Google account only.
+- **Foldable layouts.** A layout tested only on a desktop browser breaks on the cover screen or loses state on unfold. Mitigation: both Fold 6 screens in the req_038 checks.
 - **Polling cost.** Mission views slow down as history grows (Jarvis measured 5 to 8 s). Mitigation: caching keyed on store state, ETags from day one.
 - **Single host.** core on the laptop sleeps with the laptop. Mitigation: park and resume tolerates it; homelab later.
 - **Flaky gates.** Auto-merge stalls on flaky tests. Mitigation: treat flakes as bugs; full-suite receipt before main.
@@ -334,9 +353,9 @@ Source: U Ultron, J Jarvis, O owner. Effort from the colleagues' rebuild tables 
 - Guard hook, sandbox, engine-publishes, or a mix: req_030.
 - Go or Python backend; polling vs SSE; PWA vs TWA vs native: req_031.
 - Butler engine and persona: req_032.
-- Kind defaults (gates, autonomy, accounts): req_037 grooming.
 - Mission store: SQLite proposed in adr_001; files-only fallback.
-- Discord or Telegram: pick one.
+- Fold detection in the browser (Viewport Segments API support on Samsung Internet and Chrome): req_031.
+- News sources and ranking signals: req_039.
 
 # References
 - `logics/request/req_028_jarvis_layer_missions_inbox_butler_chat_model_router.md`

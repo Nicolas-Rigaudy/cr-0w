@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 18:12:01
 
 # AI Context
 - Summary: Research spike. Decide where core and missions run, what each of the owner's three machines can serve, which model sources to use for what (Claude accounts, Antigravity on Gmail accounts, local Ollama), and how quota is probed. Includes local AI benchmarks on laptop, tower and homelab.
@@ -27,6 +28,7 @@
 7. **Router table.** Kind × scope × data class → provider, account, model, effort, host. Fallback order per row.
 
 # Context
+- Folded in 2026-11-06: req_023 (scheduled jobs that survive the lid closed and offline). The control host choice answers it.
 - Owner decisions 2026-11-06: laptop first, homelab later if it pays, tower idle only; Claude for anything that matters and all work data; Antigravity on Gmail accounts after a terms check; local after benchmarks.
 - cdx already has profiles with policy (`use`, `ask-first`, `never`), priority and budget; req_025 routes by scope.
 - Jarvis used Codex first, Claude second, Ollama for private and bulk; Ultron used 3 Claude accounts only.
@@ -49,6 +51,7 @@
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 
 # References
+- `logics/request/req_023_scheduled_jobs_that_survive_lid_closed_and_offline.md`
 - `logics/request/req_028_jarvis_layer_missions_inbox_butler_chat_model_router.md`
 - `logics/request/req_016_crow_everywhere_multi_machine_and_mobile_control.md`
 - `logics/request/req_025_account_routing_by_scope.md`

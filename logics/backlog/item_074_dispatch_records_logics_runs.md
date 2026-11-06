@@ -8,6 +8,7 @@
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 18:12:20
 
 # AI Context
 - Summary: crow dispatch records each run in the linked Logics doc's Executions table via `flow record-run`.
@@ -52,9 +53,9 @@
 - Rationale: owner picked it from the 2026-11-03 release review.
 
 # Notes
+- 2026-11-06 (Jarvis review): write each dispatch record as a core-shaped event (`{ts, mission, type, actor, data}`, adr_001) so the core store imports them on day one.
 - record-run writes to the target repo's working tree: in a work repo that is an uncommitted change in someone's checkout. Decide while building whether work repos are skipped or only hub docs get rows.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

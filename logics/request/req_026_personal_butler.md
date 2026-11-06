@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 75%
-> Confidence: 70%
+> Understanding: 80%
+> Confidence: 75%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -29,6 +29,7 @@
 - Hub skills already split generic engine (skills/, runbooks/) from private config (local/); personal rituals follow `runbooks/own-routines.md`.
 
 # Decisions (owner, 2026-11-06)
+- Review round: the butler track waits for core. Personal brief, reminders and budget are built as core jobs (scripts first, narrate-only model), shown in the nest Personal screen. Memos live on Home (capture) and Personal. The news board is its own request (req_039).
 - Personal state lives in the personal vault (budget reviews, appointment log, personal brief history). Raw imports may sit next to it in the vault's attachments; nothing in the publishable engine.
 - Health: global, not detailed. Appointment reminders and follow-ups (who, when, what to bring, next check-up due), no sensor or wearable data.
 - Banking: start from the bank's own export (CSV, rolling 12 months, "download my operations" on the web account). No third party, no stored bank credentials. The importer is source-agnostic so a DSP2 aggregator (French providers such as Powens or Bridge, consent renewed every 90 to 180 days) can replace the manual export later if downloading becomes a chore. Bank name and account specifics in local/context.md.

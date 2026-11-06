@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 18:12:20
 
 # AI Context
 - Summary: Research spike. Pick the nest stack and app shape: React front end (owner decision), Go or Python backend, live update method, push mechanism, terminal attach, and PWA vs web app vs TWA or native shell on Android.
@@ -24,7 +25,8 @@
 5. **Push.** Service worker with action buttons, grouping and badges on Android; VAPID key storage; payload limits; what happens without the app open.
 6. **Live terminal.** Read-only attach to a cdx run (xterm.js + pty or tmux), "take control" flow, logging.
 7. **App shape.** Installable PWA first; what a TWA or native shell adds (widgets, tiles, assistant hooks from req_033) and costs.
-8. **Auth.** Tailnet identity header, CSRF header, localhost bind; nothing public.
+8. **Galaxy Z Fold 6.** The owner's phone. Check Viewport Segments API and fold posture support in Chrome and Samsung Internet, state kept across fold and unfold, the share target (req_039) and Web Push over the tailnet (HTTPS through `tailscale serve`).
+9. **Auth.** Tailnet identity header, CSRF header, localhost bind; nothing public.
 
 # Context
 - Owner decisions 2026-11-06: React (work team stack, strong ecosystem); Go or Python backend; app shape by research.

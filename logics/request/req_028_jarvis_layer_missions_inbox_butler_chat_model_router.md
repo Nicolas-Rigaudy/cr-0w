@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 80
-> Confidence: 65
+> Understanding: 85
+> Confidence: 75
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -29,6 +29,7 @@
 - **Park and resume.** A run that needs a decision writes an inbox item and exits; core parks the mission; the answer resumes it with `cdx run --continue-run`. No tokens or sessions held while waiting.
 - **Free and local models for cheap tasks and private data.** Gemini Flash free API key or local Gemma for triage, summaries, classification and private personal data (bank, health). Antigravity free tier as optional overflow for side-project code. Claude for everything that matters. Work data never leaves Claude accounts.
 - Plan here, build later in fresh sessions from backlog docs.
+- Review round (2026-11-06, `local/state/research/jarvis-roadmap-review-2026-11-06.md`): nest is the main surface, deck gets an inbox pane; Web Push first, ntfy only if needed; a Discord bot for butler free-text chat on personal data only; 8 mission kinds; 7 nest screens plus 3 overlays; the butler track waits for core; AFK runs become mission batches in nest; a news board (req_039). The phone is a Galaxy Z Fold 6 (req_038).
 - Product brief round (2026-11-06): see `prod_005_crow_jarvis_layer` for every decision (gates per kind, preflight plus park and resume, laptop first, Web Push with digest and quiet hours, one scope-aware butler with focus mode, auto-merge on green CI for personal repos, scripts-first jobs, repair catalogue, failover, watchdog, incident log). Architecture in `adr_001_core_missions_and_inbox_architecture`.
 
 # Context
@@ -46,7 +47,7 @@
 # Architecture sketch
 ```
  owner ── nest (chat, inbox, mission board, proposal viewer; laptop + phone PWA)
-       ── deck (same views in the terminal)        ── comlink (ntfy push, quick approve)
+       ── deck (inbox pane in the terminal)        ── Web Push (ntfy fallback) · Discord bot (personal chat)
                           │  core API (tailnet only)
                         core: missions · inbox · scheduler · router · policy · summaries
                           │
@@ -66,10 +67,12 @@
 5. **Autonomy dial.** Per kind: full auto, notify, ask. Hard rules override. First full-auto candidates: review fixes matching ledger patterns up to a local commit, retro batch, briefs, mail triage (drafts only).
    - AC: a full-auto mission finishes with only an FYI item; an ask mission stops at its first decision.
 6. **deck views.** Inbox and mission board widgets on the req_020 kit; the MR pane stays the detail view reached from an item.
-7. **nest MVP.** Web app over core: butler chat pane, inbox, mission board, proposal viewer (HTML pages and images side by side, flip and zoom, pick resumes the mission); phone PWA; comlink push with action buttons for approvals.
+7. **nest MVP.** Web app over core: Home with inbox, Missions, Mission detail with the mockup tab (pages side by side, flip and zoom, pick resumes the mission); phone PWA laid out for both Fold 6 screens; Web Push with action buttons for approvals.
 8. **Butler chat.** Persistent session with a crow tool surface (missions, inbox, runs, summaries, dispatch) instead of reading transcripts; context kept small; same chat reachable from deck and nest.
 9. **Model router.** Rules by kind × scope × data class: work → Claude only; private personal data → local only; cheap text → Gemini key or Gemma; side-project code overflow → Antigravity. Uses `cdx select` and account policies; records cost per mission (item_075).
-10. **Later.** Voice in and out, mission screensaver (req_015), multi-machine routing (req_016), report pipelines.
+10. **AFK batches.** The New mission sheet in batch mode gathers jobs and asks every preflight question up front (from the `afk` skill and `crow-afk-preflight`); core runs the batch; the morning report becomes a batch digest in Missions. Retires `crow-afk-page` and the night pages.
+   - AC: an AFK batch launched from the phone runs overnight and its digest opens from one push in the morning.
+11. **Later.** Voice in and out, mission screensaver (req_015), multi-machine routing (req_016), report pipelines.
 
 # Open questions (grooming)
 - Butler: one scope-aware butler with a focus mode (decided); engine in req_032.

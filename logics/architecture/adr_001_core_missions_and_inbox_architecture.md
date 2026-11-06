@@ -1,7 +1,7 @@
 ## adr_001_core_missions_and_inbox_architecture - Core missions and inbox architecture
 > Date: 2026-11-06
 > Status: Proposed
-> Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_037_mission_kinds_and_run_contract`
+> Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_037_mission_kinds_and_run_contract`, `req_039_news_board_for_tech_news_and_repos`
 > Related backlog: (none yet)
 > Related task: (none yet)
 > Drivers: hands-off work from nest and deck; park and resume without held sessions; one API for every surface; hard rules in one place; cheap to run on the laptop first.
@@ -12,7 +12,7 @@
 flowchart LR
     N[nest] --> API[core API on tailnet]
     D[deck] --> API
-    C[chat bots, voice, butler] --> API
+    C[Discord bot, voice, butler via MCP] --> API
     API --> CORE[core: missions, inbox, scheduler, router, policy]
     CORE --> EV[(event log and store)]
     CORE --> CDX[cdx run, continue-run]
@@ -37,14 +37,17 @@ core is one always-on service. It owns missions, the inbox, the scheduler, the r
 # Decision
 ## One process
 - core is a systemd user service on the control host (laptop first). It owns the mission store, inbox, scheduler, router, policy, summaries and event log. Surfaces hold no logic.
-- A tick (every 2 min) finishes runs, admits queued missions, updates summaries and runs watchdogs. Timers start scheduled jobs. No model is called by the tick.
+- A tick (every 2 min) finishes runs, admits queued missions, updates summaries, runs watchdogs and a reconciler (store vs mission dirs, cdx runs and forge state; a mismatch becomes an incident). Timers start scheduled jobs. No model is called by the tick.
 - Paths (store, mission dirs, worktrees) come from config so core can move to a homelab later.
+- Kinds are data files (one per kind: gates, autonomy, scopes, account, effort, caps, skill). core reads them; adding a kind needs no code change.
+- A "pause all publishing" switch in config and on the System screen stops every publish action at once; missions keep running up to their gate.
 
 ## Mission record
 | Field | Meaning |
 | --- | --- |
 | `id` | Stable slug, `YYYYMMDD-kind-short` |
-| `kind` | One of the req_037 kinds |
+| `kind` | One of the 8 req_037 kinds (data file) |
+| `batch` | AFK batch id when the mission is part of one, else null |
 | `scope` | work or personal |
 | `data_class` | work, personal, private |
 | `project` | Registry name from `local/projects.yaml` |
@@ -81,7 +84,8 @@ The answer is appended to the brief. core calls `cdx run --continue-run <run>`. 
 - Bound to localhost and the tailnet only. Tailnet identity header checked against the owner; every POST needs a custom header (CSRF).
 - Read endpoints first: `/state` split in sections (inbox, missions, runs, accounts, machines, jobs), each with `updated_at` and an ETag; mission detail; artifacts; event feed. Responses cached on store version.
 - Actions second: dispatch, answer (verb + text + attachments), stop, cancel, hide, publish preview, publish confirm.
-- Live updates: SSE or polling with ETags (req_031). Web Push sent by core with VAPID keys kept on disk.
+- Live updates: SSE or polling with ETags (req_031). Web Push sent by core with VAPID keys kept on disk; ntfy only as a fallback.
+- MCP server over the same API for the butler, interactive sessions and the Discord bot. Same auth and policy; read tools and `tell`/dispatch only, never `ok`, `go` or mockup approval.
 
 ## Publish
 - Push, MR, merge, Jira and Confluence writes, mail and posts are core actions behind policy. Agents hold no work credentials.
@@ -108,6 +112,8 @@ The answer is appended to the brief. core calls `cdx run --continue-run <run>`. 
 
 # Follow-up work
 - Groom req_028 slices 1 to 3 against this decision, with req_037 first.
+- Today's `crow dispatch` records (item_074) are written as core-shaped events, so the store can import them on day one.
+- AFK batches (req_028 slice 10) and the news scout (req_039) run as core jobs.
 - Confirm store and backend language with req_031, publish path with req_030, hosts with req_029.
 
 # References

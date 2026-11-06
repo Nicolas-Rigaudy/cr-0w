@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Management
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 18:12:20
 
 # AI Context
 - Summary: bin/crow-checks runs small rule functions over calendar, mail, Jira and the vault and prints JSON rows that the deck shows in Next > You decide and the brief lists.
@@ -58,6 +59,7 @@
 - Rationale: Owner asked 2026-11-03; the sprint planning gap is the founding example.
 
 # Notes
+- 2026-11-06 (Jarvis review): build the checks engine as a core job from the start, so the deck You decide pane and the nest Work screen read one engine.
 - Vault people notes carry a monthly 1:1 recurring task with a due date; read it with crow_vault.py.
 - Sprints last 2 weeks and end on Wednesday.
 - Keep each rule a pure function over a snapshot so tests need no network.

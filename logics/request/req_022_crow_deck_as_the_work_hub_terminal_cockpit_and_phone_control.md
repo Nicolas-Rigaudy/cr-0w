@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 90%
-> Confidence: 85%
+> Understanding: 85%
+> Confidence: 80%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -14,6 +14,10 @@
 - Keywords: deck, hub, cockpit, tmux, layout, session, send, approvals, phone, ssh, termux, pwa, ntfy, nest, core, comlink, cyberdeck
 - Use when: planning how the owner drives sessions and crow actions from the deck or from the phone.
 - Skip when: deck widget visuals (req_020) or the multi-machine sync design (req_016).
+
+# Status (owner, 2026-11-06)
+- Superseded in part by prod_005 and req_028. nest is the main surface and deck gets an inbox pane; the terminal-first cockpit (tmux layout, send box, session switcher) is no longer the target. ntfy and comlink give way to Web Push, ntfy only as a fallback. The 0.7 milestone folds into the Jarvis tracks.
+- Kept: the Claude Code panel mod spike, the naming (deck, nest, core), SSH plus `tmux attach` as fallback, and the rule that no surface keeps its own logic.
 
 # Needs
 - Today the owner works in Claude Code sessions in terminals and keeps crow deck beside them as an information dashboard. The goal (owner, 2026-11-05) is to work from the deck itself.

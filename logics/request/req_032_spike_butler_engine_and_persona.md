@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 65
-> Confidence: 55
+> Understanding: 70
+> Confidence: 60
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -24,12 +24,13 @@
 3. **Context rules.** Evidence rows not whole docs; long outputs as linked files; shorter answers on the phone; owner prefs loaded.
 4. **Scope and focus.** Work data answered only on Claude accounts; focus mode hides the other side in chat and push.
 5. **Persona.** Name, voice, tone, sounds, in-character reports. Outward prose still follows owner prefs. One persona file, versioned.
-6. **Surfaces.** nest chat panel, deck pane, voice (local speech to text and text to speech), one of Discord or Telegram, Android assistant entry (req_033). Same conversation across surfaces with a surface tag.
+6. **Surfaces.** nest chat panel, deck pane, voice (local speech to text and text to speech), a Discord bot (free-text chat, personal data only; work data never goes through it), Android assistant entry (req_033). Same conversation across surfaces with a surface tag.
 7. **Memory.** Transcript mirror and index; no hidden memory beyond owner prefs, Logics and the store.
 
 # Context
 - Owner decisions 2026-11-06: one butler, scope-aware, focus mode, full persona, all listed surfaces.
 - Ultron dropped Discord and Telegram; Jarvis kept Discord only. One bot channel is enough.
+- Owner 2026-11-06: Discord chosen (no Telegram account). The butler reaches core through the core MCP server (adr_001). Built after core.
 
 # Acceptance criteria
 - AC1: An engine comparison with measured cost and latency for 10 scripted questions.
