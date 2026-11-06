@@ -58,6 +58,7 @@ def test_session_split_by_touched_paths(hub):
     assert tok == {"hub": 110, "lazytf": 390, "nested": 10}
     assert sum(tok.values()) == s["tokens"]
     assert s["project"] == "hub"  # the cwd label is unchanged
+    assert s["cwd"] == "/w/hub" and s["path"].endswith("/-w-hub/s1.jsonl")  # History resumes and reads it
 
 
 def test_streamed_message_uses_tool_use_from_every_event(hub):

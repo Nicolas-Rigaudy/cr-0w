@@ -789,6 +789,8 @@ def collect_sessions(days):
             "_mtime": st.st_mtime,
             "account": account,
             "project": os.path.basename(meta["cwd"] or "") or "?",
+            "cwd": meta["cwd"],
+            "path": path,
             "title": session_title(sid, meta, account, titles),
             "branch": meta["branch"],
             "kind": "run" if meta["entrypoint"] == "sdk-cli" else "interactive",

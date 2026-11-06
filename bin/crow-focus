@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crow-focus: bring a Claude session to the front, or resume it when no window holds it.
 
-  crow-focus --pid PID --account ACCOUNT --cwd DIR [--dry-run]
+  crow-focus --pid PID --account ACCOUNT --cwd DIR [--session ID] [--dry-run]
   crow-focus --pid PID --send TEXT [--dry-run]
   crow-focus --pid PID --interrupt [--dry-run]
   crow-focus --pid PID --stop [--dry-run]
@@ -10,7 +10,8 @@ Goes through the terminal backend (crow_term: CROW_TERMINAL=kitty|tmux|print).
 Focus: finds the window (kitty) or pane (tmux) running PID, matching its own process or any
 ancestor of PID (the shell the session was started from). Resume: when no window holds it (the
 process is gone or runs elsewhere), opens a new window in DIR running `cdx ACCOUNT --dir DIR --resume`;
-the print backend prints that command instead.
+the print backend prints that command instead. --session resumes that session id (`--resume ID`);
+with --pid 0 it never looks for a window (a History row).
 --send types TEXT and Enter into the window holding PID (the deck's answer to an agent question) and
 never resumes: it exits 1 when no window holds the session (always, on the print backend).
 --interrupt presses Escape in the window holding PID (pauses the agent's turn; the session stays open).
@@ -81,7 +82,7 @@ def main(argv):
     account, cwd = opts.get("account"), opts.get("cwd")
     if not account or not cwd:
         sys.exit(__doc__)
-    resume = ["cdx", account, "--dir", cwd, "--resume"]
+    resume = ["cdx", account, "--dir", cwd, "--resume"] + ([opts["session"]] if opts.get("session") else [])
     if dry:
         print(f"focus the {backend} window holding pid {pid}, else: {crow_term.print_line(resume, cwd)}")
         return 0
