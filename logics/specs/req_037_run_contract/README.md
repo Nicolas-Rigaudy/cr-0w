@@ -92,7 +92,7 @@ One version counter per mission. Plan, report and mockup share it. `answers.vN.m
 
 - Everything the owner should see goes under `outbox/` and is listed in `artifacts`.
 - Types: html, image, video, diff, doc, data.
-- Caps per kind (`caps.outbox_file_mb`, `caps.outbox_total_mb`). Most kinds: 20 MB per file, 100 MB in total. design: 200 MB in total for video. review, review-fix, write and repair: 5 MB and 20 MB.
+- Caps per kind (`caps.outbox_file_mb`, `caps.outbox_total_mb`). Most kinds: 20 MB per file, 100 MB in total. design: 200 MB in total for video. write: 20 MB and 50 MB. review, review-fix and repair: 5 MB and 20 MB.
 - core ingests the outbox after the turn. A file over the cap is dropped and noted in the event log. A file not listed in `artifacts` is ignored.
 - `outbox/questions.json` is for questions outside a plan or report. Writing it ends the turn. core parks the mission and shows the questions in the inbox.
 
