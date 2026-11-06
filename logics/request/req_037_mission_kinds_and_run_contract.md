@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 80
-> Confidence: 70
+> Understanding: 90
+> Confidence: 80
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -38,6 +38,45 @@
 - crow already has: skills per task type, `crow dispatch` prompts, `local/owner-prefs.md`, review ledgers.
 - adr_001 sets the mission dir and the event log; this request fills in the formats.
 
+# Spec
+Draft spec in `logics/specs/req_037_run_contract/` (groomed 2026-11-06): kind schema and the 8 kind files, `crow` block, `questions.json` and validation event schemas, one example per gate shape, a full two-gate example mission, the brief template, and a README with the gate table, verbs, mission dir, versions, validation record, outbox caps, end-of-run rules and sources.
+
+Grooming findings:
+- Five gate shapes are in use, so the spec models gates as an ordered list: `[]`, `[report]`, `[plan]`, `[plan, report]`, `[mockup]`.
+- One version counter per mission so `answers.vN.md` always answers version N.
+- The validation record matches req_030 Need 5 and item_099: one hash-chained record per publish action.
+- cdx `--continue-run` pins the parent's account, model and effort and cannot be combined with `--failover` (cdx-manager README, v0.26.6, checked 2026-11-06). Need 10's "resumes on the next account" needs a cold run. See D2.
+- Backend language is still open (req_031). Only the validator and the parser are Ready.
+
+# Decisions (open, for the owner)
+- **D1. Where kind files live.** req_028 slice 1 says a private `missions.yaml`; the spec uses one tracked file per kind.
+  - A. Tracked `kinds/<kind>.yaml` with generic defaults, plus optional private overrides. Shareable, no names in tracked files.
+  - B. One private `missions.yaml` as req_028 says. Simple, but the catalogue is not publishable.
+  - C. Tracked files only, no overrides. Simplest; private tuning goes through scope routing only.
+  - Recommendation: A, and update req_028 slice 1.
+- **D2. Resume after a usage limit on another account.** `--continue-run` keeps the parent's account.
+  - A. Cold run on the next allowed account from `brief.md` and the version files. Works now; loses the session cache.
+  - B. Wait for the same account to reset, then continue the session. Cheapest in tokens; can stall for hours.
+  - C. A then B: cold run when the reset is more than an hour away, otherwise wait.
+  - Recommendation: C. item_100 already resumes isolated runs cold.
+- **D3. What `go` does for the plan kind.** The plan file is the content; there is no report gate.
+  - A. `go` commits the docs on a mission branch; landing follows the scope rules (work needs a push OK). Safe and traceable.
+  - B. `go` commits straight to the default branch on personal and crow repos. Fastest; no branch to clean up.
+  - C. Add a report gate: `go` writes the docs, `ok` lands them. Owner sees the final files; one more round trip.
+  - Recommendation: A.
+- **D4. What design `approve` does before the build kind exists.** Build is phase 3; design is phase 1.
+  - A. Commit the pages to `docs/design/` and open a plan mission instead. Keeps the chain moving.
+  - B. Commit the pages only and leave a note. Simplest.
+  - Recommendation: A, switch to the build mission in phase 3.
+- **D5. Skills for research, design, repair and a generic write.**
+  - A. New skills for research and design in phase 1, repair and write in their phases. Same pattern as other kinds.
+  - B. Instructions in the brief only, no skill. Fewer files; behaviour drifts between runs.
+  - Recommendation: A.
+- **D6. Where the contract code lives before the backend is picked.**
+  - A. Python in `bin/` now, shared by crow dispatch and the tests; core ports it if req_031 picks Go. Usable for AFK runs today.
+  - B. Wait for req_031. No throwaway risk; nothing reads the contract meanwhile.
+  - Recommendation: A for the validator and the parser (items 104 and 106), B for the rest.
+
 # Acceptance criteria
 - AC1: A kind file with every column of need 1 filled for the 8 kinds, phase 1 kinds first, reviewed by the owner.
 - AC2: A JSON schema for the `crow` block and for `outbox/questions.json`, with one valid example per gate shape.
@@ -55,12 +94,23 @@
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 
 # References
+- `logics/specs/req_037_run_contract/README.md`
+- `logics/request/req_030_spike_mission_safety_and_sandbox.md`
 - `logics/request/req_028_jarvis_layer_missions_inbox_butler_chat_model_router.md`
 - `logics/product/prod_005_crow_jarvis_layer.md`
 - `logics/architecture/adr_001_core_missions_and_inbox_architecture.md`
 
 # Backlog
-- none
+- `item_104_load_and_validate_mission_kind_files`
+- `item_105_owner_review_of_the_mission_kind_catalogue`
+- `item_106_parse_and_validate_the_crow_block_and_questions_file`
+- `item_107_render_the_mission_brief_from_kind_record_and_answers`
+- `item_108_mission_versions_responses_and_validation_record`
+- `item_109_outbox_ingest_with_caps_and_parked_questions`
+- `item_110_stop_guard_for_runs_that_end_without_a_valid_version_file`
+- `item_111_files_only_dry_run_of_a_two_gate_mission_and_a_mockup_loop`
+- `item_112_skill_and_reply_contract_for_each_mission_kind`
+- `item_113_preflight_questions_per_mission_kind_at_dispatch`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
