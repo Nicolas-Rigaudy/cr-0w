@@ -2,7 +2,7 @@
 > Date: 2026-11-05
 > Status: Proposed
 > Related product: (none yet)
-> Related request: `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`
+> Related request: `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`, `req_025_account_routing_by_scope`, `req_026_personal_butler`, `req_027_conversations_feed_for_core_deck_nest`
 > Reminder: Update status, milestone scope, linked refs, risks, and success signals when you edit this doc.
 > Indicators reviewed: 2026-11-05 15:24:06
 
@@ -26,6 +26,12 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 - Scope: req_000 (001 done 2026-11-05; 002 and 005 closed, crow watch folded into the deck) and req_001 (done 2026-11-05: 009 built in the deck, account table and no-model group); req_008 via task_003 (apply 023, re-measure 029, build 025 gather scripts, then 024 batched retros); req_007 deck (017-022, 038).
 - Exit signal: req_000, req_001, req_007 and req_008 are Done; brief, daily and weekly run from gather scripts.
 - Rule: no new deck features until this milestone closes.
+
+## 0.2b - Account routing by scope (exception)
+- Goal: Work, personal and hub sessions each prefer their own account and overflow by rule, on top of the cdx ranking (usability, then `--priority`).
+- Scope: req_025 via item_095. One session.
+- Exit signal: `crow-accounts pick --scope` routes by rank and matches `cdx select` without a scope.
+- Exception (owner, 2026-11-06): ahead of 0.3 because background runs and the personal butler need the overflow rules.
 
 ## 0.3 - Safe background runs
 - Goal: Unattended runs start with no authorisation, load only what their kind needs, and record cost.
@@ -52,8 +58,14 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 
 ## 0.7 - Work cockpit
 - Goal: Work happens from the deck, not beside it.
-- Scope: groom req_022 into backlog items; spike a Claude Code panel mod; build the terminal cockpit (deck pane plus session pane, send box, session switcher, inline approvals); then core as a systemd user service, nest and ntfy later.
+- Scope: groom req_022 into backlog items; spike a Claude Code panel mod; build the terminal cockpit (deck pane plus session pane, send box, session switcher, inline approvals); then core as a systemd user service, nest and ntfy later. req_027: core reads sessions through `cdx conversation` (cursor polling, push to deck and nest); groom it with core.
 - Exit signal: a full day of hub work runs from the cockpit layout.
+
+## B - Personal butler (parallel track)
+- Goal: crow runs the owner's personal admin on the personal account: personal brief, mail and calendar, appointment reminders, budget.
+- Scope: req_026, groomed now, built on the personal account in parallel with the work milestones once 0.2b is done. Slices: personal connectors and personal brief, appointments and reminders, budget from bank exports. Later: conversation-backed memory (req_027) once core exists.
+- Exit signal: a personal brief runs daily from the vault and the monthly budget review needs no manual sorting.
+- Parallel: it runs on the personal account and touches no work milestone.
 
 ## 0.8 - Side projects and later
 - Goal: Lower priority work once the hub is settled.
@@ -70,6 +82,6 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 
 # References
 - Product brief(s): (none yet)
-- Request(s): `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`
+- Request(s): `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`, `req_025_account_routing_by_scope`, `req_026_personal_butler`, `req_027_conversations_feed_for_core_deck_nest`
 - Backlog item(s): (none yet)
 - Task(s): `task_003_deliver_the_crow_cost_and_reliability_pass`, `task_010_orchestrate_terminal_design_system`
