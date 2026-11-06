@@ -11,7 +11,7 @@ Pick the account for a dispatch from the scope of the target repo (backlog item 
 - key: item_095
 - scope: crow
 - repo: `<repo>` on branch `mission/20261109-build-item-095` (worktree `<repo>.wt/20261109-build-item-095`)
-- caps: 120 min, 25 USD, 2 resumes
+- caps: 120 min, 25 USD, 3 resumes, 3 rounds
 - current version: 1 (write `plan.v1.md`)
 
 ## Owner preferences
