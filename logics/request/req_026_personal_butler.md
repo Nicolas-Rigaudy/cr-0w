@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 16:13:51
 
 # AI Context
 - Summary: Grow crow from a work chief of staff into a personal butler on the personal account: personal mail, calendar, budget and banking, health, home admin. Draft: needs grooming into slices before any build.
@@ -48,6 +49,7 @@
 - Architecture decision(s): (none yet)
 
 # References
+- `logics/request/req_027_conversations_feed_for_core_deck_nest.md` (rk1 conversations as the butler's memory of requests and follow-ups)
 - `runbooks/own-routines.md`
 - `logics/request/req_025_account_routing_by_scope.md`
 

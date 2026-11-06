@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 16:13:51
 
 # AI Context
 - Summary: Make crow deck the place the owner works from, not a side dashboard: a terminal cockpit (deck pane plus the active session pane in one tmux/kitty layout, with a send box and inline approvals), then one responsive web app over core for the phone (touch session views, ntfy action notifications) and for the laptop's graphical views (charts, diffs, design picks, reports); SSH as fallback.
@@ -29,7 +30,7 @@
     - **nest**: the graphical interface (`crow nest`), on the laptop in the browser and on the phone as the installed app. The crow's nest is the lookout post where everything is visible.
     - **core**: the always-on engine that feeds deck and nest. A systemd user service started at login; `crow core status` / `restart` only when needed. Replaces the earlier `crow serve` and `crow nest` names.
     - **comlink**: the phone notifications (ntfy topic and the feature name).
-  - **core** exposes per session: read (last screen via `tmux capture-pane`, or the transcript tail from the session .jsonl) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
+  - **core** exposes per session: read (last screen via `tmux capture-pane`, or the conversation via `cdx conversation --json`, see req_027) and send (`crow-focus --send`), plus runs, MRs, threads, today, usage. Every UI reads it; no UI keeps its own logic.
   - **Phone step 1: comlink**, ntfy notifications with action buttons (approve, dispatch, open) when a run finishes or a session waits on the owner.
   - ****nest**: one responsive web app (PWA)** over core:
     - Phone: touch views of sessions (pane view, send box, approve buttons), runs, MRs, threads, today.
@@ -43,6 +44,7 @@
 - `bin/crow_term.py` (item_031) already has kitty, tmux and print backends; `crow term`, `crow-focus` and `crow-relaunch` go through it.
 - The deck already runs actions: handoff (main.go), mail session (today_data.go), MR review and posting, runs, usage.
 - req_016 plans Tailscale, core (HTTP API over existing commands), the home server as aggregator, ntfy and a PWA. This request uses those pieces and does not redesign them.
+- req_027 owns the conversation feed (cdx conversation) that core serves to deck and nest.
 - req_020 owns the deck's look and composable widgets; new deck surfaces here follow it.
 - Open spike: a Claude Code panel mod (plugin-authoring) could show deck widgets beside the chat. Check whether it makes the split layout unnecessary before building the layout.
 
@@ -77,4 +79,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
