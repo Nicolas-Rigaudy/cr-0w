@@ -1,10 +1,10 @@
 ## item_095_scope_aware_account_pick - Scope-aware account pick with per-scope ranks and room thresholds
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -41,15 +41,15 @@
 - AC8: dispatch passes --failover; pick prints the deciding factor.
 
 # AC Traceability
-- request-AC0 -> AC0. Proof: pick_accounts test against a recorded `cdx select --json` fixture.
-- request-AC1 -> AC1. Proof: tests on pick_accounts with ranked fixtures.
-- request-AC2 -> AC2. Proof: test with an unranked account.
-- request-AC3 -> AC3. Proof: test below the threshold.
-- request-AC4 -> AC4. Proof: existing fallback tests pass with scopes set.
-- request-AC5 -> AC5. Proof: crow CLI test on a personal-scope project.
-- request-AC6 -> AC6. Proof: unchanged existing tests.
-- request-AC7 -> AC7. Proof: doctor/json tests.
-- request-AC8 -> AC8. Proof: dispatch command-line test; pick output test.
+- request-AC0 -> AC0. Proof: tests/test_crow_scope_pick.py::test_no_scope_matches_the_recorded_cdx_select against tests/fixtures/cdx-select.json (recorded `cdx select`/`status`/`configs`), plus the priority and default-vs-priority tests.
+- request-AC1 -> AC1. Proof: test_rank_orders_the_scope, test_rank_never_beats_usability, test_rank_beats_priority_and_room_and_names_the_factor, test_equal_rank_falls_back_to_the_cdx_order.
+- request-AC2 -> AC2. Proof: test_account_without_a_rank_is_never_picked_for_the_scope; CLI: test_an_explicit_account_beats_the_scope (CROW_ACCOUNT overrides).
+- request-AC3 -> AC3. Proof: test_min_room_skips_with_a_reason, test_min_room_lets_the_account_through_above_the_floor.
+- request-AC4 -> AC4. Proof: test_ask_first_stays_ask_first_inside_a_scope, test_caps_still_block_inside_a_scope; existing fallback tests pass.
+- request-AC5 -> AC5. Proof: tests/test_crow_launch_pick.py scope tests (personal project, work project and overflow, hub passes `hub`, hub keeps the default without scopes); dispatch: test_dispatch_routes_by_the_project_scope; rescue uses the stranded sessions' shared scope (crow-relaunch scope_of).
+- request-AC6 -> AC6. Proof: all 294 earlier tests unchanged and green (317 with the new ones); test_no_scopes_anywhere_ignores_the_scope.
+- request-AC7 -> AC7. Proof: test_json_and_doctor_show_priority_and_scopes; docs/accounts.example.yaml documents scopes, scope_min_room and cdx priority; live `crow doctor` shows them for the owner config.
+- request-AC8 -> AC8. Proof: test_dispatch_passes_failover (run_flags already carried `--failover`); pick prints "decided by <factor>" (tests/test_crow_launch_pick.py asserts "decided by scope rank").
 
 # Decision framing
 - Product framing: Not needed
@@ -72,3 +72,5 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-06T19:47:47.173034+00:00 | afk | afk-2026-11-06-scope | scope-aware account pick | succeeded |  | commit fdf998b |
+

@@ -1,7 +1,7 @@
 ## req_025_account_routing_by_scope - Route crow sessions to accounts by scope (work, personal, hub)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 85%
 > Complexity: Medium
