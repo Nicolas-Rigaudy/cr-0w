@@ -7,6 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-06 17:39:05
 
 # AI Context
 - Summary: Turn crow into a hands-off assistant. Work runs as background missions through cdx. Decisions, approvals and proposals land in one inbox shown in deck, nest and comlink. A butler chat talks to everything going on. A router picks the model and account per mission kind and data class. Status is told in short human sentences; detail stays one step away.
@@ -102,6 +103,7 @@
 - `logics/roadmap/road_001_crow_roadmap_after_the_deck_pass.md`
 - Spikes: `logics/request/req_029_spike_hosts_model_sources_and_local_ai_benchmarks.md`, `logics/request/req_030_spike_mission_safety_and_sandbox.md`, `logics/request/req_031_spike_nest_stack_and_app_shape.md`, `logics/request/req_032_spike_butler_engine_and_persona.md`, `logics/request/req_033_spike_android_extras_for_nest.md`
 - Tracks: `logics/request/req_034_work_views_in_nest.md`, `logics/request/req_035_forge_ops_in_nest.md`, `logics/request/req_036_fun_layer_for_crow.md`
+- Design: `logics/request/req_037_mission_kinds_and_run_contract.md`, `logics/request/req_038_nest_design_rules.md`
 
 # Backlog
 - none

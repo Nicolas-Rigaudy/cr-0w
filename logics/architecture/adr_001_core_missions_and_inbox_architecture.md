@@ -1,10 +1,10 @@
 ## adr_001_core_missions_and_inbox_architecture - Core missions and inbox architecture
 > Date: 2026-11-06
 > Status: Proposed
-> Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
+> Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_037_mission_kinds_and_run_contract`
 > Related backlog: (none yet)
 > Related task: (none yet)
-> Drivers: hands-off work from nest and deck; park and resume without held sessions; one API for every surface; cheap to run on the laptop first.
+> Drivers: hands-off work from nest and deck; park and resume without held sessions; one API for every surface; hard rules in one place; cheap to run on the laptop first.
 > Reminder: Update status, linked refs, decision rationale, consequences, and follow-up work when you edit this doc.
 
 # Flow
@@ -12,49 +12,105 @@
 flowchart LR
     N[nest] --> API[core API on tailnet]
     D[deck] --> API
-    C[chat bots, voice] --> API
+    C[chat bots, voice, butler] --> API
     API --> CORE[core: missions, inbox, scheduler, router, policy]
     CORE --> EV[(event log and store)]
     CORE --> CDX[cdx run, continue-run]
-    CDX --> RUN[run in mission dir]
-    RUN --> OUT[outbox: questions, proposals, artifacts]
+    CDX --> RUN[run in mission dir and worktree]
+    RUN --> OUT[plan, report, outbox]
     OUT --> CORE
+    CORE --> PUB[publish: push, MR, merge, post]
     CORE --> PUSH[Web Push]
 ```
 
 # Overview
-- core is one always-on service that owns missions, the inbox and events; runs talk to it through files; every surface reads one HTTP API.
+core is one always-on service. It owns missions, the inbox, the scheduler, the router and policy. Runs talk to it through files in a mission dir. Every surface reads one HTTP API. core alone publishes.
 
 # Context
 - Today crow dispatches cdx runs and tracks them with `crow runs`; questions come back in terminal sessions.
-- Both colleague systems converge on the same shape: a mission store, an engine that drives agents, a file or block contract for questions, and a web front end over an API.
+- Ultron and Jarvis converge on the same shape: a mission store, an engine that drives agents, a file or block contract for questions, a web front end over one API.
+- Ultron runs on one Mac: Node server, `node:sqlite`, launchd tick every 5 min, marker files per phase. Its lessons: schema first, one event log from day one, budget context early.
+- Jarvis runs on three hosts: Python stdlib server, JSON mission records, systemd timers, engine pushes and merges. Its lessons: core before UI, data contract before screens, cache from day one (mission views grew to 5 to 8 s).
 - cdx already gives `run --detach`, `--continue-run`, `--failover`, `select` and `conversation`. core builds on those and does not reimplement agent control.
-- Hosts, safety model, backend language and butler engine are open spikes (req_029 to req_032). This decision must hold whatever they pick.
+- Hosts, safety, backend language and butler engine are open (req_029 to req_032). This decision must hold whatever they pick.
 
 # Decision
-- **One process, core.** A systemd user service on the control host (laptop first). It owns: mission store, inbox, scheduler, router, policy, summaries, event log. No surface owns logic.
-- **Mission is the unit.** A mission has goal, kind, scope, data class, budget, end state, autonomy level, gates. It maps to one or more cdx runs. States: `preflight → queued → running → waiting → review → done | failed | cancelled`.
-- **Files as protocol between runs and core.** Each run gets a mission dir with `brief.md` (input), `outbox/` (questions and proposals as small JSON or a fenced block, plus artifacts: HTML pages, screenshots, diffs) and `report.md` (output). A run that needs a decision writes to `outbox/` and exits. core turns it into an inbox item and parks the mission.
-- **Resume through cdx.** The answer is appended to the brief and core calls `cdx run --continue-run <run>`. Usage limits end the run the same way and resume on the next allowed account.
-- **Event log is the source of truth.** Every transition and inbox item is an append-only event. Summaries, stats, digests and the incidents pass read events. Proposed store: SQLite (events, missions, inbox, FTS index for transcripts) with artifacts on disk. Files-only stays the fallback if the backend spike prefers it.
-- **HTTP API on the tailnet only.** Read endpoints first (missions, inbox, runs, summaries, sections with ETags), actions second (dispatch, answer, cancel). Server-sent events or polling with ETags for live updates. Web Push is sent by core.
-- **Engine holds the keys.** Push, PR, merge and outbound messages are core actions behind policy, never agent actions, so hard rules live in one place (exact sandboxing per req_030).
-- **Scripts before models.** Scheduled jobs are scripts that write events; a model only narrates events into short text.
+## One process
+- core is a systemd user service on the control host (laptop first). It owns the mission store, inbox, scheduler, router, policy, summaries and event log. Surfaces hold no logic.
+- A tick (every 2 min) finishes runs, admits queued missions, updates summaries and runs watchdogs. Timers start scheduled jobs. No model is called by the tick.
+- Paths (store, mission dirs, worktrees) come from config so core can move to a homelab later.
+
+## Mission record
+| Field | Meaning |
+| --- | --- |
+| `id` | Stable slug, `YYYYMMDD-kind-short` |
+| `kind` | One of the req_037 kinds |
+| `scope` | work or personal |
+| `data_class` | work, personal, private |
+| `project` | Registry name from `local/projects.yaml` |
+| `goal`, `end_state` | Owner words |
+| `autonomy` | ask, notify, auto |
+| `gates` | From the kind, overridable per mission |
+| `state` | See below |
+| `runs` | List of cdx run ids with account, start, end, exit cause |
+| `version` | Current plan or report version |
+| `validation` | Event id of the last valid `ok`, or null |
+| `file_scope` | Globs the run may touch, for overlap checks |
+| `budget` | Time cap, token cap, resume cap |
+| `branch`, `worktree`, `mr` | When code is involved |
+
+**States:** `preflight → queued → running → waiting → review → publishing → done | failed | cancelled`. `waiting` and `review` hold no session; the mission is parked.
+
+## Files as protocol
+Mission dir `missions/<id>/`:
+- `brief.md`: written by core (goal, owner prefs, answers so far, constraints, reply contract).
+- `plan.vN.md`, `report.vN.md`: written by the run, each with one fenced `crow` block (schema in req_037).
+- `outbox/`: `questions.json` and artifacts (HTML, images, video, diffs). Size caps enforced on ingest.
+- `answers.vN.md`: the owner's words, kept per version.
+A run that needs the owner writes and ends its turn. core parses the block, creates the inbox item, parks the mission.
+
+## Resume
+The answer is appended to the brief. core calls `cdx run --continue-run <run>`. A usage limit ends the run the same way; core resumes on the next allowed account after a quota probe. After N resumes in a row core asks the owner. Review and continued runs keep their account constraints.
+
+## Event log
+- Append-only JSONL is the source of truth: `{ts, mission, type, actor, data}`. Types include `created`, `state`, `run_start`, `run_end`, `question`, `answer`, `validation`, `publish`, `incident`, `manual_gesture`, `push_sent`.
+- The store (SQLite proposed) is rebuilt from events: missions, inbox, stats, and an FTS index over typed messages and replies (tool output excluded).
+- Artifacts stay on disk. Files-only stays the fallback if req_031 prefers it.
+
+## API
+- Bound to localhost and the tailnet only. Tailnet identity header checked against the owner; every POST needs a custom header (CSRF).
+- Read endpoints first: `/state` split in sections (inbox, missions, runs, accounts, machines, jobs), each with `updated_at` and an ETag; mission detail; artifacts; event feed. Responses cached on store version.
+- Actions second: dispatch, answer (verb + text + attachments), stop, cancel, hide, publish preview, publish confirm.
+- Live updates: SSE or polling with ETags (req_031). Web Push sent by core with VAPID keys kept on disk.
+
+## Publish
+- Push, MR, merge, Jira and Confluence writes, mail and posts are core actions behind policy. Agents hold no work credentials.
+- Work: publish needs a valid validation record for the exact text shown to the owner.
+- Personal: merge on green CI, a secret scan over the commit range and a diff size limit; sensitive paths (CI, sandbox, units, policy) always ask.
+
+## Housekeeping
+- Disk floor checked before a worktree; merged worktrees pruned (squash included), never with uncommitted changes or stacked branches.
+- crow deploy: merging main updates the installed copy and restarts core if its code changed.
+- Backup of store, config and mission dirs daily; alert past 36 h.
+
+# Alternatives considered
+- **Agent keeps the session open and waits** (classic interactive loop): holds a slot and quota for hours. Rejected.
+- **Front end owns state** (each surface polls cdx): logic duplicated across deck, nest and bots. Rejected.
+- **JSON records only, no event log** (Jarvis): simple, but stats and incident passes need history. Ultron regretted not starting with events.
+- **Agent publishes with scoped tokens**: fewer moving parts, but hard rules would live in every prompt. Rejected for work; open for personal in req_030.
 
 # Consequences
-- deck, nest, Discord or Telegram and the butler are all thin clients; adding a surface costs no engine work.
-- Park and resume holds no tokens while the owner is away; a mission can wait days.
-- The run prompt contract (`brief.md`, `outbox/`, `report.md`) must be added to dispatch prompts and to each mission kind.
-- core becomes a single point of failure: a deck fallback reading the store directly, and a watchdog, are needed.
-- Moving core to a homelab later means moving the store and the mission dirs; keep paths configurable from day one.
+- deck, nest, bots and the butler are thin clients; a new surface costs no engine work.
+- Park and resume holds no tokens; a mission can wait days, and the laptop can sleep.
+- Dispatch prompts and skills must follow the req_037 contract.
+- core is a single point of failure: deck keeps a read-only fallback over the store, and a watchdog restarts core.
+- The event log grows: rotate monthly, keep the store rebuildable.
 
 # Follow-up work
-- Groom req_028 slices 1 to 3 against this decision.
-- Confirm the store choice and the backend language with req_031.
-- Confirm the publish path with req_030.
+- Groom req_028 slices 1 to 3 against this decision, with req_037 first.
+- Confirm store and backend language with req_031, publish path with req_030, hosts with req_029.
 
 # References
 - Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
+- Run contract: `req_037_mission_kinds_and_run_contract`
 - Product brief: `prod_005_crow_jarvis_layer`
-- Related backlog: (none yet)
-- Related task: (none yet)

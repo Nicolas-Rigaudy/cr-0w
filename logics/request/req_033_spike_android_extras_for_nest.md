@@ -2,39 +2,42 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 50
-> Confidence: 45
+> Understanding: 65
+> Confidence: 55
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
 
 # AI Context
-- Summary: Research spike. List what Android adds beyond a PWA for a tinkerer: widgets, tiles, automations, NFC, watch, always-on display, assistant.
-- Keywords: android, widgets, quick settings, tasker, kwgt, nfc, wear os, always-on, twa, assistant
-- Use when: planning phone features for nest.
-- Skip when: building core or nest screens.
+- Summary: Research spike. List what Android allows beyond the iOS-bound colleague designs and pick the extras worth building: rich push, home widgets, quick settings tiles, Tasker hooks, NFC tags, Wear OS, an old phone as an always-on display, assistant entry.
+- Keywords: Android, PWA, TWA, widgets, quick settings tile, Tasker, NFC, Wear OS, always-on display, assistant, notification actions
+- Use when: adding phone features to nest.
+- Skip when: building the base PWA (req_031).
 
 # Needs
-1. Home screen widgets (inbox count, live missions) through KWGT or a native app.
-2. Quick Settings tiles (focus mode, approve last ask, dispatch a preset mission).
-3. Tasker or Automate flows over the core API (arrive at the office → work focus).
-4. NFC tags (desk tag starts the morning brief).
-5. Wear OS: approvals from the watch.
-6. Old phone as an always-on cyberdeck display (screensaver from req_036).
-7. Android assistant entry to the butler.
-8. Which of these need a native or TWA app versus a PWA.
+1. **Push.** Action buttons (go, ok, open), inline reply, grouping, channels per scope, badges. What a PWA gets vs a TWA or native shell.
+2. **Widgets.** Inbox count and next ask on the home screen; needs a native or TWA shell.
+3. **Quick settings tiles.** Focus mode switch, quiet hours, "what waits on me".
+4. **Tasker and intents.** Trigger missions or focus from Tasker profiles (arriving at work, leaving home).
+5. **NFC tags.** Tap a tag on the desk to start the day, at home to switch to personal focus.
+6. **Wear OS.** Asks on the watch with one-tap answers.
+7. **Old phone display.** An always-on cyberdeck screen running the screensaver and the inbox (with req_036).
+8. **Assistant entry.** Long-press or voice opens the butler.
+9. For each: value, effort, shell needed (PWA, TWA, native), security impact.
 
 # Context
-- Owner decision 2026-11-06: the owner is on Android and a tinkerer; colleagues are on iPhone, so this is new ground.
+- Owner decision 2026-11-06: explore everything a tinkerer can do on Android.
+- Ultron chose Declarative Web Push because iOS lacks more; Android has no such limit.
 
 # Acceptance criteria
-- AC1: A table of features with effort, need for a native app, and fun value.
-- AC2: A short list of the first three to build.
+- AC1: A table of extras with value, effort, shell and security notes.
+- AC2: A recommendation of the first three to build and the shell they need.
+- AC3: One working prototype (likely rich push or a tile) on the owner's phone.
 
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
-- [ ] Acceptance criteria are testable.
+- [x] Acceptance criteria are testable.
 - [x] Dependencies and known risks are listed.
 
 # Companion docs

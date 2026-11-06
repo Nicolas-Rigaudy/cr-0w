@@ -2,37 +2,44 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 60
-> Confidence: 55
+> Understanding: 70
+> Confidence: 60
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
 
 # AI Context
-- Summary: Research spike. Pick the nest stack and app shape: React front end, Go or Python backend, and PWA, web app or phone app.
-- Keywords: nest, react, vite, go, python, pwa, twa, web push, sse, etag, design tokens
-- Use when: choosing technologies for core API and nest.
-- Skip when: building nest screens.
+- Summary: Research spike. Pick the nest stack and app shape: React front end (owner decision), Go or Python backend, live update method, push mechanism, terminal attach, and PWA vs web app vs TWA or native shell on Android.
+- Keywords: React, Vite, Go, Python, SSE, polling, ETag, Web Push, service worker, VAPID, PWA, TWA, xterm, pty, SQLite
+- Use when: starting the nest code or the core API.
+- Skip when: writing design rules (req_038) or Android extras (req_033).
 
 # Needs
-1. Front end: React (the work team's stack) with a strong UI ecosystem. Compare with the colleague choices (React 19 + Vite; vanilla ES modules with no build).
-2. Backend: Go (shares code and types with deck) or Python (shares `crow_lib.py` and scripts). Compare effort, deploy, live updates (SSE vs polling with ETags), Web Push libraries.
-3. App shape: installable PWA, plain web app, or Android app (TWA wrapper or native) for widgets, tiles and assistant hooks (see req_033).
-4. Screens to support: dashboard home (inbox, today), chat on every screen, mission detail, mockup loop, live terminal (xterm), groups nav.
-5. Design: dark tokens matching the terminal kit (req_020) so deck and nest look like one product.
+1. **Reference stacks.**
+   - Ultron: React 19 + Vite, xterm.js, OKLCH tokens, dark only; Node `node:http` server, ws, node-pty, `node:sqlite`; polling every 3 s, long-poll for chat; Declarative Web Push without a service worker (iOS).
+   - Jarvis: vanilla ES modules with hash routes; Python stdlib `ThreadingHTTPServer`, ETags, CSP; polling 30 s, 2.5 s during actions; Web Push with VAPID; no build step.
+2. **Backend.** Go (single binary, matches deck, good SSE and pty libraries) vs Python (matches `bin/` scripts and logics-manager, faster to write). Criteria: deploy simplicity, pty and SSE support, SQLite access, sharing code with deck and scripts, the owner's pleasure.
+3. **Front end.** React with Vite; routing; state fetching with ETags; component kit or hand-made over req_038 tokens; bundle size on the phone.
+4. **Live updates.** SSE vs polling with ETags vs WebSocket. Battery on the phone, behaviour behind Tailscale, reconnects.
+5. **Push.** Service worker with action buttons, grouping and badges on Android; VAPID key storage; payload limits; what happens without the app open.
+6. **Live terminal.** Read-only attach to a cdx run (xterm.js + pty or tmux), "take control" flow, logging.
+7. **App shape.** Installable PWA first; what a TWA or native shell adds (widgets, tiles, assistant hooks from req_033) and costs.
+8. **Auth.** Tailnet identity header, CSRF header, localhost bind; nothing public.
 
 # Context
-- Owner decisions 2026-11-06: React front end likely; Go or Python backend; Web Push; dashboard home with chat everywhere.
-- adr_001 fixes one core API; this spike picks how it is built.
+- Owner decisions 2026-11-06: React (work team stack, strong ecosystem); Go or Python backend; app shape by research.
+- Jarvis lessons: data contract before screens, cache from day one. Ultron lesson: one event log.
+- deck is Go and Bubble Tea; scripts and logics-manager are Python.
 
 # Acceptance criteria
-- AC1: A decision table with a pick for front end, backend, live updates and app shape.
-- AC2: A thin prototype: one page reading the inbox from core and receiving one Web Push on the Android phone.
+- AC1: A comparison table for backend, live updates and app shape with a recommendation each.
+- AC2: A hello-world slice: core API section with ETag, a React page reading it, one Web Push with an action button received on the owner's Android phone over the tailnet.
+- AC3: A read-only terminal attach to a running cdx run in the browser.
 
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
-- [ ] Acceptance criteria are testable.
+- [x] Acceptance criteria are testable.
 - [x] Dependencies and known risks are listed.
 
 # Companion docs

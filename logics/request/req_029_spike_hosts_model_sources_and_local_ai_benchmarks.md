@@ -2,39 +2,46 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 60
-> Confidence: 50
+> Understanding: 70
+> Confidence: 60
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
 
 # AI Context
-- Summary: Research spike. Decide where core runs (laptop now, homelab later?), which machines can serve local models, and how Google free usage through Antigravity in cdx fits the router.
-- Keywords: hosts, homelab, tower, laptop, ollama, benchmarks, antigravity, gemini, quota, router
-- Use when: choosing the control host, a local model host, or a non-Claude model source.
-- Skip when: building the router rules themselves (req_028 slice 9).
+- Summary: Research spike. Decide where core and missions run, what each of the owner's three machines can serve, which model sources to use for what (Claude accounts, Antigravity on Gmail accounts, local Ollama), and how quota is probed. Includes local AI benchmarks on laptop, tower and homelab.
+- Keywords: hosts, control host, worker, tower idle, homelab, Ollama, benchmarks, Antigravity, Gemini, Google terms, quota probe, routing, data class
+- Use when: deciding where a mission or a model call runs, or which account pays.
+- Skip when: per-scope routing rules already settled in req_025.
 
 # Needs
-1. **Control host.** Laptop first. Study whether a homelab as control is worth it (always-on, power, backups, moving the store) and the best practice for a small always-on agent host.
-2. **Tower as idle worker.** The tower is also the gaming PC. Find a way to use it only when idle (game or GPU busy pauses jobs; they wait or fall back to cloud). Wake on LAN, suspend rules.
-3. **Local model benchmarks.** Benchmark the laptop, tower and homelab: tokens per second and quality on summaries, triage and classification with a few Gemma, Qwen and Llama sizes. Pick a default model per task and host.
-4. **Google free usage through Antigravity.** Use the Antigravity provider in cdx with the owner's Gmail accounts. Check the terms for several accounts first, check headless use, measure the real weekly quota. Compare with a Gemini API key for cheap text tasks.
+1. **Host roles.** Compare the two references:
+   - Ultron: everything on one Mac. Simple; dies with the laptop lid.
+   - Jarvis: main host (engine, HQ, timers), worker host (missions), office host; Tailscale between them; engine dispatches over SSH.
+   - crow: laptop first (owner decision). Measure what a homelab control host would gain (always on, phone answers while the laptop sleeps) against the cost (moving the store, credentials on another box).
+2. **Tower as idle worker.** The tower only takes work when idle and never while the owner plays. Define idle (no game process, no input for N min, GPU free), how a running job yields (pause, kill, migrate), and wake-on-LAN or not.
+3. **Local AI benchmarks** on all 3 machines. Models: small and mid Gemma, Qwen, Llama, a code model. Tasks: run summary from a `cdx conversation` excerpt, mail triage label, bank line categorisation, memo to action, French short prose. Metrics: tokens per second, first token latency, memory, quality against a Claude baseline on a fixed set of 20 samples, power draw where easy.
+4. **Need check.** Ultron dropped local models for lack of measured need. List what crow would actually send local (private data, bulk summaries) and the volume per day, so benchmarks answer a real question.
+5. **Antigravity and Google free usage.** Check cdx `--provider antigravity`; what quota each Gmail account gives; Google terms on several accounts for one person; what data Google keeps; which mission kinds fit (personal code, research, cheap text). Rule stays: no work data.
+6. **Quota probe.** Ultron probes with a one-token Haiku request and reads rate-limit headers for the 5 h and weekly windows. Check what cdx exposes per provider; define room (lower window, ≥ 20 % left, interactive reserve).
+7. **Router table.** Kind × scope × data class → provider, account, model, effort, host. Fallback order per row.
 
 # Context
-- Owner decisions 2026-11-06: laptop first; tower must never take performance while the owner plays; local models for private data and summaries; Antigravity via cdx is the Google path.
-- Research 2026-11-06 (see req_028): Gemini key about 250 requests/day on Flash, training on free data; Antigravity free tier weekly and capacity based; several Gmail accounts to stack quota counts as circumvention under Google terms. Verify each point.
-- Laptop: Iris Xe, 30 GB RAM, mostly used. Tower GPU and homelab specs to collect.
+- Owner decisions 2026-11-06: laptop first, homelab later if it pays, tower idle only; Claude for anything that matters and all work data; Antigravity on Gmail accounts after a terms check; local after benchmarks.
+- cdx already has profiles with policy (`use`, `ask-first`, `never`), priority and budget; req_025 routes by scope.
+- Jarvis used Codex first, Claude second, Ollama for private and bulk; Ultron used 3 Claude accounts only.
 
 # Acceptance criteria
-- AC1: A short report names the control host for now and the trigger to move it.
-- AC2: A benchmark table per machine and model with a default pick per task.
-- AC3: An idle-only worker rule for the tower that was tested during a game.
-- AC4: A go or no-go on Antigravity per account count, with the terms check cited.
+- AC1: A host recommendation (control host now and later, tower rules) with the measured gain and cost.
+- AC2: A benchmark table for 3 machines × chosen models × 5 tasks, with a go or no-go per task.
+- AC3: A written terms check for Antigravity on several Gmail accounts and a decision on how many to use.
+- AC4: A probe script returning room per account for Claude and, if possible, Antigravity.
+- AC5: A router table ready to paste into core config.
 
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
-- [ ] Acceptance criteria are testable.
+- [x] Acceptance criteria are testable.
 - [x] Dependencies and known risks are listed.
 
 # Companion docs
