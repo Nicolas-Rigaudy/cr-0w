@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/questions.schema.json",
+  "title": "outbox/questions.json",
+  "description": "Questions a run asks outside a plan or report (a straight-through or report-gate kind that hits a blocking choice mid-run). Writing it ends the turn; core parks the mission.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "mission", "version", "questions"],
+  "properties": {
+    "contract": {"const": 1},
+    "mission": {"type": "string"},
+    "version": {"type": "integer", "minimum": 1, "description": "Version of the run's current output; the answer is filed as answers.vN.md."},
+    "questions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/question"}}
+  },
+  "$defs": {
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "blocking"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^q[0-9]+$"},
+        "text": {"type": "string", "minLength": 1, "description": "Self-contained: the problem in plain words, then what is asked."},
+        "blocking": {"type": "boolean", "description": "A go or ok is refused while a blocking question is unanswered."},
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+              "label": {"type": "string"},
+              "note": {"type": "string", "description": "What this choice changes."},
+              "preview": {"type": "string", "pattern": "^outbox/"}
+            }
+          }
+        },
+        "default": {"type": "string", "description": "Choice id, or free text, used if the owner answers go/ok without picking."},
+        "recommended": {"type": "string"}
+      }
+    }
+  }
+}

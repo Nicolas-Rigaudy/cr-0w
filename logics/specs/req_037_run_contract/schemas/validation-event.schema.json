@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/validation-event.schema.json",
+  "title": "validation event",
+  "description": "Event-log line written when the owner answers ok (or go on a plan-gate kind whose go publishes). core checks the latest one before every publish.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ts", "mission", "type", "actor", "data"],
+  "properties": {
+    "ts": {"type": "string", "format": "date-time"},
+    "mission": {"type": "string"},
+    "type": {"enum": ["validation", "validation_dropped"]},
+    "actor": {"enum": ["owner"], "description": "Only the owner validates; never a chat tool, the butler or a run."},
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "version", "verb", "publish_sha256", "surface"],
+      "properties": {
+        "file": {"type": "string", "pattern": "^(plan|report|mockup)\\.v[0-9]+\\.md$"},
+        "version": {"type": "integer", "minimum": 1},
+        "verb": {"enum": ["ok", "go", "approve"]},
+        "publish_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Hash of the canonical JSON of the block's publish list; publish is refused when it no longer matches."},
+        "surface": {"enum": ["nest", "deck", "cli"]},
+        "dropped_by": {"type": "string", "description": "Event id of the message that dropped it (validation_dropped only)."}
+      }
+    }
+  }
+}

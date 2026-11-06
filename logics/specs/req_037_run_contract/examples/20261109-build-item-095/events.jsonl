@@ -1,0 +1,13 @@
+{"ts":"2026-11-09T09:00:00+01:00","mission":"20261109-build-item-095","type":"created","actor":"owner","data":{"kind":"build","key":"item_095","surface":"deck"}}
+{"ts":"2026-11-09T09:01:00+01:00","mission":"20261109-build-item-095","type":"run_started","actor":"core","data":{"version":1,"account_class":"crow","cold":true}}
+{"ts":"2026-11-09T09:10:00+01:00","mission":"20261109-build-item-095","type":"gate","actor":"core","data":{"file":"plan.v1.md","verdict":"needs-input"}}
+{"ts":"2026-11-09T09:12:00+01:00","mission":"20261109-build-item-095","type":"answer","actor":"owner","data":{"file":"answers.v1.md","verb":"dig"}}
+{"ts":"2026-11-09T09:13:00+01:00","mission":"20261109-build-item-095","type":"run_started","actor":"core","data":{"version":2,"account_class":"crow","cold":false}}
+{"ts":"2026-11-09T09:20:00+01:00","mission":"20261109-build-item-095","type":"gate","actor":"core","data":{"file":"plan.v2.md","verdict":"ready"}}
+{"ts":"2026-11-09T09:40:00+01:00","mission":"20261109-build-item-095","type":"answer","actor":"owner","data":{"file":"answers.v2.md","verb":"go"}}
+{"ts":"2026-11-09T09:41:00+01:00","mission":"20261109-build-item-095","type":"run_started","actor":"core","data":{"version":3,"account_class":"crow","cold":false}}
+{"ts":"2026-11-09T10:30:00+01:00","mission":"20261109-build-item-095","type":"gate","actor":"core","data":{"file":"report.v3.md","verdict":"ready"}}
+{"ts":"2026-11-09T11:02:00+01:00","mission":"20261109-build-item-095","type":"validation","actor":"owner","data":{"file":"report.v3.md","version":3,"verb":"ok","publish_sha256":"52b3bd096a17b1f79243f1f39aa38ddd2925b1ae6fb3bec0d0ec885b42a9e09f","surface":"nest"}}
+{"ts":"2026-11-09T11:02:05+01:00","mission":"20261109-build-item-095","type":"publish","actor":"core","data":{"action":"push","validation_ts":"2026-11-09T11:02:00+01:00","result":"ok"}}
+{"ts":"2026-11-09T11:02:09+01:00","mission":"20261109-build-item-095","type":"publish","actor":"core","data":{"action":"mr","validation_ts":"2026-11-09T11:02:00+01:00","result":"ok"}}
+{"ts":"2026-11-09T11:02:10+01:00","mission":"20261109-build-item-095","type":"done","actor":"core","data":{}}

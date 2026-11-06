@@ -1,0 +1,4 @@
+$ bin/crow-check
+pass  tests       214 passed
+pass  leak        no hits
+crow-check: green

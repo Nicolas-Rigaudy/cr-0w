@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/crow-block.schema.json",
+  "title": "crow block",
+  "description": "The one fenced ```crow block in plan.vN.md, report.vN.md or mockup.vN.md, written as YAML or JSON. core parses it; the Markdown around it is for the owner.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "mission", "kind", "phase", "version", "summary", "confidence", "verdict"],
+  "properties": {
+    "contract": {"const": 1, "description": "Contract version; bumps on a breaking change."},
+    "mission": {"type": "string", "pattern": "^[0-9]{8}-[a-z-]+-[a-z0-9_!#@.-]+$", "description": "Mission id from brief.md."},
+    "kind": {"type": "string", "pattern": "^[a-z][a-z-]*$"},
+    "phase": {"enum": ["plan", "report", "mockup"]},
+    "version": {"type": "integer", "minimum": 1, "description": "Matches the N of the file name."},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 200, "description": "One sentence, plain words."},
+    "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+    "verdict": {"enum": ["ready", "blocked", "needs-input"], "description": "ready = the gate can be answered; blocked = cannot go on (reason in summary); needs-input = a blocking question is open."},
+    "assumptions": {"type": "array", "items": {"type": "string"}, "description": "Safest assumptions taken for skipped preflight questions."},
+    "questions": {"type": "array", "items": {"$ref": "questions.schema.json#/$defs/question"}},
+    "responses": {
+      "type": "array",
+      "description": "Required from version 2: what became of each point in the previous answers file.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "outcome"],
+        "properties": {
+          "ref": {"type": "string", "description": "Question id or answer point number (a1, a2...)."},
+          "outcome": {"enum": ["done", "partly", "declined", "moot"]},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "properties": {
+          "path": {"type": "string", "pattern": "^outbox/[^/][^\\0]*$", "description": "Relative to the mission dir; always under outbox/."},
+          "kind": {"enum": ["html", "image", "video", "diff", "doc", "data"]},
+          "option": {"type": "string", "description": "Mockup option id (A, B, C...)."},
+          "scenario": {"type": "string", "description": "Mockup scenario (same framing across options)."},
+          "caption": {"type": "string"}
+        }
+      }
+    },
+    "publish": {
+      "type": "array",
+      "description": "What core would do after the gate passes, with the exact text. Empty when nothing goes out.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["action", "target"],
+        "properties": {
+          "action": {"enum": ["commit-docs", "push", "merge", "mr", "post-comments", "reply-resolve", "page", "mail-draft", "vault-note", "next-mission"]},
+          "target": {"type": "string", "description": "Repo and branch, MR ref, page path, or next mission kind."},
+          "title": {"type": "string"},
+          "body": {"type": "string", "description": "Exact text, or outbox/<file> holding it."},
+          "commits": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"}}
+        }
+      }
+    },
+    "proof": {
+      "type": "array",
+      "description": "Proof of work: required and non-empty on a report with verdict ready.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["what"],
+        "properties": {
+          "what": {"enum": ["command", "test", "link", "file", "source"]},
+          "cmd": {"type": "string"},
+          "exit": {"type": "integer"},
+          "url": {"type": "string"},
+          "checked": {"type": "string", "description": "Version or date checked, for links and sources."},
+          "path": {"type": "string"},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "next": {"type": "string", "description": "What the run does after the expected answer (plan phase)."}
+  },
+  "allOf": [
+    {"if": {"properties": {"phase": {"const": "report"}, "verdict": {"const": "ready"}}, "required": ["phase", "verdict"]},
+     "then": {"required": ["proof"], "properties": {"proof": {"minItems": 1}}}},
+    {"if": {"properties": {"version": {"minimum": 2}}, "required": ["version"]},
+     "then": {"required": ["responses"]}},
+    {"if": {"properties": {"verdict": {"const": "needs-input"}}, "required": ["verdict"]},
+     "then": {"required": ["questions"], "properties": {"questions": {"minItems": 1}}}},
+    {"if": {"properties": {"phase": {"const": "mockup"}}, "required": ["phase"]},
+     "then": {"required": ["artifacts"], "properties": {"artifacts": {"minItems": 2}}}}
+  ]
+}
