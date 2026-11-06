@@ -10,3 +10,4 @@ __pycache__/
 .claude/skills/weekly
 .claude/skills/mgmt-weekly
 logics/context-pack.json
+logics/.cache/
