@@ -99,15 +99,12 @@ func TestHistoryModeHidesPerso(t *testing.T) {
 	}
 }
 
-func TestHistoryActionsAreReadOnly(t *testing.T) {
+func TestHistoryActionsSkipSampleRows(t *testing.T) {
 	m := histModel(170, 46)
 	for _, k := range []string{"enter", "o", "r", "y", "h"} {
 		m2 := send(m, keyMsg(k))
-		if !strings.Contains(m2.flash, "actions slice") {
-			t.Errorf("%s: flash %q", k, m2.flash)
-		}
-		if !m2.hist {
-			t.Errorf("%s left History", k)
+		if !strings.Contains(m2.flash, "sample row") || m2.overlay != ovNone || !m2.hist {
+			t.Errorf("%s: flash %q overlay %d", k, m2.flash, m2.overlay)
 		}
 	}
 }

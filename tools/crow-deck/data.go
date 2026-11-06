@@ -101,6 +101,8 @@ type usageSession struct {
 	ID       string           `json:"id"`
 	Account  string           `json:"account"`
 	Project  string           `json:"project"`
+	Cwd      string           `json:"cwd"`
+	Path     string           `json:"path"` // the transcript
 	Title    string           `json:"title"`
 	Start    string           `json:"start"`
 	End      string           `json:"end"`

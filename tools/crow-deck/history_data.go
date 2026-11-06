@@ -19,6 +19,8 @@ type histSession struct {
 	Tokens, Messages                         int
 	Active                                   bool
 	Branch                                   string
+	Cwd, Path                                string         // workspace and transcript, "" on sample rows
+	Files                                    map[string]int // edited files and their edit counts
 	// Detail: the sources record these; false on live rows.
 	Detail   bool
 	EndState string
@@ -80,6 +82,7 @@ func histOf(u *usageSnap, reg *registry, now time.Time) []histSession {
 			ID: s.ID, Project: reg.shortName(s.Project), Account: s.Account, Model: modelFamily(s.Models),
 			Task: whoName(s, reg), Scope: reg.scopeOf(s.Project), Start: start.Local(), Took: took,
 			Cost: s.CostUSD, Tokens: s.Tokens, Messages: s.Messages, Branch: s.Branch,
+			Cwd: s.Cwd, Path: s.Path, Files: s.FilesEdited,
 			Active: now.Sub(end) < 3*time.Minute,
 		})
 	}

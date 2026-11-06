@@ -65,9 +65,10 @@ func TestProjectsKeys(t *testing.T) {
 		t.Errorf("selection ran past the cards: %d", m.prjSel)
 	}
 	press("c")
-	if !strings.Contains(m.flash, "continue on") || strings.Contains(m.flash, "not wired") {
-		t.Errorf("flash %q", m.flash)
+	if m.overlay != ovAct || m.act == nil || strings.Join(m.act.Cmd[:2], " ") != "crow term" {
+		t.Errorf("c: overlay %d act %+v", m.overlay, m.act)
 	}
+	press("esc")
 	_, n0, _ := m.projectsView().window(false)
 	press("z")
 	if !m.prjZoom {

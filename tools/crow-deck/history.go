@@ -1,8 +1,7 @@
 package main
 
 // History page, behind `/` in Agents: a search box with filter chips, the sessions grouped
-// by day, and a preview of the selected one. Read only: resume, transcript, retro, copy id
-// and handoff note arrive with the actions slice.
+// by day, and a preview of the selected one. Its actions are in history_actions.go.
 
 import (
 	"fmt"
@@ -242,10 +241,33 @@ func (hv histView) previewSpec(iw, h int) boxSpec {
 			rows = append(rows, line{{fit(t.At, 5), lk.cyan}, spc(1), {t.Text, lk.plain}})
 		}
 	} else {
-		rows = append(rows, nil, line{{"End state, touched files, links and last messages", lk.sub}}, line{{"are not recorded by the sources yet.", lk.sub}})
+		touched, last := histDetail(s)
+		if len(touched) > 0 {
+			t := line{lab("touched")}
+			for _, f := range touched {
+				t = append(t, seg{f, lk.plain}, spc(2))
+			}
+			if n := len(s.Files) - len(touched); n > 0 {
+				t = append(t, seg{fmt.Sprintf("+%d more", n), lk.sub})
+			}
+			rows = append(rows, t)
+		}
+		if len(last) > 0 {
+			rows = append(rows, nil, line{{lk.cap("last messages"), lk.head}})
+			for _, t := range last {
+				for i, l := range wrap(t.Text, max(10, iw-6)) {
+					at := ""
+					if i == 0 {
+						at = t.At
+					}
+					rows = append(rows, line{{fit(at, 5), lk.cyan}, spc(1), {l, lk.plain}})
+				}
+			}
+		}
+		rows = append(rows, nil, line{{"The end state and links are not recorded by the sources yet.", lk.sub}})
 	}
-	hints := line{{"enter resume  o transcript  r retro  y copy id  h handoff note", lk.sub}}
-	note := line{{"read only: these arrive with the actions slice", lk.sub}}
+	hints := line{{"enter", lk.key}, spc(1), {"resume", lk.sub}, spc(2), {"o", lk.key}, spc(1), {"transcript", lk.sub}, spc(2), {"r", lk.key}, spc(1), {"retro", lk.sub}, spc(2), {"y", lk.key}, spc(1), {"copy id", lk.sub}, spc(2), {"h", lk.key}, spc(1), {"handoff note", lk.sub}}
+	note := line{{"resume, retro and handoff ask first", lk.sub}}
 	slots := max(0, h-lk.boxH(0)-2)
 	if len(rows) > slots {
 		rows = rows[:slots]
@@ -309,7 +331,7 @@ func (hv histView) body(w, h int) []string {
 
 // histKey handles the History keys; ok is false for keys the page shares with the rest (tabs,
 // mode, theme, help, palette, j k, tab, quit).
-func (m model) histKey(msg tea.KeyMsg) (model, bool) {
+func (m model) histKey(msg tea.KeyMsg) (model, tea.Cmd, bool) {
 	k := msg.String()
 	if m.histTyping {
 		switch msg.Type {
@@ -324,10 +346,10 @@ func (m model) histKey(msg tea.KeyMsg) (model, bool) {
 		case tea.KeySpace:
 			m.histF.query += " "
 		case tea.KeyCtrlC:
-			return m, false
+			return m, nil, false
 		}
 		m.histSel = 0
-		return m, true
+		return m, nil, true
 	}
 	switch k {
 	case "esc":
@@ -339,7 +361,7 @@ func (m model) histKey(msg tea.KeyMsg) (model, bool) {
 		m.histSel = 0
 	case "m":
 		// m stays the global mode key; the model chip is on M.
-		return m, false
+		return m, nil, false
 	case "M":
 		m.histF.cycle("m", m.fx, m.mode)
 		m.histSel = 0
@@ -351,9 +373,10 @@ func (m model) histKey(msg tea.KeyMsg) (model, bool) {
 	case "pgup", "ctrl+u":
 		m.moveSel(-10)
 	case "enter", "o", "r", "y", "h":
-		m.flash = k + ": " + map[string]string{"enter": "resume", "o": "transcript", "r": "retro", "y": "copy id", "h": "handoff note"}[k] + " arrives with the actions slice"
+		nm, cmd := m.histAction(k)
+		return nm, cmd, true
 	default:
-		return m, false
+		return m, nil, false
 	}
-	return m, true
+	return m, nil, true
 }

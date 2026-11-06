@@ -129,6 +129,8 @@ func TestEveryProcessGoesThroughTheGate(t *testing.T) {
 		"runJSON":        "read only: data sources",
 		"editRoadmap":    "the owner edits the roadmap doc in $EDITOR",
 		"editorCmd":      "the owner's editor",
+		"pagerCmd":       "the owner's pager",
+		"openTranscript": "navigation: read a transcript in the pager",
 	}
 	starters := map[string]bool{"runBin": true, "actionCmd": true, "Command": true, "CommandContext": true, "ExecProcess": true}
 	fset := token.NewFileSet()

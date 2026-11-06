@@ -507,8 +507,8 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.mrTypingKey(msg)
 	}
 	if m.overlay == ovNone && m.page == 1 && m.hist {
-		if nm, ok := m.histKey(msg); ok {
-			return nm, nil
+		if nm, cmd, ok := m.histKey(msg); ok {
+			return nm, cmd
 		}
 	}
 	switch m.overlay {
@@ -630,7 +630,7 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "o":
 		if m.page == 3 {
-			m.flash = m.projectKey(k)
+			return m.projectAction(k)
 		}
 		if m.page == 0 && m.focus == pToday {
 			return m.todayKey(k)
@@ -692,31 +692,18 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if k == "e" {
 				return m, m.editRoadmap()
 			}
-			m.flash = m.projectKey(k)
-			return m, nil
+			return m.projectAction(k)
 		}
-		m.flash = k + ": actions are not wired yet"
+		if k == "h" || k == "r" || k == "x" {
+			return m.homeAction(k)
+		}
+		m.flash = k + ": no action on this key here"
 	}
 	return m, nil
 }
 
 // azertyTabs maps the unshifted AZERTY digit row to tabs 1-5.
 var azertyTabs = map[string]int{"&": 0, "é": 1, "\"": 2, "'": 3, "(": 4}
-
-// projectKey explains an action key on the Projects page: it needs a selected project, and
-// the actions themselves (but e) arrive with the actions slice.
-func (m model) projectKey(k string) string {
-	c := m.projectsView().cur()
-	if c == nil {
-		return "no project selected"
-	}
-	for _, a := range cardActions {
-		if a[0] == k {
-			return k + ": " + a[1] + " on " + c.Name + " arrives with the actions slice"
-		}
-	}
-	return k + ": no action on this key"
-}
 
 // editRoadmap opens the selected project's roadmap doc in $EDITOR (vi without one). The
 // deck reloads the registry when the editor exits, so the card shows the edit.
@@ -743,6 +730,15 @@ func editorCmd(path string) *exec.Cmd {
 		ed = []string{"vi"}
 	}
 	return exec.Command(ed[0], append(ed[1:], path)...)
+}
+
+// pagerCmd runs $PAGER on path, less without one.
+func pagerCmd(path string) *exec.Cmd {
+	pg := strings.Fields(os.Getenv("PAGER"))
+	if len(pg) == 0 {
+		pg = []string{"less"}
+	}
+	return exec.Command(pg[0], append(pg[1:], path)...)
 }
 
 type roadmapEditedMsg struct{ name string }
@@ -855,8 +851,8 @@ func (m *model) stepItem(d int) {
 	}
 }
 
-// mrKeyPress handles the MRs page keys. The page is read only: T flips the card kind, the
-// other action keys say what arrives later.
+// mrKeyPress handles the MRs page keys. Review, apply, post and handoff confirm in an
+// overlay first; T flips the card kind.
 func (m model) mrKeyPress(k string) (tea.Model, tea.Cmd) {
 	mv := m.mrsView()
 	switch k {
@@ -1107,7 +1103,7 @@ func (m model) context() []keyHint {
 		if m.histTyping {
 			return []keyHint{{"enter", "keep text"}, {"esc", "stop typing"}}
 		}
-		return []keyHint{{"/", "search"}, {"p a d M s", "filter"}, {"x", "clear"}, {"j k", "session"}, {"tab", "pane"}, {"esc", "back to live"}}
+		return []keyHint{{"/", "search"}, {"p a d M s", "filter"}, {"x", "clear"}, {"j k", "session"}, {"enter", "resume"}, {"o", "transcript"}, {"r", "retro"}, {"y", "copy id"}, {"h", "handoff"}, {"esc", "back to live"}}
 	}
 	if m.page == 1 {
 		if m.typing {
