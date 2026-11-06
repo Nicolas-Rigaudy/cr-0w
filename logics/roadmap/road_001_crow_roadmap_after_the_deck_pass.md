@@ -38,6 +38,12 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 - Scope: req_019: 077 sandboxed runs (fold 076 isolated review workspace into it), then 074 dispatch records runs, 075 cost per run, 073 deck Logics viewer. Groom req_021 and run the 088 trials alongside.
 - Exit signal: a headless run loads no repo `.mcp.json` server it does not need, and `crow runs` shows its cost.
 
+## 0.3b - Jarvis layer core (exception)
+- Goal: work runs as background missions; questions and proposals land in one inbox; status reads as short human sentences.
+- Scope: req_028 slices 1-5 (mission model, inbox with park and resume, core API, human summaries, autonomy dial), with thin deck and nest views of the inbox. Slices 6-9 (deck views, nest MVP, butler chat, model router) follow and feed 0.7.
+- Exception (owner, 2026-11-06): ahead of 0.4 because the owner wants to steer from the interface and run more hands off. Needs 0.3 (deny-by-default runs) first.
+- Exit signal: a mission asks a question, exits, and resumes from an answer given in deck or nest.
+
 ## 0.4 - Release path
 - Goal: crow is installable and updatable by someone else.
 - Scope: req_006 and req_004: 037 docs (README install, CONTRIBUTING, SECURITY, release runbook), 034 install script and `crow update`, 035 release workflow (tag, CI, GitHub Release, checksums), 036 AUR then Homebrew tap.
