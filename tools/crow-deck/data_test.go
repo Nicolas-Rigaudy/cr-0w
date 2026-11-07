@@ -547,8 +547,8 @@ func TestRefreshSchedule(t *testing.T) {
 	if n := len(refreshCmds(usageTicks)); n != 5 {
 		t.Errorf("usage tick: %d, want 5 (adds usage, accounts and relaunch status)", n)
 	}
-	if n := len(refreshCmds(registryTicks)); n != 8 {
-		t.Errorf("registry tick: %d, want 8 (adds registry, MRs and Today)", n)
+	if n := len(refreshCmds(registryTicks)); n != 9 {
+		t.Errorf("registry tick: %d, want 9 (adds registry, MRs, Today and checks)", n)
 	}
 }
 

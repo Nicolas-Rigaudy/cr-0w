@@ -320,16 +320,17 @@ const (
 
 // liveState holds the last good payload of every source with its age and last error.
 type liveState struct {
-	runs  *runsSnap
-	intr  []intrSession
-	usage *usageSnap
-	acct  []acctPolicy
-	reg   *registry
-	mrs   *mrsSnap
-	today *todaySnap
-	rel   *relStatus
-	at    map[string]time.Time
-	err   map[string]string
+	runs   *runsSnap
+	intr   []intrSession
+	usage  *usageSnap
+	acct   []acctPolicy
+	reg    *registry
+	mrs    *mrsSnap
+	today  *todaySnap
+	checks *checksSnap
+	rel    *relStatus
+	at     map[string]time.Time
+	err    map[string]string
 	// MR diffs and threads, fetched when an MR is selected.
 	details map[string]*detailEntry
 	// git state of the selected lane's checkout, by path.
@@ -377,6 +378,8 @@ func (ls *liveState) apply(msg srcMsg) {
 		ls.mrs = v
 	case *todaySnap:
 		ls.today = v
+	case *checksSnap:
+		ls.checks = v
 	case *relStatus:
 		ls.rel = v
 	}
@@ -922,6 +925,7 @@ func buildFixtures(in liveInput) *fixtures {
 			}
 		}
 	}
+	fx.Decide = append(fx.Decide, checkDecide(ls.checks, now.Local())...)
 	fx.Cards = projectCardsOf(now, ls.reg, fx.Agents, fx.Next, fx.MRs)
 	fx.Projects = homeProjects(now, ls.reg, fx.Cards)
 	fx.MRDetails, fx.MRErrs = map[string]*mrDetail{}, map[string]string{}
