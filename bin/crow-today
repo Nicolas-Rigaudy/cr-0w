@@ -14,7 +14,7 @@ With mark_important: true, crow flags the mail it picks (category "crow"), once 
 clears its own flag when you answered; Today then lists every flagged mail. Keyring: service crow-graph, user <user>.
 JSON: {"at", "events": [{"start","end","subject","all_day","next"}], "tomorrow": [...],
        "unread", "flagged": [{"id","subject","from","crow","webLink","until"}], "drafts",
-       "important": [{"id","subject","from","at","unread","high","webLink"}]}. until: ISO time a snoozed flag returns.. Exit 2 when not signed in.
+       "important": [{"id","subject","from","at","unread","high","webLink"}], "week": [events today to 7 days ahead]}. until: ISO time a snoozed flag returns.. Exit 2 when not signed in.
 """
 import datetime as dt, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 import re
@@ -91,6 +91,7 @@ def access(c):
 
 
 TZ = "UTC"
+WEEK = 8  # days in "week", today included (the crow-checks 1:1 window)
 
 
 def get(tok, path, extra=None):
@@ -100,14 +101,16 @@ def get(tok, path, extra=None):
         return json.load(r)
 
 
-def events(tok, day):
-    q = urllib.parse.urlencode({"startDateTime": day.isoformat(), "endDateTime": (day + dt.timedelta(days=1)).isoformat(),
-                                "$select": "subject,start,end,isAllDay,isCancelled,showAs", "$orderby": "start/dateTime", "$top": "30"})
+def events(tok, day, days=1):
+    end = day + dt.timedelta(days=days)
+    q = urllib.parse.urlencode({"startDateTime": day.isoformat(), "endDateTime": end.isoformat(),
+                                "$select": "subject,start,end,isAllDay,isCancelled,showAs", "$orderby": "start/dateTime",
+                                "$top": str(30 * days)})
     out, seen = [], set()
     for e in get(tok, "/me/calendarView?" + q)["value"]:
         if e.get("isCancelled") or e.get("showAs") == "free" and not e.get("isAllDay"):
             continue
-        lo, hi = day.strftime("%Y-%m-%dT%H:%M"), (day + dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
+        lo, hi = day.strftime("%Y-%m-%dT%H:%M"), end.strftime("%Y-%m-%dT%H:%M")
         if e["end"]["dateTime"][:16] <= lo or e["start"]["dateTime"][:16] >= hi:
             continue  # Graph returns events that only touch the window edge
         key = (e["start"]["dateTime"][:16], e.get("subject"))
@@ -285,7 +288,7 @@ def fetch(c):
     flagged = mark(tok, picked, answered) if c.get("mark_important") else []
     return {"at": now.isoformat(timespec="seconds"), "events": today, "tomorrow": events(tok, day + dt.timedelta(days=1)),
             "unread": inbox.get("unreadItemCount", 0), "flagged": flagged, "drafts": drafts.get("totalItemCount", 0),
-            "important": picked}
+            "important": picked, "week": events(tok, day, WEEK)}
 
 
 def main():
