@@ -27,6 +27,62 @@ def data_home(env=None):
     return os.path.join(xdg, "crow")
 
 
+# Owner-facing notes: kind -> (name under the vault crow folder, legacy name under local/state).
+NOTES = {
+    "threads": ("Open Threads.md", "open-threads.md"),
+    "status": ("Status.md", "status.md"),
+    "decisions": ("Decisions", "decisions.md"),
+    "rollups": ("Rollups", "weekly"),
+    "drafts": ("Drafts", "drafts"),
+    "research": ("Research", "research"),
+    "retros": ("Retros", "retros"),
+}
+
+
+def registry(home=None):
+    """local/projects.yaml as a dict ({} when missing)."""
+    import yaml
+    path = os.path.join(home or data_home(), "local", "projects.yaml")
+    try:
+        with open(path) as f:
+            return yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return {}
+
+
+def machine_dir(home=None):
+    """Machine state (JSON, caches, locks, queues, handoffs, renders): always local/state."""
+    from pathlib import Path
+    return Path(home or data_home()) / "local" / "state"
+
+
+def crow_dir(reg=None, home=None):
+    """Vault folder for owner-facing notes (vault.path / vault.crow_dir), or None when unset."""
+    from pathlib import Path
+    reg = registry(home) if reg is None else reg
+    vault = reg.get("vault") or {}
+    name = vault.get("crow_dir")
+    if not name:
+        return None
+    path = Path(os.path.expanduser(str(name)))
+    if not path.is_absolute() and vault.get("path"):
+        path = Path(vault["path"]) / path
+    return path
+
+
+def crow_path(kind, reg=None, home=None):
+    """Path of an owner-facing note kind: in the vault crow folder when set, else the legacy local/state name."""
+    vault_name, legacy = NOTES[kind]
+    notes = crow_dir(reg, home)
+    return notes / vault_name if notes else machine_dir(home) / legacy
+
+
+def rollup_path(week, reg=None, home=None):
+    """Weekly rollup file for an ISO week label like 2026-W45."""
+    root = crow_path("rollups", reg, home)
+    return root / (f"{week} rollup.md" if crow_dir(reg, home) else f"{week}.md")
+
+
 def profiles_dir(env=None):
     """cdx profiles dir: CDX_PROFILES, else CDX_HOME/profiles, else ~/.cdx/profiles."""
     env = os.environ if env is None else env
@@ -410,11 +466,13 @@ CLAUDE_MODEL_IDS = {"opus": "claude-opus-5-5", "sonnet": "claude-sonnet-5-5", "h
                     "fable": "claude-fable-5-1"}
 # kind: default model, effort, budget in USD, wall-clock cap in minutes. Env CROW_<KIND>_BUDGET / _TIMEOUT_MIN override.
 RUN_KINDS = {
-    "task": {"model": "opus", "power": "medium", "budget": 25.0, "timeout_min": 120},
-    "review": {"model": "opus", "power": "high", "budget": 10.0, "timeout_min": 60},
+    "task": {"model": "opus", "power": "medium", "budget": 25.0, "timeout_min": 120, "isolate": "rw"},
+    "review": {"model": "opus", "power": "high", "budget": 10.0, "timeout_min": 60, "isolate": "ro"},
     "retro": {"model": "sonnet", "power": "low", "budget": 2.0, "timeout_min": 45},
     "oneshot": {"model": "opus", "power": "medium", "budget": 3.0, "timeout_min": 20},
 }
+# "isolate": the kind may run under `cdx run --isolate-workspace` (rw tree, or ro for review). retro and oneshot
+# read host data (transcripts, vault) and never isolate.
 # crow kinds that map to a cdx --kind (cdx knows assistant|code-review|retro; the rest keep its default).
 CDX_KINDS = {"retro": "retro"}
 # Headless traps: no background tasks (phantom results), no claude.ai connectors (~40k tokens of tool defs per call).
@@ -539,3 +597,112 @@ def run_denials(run):
             what = inp.get("command") or inp.get("file_path") or inp.get("url") or ""
             out.append(f"{d.get('tool_name', '?')}: {what}"[:120].rstrip(": "))
     return out
+
+
+# ---------- isolated runs (item_100, req_030) ----------
+
+# Tools cdx needs for an isolated online run: bwrap for the sandbox, pasta + nft + python3 for its network.
+ISOLATION_TOOLS = {"bwrap": "bubblewrap", "pasta": "passt", "nft": "nftables", "python3": "python"}
+
+
+def isolation_mode(kind):
+    """"rw" or "ro" when the kind may run isolated, else None."""
+    return RUN_KINDS.get(kind, {}).get("isolate")
+
+
+def isolation_preflight(provider, auth_type, path=None, kind=None):
+    """Why an isolated run cannot start (with the fix), or None. Never a fallback to a shared network."""
+    import shutil
+    if kind is not None and not isolation_mode(kind):
+        return f"kind {kind} cannot run isolated (it reads host data); isolated kinds: " + \
+            ", ".join(k for k in RUN_KINDS if isolation_mode(k))
+    missing = [t for t in ISOLATION_TOOLS if not shutil.which(t, path=path)]
+    if missing:
+        pkgs = " ".join(dict.fromkeys(ISOLATION_TOOLS[t] for t in missing))
+        return f"isolated runs need {', '.join(missing)}: install with `sudo pacman -S {pkgs}`; no shared-network fallback"
+    if provider == "claude" and auth_type != "setup-token":
+        return (f"isolated Claude runs need a cdx setup token (this profile is {auth_type or 'unknown'}): "
+                "`cdx add <account>-runs` then `cdx login <account>-runs`, and dispatch with --account <account>-runs")
+    return None
+
+
+def cdx_rows():
+    """`cdx status --json` rows, or [] when cdx cannot answer."""
+    try:
+        return json.loads(subprocess.run(["cdx", "status", "--json"], capture_output=True, text=True,
+                                         timeout=60).stdout).get("rows") or []
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+
+
+def account_auth(account, rows=None):
+    """cdx auth type of an account (full-login, setup-token...), or None when cdx does not list it."""
+    rows = cdx_rows() if rows is None else rows
+    return next((r.get("auth_type") for r in rows if r.get("session_name") == account), None)
+
+
+def isolation_account(account, rows):
+    """The account an isolated run uses: its `<account>-runs` profile when cdx has one, else the account."""
+    names = {r.get("session_name") for r in rows}
+    return run_profile(account) if run_profile(account) in names else account
+
+
+_SHEBANG_KINDS = {"python": "PY", "bash": "SH", "sh": "SH", "zsh": "SH", "node": "JS"}
+_EXT_KINDS = {"yml": "YAML", "markdown": "MD", "bash": "SH"}
+
+
+def file_kind(path, root="."):
+    """Commit SCOPE kind of a file: its extension (PY, MD, GO...), else its shebang interpreter, else TXT."""
+    base = os.path.basename(path)
+    if "." in base.lstrip("."):
+        ext = base.rsplit(".", 1)[1].lower()
+        return _EXT_KINDS.get(ext, ext.upper())
+    try:
+        with open(os.path.join(root, path), "rb") as f:
+            line = f.readline(200).decode("utf-8", "replace")
+    except OSError:
+        line = ""
+    if line.startswith("#!"):
+        words = line[2:].split()
+        interp = os.path.basename(words[-1] if words and words[0].endswith("env") else (words or [""])[0])
+        interp = re.sub(r"[\d.]+$", "", interp)
+        return _SHEBANG_KINDS.get(interp, "SH")
+    return "TXT"
+
+
+def commit_scope(paths, root="."):
+    """`PY/MD` style scope, most touched kind first, alphanumeric only."""
+    counts = {}
+    for p in paths:
+        k = re.sub(r"[^A-Z0-9]", "", file_kind(p, root).upper()) or "TXT"
+        counts[k] = counts.get(k, 0) + 1
+    return "/".join(sorted(counts, key=lambda k: (-counts[k], k)))
+
+
+def run_commit_message(label, run_id, statuses, root="."):
+    """`new|chg[SCOPE]: <label> (run <id8>)` for a run's staged changes ({path: git status letter})."""
+    kind = "new" if statuses and all(s == "A" for s in statuses.values()) else "chg"
+    text = re.sub(r"\s+", " ", label or "").strip()[:72] or "isolated run"
+    return f"{kind}[{commit_scope(statuses, root)}]: {text} (run {str(run_id)[:8]})"
+
+
+def commit_run_diff(cwd, label, run_id):
+    """Commit what an isolated run left in its worktree, from the host (the sandbox cannot write git).
+    Returns {"sha", "message", "files"}, else {"sha": None, "reason"} (no changes, message refused, git failed)."""
+    git = lambda *a, **k: subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True, **k)
+    if git("add", "-A").returncode:
+        return {"sha": None, "reason": "git add failed"}
+    rows = [r.split("\t") for r in git("diff", "--cached", "--name-status", "--no-renames").stdout.splitlines() if r]
+    statuses = {r[-1]: r[0][0] for r in rows}
+    if not statuses:
+        return {"sha": None, "reason": "no changes"}
+    msg = run_commit_message(label, run_id, statuses, cwd)
+    check = subprocess.run([os.path.join(ENGINE, "bin", "crow-commit-msg-check"), "-"], input=msg, text=True,
+                           capture_output=True)
+    if check.returncode:
+        git("reset", "-q")
+        return {"sha": None, "reason": "message refused: " + check.stderr.strip(), "message": msg}
+    c = git("commit", "-q", "-m", msg)
+    if c.returncode:
+        return {"sha": None, "reason": "git commit failed: " + (c.stderr or c.stdout).strip()[-300:], "message": msg}
+    return {"sha": git("rev-parse", "HEAD").stdout.strip(), "message": msg, "files": sorted(statuses)}

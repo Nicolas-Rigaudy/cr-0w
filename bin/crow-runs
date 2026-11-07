@@ -329,6 +329,8 @@ def notify(run_ids, poll=20, max_hours=12):
             if rid in done:
                 rec = recs.get(rid, {})
                 st = run_state(done[rid])
+                if rec.get("isolated") and rec.get("permission") != "review":
+                    commit_isolated(rec)
                 record_run(rec, st)
                 msg = requeue(rec, deadline) if st == "limit" and rec else ""
                 subprocess.run(["notify-send", "-a", "crow", "-u", "normal" if st == "done" else "critical",
@@ -336,6 +338,16 @@ def notify(run_ids, poll=20, max_hours=12):
                 pending.discard(rid)
         if pending:
             time.sleep(poll)
+
+
+def commit_isolated(rec):
+    """An isolated run cannot write git: the host commits what it left in the worktree (item_100).
+    Done here in bin/ until the core (item_119) owns mission commits."""
+    res = crow_lib.commit_run_diff(rec["cwd"], rec.get("label"), rec["run_id"])
+    log_event(rec, "run.committed" if res.get("sha") else "run.commit_skipped", res)
+    if not res.get("sha") and res.get("reason") != "no changes":
+        print(f"crow: warning: run {rec['run_id'][:8]} diff not committed: {res['reason']}", file=sys.stderr)
+    return res
 
 
 MAX_CHAIN = 3          # limit requeues per original run
@@ -375,25 +387,35 @@ def requeue(rec, deadline):
     choice, why = crow_lib.limit_policy(ctx, left, bool(target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists()))
     log_event(rec, "run.limit_policy", {"choice": choice, "reason": why, "context": ctx, "account": acct,
                                         "reset_5h_at": row.get("reset_5h_at_iso"), "reset_in_min": left})
-    base += ["--context", ctx]
-    if choice == "move":
+    base += ["--context", ctx, *(["--isolate"] if rec.get("isolated") else [])]
+
+    def fresh(account):
+        """A new run from the brief plus the resume note (isolated runs cannot continue a conversation)."""
         f = STATE / "dispatch" / f"resume-{rec['run_id'][:8]}.md"
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(RESUME_NOTE + Path(rec["prompt_file"]).read_text())
-        cmd = base + ["--prompt-file", str(f), "--kind", rec.get("kind") or "task", "--account", target,
-                      *(["--power", rec["power"]] if rec.get("power") else []),
-                      *(["--model", rec["model"]] if rec.get("model") else []),
-                      *(["--permission", rec["permission"]] if rec.get("permission") else [])]
+        return base + ["--prompt-file", str(f), "--kind", rec.get("kind") or "task", "--account", account,
+                       *(["--power", rec["power"]] if rec.get("power") else []),
+                       *(["--model", rec["model"]] if rec.get("model") else []),
+                       *(["--permission", rec["permission"]] if rec.get("permission") else [])]
+    if choice == "move":
+        cmd = fresh(target)
         where = f"resumed on {target}"
     else:
         if "weekly" in (st["current_blocked"] or ""):
             return "not requeued: weekly limit, no other account free without an OK"
         if left is None or time.time() + left * 60 + RESET_GRACE_S > deadline:
             return "not requeued: no account free and no reset in time (see `crow runs relaunch status`)"
+        if rec.get("isolated") and not (rec.get("prompt_file") and Path(rec["prompt_file"]).exists()):
+            return "not requeued: isolated run without a prompt file to restart from"
         time.sleep(max(0, left * 60) + RESET_GRACE_S)
-        cmd = base + ["--continue-run", rec["run_id"], "--account", acct, "--kind", rec.get("kind") or "task",
-                      "--prompt", RESUME_NOTE + "Continue the task from where it stopped."]
-        where = f"continued on {acct} after the reset"
+        if rec.get("isolated"):
+            cmd = fresh(acct)
+            where = f"restarted isolated on {acct} after the reset"
+        else:
+            cmd = base + ["--continue-run", rec["run_id"], "--account", acct, "--kind", rec.get("kind") or "task",
+                          "--prompt", RESUME_NOTE + "Continue the task from where it stopped."]
+            where = f"continued on {acct} after the reset"
     r = subprocess.run(cmd, capture_output=True, text=True)
     return where if r.returncode == 0 else f"requeue failed: {(r.stderr or r.stdout).strip()[:120]}"
 
@@ -720,8 +742,23 @@ def pick_account(a):
               if rec else "No allowed account is free; wait for the reset."))
 
 
+def isolation_refusal(a, acct, cwd, rows):
+    """Why this run cannot start isolated (with the fix), or None. Never falls back to an unisolated run."""
+    if a.continue_run:
+        return "--isolate cannot continue a conversation (cdx refuses --continue-run with --isolate-workspace); dispatch a fresh run"
+    if not a.cwd:
+        return "--isolate needs --cwd <worktree under <path>.wt/>: the sandbox binds a linked worktree, never the main checkout"
+    if not (Path(cwd) / ".git").is_file():
+        return f"--isolate needs a linked git worktree; {cwd}/.git is not a worktree marker"
+    provider = crow_lib.provider_of(acct)
+    return crow_lib.isolation_preflight(provider, crow_lib.account_auth(acct, rows), kind=a.kind)
+
+
 def dispatch(a):
+    rows = crow_lib.cdx_rows() if a.isolate else []
     acct = pick_account(a)
+    if a.isolate and not a.account:
+        acct = crow_lib.isolation_account(acct, rows)
     if subprocess.run([str(HOME / "bin/crow-accounts"), "require", acct]).returncode:
         sys.exit(1)
     p = project(a.project)
@@ -730,6 +767,12 @@ def dispatch(a):
         cwd = os.path.realpath(a.cwd)
         if not cwd.startswith(os.path.realpath(p["path"]) + ".wt/") or not os.path.isdir(cwd):
             sys.exit(f"crow: --cwd must be an existing worktree under {p['path']}.wt/")
+    if a.isolate:
+        why = isolation_refusal(a, acct, cwd, rows)
+        if why:
+            sys.exit(f"crow: {why}")
+        if crow_lib.isolation_mode(a.kind) == "ro":
+            a.permission = "review"  # the sandbox mounts the tree read-only
     runs = running_runs()
     # A review run cannot write, so it may share the folder with another run.
     if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
@@ -745,9 +788,12 @@ def dispatch(a):
         src = ["--prompt-file", str(f)]
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
     flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget)
+    if a.isolate:  # cdx failover could land on a full-login account, which refuses isolation; requeue moves it
+        flags = [f for f in flags if f != "--failover"]
     cmd = ["cdx", "run", acct, "--cwd", cwd, *src, *(["--continue-run", a.continue_run] if a.continue_run else []), *flags,
            "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
-           "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)])]
+           "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)]),
+           *(["--isolate-workspace"] if a.isolate else [])]
     if a.dry_run:
         print(" ".join(f"{k}={v}" for k, v in env.items()), " ".join(cmd))
         return
@@ -770,6 +816,8 @@ def dispatch(a):
         "account": acct, "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
         "kind": a.kind, "context": a.context,
     }
+    if a.isolate:
+        rec["isolated"] = True
     if a.logics:
         rec["logics_ref"] = a.logics
     if "--budget" in flags:
@@ -888,6 +936,8 @@ def main():
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     d.add_argument("--cwd", help="run in this worktree of the project (<path>.wt/...) instead of the main checkout")
     d.add_argument("--account", help="run on this account (an ask-first account needs the owner's OK first)")
+    d.add_argument("--isolate", action="store_true", help="run in cdx's OS sandbox (--isolate-workspace): no credentials, "
+                   "no git push, public internet minus LAN; crow commits the diff after the run. Kinds: task (rw), review (ro)")
     d.add_argument("--continue-run", metavar="RUN_ID", help="resume that finished run's conversation (cdx --continue-run; its model and effort)")
     sub.add_parser("report").add_argument("run_id")
     fp = sub.add_parser("final")
