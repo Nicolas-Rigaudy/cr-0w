@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""crow-room: quota room per cdx account and whether a background run may start there.
+
+  crow-room [--reserve NAME=PCT ...] [--minutes N] [--refresh] [--json]
+
+room = min(remaining 5h, remaining week). A row admits a run when policy is `use`, the account is
+authenticated, no rate limit is reached, room >= 20 + reserve and the burn-rate projection
+(runs_out_at_iso) does not end before the run (--minutes, default 60). The reading comes from
+`cdx status --json --cached`; it is refreshed when older than 10 minutes (or with --refresh).
+Antigravity readings older than 24 hours count as unknown; Ollama has no quota, only reachability.
+"""
+import argparse, json, os, subprocess, sys
+from datetime import datetime
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+MIN_ROOM = 20
+STALE_MIN = 10
+AGY_STALE_MIN = 24 * 60
+
+
+def status(refresh=False):
+    args = ["cdx", "status", "--json"] + ([] if refresh else ["--cached"])
+    try:
+        out = subprocess.run(args, capture_output=True, text=True, timeout=60).stdout
+        return [r for r in json.loads(out).get("rows") or [] if r.get("session_name")]
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return []
+
+
+def age_min(row, now):
+    m = crow_lib.minutes_to(row.get("updated_at"), now)
+    return None if m is None else -m
+
+
+def verdict(row, now, reserve=0, minutes=60):
+    """(room, admit, why) for one cdx status row."""
+    provider = row.get("provider") or "claude"
+    if provider == "ollama":
+        return None, False, "no quota signal; check reachability and the model by hand"
+    r5, rw = row.get("remaining_5h_pct"), row.get("remaining_week_pct")
+    age = age_min(row, now)
+    if provider == "antigravity" and (age is None or age > AGY_STALE_MIN):
+        return None, False, "reading older than 24h: unknown, admit one small run and read the result"
+    if r5 is None or rw is None:
+        return None, False, "no quota reading"
+    room = min(r5, rw)
+    if row.get("policy") != "use":
+        return room, False, f"policy {row.get('policy') or 'unknown'}"
+    if row.get("auth_status") != "authenticated":
+        return room, False, f"auth {row.get('auth_status') or 'unknown'}"
+    if row.get("rate_limit_reached"):
+        return room, False, "rate limit reached"
+    if room < MIN_ROOM + reserve:
+        return room, False, f"room {room}% < {MIN_ROOM + reserve}% (20 + reserve {reserve})"
+    out = crow_lib.minutes_to(row.get("runs_out_at_iso"), now)
+    if out is not None and out < minutes:
+        return room, False, f"runs out in {out:.0f} min, run needs {minutes}"
+    return room, True, "ok"
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--reserve", action="append", default=[], metavar="NAME=PCT")
+    ap.add_argument("--minutes", type=int, default=60)
+    ap.add_argument("--refresh", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+    try:
+        reserve = {k: int(v) for k, v in (x.split("=", 1) for x in a.reserve)}
+    except ValueError:
+        sys.exit("crow-room: --reserve takes NAME=PCT")
+    now = datetime.now().astimezone()
+    rows = status(a.refresh)
+    if not a.refresh and any((age_min(r, now) or 0) > STALE_MIN for r in rows):
+        rows = status(True) or rows
+    if not rows:
+        sys.exit("crow-room: cdx did not answer")
+    out = []
+    for r in rows:
+        name = r["session_name"]
+        room, admit, why = verdict(r, now, reserve.get(name, 0), a.minutes)
+        out.append({"name": name, "provider": r.get("provider") or "claude", "room": room,
+                    "reset_5h": r.get("reset_5h_at_iso"), "admit": admit, "why": why})
+    if a.json:
+        print(json.dumps(out, indent=2))
+        return
+    print(f"{'account':<14}{'provider':<13}{'room':>5}  {'5h reset':<17}admit  why")
+    for o in out:
+        rs = (o["reset_5h"] or "-")[:16].replace("T", " ")
+        room = "-" if o["room"] is None else f"{o['room']}%"
+        print(f"{o['name']:<14}{o['provider']:<13}{room:>5}  {rs:<17}{'yes' if o['admit'] else 'no':<6} {o['why']}")
+
+
+if __name__ == "__main__":
+    main()

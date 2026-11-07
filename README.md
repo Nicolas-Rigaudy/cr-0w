@@ -111,6 +111,7 @@ which is ignored by this repo and meant to be its own private repo.
 | `bin/crow_term.py` | terminal backends (kitty, tmux, print) behind `crow term`, `crow focus` and relaunch |
 | `bin/crow-retro`, `bin/crow-digest` | automatic retrospective after every session |
 | `bin/crow-tidy`, `bin/crow-releases`, `bin/crow-doctor` | repo hygiene report with safe cleanup, release-track progress (`crow projects`), read-only checks of identity, accounts and stale worktrees (`crow doctor`) |
+| `bin/crow-room` | quota room per cdx account (min of 5h and week) and whether a background run may start there |
 | `bin/ansi-shot` | render any terminal output to a PNG in your own theme or the bundled one (how the screenshots here are made) |
 | `tools/crow-deck` | the terminal deck (Go, Bubble Tea), `crow deck` or `crow watch` |
 | `tools/crow-watch` | the previous board, kept as a fallback (not built by `crow`) |
