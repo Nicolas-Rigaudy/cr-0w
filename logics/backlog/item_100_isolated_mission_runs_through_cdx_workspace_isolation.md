@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Safety
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:28:22
+> Indicators reviewed: 2026-11-07 17:40:09
 > Owner: crow
 
 # AI Context
@@ -70,7 +70,7 @@
 - Aligns with item_077: that item is the run-config layer, this one the OS layer.
 - Decisions 2026-11-07 in req_030: public minus LAN, core commits the diff, fresh run from files for resume.
 - Built 2026-11-07: `crow dispatch --isolate` for task (read-write) and review (read-only). The commit lives in bin/ (`crow-runs notify` calls `crow_lib.commit_run_diff`) until the core (item_119) owns mission commits.
-- A live isolated Claude run needs a cdx setup-token profile. No allowed account has one yet: owner action (`cdx add <account>-runs`, then `cdx login <account>-runs`).
+- A live isolated Claude run needs a setup token. The full-login profiles still store one, but cdx skips it when the profile holds a full login. Owner chose a cdx fix (2026-11-07): https://github.com/AlexAgo83/cdx-manager/issues/124. Until it ships, a `<account>-runs` setup-token profile is the workaround.
 - Pasta chosen over Claude Code `settings.sandbox`: Claude enforces that one itself and a bypass run skips its domain list.
 - Prior art for the OS layer: Claude Code `settings.sandbox` (bubblewrap + socat), writes limited to the run folder, home and secrets hidden, per-run domain list. Compare with pasta before building; same bypass caveat as item_077.
 
