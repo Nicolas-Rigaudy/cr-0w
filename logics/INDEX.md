@@ -66,6 +66,7 @@
 | [req_037_mission_kinds_and_run_contract](request/req_037_mission_kinds_and_run_contract.md) | Mission kinds and run contract | Draft |  |  | request/req_037_mission_kinds_and_run_contract.md |
 | [req_038_nest_design_rules](request/req_038_nest_design_rules.md) | nest design rules | Draft |  |  | request/req_038_nest_design_rules.md |
 | [req_039_news_board_for_tech_news_and_repos](request/req_039_news_board_for_tech_news_and_repos.md) | News board for tech news and repos | Draft |  |  | request/req_039_news_board_for_tech_news_and_repos.md |
+| [req_040_nest_deck_two_themes_3d_world](request/req_040_nest_deck_two_themes_3d_world.md) | Two themes and a 3D mission world for nest and deck | Draft |  |  | request/req_040_nest_deck_two_themes_3d_world.md |
 
 ## Backlog
 
@@ -176,7 +177,7 @@
 | [item_103_take_control_of_a_mission_as_a_logged_manual_gesture](backlog/item_103_take_control_of_a_mission_as_a_logged_manual_gesture.md) | Take control of a mission as a logged manual gesture | Draft |  | 0% | backlog/item_103_take_control_of_a_mission_as_a_logged_manual_gesture.md |
 | [item_104_load_and_validate_mission_kind_files](backlog/item_104_load_and_validate_mission_kind_files.md) | Load and validate mission kind files | Done |  | 100% | backlog/item_104_load_and_validate_mission_kind_files.md |
 | [item_105_owner_review_of_the_mission_kind_catalogue](backlog/item_105_owner_review_of_the_mission_kind_catalogue.md) | Owner review of the mission kind catalogue | Draft |  | 0% | backlog/item_105_owner_review_of_the_mission_kind_catalogue.md |
-| [item_106_parse_and_validate_the_crow_block_and_questions_file](backlog/item_106_parse_and_validate_the_crow_block_and_questions_file.md) | Parse and validate the crow block and questions file | Draft |  | 0% | backlog/item_106_parse_and_validate_the_crow_block_and_questions_file.md |
+| [item_106_parse_and_validate_the_crow_block_and_questions_file](backlog/item_106_parse_and_validate_the_crow_block_and_questions_file.md) | Parse and validate the crow block and questions file | Done |  | 100% | backlog/item_106_parse_and_validate_the_crow_block_and_questions_file.md |
 | [item_107_render_the_mission_brief_from_kind_record_and_answers](backlog/item_107_render_the_mission_brief_from_kind_record_and_answers.md) | Render the mission brief from kind, record and answers | Draft |  | 0% | backlog/item_107_render_the_mission_brief_from_kind_record_and_answers.md |
 | [item_108_mission_versions_responses_and_validation_record](backlog/item_108_mission_versions_responses_and_validation_record.md) | Mission versions, responses and validation record | Draft |  | 0% | backlog/item_108_mission_versions_responses_and_validation_record.md |
 | [item_109_outbox_ingest_with_caps_and_parked_questions](backlog/item_109_outbox_ingest_with_caps_and_parked_questions.md) | Outbox ingest with caps and parked questions | Draft |  | 0% | backlog/item_109_outbox_ingest_with_caps_and_parked_questions.md |
@@ -185,7 +186,7 @@
 | [item_112_skill_and_reply_contract_for_each_mission_kind](backlog/item_112_skill_and_reply_contract_for_each_mission_kind.md) | Skill and reply contract for each mission kind | Draft |  | 0% | backlog/item_112_skill_and_reply_contract_for_each_mission_kind.md |
 | [item_113_preflight_questions_per_mission_kind_at_dispatch](backlog/item_113_preflight_questions_per_mission_kind_at_dispatch.md) | Preflight questions per mission kind at dispatch | Draft |  | 0% | backlog/item_113_preflight_questions_per_mission_kind_at_dispatch.md |
 | [item_114_home_snooze_marker_in_open_threads_honoured_by_deck_brief_and_wrap](backlog/item_114_home_snooze_marker_in_open_threads_honoured_by_deck_brief_and_wrap.md) | Home snooze marker in open threads honoured by deck brief and wrap | Draft |  | 0% | backlog/item_114_home_snooze_marker_in_open_threads_honoured_by_deck_brief_and_wrap.md |
-| [item_115_usage_limit_mid_mission_policy_by_context](backlog/item_115_usage_limit_mid_mission_policy_by_context.md) | Usage limit mid-mission policy by context | Draft |  | 0% | backlog/item_115_usage_limit_mid_mission_policy_by_context.md |
+| [item_115_usage_limit_mid_mission_policy_by_context](backlog/item_115_usage_limit_mid_mission_policy_by_context.md) | Usage limit mid-mission policy by context | Done |  | 100% | backlog/item_115_usage_limit_mid_mission_policy_by_context.md |
 | [item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume](backlog/item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume.md) | Resume of isolated missions from files and cdx issue for native resume | Draft |  | 0% | backlog/item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume.md |
 | [item_117_mission_kind_private_overrides_in_local](backlog/item_117_mission_kind_private_overrides_in_local.md) | Mission kind private overrides in local | Draft |  | 0% | backlog/item_117_mission_kind_private_overrides_in_local.md |
 | [item_118_butler_persona_file_steward_with_a_droid_flavour](backlog/item_118_butler_persona_file_steward_with_a_droid_flavour.md) | Butler persona file Steward with a droid flavour | Draft |  | 0% | backlog/item_118_butler_persona_file_steward_with_a_droid_flavour.md |
@@ -208,6 +209,8 @@
 | [task_009_0_7_crow_command_map_and_doctor](tasks/task_009_0_7_crow_command_map_and_doctor.md) | 0.7 crow command map and doctor | Done |  | 100% | tasks/task_009_0_7_crow_command_map_and_doctor.md |
 | [task_010_orchestrate_terminal_design_system](tasks/task_010_orchestrate_terminal_design_system.md) | Orchestrate terminal design system | Ready |  | 0% | tasks/task_010_orchestrate_terminal_design_system.md |
 | [task_011_load_and_validate_mission_kind_files](tasks/task_011_load_and_validate_mission_kind_files.md) | Load and validate mission kind files | Done |  | 100% | tasks/task_011_load_and_validate_mission_kind_files.md |
+| [task_012_parse_and_validate_the_crow_block_and_questions_file](tasks/task_012_parse_and_validate_the_crow_block_and_questions_file.md) | Parse and validate the crow block and questions file | Done |  | 100% | tasks/task_012_parse_and_validate_the_crow_block_and_questions_file.md |
+| [task_013_usage_limit_mid_mission_policy_by_context](tasks/task_013_usage_limit_mid_mission_policy_by_context.md) | Usage limit mid-mission policy by context | Done | crow | 100% | tasks/task_013_usage_limit_mid_mission_policy_by_context.md |
 
 ## Runbooks
 

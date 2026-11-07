@@ -1,13 +1,14 @@
 ## item_115_usage_limit_mid_mission_policy_by_context - Usage limit mid-mission policy by context
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:53:39
 
 # AI Context
 - Summary: When a mission run hits a usage limit, core decides by context: wait for the reset at night, restart cold on the next account by day when the reset is far.
@@ -44,7 +45,7 @@
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
 - Request: `req_037_mission_kinds_and_run_contract`
-- Primary task(s): (none yet)
+- Primary task(s): `task_013_usage_limit_mid_mission_policy_by_context`
 
 # Priority
 - Priority: Medium
@@ -54,8 +55,12 @@
 - 2026-11-07 owner decision 12 (req_037 D2, option C refined by context).
 - The 1 hour and 4 hour values are owner numbers; tune from real resets.
 - Needs reset times from `cdx status --json` (req_029 Need 6) and the brief rebuild of item_107.
+- Task `task_013_usage_limit_mid_mission_policy_by_context` was finished via `logics-manager flow finish task` on 2026-11-07.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+# Tasks
+- `task_013_usage_limit_mid_mission_policy_by_context`
