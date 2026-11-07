@@ -80,3 +80,27 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 
 ## Permission mode per account
 A cdx account's launch mode is its own setting: `cdx configs --json` shows `permission`, `cdx set <account> --permission auto|full` changes it (full = bypassPermissions). It is not in the profile's settings.json. A session in auto mode blocks external writes (gh issue create, posts); check this setting first when a headless run or session gets "denied by the auto mode classifier". Applies to sessions launched after the change.
+
+## Run sandbox: allowlists, env, MCP (deny by default)
+Config lives in `bin/crow_lib.py` next to `RUN_KINDS`: `RUN_SANDBOX` (per kind), `RUN_DENY` (every kind), `CREDENTIAL_ENV`, `RUN_KEEP_ENV`, `MCP_SERVERS`.
+
+| Kind | Tools | Bash prefixes (each also as `rtk <prefix>`) | MCP |
+|---|---|---|---|
+| review | Read, Grep, Glob, TodoWrite | git read (status, log, diff, show, branch, rev-parse, ls-files, blame, merge-base, remote -v), shell read (ls, cat, head, tail, wc, grep, rg, sort, uniq, cut, jq, pwd, echo, date, diff), git fetch, gh pr view/diff/checks, glab mr view/diff, logics-manager | none |
+| task | review's file tools + Edit, Write, NotebookEdit | git read, shell read, git add/commit/switch/checkout/restore/stash/rebase/mv/rm, mkdir, touch, cp, mv, pytest, go test/build/vet, gofmt, make, npm test/run, logics-manager | none |
+| retro | Read, Grep, Glob, Edit, Write, TodoWrite | shell read | none |
+| oneshot | Read, Grep, Glob | shell read, git read | none |
+
+Denied for every kind (a deny beats any allow or hook): git push, gh pr create/merge/comment, gh issue, gh api, glab mr create/merge/note, glab api, curl, wget, WebFetch.
+
+- **Env (live):** `crow dispatch`, `crow-retro` and `crow oneshot` start cdx without any variable matching `CREDENTIAL_ENV` (tokens, secrets, passwords, API keys, `AWS_*`, `SSH_AUTH_SOCK`). cdx hands its own env to the run, so the run never sees them. gh and glab keep working through their config dirs (`GH_CONFIG_DIR`, `GLAB_CONFIG_DIR`), which are not env tokens. Probe 2026-11-07: injected `GH_TOKEN`, `AWS_SECRET_ACCESS_KEY` and a fake token were absent from the run's `env`.
+- **Denials (live):** cdx returns `permission_denials` as a run warning; `crow runs` prints `denied <tool>: <input>` under the finished run and the deck adds `N denied` to its row.
+- **Allowlists and strict MCP (waiting on cdx):** `crow_lib.sandbox_args(kind)` builds `--strict-mcp-config --allowedTools ... --disallowedTools ...`. `cdx run` takes provider args only from the account (`cdx set --extra-args`), which also changes interactive launches, so crow cannot pass them per run yet (upstream request: cdx-manager issue 120, `cdx run --extra-args`). Once it lands, dispatch passes `--permission default --extra-args "$(sandbox_args)"`. Probe 2026-11-07: `--permission default` alone denies every Bash call; a scratch folder's `.mcp.json` server loads in a headless run unless `--strict-mcp-config` is passed.
+- Fallback transport: one `<account>-runs` cdx profile per dispatch account, `cdx set <account>-runs --scrub-env on --extra-args "$(crow_lib.run_profile_args())"` (union of every kind's allowlist). It needs its own login; `cdx cp` would duplicate the account's OAuth login.
+
+### Widen an allowlist
+1. A run shows `denied Bash: <command>` in `crow runs`. Decide that the kind really needs it.
+2. Add the prefix to `RUN_SANDBOX[kind]["bash"]` (or the tool to `"tools"`), never to every kind at once. Keep `RUN_DENY` items out.
+3. An MCP server: add its `.mcp.json` entry to `MCP_SERVERS` and its name to the kind's `"mcp"`.
+4. A credential a kind needs: add the variable name to `RUN_KEEP_ENV[kind]` only after the owner approves it.
+5. Run `python3 -m pytest tests/test_crow_run_sandbox.py`, then rerun the probe for that kind from a scratch folder.
