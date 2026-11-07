@@ -1,5 +1,5 @@
 // crow-deck: the chief of staff's terminal control room (skeleton: chrome, tabs, themes,
-// config and a mock Home). Run `crow deck`. Spec: local/state/research/crow-deck-design.md.
+// config and a mock Home). Run `crow deck`. Spec: vault CR-0W/Research/crow-deck-design.md.
 package main
 
 import (

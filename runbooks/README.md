@@ -41,6 +41,6 @@ want to trigger it by name.
 - [tui-projects-ux](tui-projects-ux.md): project portfolio UX research: ledger, runway gantt, who-acts lanes
 - [tui-usage-ux](tui-usage-ux.md): token and cost usage UX research: ledger, runway timeline, account cards
 - [tui-themes-ux](tui-themes-ux.md): TUI theme research: axes a theme can change, four skeleton-level theme specs
-- [open-threads](open-threads.md): the three-section format (me, crow, waiting) of `open-threads.md`, the done and stale rules, who reads and writes it
+- [open-threads](open-threads.md): the three-section format (me, crow, waiting) of `Open Threads.md`, the done and stale rules, who reads and writes it
 - [graph-today](graph-today.md): Entra app + device-code login for `bin/crow-today`, the Graph calendar and mail feed of the deck Today box
 - [releases](releases.md): VERSION, per-release changelogs, the aggregate and the version-bump gate, `crow release propose`

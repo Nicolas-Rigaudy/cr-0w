@@ -33,7 +33,7 @@ Before writing, look at what the next session would load:
 - Project: `<cwd>/CLAUDE.md`, `<cwd>/.claude/skills/*/SKILL.md`, `<cwd>/.claude/skills/*/*.md`
 - Project memory: `<claude config dir>/projects/<slug>/memory/` (the config dir is the parent of `projects/` in the transcript path) with `MEMORY.md` (slug = cwd with every `/` replaced by `-`)
 - Hub: `runbooks/README.md`, `local/runbooks/README.md`, `.claude/skills/`
-- Earlier retros: `rg -l "<keyword>" local/state/retros/*.md` to count recurrences.
+- Earlier retros: `rg -l "<keyword>" "$(bin/crow-state path retros)"` to count recurrences.
 
 Before writing, check `local/owner-prefs.md`: a rule already there that the session broke means a repeat, so say so in the report and move it higher or sharpen it.
 
@@ -61,7 +61,7 @@ Commit your own hub edits at the end, one commit per repo: the hub repo for `run
 Never commit in project repos, never push, post or message anyone. Never add AI attribution anywhere.
 
 ## 4. Report
-Write `local/state/retros/YYYY-MM-DD-<project>-<session8>.md`, at most 30 lines:
+Write `Retros/YYYY-MM-DD-<project>-<session8>.md` in the crow folder (`bin/crow-state path retros`), at most 30 lines:
 
 ```
 # Retro: <project>, <date> (<session8>)
@@ -80,7 +80,7 @@ Outcome: <done / partly / abandoned, one line>
 - ... (only if any)
 ```
 
-Batch mode: write the single report path named in the manifest (`local/state/retros/YYYY-MM-DD-batch.md`) instead, titled `# Retro batch: <date>`, with one `## <project> <session8>` section per session holding the Task / Outcome / Findings / Hub handoff / Risks left lines above (at most 30 lines each). Don't write a skipped list: the script appends it. One activity line for the whole batch: `- HH:MM [retro] batch: <n> sessions, <n> applied, <n> proposed`.
+Batch mode: write the single report path named in the manifest (`Retros/YYYY-MM-DD-batch.md` in the crow folder) instead, titled `# Retro batch: <date>`, with one `## <project> <session8>` section per session holding the Task / Outcome / Findings / Hub handoff / Risks left lines above (at most 30 lines each). Don't write a skipped list: the script appends it. One activity line for the whole batch: `- HH:MM [retro] batch: <n> sessions, <n> applied, <n> proposed`.
 
 Then run `bin/crow-log "[retro] <project> <session8>: <n> applied, <n> proposed"`.
 Final message: the report path and one line per applied change.

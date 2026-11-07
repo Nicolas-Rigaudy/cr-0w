@@ -1,6 +1,6 @@
 # Open threads
 
-One file in the state dir (`vault.crow_dir` or `local/state/`): `open-threads.md`. It lists open work by who acts. It stays a plain checkbox list that Obsidian Tasks can read.
+One note in the vault crow folder: `Open Threads.md` (`bin/crow-state path threads`; `local/state/open-threads.md` only while `vault.crow_dir` is unset). It lists open work by who acts. It stays a plain checkbox list that Obsidian Tasks can read.
 
 ## Format
 ```
@@ -19,7 +19,7 @@ One file in the state dir (`vault.crow_dir` or `local/state/`): `open-threads.md
 
 ## Rules
 - Done means gone. A ticked item leaves the file in the same write and is logged with `bin/crow-log "[project] done: text"` (daily note, CR-0W section).
-- Never write a status note here. Project state goes to `status.md`, constraints and decisions to `decisions.md`.
+- Never write a status note here. Project state goes to `Status.md`, constraints and decisions to one note each in `Decisions/`.
 - Stale: no touch for 14 days (date older than today minus 14). Readers list stale lines and ask keep, re-date or drop. Drop means the line leaves the file.
 - One line per item. Update a line in place, never duplicate it.
 
