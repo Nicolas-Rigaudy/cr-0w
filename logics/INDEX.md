@@ -15,6 +15,7 @@
 | [prod_003_crow_cost_and_reliability_pass](product/prod_003_crow_cost_and_reliability_pass.md) | crow cost and reliability pass | Proposed |  |  | product/prod_003_crow_cost_and_reliability_pass.md |
 | [prod_004_terminal_design_system](product/prod_004_terminal_design_system.md) | Terminal design system | Proposed |  |  | product/prod_004_terminal_design_system.md |
 | [prod_005_crow_jarvis_layer](product/prod_005_crow_jarvis_layer.md) | Crow Jarvis layer | Proposed |  |  | product/prod_005_crow_jarvis_layer.md |
+| [prod_006_crow_data_in_the_vault](product/prod_006_crow_data_in_the_vault.md) | Crow data in the vault | Proposed |  |  | product/prod_006_crow_data_in_the_vault.md |
 
 ## Roadmaps
 
@@ -67,6 +68,7 @@
 | [req_038_nest_design_rules](request/req_038_nest_design_rules.md) | nest design rules | Draft |  |  | request/req_038_nest_design_rules.md |
 | [req_039_news_board_for_tech_news_and_repos](request/req_039_news_board_for_tech_news_and_repos.md) | News board for tech news and repos | Draft |  |  | request/req_039_news_board_for_tech_news_and_repos.md |
 | [req_040_nest_deck_two_themes_3d_world](request/req_040_nest_deck_two_themes_3d_world.md) | Two themes and a 3D mission world for nest and deck | Draft |  |  | request/req_040_nest_deck_two_themes_3d_world.md |
+| [req_041_crow_data_in_the_vault](request/req_041_crow_data_in_the_vault.md) | Crow data in the vault | Draft |  |  | request/req_041_crow_data_in_the_vault.md |
 
 ## Backlog
 
@@ -105,7 +107,7 @@
 | [item_031_put_terminal_actions_behind_a_backend_so_kitty_is_optional](backlog/item_031_put_terminal_actions_behind_a_backend_so_kitty_is_optional.md) | Put terminal actions behind a backend so kitty is optional | Done |  | 100% | backlog/item_031_put_terminal_actions_behind_a_backend_so_kitty_is_optional.md |
 | [item_032_add_ci_workflow_linux_and_macos_matrix_running_the_gate](backlog/item_032_add_ci_workflow_linux_and_macos_matrix_running_the_gate.md) | Add CI workflow: Linux and macOS matrix running the gate | Done |  | 100% | backlog/item_032_add_ci_workflow_linux_and_macos_matrix_running_the_gate.md |
 | [item_033_add_version_changelogs_and_the_version_bump_check](backlog/item_033_add_version_changelogs_and_the_version_bump_check.md) | Add VERSION, changelogs and the version-bump check | Done |  | 100% | backlog/item_033_add_version_changelogs_and_the_version_bump_check.md |
-| [item_034_add_install_script_and_the_crow_update_command](backlog/item_034_add_install_script_and_the_crow_update_command.md) | Add install script and the crow update command | Ready |  | 0% | backlog/item_034_add_install_script_and_the_crow_update_command.md |
+| [item_034_add_install_script_and_the_crow_update_command](backlog/item_034_add_install_script_and_the_crow_update_command.md) | Add install script and the crow update command | Done |  | 100% | backlog/item_034_add_install_script_and_the_crow_update_command.md |
 | [item_035_add_the_release_workflow_tag_await_ci_github_release_checksums](backlog/item_035_add_the_release_workflow_tag_await_ci_github_release_checksums.md) | Add the release workflow: tag, await CI, GitHub Release, checksums | Ready |  | 0% | backlog/item_035_add_the_release_workflow_tag_await_ci_github_release_checksums.md |
 | [item_036_package_crow_aur_first_then_homebrew_tap](backlog/item_036_package_crow_aur_first_then_homebrew_tap.md) | Package crow: AUR first, then Homebrew tap | Ready |  | 0% | backlog/item_036_package_crow_aur_first_then_homebrew_tap.md |
 | [item_037_add_release_docs_readme_install_section_contributing_security_release_runbook](backlog/item_037_add_release_docs_readme_install_section_contributing_security_release_runbook.md) | Add release docs: README install section, CONTRIBUTING, SECURITY, release runbook | Ready |  | 0% | backlog/item_037_add_release_docs_readme_install_section_contributing_security_release_runbook.md |
@@ -134,7 +136,7 @@
 | [item_060_deck_projects_build_from_the_round_2_pick](backlog/item_060_deck_projects_build_from_the_round_2_pick.md) | Deck Projects build from the round 2 pick | Done | crow | 100% | backlog/item_060_deck_projects_build_from_the_round_2_pick.md |
 | [item_061_deck_usage_build_from_the_round_2_pick](backlog/item_061_deck_usage_build_from_the_round_2_pick.md) | Deck Usage build from the round 2 pick | Done | crow | 100% | backlog/item_061_deck_usage_build_from_the_round_2_pick.md |
 | [item_062_deck_today_mail_actions_open_session_done_snooze](backlog/item_062_deck_today_mail_actions_open_session_done_snooze.md) | Deck Today mail actions: open, crow session, done, snooze | Done |  | 100% | backlog/item_062_deck_today_mail_actions_open_session_done_snooze.md |
-| [item_063_checks_engine_crow_checks_feeds_you_decide](backlog/item_063_checks_engine_crow_checks_feeds_you_decide.md) | Checks engine: crow-checks rules feed You decide | Ready |  | 0% | backlog/item_063_checks_engine_crow_checks_feeds_you_decide.md |
+| [item_063_checks_engine_crow_checks_feeds_you_decide](backlog/item_063_checks_engine_crow_checks_feeds_you_decide.md) | Checks engine: crow-checks rules feed You decide | Done |  | 100% | backlog/item_063_checks_engine_crow_checks_feeds_you_decide.md |
 | [item_064_deck_action_model_every_row_actionable](backlog/item_064_deck_action_model_every_row_actionable.md) | Deck action model: every row actionable | Ready |  | 0% | backlog/item_064_deck_action_model_every_row_actionable.md |
 | [item_065_calendar_actions_propose_and_book_meetings](backlog/item_065_calendar_actions_propose_and_book_meetings.md) | Calendar actions: propose and book meetings | Ready |  | 0% | backlog/item_065_calendar_actions_propose_and_book_meetings.md |
 | [item_066_one_on_one_prep_and_capture_per_dev](backlog/item_066_one_on_one_prep_and_capture_per_dev.md) | 1:1 prep and capture per dev | Ready |  | 0% | backlog/item_066_one_on_one_prep_and_capture_per_dev.md |
@@ -193,6 +195,15 @@
 | [item_119_go_core_and_python_sidecar_contract_with_shared_fixtures](backlog/item_119_go_core_and_python_sidecar_contract_with_shared_fixtures.md) | Go core and Python sidecar contract with shared fixtures | Draft |  | 0% | backlog/item_119_go_core_and_python_sidecar_contract_with_shared_fixtures.md |
 | [item_120_tower_as_a_mission_host_for_claude_missions](backlog/item_120_tower_as_a_mission_host_for_claude_missions.md) | Tower as a mission host for Claude missions | Draft |  | 0% | backlog/item_120_tower_as_a_mission_host_for_claude_missions.md |
 | [item_121_antigravity_weekly_quota_measurement_for_one_overflow_account](backlog/item_121_antigravity_weekly_quota_measurement_for_one_overflow_account.md) | Antigravity weekly quota measurement for one overflow account | Draft |  | 0% | backlog/item_121_antigravity_weekly_quota_measurement_for_one_overflow_account.md |
+| [item_122_crow_home_is_the_private_config_repo_itself](backlog/item_122_crow_home_is_the_private_config_repo_itself.md) | CROW_HOME is the private config repo itself | Ready |  | 0% | backlog/item_122_crow_home_is_the_private_config_repo_itself.md |
+| [item_123_checks_engine_reads_sprint_dates_from_jira](backlog/item_123_checks_engine_reads_sprint_dates_from_jira.md) | Checks engine reads sprint dates from Jira | Ready |  | 0% | backlog/item_123_checks_engine_reads_sprint_dates_from_jira.md |
+| [item_124_render_the_checks_action_options_on_deck_home](backlog/item_124_render_the_checks_action_options_on_deck_home.md) | Render the checks action options on deck Home | Ready |  | 0% | backlog/item_124_render_the_checks_action_options_on_deck_home.md |
+| [item_125_workshop_concept_art_round_2_original_cast_states_phone_and_night_views](backlog/item_125_workshop_concept_art_round_2_original_cast_states_phone_and_night_views.md) | Workshop concept art round 2: original cast, states, phone and night views | Ready |  | 0% | backlog/item_125_workshop_concept_art_round_2_original_cast_states_phone_and_night_views.md |
+| [item_126_plan_the_workshop_nest_build_from_the_approved_concept_art](backlog/item_126_plan_the_workshop_nest_build_from_the_approved_concept_art.md) | Plan the workshop nest build from the approved concept art | Ready |  | 0% | backlog/item_126_plan_the_workshop_nest_build_from_the_approved_concept_art.md |
+| [item_127_path_helper_separating_vault_notes_from_machine_state](backlog/item_127_path_helper_separating_vault_notes_from_machine_state.md) | Path helper separating vault notes from machine state | Ready |  | 0% | backlog/item_127_path_helper_separating_vault_notes_from_machine_state.md |
+| [item_128_activity_lines_in_the_daily_note](backlog/item_128_activity_lines_in_the_daily_note.md) | Activity lines in the daily note | Ready |  | 0% | backlog/item_128_activity_lines_in_the_daily_note.md |
+| [item_129_move_owner_notes_into_the_vault_and_switch_on_crow_dir](backlog/item_129_move_owner_notes_into_the_vault_and_switch_on_crow_dir.md) | Move owner notes into the vault and switch on crow_dir | Ready |  | 0% | backlog/item_129_move_owner_notes_into_the_vault_and_switch_on_crow_dir.md |
+| [item_130_vault_side_dashboard_templates_and_folder_conventions](backlog/item_130_vault_side_dashboard_templates_and_folder_conventions.md) | Vault side: dashboard, templates and folder conventions | Ready |  | 0% | backlog/item_130_vault_side_dashboard_templates_and_folder_conventions.md |
 
 ## Tasks
 
@@ -211,6 +222,8 @@
 | [task_011_load_and_validate_mission_kind_files](tasks/task_011_load_and_validate_mission_kind_files.md) | Load and validate mission kind files | Done |  | 100% | tasks/task_011_load_and_validate_mission_kind_files.md |
 | [task_012_parse_and_validate_the_crow_block_and_questions_file](tasks/task_012_parse_and_validate_the_crow_block_and_questions_file.md) | Parse and validate the crow block and questions file | Done |  | 100% | tasks/task_012_parse_and_validate_the_crow_block_and_questions_file.md |
 | [task_013_usage_limit_mid_mission_policy_by_context](tasks/task_013_usage_limit_mid_mission_policy_by_context.md) | Usage limit mid-mission policy by context | Done | crow | 100% | tasks/task_013_usage_limit_mid_mission_policy_by_context.md |
+| [task_014_add_install_script_and_the_crow_update_command](tasks/task_014_add_install_script_and_the_crow_update_command.md) | Add install script and the crow update command | Done | crow | 100% | tasks/task_014_add_install_script_and_the_crow_update_command.md |
+| [task_015_build_crow_data_in_the_vault](tasks/task_015_build_crow_data_in_the_vault.md) | Build crow data in the vault | Ready |  | 0% | tasks/task_015_build_crow_data_in_the_vault.md |
 
 ## Runbooks
 
