@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""crow-checks: management gaps (sprint rituals, 1:1s, mail, rituals, overdue notes) as rows.
+
+  crow-checks json [-f] [--now ISO]   rows as JSON (cached for 5 minutes in local/state/checks-rows.json)
+  crow-checks dismiss ID              hide the row for good
+  crow-checks snooze ID [YYYY-MM-DD]  hide the row until that date (default tomorrow)
+  crow-checks snapshot [--now ISO]    print the snapshot the rules read (save it to replay a day)
+  crow-checks replay FILE             run the rules over a saved snapshot, no state, no cache
+
+Reads cached files only: local/state/today.json (crow-today), the sprint cache or cadence,
+vault notes and marker files. It never calls Graph or Jira.
+Config: local/checks.yaml (format in docs/checks.example.yaml). State: local/state/checks.json
+({"dismissed": [ids], "snoozed": {id: "YYYY-MM-DD"}}).
+JSON: {"at", "rows": [{"id","check","what","why","action","due"}], "skipped": {source: reason}}.
+"""
+import datetime as dt
+import json
+import os
+import sys
+import time
+
+import yaml
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_checks as cc
+from crow_vault import vault_path
+
+HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+CONF = os.path.join(HOME, "local", "checks.yaml")
+STATE = os.path.join(HOME, "local", "state", "checks.json")
+CACHE = os.path.join(HOME, "local", "state", "checks-rows.json")
+TTL = 300
+
+
+def conf():
+    try:
+        with open(CONF) as f:
+            return yaml.safe_load(f) or {}
+    except OSError:
+        return {}
+
+
+def load_state():
+    try:
+        with open(STATE) as f:
+            s = json.load(f)
+    except (OSError, ValueError):
+        s = {}
+    s.setdefault("dismissed", [])
+    s.setdefault("snoozed", {})
+    return s
+
+
+def save_state(s):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE, "w") as f:
+        json.dump(s, f, indent=1, sort_keys=True)
+    try:
+        os.remove(CACHE)
+    except OSError:
+        pass
+
+
+def now_of(a):
+    if "--now" in a:
+        t = dt.datetime.fromisoformat(a[a.index("--now") + 1])
+        return t if t.tzinfo else t.astimezone()
+    return dt.datetime.now().astimezone()
+
+
+def vault():
+    v = vault_path()
+    return str(v) if v else None
+
+
+def rows_json(a):
+    now = now_of(a)
+    cfg = conf()
+    snap = cc.snapshot(cfg, HOME, vault(), now)
+    return {"at": now.isoformat(timespec="seconds"), "rows": cc.evaluate(snap, cfg, load_state()),
+            "skipped": cc.skipped(snap)}
+
+
+def main():
+    a = sys.argv[1:]
+    verb = a[:1]
+    if verb == ["json"]:
+        fresh = "-f" in a or "--now" in a
+        if not fresh and os.path.exists(CACHE) and time.time() - os.path.getmtime(CACHE) < TTL:
+            with open(CACHE) as f:
+                print(f.read())
+            return
+        data = json.dumps(rows_json(a))
+        if "--now" not in a:
+            os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+            with open(CACHE, "w") as f:
+                f.write(data)
+        print(data)
+    elif verb == ["dismiss"] and len(a) == 2:
+        s = load_state()
+        if a[1] not in s["dismissed"]:
+            s["dismissed"].append(a[1])
+        s["snoozed"].pop(a[1], None)
+        save_state(s)
+        print("dismissed")
+    elif verb == ["snooze"] and len(a) in (2, 3):
+        until = a[2] if len(a) == 3 else (dt.date.today() + dt.timedelta(days=1)).isoformat()
+        dt.date.fromisoformat(until)
+        s = load_state()
+        s["snoozed"][a[1]] = until
+        save_state(s)
+        print("snoozed to " + until)
+    elif verb == ["snapshot"]:
+        cfg = conf()
+        print(json.dumps(cc.to_json(cc.snapshot(cfg, HOME, vault(), now_of(a))), indent=1))
+    elif verb == ["replay"] and len(a) == 2:
+        with open(a[1]) as f:
+            snap = cc.from_json(json.load(f))
+        print(json.dumps({"at": snap["now"].isoformat(), "rows": cc.evaluate(snap, conf()), "skipped": cc.skipped(snap)}))
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

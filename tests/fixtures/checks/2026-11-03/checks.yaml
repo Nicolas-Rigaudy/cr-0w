@@ -1,0 +1,10 @@
+sprint:
+  file: local/state/sprint/current.json
+  warn_workdays: 2
+  rituals: {planning: [planning], review: [review, demo], retro: [retro]}
+one_on_one: {dir: People, task: "1:1", lookahead_days: 7}
+mail: {older_than_days: 2}
+rituals:
+  - {id: daily, what: Team daily not posted, by: "11:30", marker: local/state/last-daily, action: post the daily}
+tasks:
+  - {id: devex, note: Management/DevEx.md, match: check-in, action: run the check-in}

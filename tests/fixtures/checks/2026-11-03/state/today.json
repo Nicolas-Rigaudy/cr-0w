@@ -1,0 +1,7 @@
+{"at": "2026-11-03T09:05:00+01:00",
+ "events": [{"start": "2026-11-03T11:30", "end": "2026-11-03T11:45", "subject": "Team daily", "all_day": false},
+            {"start": "2026-11-03T14:00", "end": "2026-11-03T15:00", "subject": "Sprint review demo", "all_day": false}],
+ "tomorrow": [{"start": "2026-11-04T10:00", "end": "2026-11-04T10:30", "subject": "1:1 Sam", "all_day": false}],
+ "unread": 4, "flagged": [], "drafts": 0,
+ "important": [{"id": "m-old", "subject": "Release scope", "from": "Pat", "at": "2026-10-31T16:00:00Z", "unread": true, "high": false, "webLink": ""},
+               {"id": "m-new", "subject": "Lunch", "from": "Sam", "at": "2026-11-03T07:00:00Z", "unread": true, "high": false, "webLink": ""}]}

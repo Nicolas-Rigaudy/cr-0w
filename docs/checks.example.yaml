@@ -1,0 +1,44 @@
+# Copy to local/checks.yaml. bin/crow-checks reads it. Every section is optional; a missing
+# section turns its rule off. Paths under vault are relative to the vault root, the others to the hub.
+workdays: [0, 1, 2, 3, 4]        # Monday = 0
+max_rows: 3                      # rows per check
+
+sprint:
+  file: local/state/sprint/current.json   # {"name", "start", "end"} written by whatever reads the tracker
+  anchor_end: 2026-01-14         # fallback cadence: one known sprint end date
+  length_days: 14
+  name: Sprint                   # row label when the cadence is used
+  warn_workdays: 2               # raise the row this many workdays before the end
+  rituals:                       # ritual -> calendar subject words; the first missing one is the action
+    planning: [planning]
+    review: [review, demo]
+    retro: [retro]
+
+one_on_one:
+  dir: People                    # one note per person; the file name is the person's name
+  task: "1:1"                    # open task with this text and a due date (📅 YYYY-MM-DD)
+  lookahead_days: 7              # a 1:1 in the calendar within this window clears the row
+  match: ["1:1", "1-1", "one-on-one"]
+
+mail:
+  older_than_days: 2             # crow-today important mail older than this
+
+rituals:
+  - id: weekly
+    what: Management weekly not prepped
+    weekday: 0                   # only on that day
+    by: "12:00"
+    marker: local/state/last-weekly   # file holding the date it was last done this week
+    action: prep the weekly
+  - id: daily
+    what: Team daily not posted
+    by: "11:30"                  # every workday
+    marker: local/state/last-daily
+    action: post the daily
+  # path: "Notes/Weekly {year}-W{week}*.md" checks for a vault file instead of a marker
+
+tasks:
+  - id: devex
+    note: Management/DevEx.md   # open tasks with a past due date in this note
+    match: check-in              # optional: only tasks containing this text
+    action: run the check-in
