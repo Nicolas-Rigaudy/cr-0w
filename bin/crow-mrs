@@ -245,7 +245,7 @@ def findings_file(repo, number):
         reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
     except FileNotFoundError:
         reg = {}
-    state = Path((reg.get("vault") or {}).get("crow_dir") or HOME / "local" / "state")
+    state = crow_lib.machine_dir(HOME)
     f = state / "reviews" / f"{repo.replace('/', '_')}-{number}.json"
     return str(f) if f.is_file() else ""
 
@@ -257,7 +257,7 @@ def findings(repo, number):
         reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
     except FileNotFoundError:
         reg = {}
-    state = Path((reg.get("vault") or {}).get("crow_dir") or HOME / "local" / "state")
+    state = crow_lib.machine_dir(HOME)
     try:
         doc = json.load(open(state / "reviews" / f"{repo.replace('/', '_')}-{number}.json"))
     except (FileNotFoundError, json.JSONDecodeError):

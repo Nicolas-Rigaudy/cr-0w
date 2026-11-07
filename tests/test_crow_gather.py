@@ -62,7 +62,7 @@ def test_brief_keeps_me_and_waiting_with_stale_flag(hub):
     assert threads["_skipped_counts"] == {"Crow": 1}
     assert data["activity"] == {"skipped": "offline"}
     assert data["checks"] == {"skipped": "offline"}
-    assert data["targets"]["activity_log"].endswith(f"{TODAY}.md")
+    assert data["targets"]["activity_log"].startswith("bin/crow-log")
 
 
 def test_daily_since_last_daily_and_work_threads_only(hub):
@@ -90,3 +90,23 @@ def test_output_fits_the_budget(hub):
     out = run(hub, "crow-gather", "daily", "--json", env=env)
     assert len(out.stdout) <= 3100
     assert json.loads(out.stdout)["_cut_to_fit"] == [f"activity_logs/{TODAY}"]
+
+
+def test_vault_notes_when_crow_dir_set(hub):
+    home, _ = hub
+    env = setup(hub)
+    notes = home / "vault" / "CR-0W"
+    (notes / "Decisions").mkdir(parents=True)
+    (home / "local" / "projects.yaml").write_text(
+        REGISTRY.replace("{path: null, crow_dir: null}", f"{{path: {home / 'vault'}, crow_dir: CR-0W}}"))
+    (notes / "Open Threads.md").write_text(THREADS.replace("fix the seed", "vault seed"))
+    (notes / "Status.md").write_text("vault status\n")
+    (notes / "Decisions" / f"{TODAY} new one.md").write_text("y\n")
+    (notes / "Decisions" / f"{OLD} old one.md").write_text("x\n")
+    brief = gather(hub, "brief", env=env)
+    assert brief["open_threads"]["Me"][0] == "0d [backend] vault seed"
+    assert brief["status"].startswith("vault status")
+    assert brief["state_dir"] == str(home / "local" / "state")
+    weekly = gather(hub, "weekly", env=env)
+    assert [d.splitlines()[0] for d in weekly["decisions"]] == [f"## {TODAY} new one"]
+    assert weekly["targets"]["rollup"].startswith(str(notes / "Rollups"))

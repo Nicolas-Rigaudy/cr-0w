@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""One-shot move of crow's owner notes from local/state into the vault crow folder.
+
+Usage: crow-vault-migrate [--crow-dir CR-0W] [--apply]
+
+Dry run by default (prints the plan). --apply moves:
+  open-threads.md -> Open Threads.md, status.md -> Status.md (frontmatter added),
+  decisions.md -> Decisions/<date> <title>.md (type: decision), one note per '## ' block,
+  retros/20*.md -> Retros/, weekly rollups <week>.md -> '<week> rollup.md',
+  activity/<date>.md lines -> that day's daily note, CR-0W section (only for dailies that exist),
+then sets vault.crow_dir in local/projects.yaml and removes the old files and the
+drafts/research/weekly symlinks. The local repo history keeps the originals.
+"""
+import argparse
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import crow_lib  # noqa: E402
+from crow_vault import CROW, daily_path  # noqa: E402
+
+HOME = Path(crow_lib.data_home())
+STATE = crow_lib.machine_dir(HOME)
+REG = HOME / "local" / "projects.yaml"
+DECISION = re.compile(r"^## (\d{4}-\d{2}-\d{2}) (?:\[([^\]]+)\] )?(.*)$")
+
+
+def front(kind, **extra):
+    lines = ["---", f"type: {kind}", *(f"{k}: {v}" for k, v in extra.items()), "---", ""]
+    return "\n".join(lines) + "\n"
+
+
+def safe(title):
+    title = re.sub(r'[\\/:*?"<>|#^\[\]]', "-", title).strip(" .-")
+    return re.sub(r"\s+", " ", title)[:90] or "decision"
+
+
+def split_decisions(text):
+    """[(date, project, title, body)] from '## YYYY-MM-DD [project] title' blocks."""
+    out = []
+    for block in re.split(r"(?m)^(?=## )", text):
+        lines = block.rstrip().split("\n")
+        m = DECISION.match(lines[0])
+        if m:
+            out.append((m.group(1), m.group(2) or "", m.group(3).strip(), "\n".join(lines[1:]).strip()))
+    return out
+
+
+def crow_section_add(text, entries):
+    """Append entries to the CR-0W section, creating it like crow-log does."""
+    import importlib.machinery
+    import importlib.util
+    loader = importlib.machinery.SourceFileLoader("crow_log", str(Path(__file__).with_name("crow-log")))
+    spec = importlib.util.spec_from_loader("crow_log", loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    for entry in entries:
+        text = mod.insert(text, entry)
+    return text
+
+
+def plan(notes, vault):
+    steps = []  # (description, callable)
+    for kind, legacy in (("threads", "open-threads.md"), ("status", "status.md")):
+        src, dst = STATE / legacy, notes / crow_lib.NOTES[kind][0]
+        if src.is_file() and not src.is_symlink():
+            def mv(src=src, dst=dst, kind=kind):
+                body = src.read_text()
+                if not dst.exists():
+                    body = (front(f"crow-{kind}") + body) if not body.startswith("---") else body
+                    dst.write_text(body)
+                else:
+                    raise SystemExit(f"crow-vault-migrate: {dst} exists, merge by hand")
+                src.unlink()
+            steps.append((f"{src} -> {dst}", mv))
+    src = STATE / "decisions.md"
+    if src.is_file():
+        items = split_decisions(src.read_text())
+
+        def decisions(items=items, src=src):
+            root = notes / "Decisions"
+            root.mkdir(parents=True, exist_ok=True)
+            for date, project, title, body in items:
+                path = root / f"{date} {safe(title)}.md"
+                n = 2
+                while path.exists():
+                    path = root / f"{date} {safe(title)} {n}.md"
+                    n += 1
+                meta = {"date": date, **({"project": project} if project else {})}
+                path.write_text(front("decision", **meta) + f"# {title}\n\n{body}\n")
+            src.unlink()
+        steps.append((f"{src} -> {notes / 'Decisions'}/ ({len(items)} notes)", decisions))
+    for rep in sorted((STATE / "retros").glob("20*.md")):
+        def retro(rep=rep):
+            dst = notes / "Retros" / rep.name
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(rep), str(dst))
+        steps.append((f"{rep} -> Retros/", retro))
+    for roll in sorted((notes / "Rollups").glob("20??-W??.md")):
+        dst = roll.with_name(f"{roll.stem} rollup.md")
+        if not dst.exists():
+            steps.append((f"{roll.name} -> {dst.name}", lambda roll=roll, dst=dst: roll.rename(dst)))
+    for act in sorted((STATE / "activity").glob("20??-??-??.md")):
+        import datetime as dt
+        daily = daily_path(vault, dt.date.fromisoformat(act.stem)) if vault else None
+        if daily is None or not daily.exists():
+            continue
+        lines = [l for l in act.read_text().split("\n") if l.startswith("- ")]
+
+        def activity(act=act, daily=daily, lines=lines):
+            text = daily.read_text()
+            if f"## {CROW}" in text:
+                have = set(text.split("\n"))
+                lines = [l for l in lines if l not in have]
+            tmp = daily.with_name(f".{daily.name}.crow-tmp")
+            tmp.write_text(crow_section_add(text, lines))
+            os.replace(tmp, daily)
+            act.unlink()
+        steps.append((f"{act.name}: {len(lines)} lines -> daily note", activity))
+    for link in ("drafts", "research", "weekly"):
+        if (STATE / link).is_symlink():
+            steps.append((f"remove symlink {STATE / link}", lambda p=STATE / link: p.unlink()))
+    return steps
+
+
+def set_crow_dir(name):
+    text = REG.read_text()
+    new, n = re.subn(r"(?m)^(\s+crow_dir:).*$", rf"\1 {name}", text)
+    if not n:
+        raise SystemExit("crow-vault-migrate: no crow_dir key under vault: in projects.yaml, add it by hand")
+    REG.write_text(new)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--crow-dir", default="CR-0W")
+    ap.add_argument("--apply", action="store_true")
+    args = ap.parse_args()
+    reg = crow_lib.registry(str(HOME))
+    vault = Path((reg.get("vault") or {}).get("path") or "")
+    if not vault.is_dir():
+        sys.exit("crow-vault-migrate: vault.path is not set or missing")
+    notes = vault / args.crow_dir
+    notes.mkdir(exist_ok=True)
+    steps = plan(notes, vault)
+    for desc, _ in steps:
+        print(("apply: " if args.apply else "plan: ") + desc)
+    print(("apply: " if args.apply else "plan: ") + f"vault.crow_dir = {args.crow_dir}")
+    if not args.apply:
+        return
+    for _, fn in steps:
+        fn()
+    set_crow_dir(args.crow_dir)
+
+
+if __name__ == "__main__":
+    main()

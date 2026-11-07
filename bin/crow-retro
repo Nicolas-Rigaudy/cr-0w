@@ -234,7 +234,10 @@ def skipped_section(rows):
 
 
 def report_path(day):
-    return os.path.join(STATE, f"{day}-batch.md")
+    """Batch report: owner-facing, so in the vault Retros folder once vault.crow_dir is set."""
+    root = crow_lib.crow_path("retros", home=CROW_HOME)
+    os.makedirs(root, exist_ok=True)
+    return os.path.join(str(root), f"{day}-batch.md")
 
 
 def write_manifest(day, scanned, digests):

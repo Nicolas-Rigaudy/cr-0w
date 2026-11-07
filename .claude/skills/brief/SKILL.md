@@ -76,4 +76,4 @@ Skip any source that errors and note it in one line at the bottom.
 ```
 
 ## After
-Append `- HH:MM [hub] brief` to `targets.activity_log`. Nothing else.
+Run `bin/crow-log "[hub] brief"` (writes `- HH:MM [hub] brief` to the daily note's CR-0W section). Nothing else.

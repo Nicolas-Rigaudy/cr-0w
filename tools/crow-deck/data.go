@@ -257,9 +257,11 @@ type regMile struct {
 }
 
 type registry struct {
-	Identities map[string]string `json:"identities"`
-	StateDir   string            `json:"state_dir"`
-	Projects   []regProject      `json:"projects"`
+	Identities  map[string]string `json:"identities"`
+	StateDir    string            `json:"state_dir"`
+	ThreadsFile string            `json:"threads_file"`
+	DailyDir    string            `json:"daily_dir"`
+	Projects    []regProject      `json:"projects"`
 }
 
 // ----- fetching -----
@@ -814,15 +816,18 @@ func openThreads(path string, reg *registry) []nextRow {
 	return out
 }
 
-// doneToday reads the "- HH:MM [tag] text" lines of a day's activity log, newest first.
-// Retro lines are skipped.
-func doneToday(path string) []doneRow {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil
+// doneToday reads the "- HH:MM [tag] text" lines of a day's activity, newest first:
+// the legacy activity log, then the daily note's CR-0W section. Retro lines are skipped.
+func doneToday(legacy, daily string) []doneRow {
+	var lines []string
+	if b, err := os.ReadFile(legacy); err == nil {
+		lines = strings.Split(string(b), "\n")
+	}
+	if b, err := os.ReadFile(daily); err == nil {
+		lines = append(lines, crowSection(string(b))...)
 	}
 	var out []doneRow
-	for _, l := range strings.Split(string(b), "\n") {
+	for _, l := range lines {
 		m := doneLine.FindStringSubmatch(l)
 		if m == nil || m[2] == "retro" {
 			continue
@@ -830,6 +835,22 @@ func doneToday(path string) []doneRow {
 		out = append(out, doneRow{m[1], m[2], strings.TrimSpace(m[3])})
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].When > out[j].When })
+	return out
+}
+
+// crowSection is the body of the "## CR-0W" heading of a daily note.
+func crowSection(text string) []string {
+	var out []string
+	in := false
+	for _, l := range strings.Split(text, "\n") {
+		if strings.HasPrefix(l, "## ") {
+			in = strings.TrimSpace(l[3:]) == "CR-0W"
+			continue
+		}
+		if in {
+			out = append(out, l)
+		}
+	}
 	return out
 }
 
@@ -899,11 +920,16 @@ func buildFixtures(in liveInput) *fixtures {
 	fx.Today, fx.Mail = todayRows(ls.today, now.Local())
 	fx.Hist = histOf(ls.usage, ls.reg, now)
 	if ls.reg != nil {
-		fx.Next = openThreads(filepath.Join(ls.reg.StateDir, "open-threads.md"), ls.reg)
+		fx.Next = openThreads(ls.reg.threadsFile(), ls.reg)
 		for i := range fx.Next {
 			fx.Next[i].Age = threadAge(fx.Next[i].Since, now.Local())
 		}
-		fx.Done = doneToday(filepath.Join(ls.reg.StateDir, "activity", now.Local().Format("2006-01-02")+".md"))
+		day := now.Local().Format("2006-01-02") + ".md"
+		daily := ""
+		if ls.reg.DailyDir != "" {
+			daily = filepath.Join(ls.reg.DailyDir, day)
+		}
+		fx.Done = doneToday(filepath.Join(ls.reg.StateDir, "activity", day), daily)
 		for _, p := range ls.reg.Projects {
 			fx.Repos++
 			if p.Git.Dirty > 0 {
@@ -944,4 +970,12 @@ func buildFixtures(in liveInput) *fixtures {
 	}
 	fx.Sync = state
 	return fx
+}
+
+// threadsFile is the open threads note: the registry's threads_file, else the legacy state dir file.
+func (r registry) threadsFile() string {
+	if r.ThreadsFile != "" {
+		return r.ThreadsFile
+	}
+	return filepath.Join(r.StateDir, "open-threads.md")
 }

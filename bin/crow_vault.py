@@ -6,12 +6,15 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parent.parent
+import crow_lib
+
+ROOT = Path(crow_lib.data_home())
 REGISTRY = ROOT / "local" / "projects.yaml"
 
 CAPTURE = "📥 Capture"
 MEETINGS = "📆 Meetings & notes"
 EOD = "🌙 End of day"
+CROW = "CR-0W"  # crow's activity section in the daily note
 SECTIONS = {"capture": CAPTURE, "meetings": MEETINGS, "eod": EOD}
 
 DAILY_DIR = "40 Journal/Daily"
@@ -67,3 +70,21 @@ def section_bounds(lines, heading):
             if line[3:].strip().startswith(heading):
                 start = i + 1
     return (start, len(lines)) if start is not None else None
+
+
+def known_template(text):
+    """True when every Templater call is one render_template fills (dates, title, cursor)."""
+    calls = re.findall(r"<%(.*?)%>", text, re.S)
+    return all(re.fullmatch(r"\s*tp\.(date\.now\(.*\)|file\.cursor\(\))\s*", c, re.S) for c in calls)
+
+
+def crow_lines(vault, day):
+    """Activity lines under '## CR-0W' in that day's daily note ([] when none)."""
+    try:
+        lines = daily_path(vault, day).read_text().split("\n")
+    except OSError:
+        return []
+    bounds = section_bounds(lines, CROW)
+    if bounds is None:
+        return []
+    return [l for l in lines[bounds[0]:bounds[1]] if l.startswith("- ")]

@@ -19,7 +19,7 @@ One batch a day, over the sessions a no-model pre-filter keeps.
    Signals: correction words in a typed prompt after the first (the first is often a pasted hand-off), interrupts, rejected tool calls, the same tool error twice. Score = 2·corrections + 2·rejections + interrupts + repeated errors.
 4. **Digest**: `bin/crow-digest <transcript.jsonl>` per kept session (~25 KB each).
 5. **Analysis**: one `cdx run <account> --kind retro --failover --power low` (Sonnet) on `/retro batch=<manifest>`. The manifest is `local/state/retros/batches/YYYY-MM-DD.md`. Budget `min(1 + 0.75·n, 8)` USD, override with `CROW_RETRO_BUDGET`.
-6. **Report**: `local/state/retros/YYYY-MM-DD-batch.md`, one section per session, then a "Skipped (pre-filter)" table appended by the script. The brief's 🔁 section lists it.
+6. **Report**: `Retros/YYYY-MM-DD-batch.md` in the vault crow folder, one section per session, then a "Skipped (pre-filter)" table appended by the script. The brief's 🔁 section lists it.
 
 ## Operate
 - `bin/crow-retro scan [--since ISO]`: what the next run would keep and skip, no model, a few seconds.

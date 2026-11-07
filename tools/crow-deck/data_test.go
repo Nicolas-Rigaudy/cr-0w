@@ -147,8 +147,13 @@ func TestDoneToday(t *testing.T) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got := doneToday(path)
-	if len(got) != 2 || got[0] != (doneRow{"11:30", "hub", "daily posted"}) || got[1].What != "first" {
+	daily := filepath.Join(t.TempDir(), "2026-11-07.md")
+	note := "# Day\n\n## 📥 Capture\n- 08:00 [x] not crow\n\n## CR-0W\n- 12:15 [hub] brief\n\n## 🌙 End of day\n- 18:00 [y] no\n"
+	if err := os.WriteFile(daily, []byte(note), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := doneToday(path, daily)
+	if len(got) != 3 || got[0] != (doneRow{"12:15", "hub", "brief"}) || got[1] != (doneRow{"11:30", "hub", "daily posted"}) || got[2].What != "first" {
 		t.Fatalf("done %+v", got)
 	}
 }

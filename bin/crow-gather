@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from crow_vault import INBOX, WORK, daily_path, vault_path  # noqa: E402
+from crow_vault import DAILY_DIR, INBOX, WORK, crow_lines, daily_path, vault_path  # noqa: E402
 
 import yaml  # noqa: E402
 
@@ -79,8 +79,13 @@ def work_tags():
 
 
 def state_dir():
-    crow_dir = (registry().get("vault") or {}).get("crow_dir")
-    return Path(crow_dir) if crow_dir else LOCAL / "state"
+    """Machine state dir (always local/state)."""
+    return crow_lib.machine_dir(ROOT)
+
+
+def note(kind):
+    """Owner-facing note path (vault crow folder once vault.crow_dir is set)."""
+    return crow_lib.crow_path(kind, registry(), ROOT)
 
 
 def read(path, limit=4000):
@@ -107,7 +112,7 @@ def threads(state, sections=None, width=None, tags=None):
     sections keeps only those sections (others are counted), tags keeps only those tags,
     width cuts each text to that many characters.
     """
-    text = read(state / "open-threads.md", 100000) or ""
+    text = read(note("threads"), 100000) or ""
     out, skipped, section = {}, {}, None
     for line in text.splitlines():
         if line.startswith("## "):
@@ -131,16 +136,29 @@ def threads(state, sections=None, width=None, tags=None):
     return out
 
 
+def activity_days(state):
+    """{date: text} of crow activity: the daily note's CR-0W section, plus legacy local/state/activity files."""
+    days = {p.stem: read(p, 200000) or "" for p in (state / "activity").glob("*.md")}
+    vault = vault_path()
+    if vault is not None and (vault / DAILY_DIR).is_dir():
+        for path in (vault / DAILY_DIR).glob("20??-??-??.md"):
+            lines = crow_lines(vault, dt.date.fromisoformat(path.stem))
+            if lines:
+                days[path.stem] = "\n".join(filter(None, [days.get(path.stem, "").rstrip(), *lines]))
+    return days
+
+
 def activity_logs(state, since, per_day=4000):
-    out = {}
-    for path in sorted((state / "activity").glob("*.md")):
-        if path.stem >= since.isoformat():
-            out[path.stem] = read(path, per_day)
-    return out
+    return {day: cap(text, per_day) for day, text in sorted(activity_days(state).items())
+            if day >= since.isoformat()}
 
 
 def decisions_since(state, since):
-    text = read(state / "decisions.md", 200000) or ""
+    path = note("decisions")
+    if path.is_dir():  # one note per decision, named "YYYY-MM-DD title.md"
+        return [cap(f"## {p.stem}\n" + (read(p, 2000) or ""), 500)
+                for p in sorted(path.glob("*.md")) if p.name[:10] >= since.isoformat()]
+    text = read(path, 200000) or ""
     keep = []
     for block in re.split(r"(?m)^(?=## )", text):
         m = re.match(r"## (\d{4}-\d{2}-\d{2})", block)
@@ -150,15 +168,15 @@ def decisions_since(state, since):
 
 
 def last_brief(state):
-    for path in sorted((state / "activity").glob("*.md"), reverse=True):
-        if "[hub] brief" in (read(path, 50000) or ""):
-            return path.stem
+    for day, text in sorted(activity_days(state).items(), reverse=True):
+        if "[hub] brief" in text:
+            return day
     return None
 
 
 def retros(state, since):
     root = state / "retros"
-    reports = sorted(p.name for p in root.glob("20*.md") if p.name[:10] >= since)
+    reports = sorted(p.name for p in note("retros").glob("20*.md") if p.name[:10] >= since)
     proposals = [line for line in (read(root / "proposals.md", 100000) or "").splitlines()
                  if line.startswith("- [ ]")]
     return {"reports_since": since, "reports": reports, "pending_proposals": proposals,
@@ -264,9 +282,9 @@ def brief(state, vault, apply=True):
         "today_priorities": today_md if dated else None,
         "afk": afk(state),
         "open_threads": threads(state, {"Me", "Waiting"}),
-        "status": read(state / "status.md", 4000),
+        "status": read(note("status"), 4000),
         **sources,
-        "targets": {"activity_log": str(state / "activity" / f"{TODAY}.md")},
+        "targets": {"activity_log": "bin/crow-log '[tag] text'"},
     }
 
 
@@ -290,7 +308,7 @@ def daily(state, vault, since):
         "targets": {"daily_note": str(daily_path(vault, TODAY)) if vault else None,
                     "template": str(vault / "90 Templates" / "Daily Note.md") if vault else None,
                     "last_daily": str(state / "last-daily"),
-                    "activity_log": str(state / "activity" / f"{TODAY}.md")},
+                    "activity_log": "bin/crow-log '[tag] text'"},
     }
 
 
@@ -302,7 +320,7 @@ def weekly(state, since):
                                  "--scope", "all", "--limit", "50"], 30000, 240),
         "notes": lambda: run([str(BIN / "crow-notes"), "--since", monday.isoformat()], as_json=True),
     })
-    prev = sorted((state / "weekly").glob("*.md"))
+    prev = sorted(note("rollups").glob("*.md"))
     return {
         "monday": monday.isoformat(),
         "iso_week": f"{year}-W{week:02d}",
@@ -311,7 +329,7 @@ def weekly(state, since):
         "activity_logs": activity_logs(state, monday, 3000),
         "decisions": decisions_since(state, monday),
         "carry_over": threads(state, width=200),
-        "targets": {"rollup": str(state / "weekly" / f"{year}-W{week:02d}.md"),
+        "targets": {"rollup": str(crow_lib.rollup_path(f"{year}-W{week:02d}", registry(), ROOT)),
                     "previous_rollup": str(prev[-1]) if prev else None},
     }
 

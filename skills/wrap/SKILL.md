@@ -34,10 +34,10 @@ Commit doc changes following the hub autonomy rules (`$CROW_HOME/CLAUDE.md`):
 
 ## 4. Save. Always (hub state)
 In the state dir:
-- `activity/YYYY-MM-DD.md`: append `- HH:MM [project] one-line summary` per notable item done (non-git work matters most: meetings, decisions, R&D, ops)
-- `open-threads.md` (format and rules: `runbooks/open-threads.md`): put each open item as one line `- [ ] YYYY-MM-DD [project] text → next step` under `## Me` (owner acts), `## Crow` (point to the Logics item if any) or `## Waiting` (start with the person's name); update a line in place and re-date it when touched. An item finished this session is removed from the file in the same write and logged in `activity/` as `- HH:MM [project] done: text`. Never write a status note here (use `status.md`, or `decisions.md` for constraints)
-- `decisions.md` (only for decisions with lasting impact): `## YYYY-MM-DD [project] title` + 1–3 lines of why
-- `status.md` (hub mode, or if a project's status changed): one row per project: status, current focus, next step, blocked by
+- Activity: run `bin/crow-log "[project] one-line summary"` (daily note, CR-0W section) per notable item done (non-git work matters most: meetings, decisions, R&D, ops)
+- `Open Threads.md` in the vault crow folder (`bin/crow-state path threads`; format and rules: `runbooks/open-threads.md`): put each open item as one line `- [ ] YYYY-MM-DD [project] text → next step` under `## Me` (owner acts), `## Crow` (point to the Logics item if any) or `## Waiting` (start with the person's name); update a line in place and re-date it when touched. An item finished this session is removed from the file in the same write and logged with `bin/crow-log "[project] done: text"`. Never write a status note here (use `Status.md`, or a decision note for constraints)
+- Decisions (only those with lasting impact): one note `Decisions/YYYY-MM-DD title.md` in the crow folder (`bin/crow-state path decisions`), frontmatter `type: decision`, `date`, `project`, then `# title` + 1–3 lines of why
+- `Status.md` (`bin/crow-state path status`; hub mode, or if a project's status changed): one row per project: status, current focus, next step, blocked by
 
 Runbooks: if the session worked out a recurring procedure, write the generic steps to `runbooks/` (tracked, no project, company, person, vendor, ticket or account names) and the private specifics to `local/runbooks/`. Never put a private name in a tracked runbook; the pre-commit check is a backstop, not the rule.
 

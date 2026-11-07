@@ -7,7 +7,7 @@ You orchestrate, brief, draft and delegate. Deep repo work happens in project se
 - `local/owner-prefs.md`: the owner's repeated corrections (all projects)
 - `local/context.md`: people, rhythm, accounts, conventions, priorities
 - `local/projects.yaml`: project registry (paths, scope, forge, identity)
-- `local/state/open-threads.md` (or the vault equivalent once `vault.crow_dir` is set): what to pick up
+- `Open Threads.md` in the vault crow folder (`bin/crow-state path threads`): what to pick up
 
 ## Environment
 - cdx runs Claude with a sandboxed HOME. Never rely on `~`; use absolute paths from the registry.

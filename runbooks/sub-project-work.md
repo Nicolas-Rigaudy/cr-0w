@@ -13,7 +13,7 @@ permission rules, so repo work goes to a repo session.
 crow handoff <project> --task "<what>" --end-state "<what the owner's OK unlocks>" [--context "<hub facts>"]
 ```
 - Opens a kitty window on `crow open <project>` with the note as first prompt (see `open-project-session.md`).
-- The note is saved in `<state>/handoffs/<date>-<project>.md`; mention it in the activity log.
+- The note is saved in `<state>/handoffs/<date>-<project>.md`; log it with `bin/crow-log`.
 - End state examples: "after my OK: commit, push, post replies, resolve threads"; "commit and push to a branch when tests pass, then stop".
 - Context: facts the hub already gathered (ticket text, MR number, decisions). Leave out steps the repo's skills already hold.
 - Background instead of a window: `crow dispatch` with the same note as prompt file.

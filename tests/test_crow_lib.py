@@ -102,3 +102,32 @@ def test_permission_and_hub_session_guard_per_provider():
 def test_final_text_real_codex_sample():
     text = (FIX / "run-codex-real.jsonl").read_text()
     assert crow_lib.final_text(text, "codex") == "Shipped: live Codex smoke test\nResult: 42"
+
+
+def _reg(tmp_path, crow_dir):
+    return {"vault": {"path": str(tmp_path / "vault"), "crow_dir": crow_dir}}
+
+
+def test_machine_dir_ignores_crow_dir(tmp_path):
+    assert crow_lib.machine_dir(tmp_path) == tmp_path / "local" / "state"
+
+
+def test_crow_path_legacy_when_unset(tmp_path):
+    reg = _reg(tmp_path, None)
+    assert crow_lib.crow_dir(reg, tmp_path) is None
+    assert crow_lib.crow_path("threads", reg, tmp_path) == tmp_path / "local/state/open-threads.md"
+    assert crow_lib.rollup_path("2026-W45", reg, tmp_path) == tmp_path / "local/state/weekly/2026-W45.md"
+
+
+def test_crow_path_in_vault_when_set(tmp_path):
+    reg = _reg(tmp_path, "CR-0W")
+    notes = tmp_path / "vault" / "CR-0W"
+    assert crow_lib.crow_dir(reg, tmp_path) == notes
+    assert crow_lib.crow_path("threads", reg, tmp_path) == notes / "Open Threads.md"
+    assert crow_lib.crow_path("decisions", reg, tmp_path) == notes / "Decisions"
+    assert crow_lib.rollup_path("2026-W45", reg, tmp_path) == notes / "Rollups" / "2026-W45 rollup.md"
+
+
+def test_crow_dir_absolute(tmp_path):
+    reg = _reg(tmp_path, str(tmp_path / "elsewhere"))
+    assert crow_lib.crow_dir(reg, tmp_path) == tmp_path / "elsewhere"

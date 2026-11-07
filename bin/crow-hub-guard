@@ -138,7 +138,7 @@ def main():
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": reason}}))
     elif kind == "UserPromptSubmit":
-        state = Path(reg.get("vault", {}).get("crow_dir") or HOME / "local/state")
+        state = crow_lib.machine_dir(HOME)
         note = prompt_note(event, projs, state)
         if note:
             print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": note}}))

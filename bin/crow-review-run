@@ -58,7 +58,7 @@ def registry():
 
 
 def state_dir():
-    return Path((registry().get("vault") or {}).get("crow_dir") or HOME / "local" / "state")
+    return crow_lib.machine_dir(HOME)
 
 
 def findings_path(repo, number):
