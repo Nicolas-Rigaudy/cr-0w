@@ -3,6 +3,7 @@ import json
 import os
 import pwd
 import re
+import shlex
 import subprocess
 import sys
 
@@ -386,6 +387,63 @@ CDX_KINDS = {"retro": "retro"}
 # Headless traps: no background tasks (phantom results), no claude.ai connectors (~40k tokens of tool defs per call).
 HEADLESS_ENV = {"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1", "ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
 
+# Deny by default: a sandboxed run starts in Claude's default permission mode and may use only its kind's tools.
+# Bash rules are prefixes (`Bash(git log:*)`). MCP servers load only when the kind lists them (none today).
+_GIT_READ = ["git status", "git log", "git diff", "git show", "git branch", "git rev-parse", "git ls-files",
+             "git blame", "git merge-base", "git remote -v"]
+_SHELL_READ = ["ls", "cat", "head", "tail", "wc", "grep", "rg", "sort", "uniq", "cut", "jq", "pwd", "echo",
+               "date", "diff"]
+RUN_SANDBOX = {
+    "review": {"tools": ["Read", "Grep", "Glob", "TodoWrite"],
+               "bash": _GIT_READ + _SHELL_READ + ["git fetch", "gh pr view", "gh pr diff", "gh pr checks",
+                                                  "glab mr view", "glab mr diff", "logics-manager"],
+               "mcp": []},
+    "task": {"tools": ["Read", "Grep", "Glob", "Edit", "Write", "NotebookEdit", "TodoWrite"],
+             "bash": _GIT_READ + _SHELL_READ + ["git add", "git commit", "git switch", "git checkout", "git restore",
+                                                "git stash", "git rebase", "git mv", "git rm", "mkdir", "touch", "cp",
+                                                "mv", "python3 -m pytest", "pytest", "go test", "go build",
+                                                "go vet", "gofmt", "make", "npm test", "npm run", "logics-manager"],
+             "mcp": []},
+    "retro": {"tools": ["Read", "Grep", "Glob", "Edit", "Write", "TodoWrite"], "bash": _SHELL_READ, "mcp": []},
+    "oneshot": {"tools": ["Read", "Grep", "Glob"], "bash": _SHELL_READ + _GIT_READ, "mcp": []},
+}
+# Denied for every kind (each also as `rtk <prefix>`); a deny rule beats an allow rule and a hook's allow.
+_DENY_BASH = ["git push", "gh pr create", "gh pr merge", "gh pr comment", "gh issue", "gh api", "glab mr create",
+              "glab mr merge", "glab mr note", "glab api", "curl", "wget"]
+RUN_DENY = [f"Bash({p}:*)" for c in _DENY_BASH for p in (c, f"rtk {c}")] + ["WebFetch"]
+# Env names a run never inherits: forge, cloud and other credentials. The provider login is cdx's own.
+CREDENTIAL_ENV = re.compile(r"TOKEN|SECRET|PASSW|CREDENTIAL|API_?KEY|ACCESS_KEY|PRIVATE_KEY|^AWS_|^SSH_AUTH_SOCK$|"
+                            r"^AZURE_CLIENT|^GOOGLE_APPLICATION_CREDENTIALS$")
+# Env names a kind keeps although they match CREDENTIAL_ENV (owner-approved; none today).
+RUN_KEEP_ENV = {}
+
+
+def sandbox_allow(kind):
+    """The kind's allow rules. Each Bash prefix also appears as `rtk <prefix>`: the RTK hook rewrites commands first."""
+    k = RUN_SANDBOX[kind]
+    bash = [p for c in k["bash"] for p in (c, f"rtk {c}")]
+    return list(k["tools"]) + [f"Bash({c}:*)" for c in bash] + [f"mcp__{s}" for s in k["mcp"]]
+
+
+def sandbox_args(kind):
+    """Claude CLI arguments for a sandboxed run of this kind: allowlist, denials, no MCP server it does not list."""
+    args = ["--strict-mcp-config", "--allowedTools", ",".join(sandbox_allow(kind)), "--disallowedTools", ",".join(RUN_DENY)]
+    servers = RUN_SANDBOX[kind]["mcp"]
+    if servers:
+        args += ["--mcp-config", json.dumps({"mcpServers": {s: MCP_SERVERS[s] for s in servers}})]
+    return args
+
+
+# MCP server definitions a kind may list in RUN_SANDBOX[kind]["mcp"] (name -> .mcp.json server entry).
+MCP_SERVERS = {}
+
+
+def sandbox_env(env, kind):
+    """env without credential variables (except the kind's RUN_KEEP_ENV), and the names it dropped."""
+    keep = set(RUN_KEEP_ENV.get(kind, ()))
+    dropped = sorted(n for n in env if CREDENTIAL_ENV.search(n.upper()) and n not in keep)
+    return {n: v for n, v in env.items() if n not in dropped}, dropped
+
 
 def model_id(model):
     """Exact Claude model id for an alias (opus -> claude-opus-5-5); other values pass through."""
@@ -414,6 +472,37 @@ def run_flags(kind, provider="claude", model=None, power=None, continue_run=None
     return args, (dict(HEADLESS_ENV) if provider == "claude" else {})
 
 
-def run_env(extra):
-    """os.environ plus the headless overrides, for subprocess calls."""
-    return {**os.environ, **extra}
+def run_env(extra, kind=None):
+    """os.environ plus the headless overrides, for subprocess calls. With a kind, credentials are dropped."""
+    env = {**os.environ, **extra}
+    return sandbox_env(env, kind)[0] if kind else env
+
+
+RUN_PROFILE_SUFFIX = "-runs"
+
+
+def run_profile(account):
+    """cdx profile that carries the sandbox flags for background runs of this account (`<account>-runs`)."""
+    return f"{account}{RUN_PROFILE_SUFFIX}"
+
+
+def run_profile_args():
+    """The `cdx set --extra-args` value of a background profile: every kind's allowlist in one (cdx run has no
+    per-run provider args yet), the shared denials and strict MCP config."""
+    allow = []
+    for kind in RUN_SANDBOX:
+        allow += [a for a in sandbox_allow(kind) if a not in allow]
+    return " ".join(["--strict-mcp-config", "--allowedTools", shlex.quote(",".join(allow)),
+                     "--disallowedTools", shlex.quote(",".join(RUN_DENY))])
+
+
+def run_denials(run):
+    """Tool calls a finished cdx run had denied, as short 'Tool: input' strings (cdx permission_denials warnings)."""
+    payload = (run or {}).get("final_payload") or run or {}
+    out = []
+    for w in payload.get("warnings") or []:
+        for d in (w.get("permission_denials") or []) if isinstance(w, dict) else []:
+            inp = d.get("tool_input") or {}
+            what = inp.get("command") or inp.get("file_path") or inp.get("url") or ""
+            out.append(f"{d.get('tool_name', '?')}: {what}"[:120].rstrip(": "))
+    return out
