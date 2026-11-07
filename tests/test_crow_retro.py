@@ -13,7 +13,7 @@ def load(tmp_path):
     spec = importlib.util.spec_from_loader("crow_retro", loader)
     mod = importlib.util.module_from_spec(spec)
     loader.exec_module(mod)
-    mod.STATE = str(tmp_path)
+    mod.STATE = mod.REPORTS = str(tmp_path)
     mod.QUEUE = str(tmp_path / "queue")
     return mod
 

@@ -38,6 +38,7 @@ LOCK = os.path.join(STATE, ".worker.lock")
 LOG = os.path.join(STATE, "worker.log")
 BATCH_STATE = os.path.join(STATE, "batch.json")
 BIN = os.path.dirname(os.path.realpath(__file__))
+REPORTS = str(crow_lib.crow_path("retros", home=CROW_HOME))  # owner-facing: vault Retros once crow_dir is set
 ACCOUNT = os.environ.get("CROW_ACCOUNT") or os.environ.get("CROW_SESSION_ACCOUNT") or subprocess.check_output([os.path.join(BIN, "crow-accounts"), "default"], text=True).strip()
 try:
     PROVIDER = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "provider", ACCOUNT], text=True, stderr=subprocess.DEVNULL).strip()
@@ -234,10 +235,8 @@ def skipped_section(rows):
 
 
 def report_path(day):
-    """Batch report: owner-facing, so in the vault Retros folder once vault.crow_dir is set."""
-    root = crow_lib.crow_path("retros", home=CROW_HOME)
-    os.makedirs(root, exist_ok=True)
-    return os.path.join(str(root), f"{day}-batch.md")
+    os.makedirs(REPORTS, exist_ok=True)
+    return os.path.join(REPORTS, f"{day}-batch.md")
 
 
 def write_manifest(day, scanned, digests):
