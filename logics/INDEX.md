@@ -147,7 +147,7 @@
 | [item_074_dispatch_records_logics_runs](backlog/item_074_dispatch_records_logics_runs.md) | crow dispatch records runs in the linked Logics doc | Done |  | 100% | backlog/item_074_dispatch_records_logics_runs.md |
 | [item_075_runs_cost_per_run](backlog/item_075_runs_cost_per_run.md) | crow runs shows cost per run | Done |  | 100% | backlog/item_075_runs_cost_per_run.md |
 | [item_076_review_runs_isolated_workspace](backlog/item_076_review_runs_isolated_workspace.md) | Review runs use cdx isolated workspaces | Ready |  | 0% | backlog/item_076_review_runs_isolated_workspace.md |
-| [item_077_sandboxed_background_runs](backlog/item_077_sandboxed_background_runs.md) | Background runs start with no authorisation and whitelist tools | Ready |  | 0% | backlog/item_077_sandboxed_background_runs.md |
+| [item_077_sandboxed_background_runs](backlog/item_077_sandboxed_background_runs.md) | Background runs start with no authorisation and whitelist tools | In progress |  | 60% | backlog/item_077_sandboxed_background_runs.md |
 | [item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook](backlog/item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook.md) | Design review workflow: crow-compare v2, decisions ledger, runbook | Ready |  | 0% | backlog/item_078_design_review_workflow_crow_compare_v2_decisions_ledger_runbook.md |
 | [item_079_shared_terminal_kit_repo_tokens_and_gallery](backlog/item_079_shared_terminal_kit_repo_tokens_and_gallery.md) | Shared terminal kit repo: tokens and gallery | Ready |  | 0% | backlog/item_079_shared_terminal_kit_repo_tokens_and_gallery.md |
 | [item_080_kit_components_extracted_from_crow_deck_and_lazytf](backlog/item_080_kit_components_extracted_from_crow_deck_and_lazytf.md) | Kit components extracted from crow deck and lazytf | Ready |  | 0% | backlog/item_080_kit_components_extracted_from_crow_deck_and_lazytf.md |
@@ -174,7 +174,7 @@
 | [item_101_personal_auto_merge_gate_for_mission_branches](backlog/item_101_personal_auto_merge_gate_for_mission_branches.md) | Personal auto-merge gate for mission branches | Draft |  | 0% | backlog/item_101_personal_auto_merge_gate_for_mission_branches.md |
 | [item_102_mission_guard_hook_for_runs_that_cannot_be_isolated](backlog/item_102_mission_guard_hook_for_runs_that_cannot_be_isolated.md) | Mission guard hook for runs that cannot be isolated | Draft |  | 0% | backlog/item_102_mission_guard_hook_for_runs_that_cannot_be_isolated.md |
 | [item_103_take_control_of_a_mission_as_a_logged_manual_gesture](backlog/item_103_take_control_of_a_mission_as_a_logged_manual_gesture.md) | Take control of a mission as a logged manual gesture | Draft |  | 0% | backlog/item_103_take_control_of_a_mission_as_a_logged_manual_gesture.md |
-| [item_104_load_and_validate_mission_kind_files](backlog/item_104_load_and_validate_mission_kind_files.md) | Load and validate mission kind files | Ready |  | 0% | backlog/item_104_load_and_validate_mission_kind_files.md |
+| [item_104_load_and_validate_mission_kind_files](backlog/item_104_load_and_validate_mission_kind_files.md) | Load and validate mission kind files | Done |  | 100% | backlog/item_104_load_and_validate_mission_kind_files.md |
 | [item_105_owner_review_of_the_mission_kind_catalogue](backlog/item_105_owner_review_of_the_mission_kind_catalogue.md) | Owner review of the mission kind catalogue | Draft |  | 0% | backlog/item_105_owner_review_of_the_mission_kind_catalogue.md |
 | [item_106_parse_and_validate_the_crow_block_and_questions_file](backlog/item_106_parse_and_validate_the_crow_block_and_questions_file.md) | Parse and validate the crow block and questions file | Draft |  | 0% | backlog/item_106_parse_and_validate_the_crow_block_and_questions_file.md |
 | [item_107_render_the_mission_brief_from_kind_record_and_answers](backlog/item_107_render_the_mission_brief_from_kind_record_and_answers.md) | Render the mission brief from kind, record and answers | Draft |  | 0% | backlog/item_107_render_the_mission_brief_from_kind_record_and_answers.md |
@@ -199,6 +199,7 @@
 | [task_008_0_6_remaining_pages_in_all_themes](tasks/task_008_0_6_remaining_pages_in_all_themes.md) | 0.6 remaining pages in all themes | Done |  | 100% | tasks/task_008_0_6_remaining_pages_in_all_themes.md |
 | [task_009_0_7_crow_command_map_and_doctor](tasks/task_009_0_7_crow_command_map_and_doctor.md) | 0.7 crow command map and doctor | Done |  | 100% | tasks/task_009_0_7_crow_command_map_and_doctor.md |
 | [task_010_orchestrate_terminal_design_system](tasks/task_010_orchestrate_terminal_design_system.md) | Orchestrate terminal design system | Ready |  | 0% | tasks/task_010_orchestrate_terminal_design_system.md |
+| [task_011_load_and_validate_mission_kind_files](tasks/task_011_load_and_validate_mission_kind_files.md) | Load and validate mission kind files | Done |  | 100% | tasks/task_011_load_and_validate_mission_kind_files.md |
 
 ## Runbooks
 

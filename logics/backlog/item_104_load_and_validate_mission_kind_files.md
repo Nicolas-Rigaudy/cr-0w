@@ -1,13 +1,14 @@
 ## item_104_load_and_validate_mission_kind_files - Load and validate mission kind files
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 92%
 > Confidence: 88%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 01:59:45
 
 # AI Context
 - Summary: A stdlib validator for the JSON Schema subset the spec uses and a repo test that validates every spec file, so the spec stays valid while it is reviewed.
@@ -47,8 +48,8 @@
 # Links
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
-- Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
-- Primary task(s): (none yet)
+- Request: `req_037_mission_kinds_and_run_contract`
+- Primary task(s): `task_011_load_and_validate_mission_kind_files`
 
 # Priority
 - Priority: High
@@ -59,7 +60,11 @@
 - A throwaway prototype of the validator passed on the spec files during grooming.
 - First item to build: it needs no owner answer.
 - Python because `bin/` and logics-manager are Python. A Go backend (req_031) ports the loader, the schemas stay.
+- Task `task_011_load_and_validate_mission_kind_files` was finished via `logics-manager flow finish task` on 2026-11-07.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_011_load_and_validate_mission_kind_files`
