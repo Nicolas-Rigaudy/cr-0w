@@ -257,6 +257,7 @@ def brief(state, vault, apply=True):
         "usage_split": lambda: run([str(BIN / "crow-usage"), "--split"], 300),
         "runs": runs_today,
         "vault_tasks": lambda: vault_tasks(vault),
+        "checks": lambda: run([str(BIN / "crow-checks"), "json"], 3000, as_json=True),
         "retros": lambda: retros(state, since_brief),
     })
     return {

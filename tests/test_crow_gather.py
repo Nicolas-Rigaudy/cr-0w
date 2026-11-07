@@ -61,6 +61,7 @@ def test_brief_keeps_me_and_waiting_with_stale_flag(hub):
     assert threads["Waiting"] == ["STALE 20d [work] vendor answer"]
     assert threads["_skipped_counts"] == {"Crow": 1}
     assert data["activity"] == {"skipped": "offline"}
+    assert data["checks"] == {"skipped": "offline"}
     assert data["targets"]["activity_log"].endswith(f"{TODAY}.md")
 
 
