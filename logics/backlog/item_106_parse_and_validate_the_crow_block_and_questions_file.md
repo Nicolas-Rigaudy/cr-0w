@@ -1,10 +1,10 @@
 ## item_106_parse_and_validate_the_crow_block_and_questions_file - Parse and validate the crow block and questions file
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -47,7 +47,7 @@
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 - Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
-- Primary task(s): (none yet)
+- Primary task(s): `task_012_parse_and_validate_the_crow_block_and_questions_file`
 
 # Priority
 - Priority: High
@@ -58,7 +58,12 @@
 - D6 decided 2026-11-07: the parser is Python in `bin/` now. Ready. A Go core ports it later against the shared fixtures (item_119).
 - Spec: `logics/specs/req_037_run_contract/`.
 - Usable by AFK run reports before core exists.
+- Proof (2026-11-07): `bin/crow_contract.py`, `bin/crow-contract`, `tests/test_crow_contract.py` (49 tests with the spec suite pass). Commit f4db263.
+- Task `task_012_parse_and_validate_the_crow_block_and_questions_file` was finished via `logics-manager flow finish task` on 2026-11-07.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_012_parse_and_validate_the_crow_block_and_questions_file`
