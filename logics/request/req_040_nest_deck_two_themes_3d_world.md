@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 70%
-> Confidence: 60%
+> Understanding: 80%
+> Confidence: 65%
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -39,6 +39,20 @@
 - Two Design System artifacts in Claude Design (modern, cyber), built from the existing tokens (req_038, terminal kit item_079/item_084, archeotech packs). Nest canvases built on them.
 - Every choice shown side by side with `bin/crow-compare`, asked with AskUserQuestion. No build before the owner picks.
 - Tech check: three.js or react-three-fiber with modelled glTF assets (Blender), cost on the Fold inner screen, reduced motion, a 2D fallback.
+
+## Delivered slice (2026-11-07)
+- Delivered: AC1 boards and the renders for AC2 and AC3. The files sit in the hub's private local state: a research folder and a shots folder for the run. They are not committed because they hold reference links and renders.
+- Research boards: one per theme with 12 references each, split into two directions. Each board is an HTML page with links plus a PNG.
+- World concepts: rooms per area, mission line, dock and tower, district map. Each has a short spec and the same iso camera in both themes, plus a phone top-down 2D version per theme.
+- Cast sheets: modern M1 scale-model people and M2 toy crew; cyber C1 utility droids and C2 protocol droids. Same framing, four roles each.
+- Contact sheets and `bin/crow-compare` specs for four decisions: world concept, modern cast, cyber cast, board direction.
+- Tech note: three.js or react-three-fiber with glTF from Blender, the Fold GPU budget, reduced motion, the 2D fallback.
+- Pending: the owner's picks. No build has started.
+
+## Next steps
+- AC4: build two Claude Design design systems (modern, cyber) on the picked board directions. Build them from one token set shared with the deck (req_038 status colours, terminal kit, archeotech Protocol register).
+- AC5: draw the nest key screens on those systems from the picked world concept and cast.
+- Model the picked cast and world kit in Blender as glTF, then measure on the Fold before any effect.
 
 # Acceptance criteria
 - AC1: A research board per theme with cited references and a short "why it fits" per reference.
