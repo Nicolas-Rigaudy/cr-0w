@@ -104,3 +104,15 @@ Denied for every kind (a deny beats any allow or hook): git push, gh pr create/m
 3. An MCP server: add its `.mcp.json` entry to `MCP_SERVERS` and its name to the kind's `"mcp"`.
 4. A credential a kind needs: add the variable name to `RUN_KEEP_ENV[kind]` only after the owner approves it.
 5. Run `python3 -m pytest tests/test_crow_run_sandbox.py`, then rerun the probe for that kind from a scratch folder.
+
+## Isolated runs: OS boundary (`--isolate`, item_100)
+`crow dispatch <project> <label> --isolate --cwd <path>.wt/<name> --prompt-file F` starts `cdx run --isolate-workspace`. The run sits in bwrap: volatile home, read-only toolchains, the worktree read-write (read-only for kind review), read-only private git with no config, remotes or hooks, an env allowlist, and pasta + nftables egress (public internet, no private, CGNAT or loopback range).
+
+- **Kinds:** `RUN_KINDS[kind]["isolate"]`: task `rw`, review `ro` (dispatch forces `--permission review`). retro and oneshot read host data and are refused.
+- **Refusals, never a fallback:** `--continue-run` (cdx refuses it with isolation), no `--cwd` or a cwd that is not a linked worktree, a missing bwrap/pasta/nft/python3 (`sudo pacman -S passt nftables`), a Claude profile that is not a setup token.
+- **Account:** Claude needs a cdx setup token (`CLAUDE_CODE_OAUTH_TOKEN`); a full login keeps the claude.ai connectors and is refused. Without `--account`, dispatch uses `<account>-runs` when cdx lists it. Create it once: `cdx add <account>-runs`, then `cdx login <account>-runs`.
+- **Permissions:** cdx runs isolated Claude with `bypassPermissions`. The OS sandbox is the boundary; the item_077 allowlists do not apply. `--failover` is dropped (it could land on a full-login account); the limit requeue moves the run instead.
+- **Commit:** the run cannot write git. When it ends, `crow-runs notify` commits the worktree diff from the host (`crow_lib.commit_run_diff`): `new|chg[SCOPE]: <label> (run <id8>)`, SCOPE from extensions or shebangs, checked by `crow-commit-msg-check` before the commit. Events `run.committed` / `run.commit_skipped`. Lives in bin/ until the core (item_119) owns mission commits.
+- **Resume:** always a fresh isolated run from the brief plus the RESUME NOTE, also after a reset on the same account. Needs `--prompt-file`.
+- **Probe:** `bin/crow-isolation-probe [--json]` runs a check script through cdx's own `sandbox_command` against a fixture worktree under `local/state/probe/`: credential files and env, commit and push, writes outside the tree, the host's LAN gateway, loopback and tailnet listeners (each checked open from the host first), public HTTPS, the host-side commit and the no-pasta refusal. Rerun it after a cdx upgrade.
+- **Why pasta and not Claude Code `settings.sandbox`:** that sandbox (bwrap + a socat proxy with a domain list) is enforced by Claude itself, and a bypass run skips its domain list. pasta + nftables sit outside the agent and hold in any permission mode.

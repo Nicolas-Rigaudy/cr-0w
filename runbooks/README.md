@@ -11,7 +11,7 @@ want to trigger it by name.
 
 ## Index
 - [install-and-update](install-and-update.md): engine vs data dir, install, `crow update`, restore on a new machine
-- [dispatch-background-runs](dispatch-background-runs.md): start, track and recover cdx background runs in project repos
+- [dispatch-background-runs](dispatch-background-runs.md): start, track and recover cdx background runs in project repos; isolated runs (`--isolate`) and `crow-isolation-probe`
 - [review-findings](review-findings.md): read-only review run of one MR, its findings JSON schema, resume for the apply phase
 - [cost-audit](cost-audit.md): measure token spend by context size, model, project and skill; re-measure after a change
 - [archeotech-crow-agents](archeotech-crow-agents.md): test the crow agents bar/panel module with fixtures and headless renders
