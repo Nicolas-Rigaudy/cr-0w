@@ -32,7 +32,7 @@ Unattended work while the owner is away. The hub session is the orchestrator; ru
 - Read `cdx status --refresh` before the first launch and before every floor decision: plain `cdx status` can show cached numbers from before a 5h reset. Max 3 parallel runs, staggered by about 3 minutes.
 - If the main account is blocked, start at most 2 runs on a shared account, and a third only when its 5-hour window shows 60% or more left.
 - Stop new runs on the main account early enough that its window is fresh when the owner starts. Floors are written as numbers in `queue.md`, never improvised.
-- A run that stops on a usage limit is redispatched with a RESUME NOTE on the other allowed account.
+- A run that stops on a usage limit follows its context (`dispatch --context afk|day`, default day). afk waits for the reset on the same account and continues. day restarts cold with a RESUME NOTE on the next allowed account when the reset is over an hour away, else waits. Each choice is logged as a `run.limit_policy` event with the reset time.
 - Waiters: `bin/crow-runs wait <id>` as its own background command (`run_in_background`). Never wrap it in a subshell, never `pkill -f` a pattern that also matches the command running it.
 
 ## Report
