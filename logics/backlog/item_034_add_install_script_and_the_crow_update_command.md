@@ -1,14 +1,14 @@
 ## item_034_add_install_script_and_the_crow_update_command - Add install script and the crow update command
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 30%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-05 22:34:37
+> Indicators reviewed: 2026-11-07 12:03:15
 
 # AI Context
 - Summary: Install script and a crow update command that respects how crow was installed.
@@ -63,3 +63,6 @@
 
 # Notes
 - Planned 2026-10-29. Execution happens in a fresh, clear-context session started from this doc and the request; do not execute from the planning session.
+
+# Tasks
+- `task_014_add_install_script_and_the_crow_update_command`
