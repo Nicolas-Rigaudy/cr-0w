@@ -1,10 +1,10 @@
 ## item_063_checks_engine_crow_checks_feeds_you_decide - Checks engine: crow-checks rules feed You decide
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 75%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Management
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -42,7 +42,10 @@
 - AC4: Each rule has a unit test with fixture input; the deck shows the rows in You decide.
 
 # AC Traceability
-- All ACs -> this item. Proof: to fill at build.
+- AC1 -> `tests/test_crow_checks.py::test_replay_2026_11_03_offline` (fixture `tests/fixtures/checks/2026-11-03`, offline): one sprint row, action "propose planning".
+- AC2 -> `test_one_on_one_past_due_and_unbooked_yields_a_row`.
+- AC3 -> `test_state_and_row_limit`, `test_dismiss_and_snooze_cli`.
+- AC4 -> one unit test per rule in `tests/test_crow_checks.py`; deck `tools/crow-deck/checks_test.go::TestHomeShowsChecksInYouDecide`.
 
 # Decision framing
 - Product framing: Not needed
@@ -63,6 +66,9 @@
 - Vault people notes carry a monthly 1:1 recurring task with a due date; read it with crow_vault.py.
 - Sprints last 2 weeks and end on Wednesday.
 - Keep each rule a pure function over a snapshot so tests need no network.
+- 2026-11-07 build: no crow-jira tool exists, so sprint dates come from a cache file (`sprint.file`) with a cadence fallback (`anchor_end`, `length_days`). A writer for that file from the tracker is future work.
+- 2026-11-07 build: crow-today now caches a `week` of events for the 1:1 window. The live Graph call is covered by a mocked test only.
+- 2026-11-07 build: the owner copies `docs/checks.example.yaml` to `local/checks.yaml` to turn the checks on.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
