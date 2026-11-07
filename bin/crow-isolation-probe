@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+"""crow-isolation-probe: prove what an isolated run (cdx --isolate-workspace) can and cannot reach.
+
+  crow-isolation-probe [--json] [--keep]
+
+Builds a fixture repo (a bare local remote, a worktree under <repo>.wt/), plants fake
+tokens in the launcher env, then runs a check script through cdx's own `sandbox_command` (bwrap, volatile home,
+read-only git, env allowlist, pasta + nftables), the same builder `cdx run --isolate-workspace` uses.
+After the run the host commits the sandbox's diff with crow_lib.commit_run_diff, as dispatch does.
+Also checks that a PATH without pasta is refused (no shared-network fallback).
+Exit 0 when every check holds. The fixture lives under <state>/probe/ and is removed unless --keep.
+"""
+import argparse, ipaddress, json, os, shutil, socket, subprocess, sys, tempfile
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+SANDBOX_HOME = "/" + "/".join(("home", "agent"))  # cdx's volatile home inside the sandbox
+
+REAL_HOME = Path(os.environ.get("CROW_REAL_HOME") or crow_lib.real_home())
+
+# Runs inside the sandbox. argv: blocked targets, public host, secret paths, fixture root, allowed binds, marker.
+INSIDE = r"""
+import json, os, socket, subprocess, sys
+targets, public, secrets, allowed, marker = (json.loads(sys.argv[1]), sys.argv[2], json.loads(sys.argv[3]),
+                                             json.loads(sys.argv[5]), sys.argv[6])
+out = {}
+def readable_files(root):
+    # Regular files under root this process can read, skipping the allowed binds (toolchains, the fixture).
+    found, seen = [], 0
+    for d, dirs, files in os.walk(root):
+        dirs[:] = [x for x in dirs if not any((d + "/" + x).startswith(a) for a in allowed)]
+        for f in files:
+            seen += 1
+            q = d + "/" + f
+            try:
+                open(q, "rb").read(1); found.append(q)
+            except OSError:
+                pass
+        if seen > 20000:
+            break
+    if os.path.isfile(root):
+        try:
+            open(root, "rb").read(1); found.append(root)
+        except OSError:
+            pass
+    return found
+out["home"] = os.environ.get("HOME")
+out["secret_files_readable"] = [q for p in secrets for q in readable_files(p)][:20]
+# GIT_CONFIG_KEY_n/VALUE_n are cdx's own git overrides (credential.helper emptied), not credentials.
+out["credential_env"] = sorted(k for k in os.environ if not k.startswith("GIT_CONFIG_")
+                               and any(w in k.upper() for w in ("TOKEN", "SECRET", "KEY", "PASSW", "CREDENTIAL")))
+def run(*a):
+    r = subprocess.run(a, capture_output=True, text=True, timeout=60)
+    return r.returncode, (r.stderr or r.stdout).strip().splitlines()[-1:]
+open("probe-change.txt", "w").write("written inside the sandbox\n")
+out["write_in_tree"] = os.path.exists("probe-change.txt")
+out["git_remotes"] = run("git", "remote", "-v")
+out["git_commit"] = run("git", "-c", "user.email=p@p", "-c", "user.name=p", "commit", "-qam", "x", "--allow-empty")
+out["git_push_named"] = run("git", "push", "origin", "HEAD")
+# TLS verification off so the push reaches the forge and fails on missing credentials, not on the CA bundle.
+out["git_push_https"] = run("git", "-c", "http.sslVerify=false", "push", "https://github.com/octocat/Hello-World.git", "HEAD")
+# Writes outside the tree land on bwrap's volatile root or fail; the host checks none reached it.
+for p in ("/etc", os.path.dirname(os.environ["HOME"]), "/usr", sys.argv[4], sys.argv[4] + "/repo/.git"):
+    try:
+        open(p + "/" + marker, "w").write("x")
+    except OSError:
+        pass
+def connect(host, port):
+    try:
+        socket.create_connection((host, port), timeout=4).close(); return "open"
+    except OSError as e:
+        return type(e).__name__ + ":" + str(e.errno)
+out["reach"] = {k: connect(h, p) for k, (h, p) in targets.items()}
+out["public"] = connect(public, 443)
+print(json.dumps(out))
+"""
+
+
+def sandbox_module():
+    """cdx's own workspace_sandbox, from the interpreter that runs cdx."""
+    cdx = shutil.which("cdx")
+    if not cdx:
+        sys.exit("crow-isolation-probe: cdx not found")
+    py = open(os.path.realpath(cdx)).readline().removeprefix("#!").strip()
+    site = subprocess.check_output([py, "-c", "import cdx_manager, os; print(os.path.dirname(os.path.dirname(cdx_manager.__file__)))"], text=True).strip()
+    sys.path.insert(0, site)
+    from cdx_manager import workspace_sandbox  # noqa: E402
+    return workspace_sandbox
+
+
+def host_targets():
+    """Private, CGNAT and loopback endpoints the host can reach and the sandbox must not."""
+    t = {}
+    gw = subprocess.run(["ip", "-4", "route", "show", "default"], capture_output=True, text=True).stdout.split()
+    if "via" in gw:
+        t["lan_gateway"] = [gw[gw.index("via") + 1], 80]
+    ss = subprocess.run(["ss", "-ltnH4"], capture_output=True, text=True).stdout.splitlines()
+    for line in ss:
+        addr = line.split()[3].rsplit(":", 1)
+        host, port = addr[0].split("%")[0], int(addr[1])
+        ip = ipaddress.ip_address(host) if host != "*" else None
+        if ip and ip.is_loopback and "host_loopback" not in t:
+            t["host_loopback"] = [host, port]
+        if ip and ip in ipaddress.ip_network("100.64.0.0/10") and "tailnet" not in t:
+            t["tailnet"] = [host, port]
+        if ip and ip.is_private and not ip.is_loopback and "lan_service" not in t:
+            t["lan_service"] = [host, port]
+    return t
+
+
+def host_connect(host, port):
+    try:
+        socket.create_connection((host, port), timeout=4).close()
+        return "open"
+    except OSError as e:
+        return type(e).__name__
+
+
+def fixture(root):
+    repo, bare = root / "repo", root / "remote.git"
+    sh = lambda *a, cwd=None: subprocess.run(a, cwd=cwd, check=True, capture_output=True)
+    sh("git", "init", "-q", "--bare", str(bare))
+    sh("git", "init", "-q", "-b", "main", str(repo))
+    (repo / "README.md").write_text("probe\n")
+    sh("git", "-C", str(repo), "add", ".")
+    sh("git", "-C", str(repo), "-c", "user.email=probe@example.com", "-c", "user.name=probe", "commit", "-qm", "new[MD]: probe fixture")
+    sh("git", "-C", str(repo), "remote", "add", "origin", str(bare))
+    sh("git", "-C", str(repo), "push", "-q", "origin", "main")
+    wt = root / "repo.wt" / "probe"
+    sh("git", "-C", str(repo), "worktree", "add", "-q", "-b", "mission/probe", str(wt))
+    sh("git", "-C", str(wt), "config", "user.email", "probe@example.com")
+    sh("git", "-C", str(wt), "config", "user.name", "probe")
+    return repo, bare, wt
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="crow-isolation-probe")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--keep", action="store_true")
+    a = ap.parse_args()
+    ws = sandbox_module()
+    base = Path(crow_lib.data_home()) / "local/state/probe"
+    base.mkdir(parents=True, exist_ok=True)
+    root = Path(tempfile.mkdtemp(prefix="isolation-", dir=base))
+    checks = []
+    def check(name, ok, detail):
+        checks.append({"check": name, "ok": bool(ok), "detail": detail})
+    try:
+        repo, bare, wt = fixture(root)
+        secrets = [str(REAL_HOME / p) for p in (".config/gh", ".config/glab-cli", ".ssh", ".aws", ".cdx/profiles",
+                                                 ".cdx/sessions.json", ".gitconfig", ".netrc", ".claude", "Projects")]
+        targets = host_targets()
+        source = {**os.environ, "FAKE_GH_TOKEN": "probe-fake-token", "GH_TOKEN": "probe-fake-token",
+                  "AWS_SECRET_ACCESS_KEY": "probe-fake"}
+        py = shutil.which("python3")
+        home = Path.home()  # cdx binds these toolchains read-only from the launcher's HOME
+        allowed = [str(home / t) for t in (".nvm", ".local/bin", ".local/share/claude", ".local/share/uv")] + [str(root)]
+        marker = "crow-probe-" + root.name
+        argv, env = ws.sandbox_command([py, "-I", "-c", INSIDE, json.dumps(targets), "api.anthropic.com",
+                                        json.dumps(secrets), str(root), json.dumps(allowed), marker],
+                                       wt, network=True, source=source)
+        check("boundary is pasta + bwrap", os.path.basename(argv[0]) == "pasta" and any("bwrap" in x for x in argv),
+              " ".join(os.path.basename(x) for x in argv[:1]))
+        r = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=180)
+        try:
+            out = json.loads(r.stdout.strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            sys.exit(f"crow-isolation-probe: sandbox run failed ({r.returncode}): {r.stderr.strip()[-400:]}")
+        check("AC1 home is volatile", out["home"] == SANDBOX_HOME, out["home"])
+        check("AC1 no forge, ssh, cloud, cdx or project files readable", not out["secret_files_readable"],
+              out["secret_files_readable"] or "none (toolchain binds excluded: " + ", ".join(allowed[:-1]) + ")")
+        check("AC1 no credential env", not out["credential_env"], out["credential_env"] or "none")
+        check("worktree writable", out["write_in_tree"], "probe-change.txt")
+        check("AC2 no remotes visible", out["git_remotes"][0] == 0 and not out["git_remotes"][1], out["git_remotes"])
+        check("AC2 git commit fails (read-only git)", out["git_commit"][0] != 0, out["git_commit"])
+        check("AC2 push to origin fails", out["git_push_named"][0] != 0, out["git_push_named"])
+        check("AC2 push to an HTTPS remote fails", out["git_push_https"][0] != 0, out["git_push_https"])
+        leaked = [p for p in ("/etc", os.path.dirname(SANDBOX_HOME), "/usr", str(root), str(root / "repo/.git")) if (Path(p) / marker).exists()]
+        check("no write outside the worktree reaches the host", not leaked, leaked or "none")
+        for k, v in out["reach"].items():
+            host = host_connect(*targets[k])
+            check(f"AC2 {k} {targets[k][0]}:{targets[k][1]} unreachable", v != "open" and host == "open",
+                  f"sandbox {v}, host {host}")
+        for k in ("lan_gateway", "host_loopback", "tailnet"):
+            if k not in targets:
+                check(f"AC2 {k} target present on host", False, "no such endpoint on this host; probe incomplete")
+        check("public inference reachable (api.anthropic.com:443)", out["public"] == "open", out["public"])
+        # AC3: the host commits what the sandbox wrote.
+        res = crow_lib.commit_run_diff(str(wt), "probe run", "probe0000")
+        log = subprocess.run(["git", "-C", str(wt), "log", "-1", "--format=%s", "--name-only"], capture_output=True, text=True).stdout.split("\n")
+        chk = subprocess.run([str(Path(__file__).resolve().parent / "crow-commit-msg-check"), "-"], input=log[0], text=True, capture_output=True)
+        check("AC3 host commits the run diff", res.get("sha") and "probe-change.txt" in log, res)
+        check("AC3 commit message passes crow-commit-msg-check", chk.returncode == 0, log[0])
+        push = subprocess.run(["git", "-C", str(wt), "push", "-q", "origin", "mission/probe"], capture_output=True, text=True)
+        check("host publishes the branch", push.returncode == 0, push.stderr.strip() or "pushed mission/probe")
+        # AC4: no pasta, no run.
+        nopasta = Path(root / "nopasta-bin")
+        nopasta.mkdir()
+        for tool in ("bwrap", "python3"):
+            os.symlink(shutil.which(tool), nopasta / tool)
+        try:
+            ws.sandbox_command([py, "-c", "pass"], wt, network=True, source={**source, "PATH": str(nopasta)})
+            check("AC4 cdx refuses without pasta", False, "sandbox built a command")
+        except RuntimeError as e:
+            check("AC4 cdx refuses without pasta", "no shared-network fallback" in str(e), str(e))
+        pre = crow_lib.isolation_preflight("claude", "setup-token", path=str(nopasta))
+        check("AC4 crow preflight refuses with the fix", pre and "pacman -S passt" in pre, pre)
+    finally:
+        if not a.keep:
+            shutil.rmtree(root, ignore_errors=True)
+    ok = all(c["ok"] for c in checks)
+    if a.json:
+        print(json.dumps({"ok": ok, "checks": checks, "fixture": str(root) if a.keep else None}, indent=1))
+    else:
+        for c in checks:
+            print(f"{'ok  ' if c['ok'] else 'FAIL'} {c['check']}: {c['detail']}")
+        print("all checks hold" if ok else "probe FAILED")
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()
