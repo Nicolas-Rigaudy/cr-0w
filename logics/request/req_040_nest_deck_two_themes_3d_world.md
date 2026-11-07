@@ -26,6 +26,12 @@
 6. **Agent cast per theme.** Each theme has its own cast. Cyber: low-poly droids and CRT/HUD props. Modern: characters too, no abstract shapes (owner: "not a fan of abstract shapes for modern"). The modern cast is open to research.
 7. **Own look, non-AI design principles.** Grounded in real design craft (composition, hierarchy, restraint, a consistent material and lighting model, hand-picked references), not the generic AI web app look (purple gradients, glass cards everywhere, emoji, stock 3D blobs). No AI-generated images or models in the shipped assets.
 
+# Owner references (2026-11-07)
+- Cyber: Cyberpunk 2077, Star Wars (droids, cantina), Dune, Warhammer, cyberdecks, Gundam, Eureka Seven, The Matrix, Tron, Ender's Game, Iron Man, Evangelion, sci-fi in general, r/unixporn rices, Caelestia shell, Aulumu, EDC gear.
+- Modern: Apple design, Devialet, Samsung devices.
+- First target: the laptop web app, then the phone.
+- Thao's Cockpit screenshots are the only external sample so far; more references will come from the owner.
+
 # Design research (first slice)
 - References from outside AI tools: game UI and diorama games, architecture models, industrial and product design, sci-fi interfaces and film UI, the owner's own rices. A board per theme with sources.
 - 3 or 4 world concepts (what the map means, how agents move, where asks pile up), each drawn in both themes.

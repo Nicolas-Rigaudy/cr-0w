@@ -57,7 +57,7 @@
 
 # Notes
 - Proposed by the req_030 spike (2026-11-06); Draft until the owner grooms it.
-- Blocked until the owner installs passt (`sudo pacman -S passt`, owner decision 2026-11-07). Then rerun the safety probe with pasta.
+- passt installed by the owner 2026-11-07: unblocked. Rerun the safety probe with pasta as the first step of this item.
 - Aligns with item_077: that item is the run-config layer, this one the OS layer.
 - Decisions 2026-11-07 in req_030: public minus LAN, core commits the diff, fresh run from files for resume.
 

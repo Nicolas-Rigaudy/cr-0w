@@ -22,8 +22,7 @@
 # Scope
 - In:
   - Fresh isolated run from `brief.md`, answers and version files is the default resume (shared with item_100).
-  - Draft the cdx issue text for native resume of isolated runs on the same account.
-  - Show the exact issue text to the owner. Post only after the OK.
+  - cdx issue posted 2026-11-07 after the owner OK on the exact text: https://github.com/AlexAgo83/cdx-manager/issues/122.
   - When cdx ships it, use native resume on the same account and keep the fresh run as fallback.
 - Out:
   - Posting the issue before the owner OKs the text.
@@ -31,7 +30,7 @@
 
 # Acceptance criteria
 - AC1: An isolated mission answered by the owner resumes through a fresh run and the version file chain stays valid.
-- AC2: The issue text exists in the item notes and the owner has approved it before any post.
+- AC2: Done 2026-11-07: owner-approved issue posted (cdx-manager #122).
 - AC3: Fresh run remains the path when the mission changes account.
 
 # AC Traceability
