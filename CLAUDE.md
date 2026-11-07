@@ -73,7 +73,8 @@ prod launch > reviews (unblock devs) > sprint tickets > roadmap/management > R&D
 
 ## Persistence
 - Operational config lives in this repo; logs, decisions and status live in the vault (`vault.crow_dir`).
-- Until `vault.crow_dir` is set, use `local/state/`: `activity/YYYY-MM-DD.md`, `weekly/YYYY-Www.md`, `decisions.md`, `status.md`, `open-threads.md`.
+- Anything the owner reads, edits or pastes from (research, specs, prompts, drafts, rollups, images to review) goes in the vault crow folder, never in `local/state/`. A path written in a Logics item does not override this.
+- `local/state/` holds machine state only: JSON/JSONL, caches, locks, run queues, handoffs, renders.
 - Daily activity is rolled up weekly on Friday.
 
 ## Engine vs config

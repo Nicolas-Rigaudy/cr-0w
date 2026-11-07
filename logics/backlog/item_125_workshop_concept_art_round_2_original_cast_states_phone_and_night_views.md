@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:24:33
+> Indicators reviewed: 2026-11-07 17:26:02
 
 # AI Context
 - Summary: Second image-prompt round on the picked droid workshop world: an original droid cast per theme, one image per droid state, a phone view and a night (AFK return) view. Prompts only, run by the owner in Gemini or ChatGPT; no render runs.
@@ -21,7 +21,7 @@
 
 # Scope
 - In:
-  - Prompt file v5 in the vault, `CR-0W/Research/Nest Design/Nest Prompts v5.md`: cast sheet per theme (6 to 8 original droids, distinct silhouettes), state close-ups (working, needs you, failed, sleeping, queued), phone portrait top-down, night view.
+  - Prompt file v5 in the vault, `CR-0W/Research/nest-design/Nest Prompts v5.md`: cast sheet per theme (6 to 8 original droids, distinct silhouettes), state close-ups (working, needs you, failed, sleeping, queued), phone portrait top-down, night view.
   - Same rules as v4: "in-game screenshot of an isometric <genre> game", stations numbered, amber/red/green/blue reserved per state, no franchise names (Gemini blocks them), no UI words.
   - Compare page from the owner's images with `bin/crow-compare`, decisions asked with AskUserQuestion.
 - Out:
@@ -30,11 +30,11 @@
 
 # Acceptance criteria
 - AC1: v5 prompts written for cast (both themes), states, phone and night, each pasteable as one block.
-- AC2: The owner's images are filed under the vault `CR-0W/Research/Nest Design/v5/` and shown side by side in one compare page.
+- AC2: The owner's images are filed under the vault `CR-0W/Research/nest-design/v5/` and shown side by side in one compare page.
 - AC3: The owner picks a cast per theme and approves the state, phone and night reads; picks recorded in req_040.
 
 # AC Traceability
-- request-AC1 -> AC1, AC2, AC3. Proof: vault folder Nest Design/v5 and req_040 picks section.
+- request-AC1 -> AC1, AC2, AC3. Proof: vault folder nest-design/v5 and req_040 picks section.
 
 # Decision framing
 - Product framing: Not needed
