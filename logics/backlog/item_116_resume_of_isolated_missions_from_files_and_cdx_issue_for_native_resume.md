@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:33:25
+> Indicators reviewed: 2026-11-07 17:14:58
 
 # AI Context
 - Summary: Isolated missions resume as a fresh run from the brief and version files. A cdx issue asks for native resume of isolated runs as a same-account optimisation.
@@ -54,6 +54,8 @@
 # Notes
 - 2026-11-07 owner decision 7. Owner OK'd an issue in principle. Show the exact text before posting (upstream posts need approval).
 - Related: item_100 (isolated runs), item_115 (limits), item_107 (brief).
+- Cost after `--resume`: `total_cost_usd` is the running total of the whole Claude thread. Cost per turn = increase since the previous total of the same thread (or the total itself when it drops: new thread). Summing raw totals overcounts quadratically; check `cdx runs` cost for resumed runs.
+- If `--resume` fails because Claude purged the transcript, start a new thread from the mission files and log a note; keep the displayed history.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

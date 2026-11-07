@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Safety
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:33:25
+> Indicators reviewed: 2026-11-07 17:14:57
 
 # AI Context
 - Summary: Mission runs start through cdx --isolate-workspace (bwrap, volatile home, read-only git, env allowlist, pasta + nftables egress) and core commits the worktree diff afterwards.
@@ -60,6 +60,7 @@
 - passt installed by the owner 2026-11-07: unblocked. Rerun the safety probe with pasta as the first step of this item.
 - Aligns with item_077: that item is the run-config layer, this one the OS layer.
 - Decisions 2026-11-07 in req_030: public minus LAN, core commits the diff, fresh run from files for resume.
+- Prior art for the OS layer: Claude Code `settings.sandbox` (bubblewrap + socat), writes limited to the run folder, home and secrets hidden, per-run domain list. Compare with pasta before building; same bypass caveat as item_077.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

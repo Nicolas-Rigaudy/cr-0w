@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:48
+> Indicators reviewed: 2026-11-07 17:14:57
 
 # AI Context
 - Summary: Move crow background runs from auto mode (allowed unless blocked) to deny by default with a per-kind tool allowlist, scrubbed credentials and only declared MCP servers.
@@ -59,6 +59,8 @@
 # Notes
 - Blocked (owner decision 2026-11-07): the allowlists wait for cdx issue 120 (per-run `--extra-args`). AC1, AC3 and AC4 stay open until it ships.
 - Depends on the cdx-manager design check (item_015, 2026-11-03 follow-up). Prior proof: scrub-env on plus `--allowedTools` passed the probe on 2026-10-29 once socat was installed; MCP tools untested.
+- Claude Code ignores the sandbox domain allowlist in bypass mode. A sandboxed run must use acceptEdits or dontAsk, never bypass (harness-maxxing review 2026-11-07, local/state/research/harness-maxxing-and-hermes-2026-11-07.md).
+- Secret paths go in `permissions.deny` as well as the sandbox: Read/Edit/Write are not shell commands, and deny rules hold in every mode. Fixed per-kind rules fit a PreToolUse hook run with `python -I`.
 
 # Progress 2026-11-07
 - Done: per-kind allowlists, shared denials, credential filter and denial parsing in `crow_lib` (`RUN_SANDBOX`, `RUN_DENY`, `CREDENTIAL_ENV`, `RUN_KEEP_ENV`, `sandbox_args`, `run_denials`); every dispatch path (crow-runs, crow-retro, crow oneshot) starts cdx without credential variables; `crow runs` and the deck show denials; runbook `dispatch-background-runs.md` "Run sandbox".

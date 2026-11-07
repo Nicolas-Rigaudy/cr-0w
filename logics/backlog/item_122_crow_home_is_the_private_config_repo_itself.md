@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 17:14:58
 
 # AI Context
 - Summary: An installed crow uses the private config repo clone as CROW_HOME, files at its root, with no extra local/ level.
@@ -58,8 +59,8 @@
 
 # Notes
 - Owner decision 2026-11-07 on return from the AFK run (local/state/afk/decisions-2026-11-07-afk.md).
+- Before each push of the private config repo: whitelist of paths plus a secret scanner, refuse the push on a hit (pattern from the harness-maxxing backup, 2026-11-07).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

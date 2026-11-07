@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:50
+> Indicators reviewed: 2026-11-07 17:14:57
 
 # AI Context
 - Summary: After a turn core ingests listed outbox files within the kind caps and parks the mission on `outbox/questions.json`.
@@ -55,6 +55,8 @@
 - Depends on item_104, item_106 and the core mission record.
 - Caps per kind in the kind files.
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
+- Tool approvals without exit and resume: `--permission-prompt-tool mcp__<server>__approve` makes Claude Code call an MCP tool and wait. The tool writes a pending approval file, polls it until deck, nest or ntfy sets allow or deny, and denies on timeout. Mark pending files expired when stdin closes; refuse Allow when the shown input was clipped (harness-maxxing review 2026-11-07, local/state/research/harness-maxxing-and-hermes-2026-11-07.md).
+- Outside text (mail, issues, web pages) reaches the run between markers, with the rule never to follow it. Owner messages are tasks, forwarded text is outside text.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

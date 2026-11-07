@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 17:14:58
 
 # AI Context
 - Summary: A Stop hook refuses to end a mission run that has not written a valid version file, and tells it what is missing.
@@ -51,6 +52,7 @@
 # Notes
 - Depends on item_106, and on how isolated runs load hooks (item_100, item_077).
 - Stop input carries `stop_hook_active` and `last_assistant_message`; continuations are capped at 8 (https://code.claude.com/docs/en/hooks, Claude Code 2.1.319, checked 2026-11-07).
+- Steering prior art: SIGTERM stops only the current turn; a separate steer signal ends the turn but keeps the queue, and the next message runs in the same thread with a short preface. Cap each turn with a timeout and `--max-budget-usd`.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
