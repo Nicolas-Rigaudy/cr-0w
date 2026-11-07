@@ -26,6 +26,7 @@ want to trigger it by name.
 - [new-account](new-account.md): bring a fresh cdx profile up to crow parity (memory links, env, hooks, skills, MCP); `crow doctor` checks it
 - [memory](memory.md): memory lives in local/memory, linked into allowed cdx profiles (never copied)
 - [design-canvas](design-canvas.md): add or change boards in a Design canvas artifact without losing the owner's layout (live index merge, one file per publish)
+- [visual-concepts](visual-concepts.md): purpose, content, flat sketches, then image-model prompts before any render run for a visual world
 - [tui-render](tui-render.md): render a TUI (or ANSI mockup) to PNG in the kitty theme at real monitor sizes; fallback-glyph and contrast checks
 - [afk-runs](afk-runs.md): unattended AFK runs (night or day): queue, guardrails, pre-push denylist, return report
 - [repo-tidy](repo-tidy.md): daily repo hygiene via `bin/crow-tidy` (safe auto-cleanup in the brief) and the by-hand cleanup steps
