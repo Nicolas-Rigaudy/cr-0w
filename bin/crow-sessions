@@ -10,7 +10,7 @@ A session is interrupted when its last user/assistant turn is a usage-limit erro
 Retros and automatic one-shot jobs (/retro, /brief, /daily, /weekly) are left out.
 Each transcript is read once per (mtime, size): unchanged files come from the cache.
 
-Files, in the state dir (vault.crow_dir, else local/state):
+Files, in the machine state dir (local/state):
   interrupted-sessions.json   the registry
   sessions-cache.json         per-transcript scan results
   relaunches.jsonl            written by crow-relaunch; entries listed there show as relaunched
@@ -38,7 +38,7 @@ def registry():
 
 
 def state_dir():
-    return (registry().get("vault") or {}).get("crow_dir") or os.path.join(HOME, "local", "state")
+    return str(crow_lib.machine_dir(HOME))
 
 
 def project_of(cwd, projects):

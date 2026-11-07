@@ -27,6 +27,62 @@ def data_home(env=None):
     return os.path.join(xdg, "crow")
 
 
+# Owner-facing notes: kind -> (name under the vault crow folder, legacy name under local/state).
+NOTES = {
+    "threads": ("Open Threads.md", "open-threads.md"),
+    "status": ("Status.md", "status.md"),
+    "decisions": ("Decisions", "decisions.md"),
+    "rollups": ("Rollups", "weekly"),
+    "drafts": ("Drafts", "drafts"),
+    "research": ("Research", "research"),
+    "retros": ("Retros", "retros"),
+}
+
+
+def registry(home=None):
+    """local/projects.yaml as a dict ({} when missing)."""
+    import yaml
+    path = os.path.join(home or data_home(), "local", "projects.yaml")
+    try:
+        with open(path) as f:
+            return yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return {}
+
+
+def machine_dir(home=None):
+    """Machine state (JSON, caches, locks, queues, handoffs, renders): always local/state."""
+    from pathlib import Path
+    return Path(home or data_home()) / "local" / "state"
+
+
+def crow_dir(reg=None, home=None):
+    """Vault folder for owner-facing notes (vault.path / vault.crow_dir), or None when unset."""
+    from pathlib import Path
+    reg = registry(home) if reg is None else reg
+    vault = reg.get("vault") or {}
+    name = vault.get("crow_dir")
+    if not name:
+        return None
+    path = Path(os.path.expanduser(str(name)))
+    if not path.is_absolute() and vault.get("path"):
+        path = Path(vault["path"]) / path
+    return path
+
+
+def crow_path(kind, reg=None, home=None):
+    """Path of an owner-facing note kind: in the vault crow folder when set, else the legacy local/state name."""
+    vault_name, legacy = NOTES[kind]
+    notes = crow_dir(reg, home)
+    return notes / vault_name if notes else machine_dir(home) / legacy
+
+
+def rollup_path(week, reg=None, home=None):
+    """Weekly rollup file for an ISO week label like 2026-W45."""
+    root = crow_path("rollups", reg, home)
+    return root / (f"{week} rollup.md" if crow_dir(reg, home) else f"{week}.md")
+
+
 def profiles_dir(env=None):
     """cdx profiles dir: CDX_PROFILES, else CDX_HOME/profiles, else ~/.cdx/profiles."""
     env = os.environ if env is None else env

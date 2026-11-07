@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""crow-state: where crow keeps a kind of data.
+
+  crow-state path <kind>      owner-facing note path: threads, status, decisions, rollups, drafts, research, retros
+  crow-state path rollup <week>   weekly rollup file (week like 2026-W45)
+  crow-state machine          machine state dir (always local/state)
+  crow-state notes            vault crow folder, or local/state while vault.crow_dir is unset
+
+Owner-facing notes go to the vault crow folder once vault.crow_dir is set; machine state never moves.
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return 0
+    cmd = argv[0]
+    if cmd == "machine":
+        print(crow_lib.machine_dir())
+    elif cmd == "notes":
+        print(crow_lib.crow_dir() or crow_lib.machine_dir())
+    elif cmd == "path" and len(argv) == 3 and argv[1] == "rollup":
+        print(crow_lib.rollup_path(argv[2]))
+    elif cmd == "path" and len(argv) == 2 and argv[1] in crow_lib.NOTES:
+        print(crow_lib.crow_path(argv[1]))
+    else:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

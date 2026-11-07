@@ -257,9 +257,10 @@ type regMile struct {
 }
 
 type registry struct {
-	Identities map[string]string `json:"identities"`
-	StateDir   string            `json:"state_dir"`
-	Projects   []regProject      `json:"projects"`
+	Identities  map[string]string `json:"identities"`
+	StateDir    string            `json:"state_dir"`
+	ThreadsFile string            `json:"threads_file"`
+	Projects    []regProject      `json:"projects"`
 }
 
 // ----- fetching -----
@@ -899,7 +900,7 @@ func buildFixtures(in liveInput) *fixtures {
 	fx.Today, fx.Mail = todayRows(ls.today, now.Local())
 	fx.Hist = histOf(ls.usage, ls.reg, now)
 	if ls.reg != nil {
-		fx.Next = openThreads(filepath.Join(ls.reg.StateDir, "open-threads.md"), ls.reg)
+		fx.Next = openThreads(ls.reg.threadsFile(), ls.reg)
 		for i := range fx.Next {
 			fx.Next[i].Age = threadAge(fx.Next[i].Since, now.Local())
 		}
@@ -944,4 +945,12 @@ func buildFixtures(in liveInput) *fixtures {
 	}
 	fx.Sync = state
 	return fx
+}
+
+// threadsFile is the open threads note: the registry's threads_file, else the legacy state dir file.
+func (r registry) threadsFile() string {
+	if r.ThreadsFile != "" {
+		return r.ThreadsFile
+	}
+	return filepath.Join(r.StateDir, "open-threads.md")
 }
