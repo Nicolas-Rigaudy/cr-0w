@@ -7,7 +7,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "bin"))
-import crow_lib  # noqa: E402
+import crow_lib
 
 
 def test_crow_home_wins(monkeypatch, tmp_path):
@@ -38,7 +38,7 @@ def _engine(tmp_path):
 def _version(eng, **env):
     e = {k: v for k, v in os.environ.items() if k not in ("CROW_HOME", "XDG_CONFIG_HOME")}
     e.update(env)
-    return subprocess.run([str(eng / "bin" / "crow"), "version"], capture_output=True, text=True, env=e)
+    return subprocess.run([str(eng / "bin" / "crow"), "version"], check=False, capture_output=True, text=True, env=e)
 
 
 def test_version_on_a_fresh_install_needs_no_data(tmp_path):

@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""crow-update: update the crow engine the way it was installed. Never touches the data dir.
+
+  crow update [--check] [--to VERSION]
+
+Install method, from <engine>/.crow-install (written by install.sh or a package) or the layout:
+  package   prints the package manager to use and exits
+  script    runs the engine's install.sh --engine-only for the target release (checksum verified)
+  git       fast-forwards the checkout to the release tag; refuses a dirty tree or local commits
+--check prints the current and target versions and the notes in between, and changes nothing.
+--to VERSION picks the target instead of the latest release.
+Environment: CROW_API_URL (base answering /releases/latest and /releases/tags/v<ver>).
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+ENGINE = crow_lib.ENGINE
+SEMVER = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+
+
+def die(msg, code=1):
+    print(f"crow update: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def vkey(v):
+    m = SEMVER.match(v.strip())
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def current_version():
+    try:
+        with open(os.path.join(ENGINE, "VERSION"), encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return "0.0.0"
+
+
+def marker():
+    out = {}
+    try:
+        with open(os.path.join(ENGINE, ".crow-install"), encoding="utf-8") as fh:
+            for line in fh:
+                k, _, v = line.strip().partition("=")
+                if k:
+                    out[k] = v
+    except OSError:
+        pass
+    return out
+
+
+def method(mark):
+    if mark.get("method"):
+        return mark["method"]
+    if os.path.exists(os.path.join(ENGINE, ".git")):
+        return "git"
+    return "package"
+
+
+def git(*args, check=True):
+    r = subprocess.run(["git", "-C", ENGINE, *args], check=False, capture_output=True, text=True)
+    if check and r.returncode != 0:
+        die(f"git {' '.join(args)}: {r.stderr.strip()}")
+    return r
+
+
+def api_base(mark):
+    return os.environ.get("CROW_API_URL") or f"https://api.github.com/repos/{mark.get('repo', 'Nicolas-Rigaudy/cr-0w')}"
+
+
+def release(mark, version=None):
+    url = api_base(mark) + ("/releases/latest" if version is None else f"/releases/tags/v{version}")
+    try:
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            return json.load(resp)
+    except (OSError, ValueError) as err:
+        die(f"cannot read {url}: {err}")
+
+
+def notes_between(files, cur, target):
+    """files: {version: text}. Notes of the versions after cur up to target, oldest first."""
+    keep = [v for v in files if vkey(cur) < vkey(v) <= vkey(target)]
+    return "\n".join(files[v].rstrip() + "\n" for v in sorted(keep, key=vkey))
+
+
+def changelog_name(v):
+    return "CHANGELOGS_" + v.replace(".", "_") + ".md"
+
+
+def run_package(cur, mark):
+    manager = mark.get("manager", "your package manager")
+    print(f"crow {cur} is installed by {manager}: update it with {manager} (crow update only updates script and git installs).")
+    return 0
+
+
+def run_git(cur, args):
+    if git("status", "--porcelain", "--untracked-files=no").stdout.strip():
+        die("the engine checkout has uncommitted changes; commit or stash them first")
+    tags = [line.split("refs/tags/")[1] for line in git("ls-remote", "--tags", "origin").stdout.splitlines()
+            if "refs/tags/v" in line and not line.endswith("^{}")]
+    versions = sorted((t[1:] for t in tags if vkey(t)), key=vkey)
+    if not versions:
+        die("no release tag on origin yet", 0)
+    target = (args.to or versions[-1]).lstrip("v")
+    if target not in versions:
+        die(f"no tag v{target} on origin")
+    if not args.to and vkey(target) <= vkey(cur):
+        print(f"crow {cur} is up to date (latest release {target}).")
+        return 0
+    print(f"crow {cur} -> {target} (git checkout {ENGINE})")
+    if args.check:
+        return 0
+    git("fetch", "--quiet", "origin", "tag", f"v{target}", "--no-tags")
+    files = {}
+    for name in git("ls-tree", "--name-only", f"v{target}", "changelogs/").stdout.split():
+        m = re.match(r"changelogs/CHANGELOGS_(\d+)_(\d+)_(\d+)\.md$", name)
+        if m:
+            files[".".join(m.groups())] = git("show", f"v{target}:{name}").stdout
+    print(notes_between(files, cur, target) or "(no changelog entries)")
+    branch = git("symbolic-ref", "--short", "-q", "HEAD", check=False).stdout.strip()
+    if branch:
+        r = git("merge", "--ff-only", "--quiet", f"v{target}", check=False)
+        if r.returncode != 0:
+            die(f"branch {branch} cannot fast-forward to v{target} (local commits?); update it by hand")
+    else:
+        git("-c", "advice.detachedHead=false", "checkout", "--quiet", f"v{target}")
+    print(f"crow updated to {target}. Data dir untouched: {crow_lib.data_home()}")
+    return 0
+
+
+def run_script(cur, mark, args):
+    rel = release(mark, args.to.lstrip("v") if args.to else None)
+    target = str(rel.get("tag_name", "")).lstrip("v")
+    if not vkey(target):
+        die(f"the release has no usable tag_name ({target!r})")
+    if not args.to and vkey(target) <= vkey(cur):
+        print(f"crow {cur} is up to date (latest release {target}).")
+        return 0
+    print(f"crow {cur} -> {target}")
+    if args.check:
+        print(str(rel.get("body") or "(no release notes)").rstrip())
+        return 0
+    prefix = mark.get("prefix") or os.path.dirname(os.path.dirname(ENGINE))
+    cmd = ["sh", os.path.join(ENGINE, "install.sh"), "--engine-only", "--version", target, "--prefix", prefix]
+    if mark.get("bin_dir"):
+        cmd += ["--bin-dir", mark["bin_dir"]]
+    sys.stdout.flush()
+    if subprocess.run(cmd, check=False).returncode != 0:
+        die(f"install of {target} failed; {cur} is still the current version")
+    logs = os.path.join(prefix, "versions", target, "changelogs")
+    files = {}
+    for name in sorted(os.listdir(logs)) if os.path.isdir(logs) else []:
+        m = re.match(r"CHANGELOGS_(\d+)_(\d+)_(\d+)\.md$", name)
+        if m:
+            with open(os.path.join(logs, name), encoding="utf-8") as fh:
+                files[".".join(m.groups())] = fh.read()
+    print(notes_between(files, cur, target) or "(no changelog entries)")
+    print(f"crow updated to {target}. Data dir untouched: {crow_lib.data_home()}")
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="crow update", description="Update the crow engine.")
+    ap.add_argument("--check", action="store_true", help="show what would change, change nothing")
+    ap.add_argument("--to", metavar="VERSION", help="target version instead of the latest release")
+    args = ap.parse_args()
+    if args.to and not vkey(args.to):
+        die(f"--to wants X.Y.Z, got {args.to!r}")
+    cur, mark = current_version(), marker()
+    how = method(mark)
+    if how == "package":
+        return run_package(cur, mark)
+    if how == "git":
+        return run_git(cur, args)
+    if how == "script":
+        return run_script(cur, mark, args)
+    die(f"unknown install method {how!r} in {ENGINE}/.crow-install")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
