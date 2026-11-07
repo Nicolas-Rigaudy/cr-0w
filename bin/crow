@@ -36,21 +36,33 @@
 #   crow projects [...]  release tracks: roadmap progress toward public releases
 #   crow release propose  draft the next version and notes from commits since the last tag (no tagging)
 #   crow doctor [--json] identity, accounts, profiles, stale worktrees (read only)
+#   crow version         version, engine path and data dir (CROW_HOME)
 #   crow secret set|get|list|rm <service> [--user U]   service tokens in the keyring (see runbooks/service-tokens.md)
 #
 # Old names still work and print a hint: sessions, relaunch (now under runs), releases (now projects).
 set -euo pipefail
 
-CROW_HOME="${CROW_HOME:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+# Engine: the checkout or install prefix this script runs from. Data: CROW_HOME holds local/
+# (owner config and state); default the checkout when it has local/, else $XDG_CONFIG_HOME/crow.
+CROW_ENGINE="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+if [[ -z "${CROW_HOME:-}" ]]; then
+  if [[ -d "$CROW_ENGINE/local" ]]; then CROW_HOME="$CROW_ENGINE"
+  else CROW_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/crow"; fi
+fi
+# Commands that need no account or data dir (a fresh install has neither).
+case "${1:-}" in
+  version|--version) echo "crow $(cat "$CROW_ENGINE/VERSION" 2>/dev/null || echo unknown)"
+                     echo "engine: $CROW_ENGINE"; echo "data:   $CROW_HOME"; exit 0 ;;
+esac
 # launch() gives a session its account as CROW_SESSION_ACCOUNT, so a CROW_ACCOUNT seen here is a choice.
 # Sessions started before that inherit CROW_ACCOUNT: there it is dropped when it names the session's own
 # account, unless crow itself passed it down (CROW_ACCOUNT_PICKED).
 CROW_ACCOUNT_GIVEN="${CROW_ACCOUNT:-}"
 [[ -z "${CROW_SESSION_ACCOUNT:-}" && -z "${CROW_ACCOUNT_PICKED:-}" && -n "${CDX_SESSION_NAME:-}" \
    && "$CROW_ACCOUNT_GIVEN" == "$CDX_SESSION_NAME" ]] && CROW_ACCOUNT_GIVEN=""
-CROW_ACCOUNT="${CROW_ACCOUNT:-$("$CROW_HOME/bin/crow-accounts" default)}"
+CROW_ACCOUNT="${CROW_ACCOUNT:-$("$CROW_ENGINE/bin/crow-accounts" default)}"
 REGISTRY="$CROW_HOME/local/projects.yaml"
-export CROW_HOME
+export CROW_HOME CROW_ENGINE
 
 # project_path <name|alias>: the folder sessions open in; a `planning:` project opens in its planning repo.
 project_path() {
@@ -73,11 +85,11 @@ EOF
 launch() {
   local dir="$1"; shift
   local run=(env -u CROW_ACCOUNT -u CROW_ACCOUNT_PICKED CROW_SESSION_ACCOUNT="$CROW_ACCOUNT" cdx)
-  "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
-  [[ "$dir" == "$CROW_HOME" ]] && "$CROW_HOME/bin/crow-accounts" hub-session "$CROW_ACCOUNT"
-  if [[ "$("$CROW_HOME/bin/crow-accounts" memory "$CROW_ACCOUNT")" == session ]]; then
-    "$CROW_HOME/bin/crow-memory" link "$CROW_ACCOUNT"
-    trap '"$CROW_HOME/bin/crow-memory" unlink "$CROW_ACCOUNT"; "$CROW_HOME/bin/crow-memory" commit' EXIT
+  "$CROW_ENGINE/bin/crow-accounts" require "$CROW_ACCOUNT"
+  [[ "$dir" == "$CROW_HOME" ]] && "$CROW_ENGINE/bin/crow-accounts" hub-session "$CROW_ACCOUNT"
+  if [[ "$("$CROW_ENGINE/bin/crow-accounts" memory "$CROW_ACCOUNT")" == session ]]; then
+    "$CROW_ENGINE/bin/crow-memory" link "$CROW_ACCOUNT"
+    trap '"$CROW_ENGINE/bin/crow-memory" unlink "$CROW_ACCOUNT"; "$CROW_ENGINE/bin/crow-memory" commit' EXIT
     "${run[@]}" "$CROW_ACCOUNT" --dir "$dir" "$@"
   else
     exec "${run[@]}" "$CROW_ACCOUNT" --dir "$dir" "$@"
@@ -100,7 +112,7 @@ PYEOF
 # The scope (registry scope of the project, `hub` for the hub) routes by the ranks in accounts.yaml.
 pick_account() {
   [[ -n "$CROW_ACCOUNT_GIVEN" ]] && return 0
-  CROW_ACCOUNT="$("$CROW_HOME/bin/crow-accounts" pick --on-busy "$on_busy" ${1:+--scope "$1"})" || exit 1
+  CROW_ACCOUNT="$("$CROW_ENGINE/bin/crow-accounts" pick --on-busy "$on_busy" ${1:+--scope "$1"})" || exit 1
   CROW_ACCOUNT_GIVEN="$CROW_ACCOUNT"
 }
 
@@ -122,19 +134,19 @@ launch_opts() {
 # oneshot <skill> [args]: run a hub skill on the account's provider.
 oneshot() {
   local prompt out
-  "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
-  prompt=$("$CROW_HOME/bin/crow-accounts" prompt "$CROW_ACCOUNT" "$@")
+  "$CROW_ENGINE/bin/crow-accounts" require "$CROW_ACCOUNT"
+  prompt=$("$CROW_ENGINE/bin/crow-accounts" prompt "$CROW_ACCOUNT" "$@")
   # Headless flags and env (crow_lib.run_flags): one line of `env` arguments (-u for each credential variable the
   # run must not inherit, crow_lib.sandbox_env, then KEY=VALUE pairs), then one argument per line.
   local spec env=() flags=() line
   spec=$(python3 -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import crow_lib as c
 f, e = c.run_flags("oneshot", c.provider_of(sys.argv[2]))
 drop = c.sandbox_env(dict(os.environ), "oneshot")[1]
-print(" ".join([f"-u {n}" for n in drop] + [f"{k}={v}" for k, v in e.items()])); print("\n".join(f))' "$CROW_HOME/bin" "$CROW_ACCOUNT")
+print(" ".join([f"-u {n}" for n in drop] + [f"{k}={v}" for k, v in e.items()])); print("\n".join(f))' "$CROW_ENGINE/bin" "$CROW_ACCOUNT")
   read -r -a env <<<"$(head -1 <<<"$spec")"
   while IFS= read -r line; do [[ -n "$line" ]] && flags+=("$line"); done < <(tail -n +2 <<<"$spec")
   out=$(env "${env[@]}" cdx run "$CROW_ACCOUNT" --cwd "$CROW_HOME" --prompt "$prompt" "${flags[@]}" \
-        --permission "$("$CROW_HOME/bin/crow-accounts" permission "$CROW_ACCOUNT")" --json)
+        --permission "$("$CROW_ENGINE/bin/crow-accounts" permission "$CROW_ACCOUNT")" --json)
   local ok stdout_path
   ok=$(jq -r '.ok' <<<"$out")
   stdout_path=$(jq -r '.stdout_path' <<<"$out")
@@ -144,7 +156,7 @@ print(" ".join([f"-u {n}" for n in drop] + [f"{k}={v}" for k, v in e.items()]));
   fi
   # cdx stores the provider's raw output; print only the final Markdown message.
   local text
-  text=$("$CROW_HOME/bin/crow-runs" final "$stdout_path" "$(jq -r '.provider // "claude"' <<<"$out")")
+  text=$("$CROW_ENGINE/bin/crow-runs" final "$stdout_path" "$(jq -r '.provider // "claude"' <<<"$out")")
   if [[ -t 1 ]] && command -v bat >/dev/null; then
     bat --language md --style plain --paging never <<<"$text"
   else
@@ -160,7 +172,7 @@ cmd="${1:-hub}"
 shift || true
 case "$cmd" in
   hub)      # With ranks in accounts.yaml the hub is routed like any scope; otherwise the default account.
-            if [[ -z "$CROW_ACCOUNT_GIVEN" ]] && "$CROW_HOME/bin/crow-accounts" scoped 2>/dev/null; then pick_account hub; fi
+            if [[ -z "$CROW_ACCOUNT_GIVEN" ]] && "$CROW_ENGINE/bin/crow-accounts" scoped 2>/dev/null; then pick_account hub; fi
             launch "$CROW_HOME" ;;
   brief)    oneshot brief ;;
   daily)    oneshot daily "Draft only: write the draft where the skill says and print it. Do not post anything." ;;
@@ -177,56 +189,56 @@ case "$cmd" in
             launch_opts "$@"; shift "$n"
             dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt | --task T --end-state E]}")"
             pick_account "$(project_scope "$1")"
-            line=$(python3 "$CROW_HOME/bin/crow_term.py" open --title "crow · $1 · $CROW_ACCOUNT" --set CROW_ACCOUNT="$CROW_ACCOUNT" \
-                   -- "$CROW_HOME/bin/crow" open ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$@")
+            line=$(python3 "$CROW_ENGINE/bin/crow_term.py" open --title "crow · $1 · $CROW_ACCOUNT" --set CROW_ACCOUNT="$CROW_ACCOUNT" \
+                   -- "$CROW_ENGINE/bin/crow" open ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$@")
             if [[ -n "$line" ]]; then
               echo "crow: no terminal backend (CROW_TERMINAL=kitty|tmux); run this in a new terminal:" >&2
               printf '%s\n' "$line"
             else
               echo "crow: $1 opened on $CROW_ACCOUNT" >&2
             fi ;;
-  work)     exec "$CROW_HOME/bin/crow-project" work "$@" ;;
+  work)     exec "$CROW_ENGINE/bin/crow-project" work "$@" ;;
   handoff)  # Pick before writing the note: a refusal leaves no orphan note.
             pick_account "$(project_scope "$1")"
-            task="$("$CROW_HOME/bin/crow-project" handoff --for-cdx "$@")"
+            task="$("$CROW_ENGINE/bin/crow-project" handoff --for-cdx "$@")"
             end=""; prev=""; for a in "$@"; do [[ "$prev" == --end-state ]] && end="$a"; [[ "$a" == --end-state=* ]] && end="${a#--end-state=}"; prev="$a"; done
-            CROW_ACCOUNT="$CROW_ACCOUNT" CROW_ACCOUNT_PICKED=1 exec "$CROW_HOME/bin/crow" term "$1" --task "$task" --end-state "$end" ;;
+            CROW_ACCOUNT="$CROW_ACCOUNT" CROW_ACCOUNT_PICKED=1 exec "$CROW_ENGINE/bin/crow" term "$1" --task "$task" --end-state "$end" ;;
   ls)       python3 -c "
 import yaml
 for p in yaml.safe_load(open('$REGISTRY'))['projects']:
     print(f\"{p['name']:<30} {p['scope']:<9} {p['status']:<9} {p['path']}\")" ;;
   runs)     case "${1:-}" in
-              sessions) shift; exec "$CROW_HOME/bin/crow-sessions" "$@" ;;
-              relaunch) shift; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
-              stop)     shift; exec "$CROW_HOME/bin/crow-runs" stop "$@" ;;
-              *)        exec "$CROW_HOME/bin/crow-runs" list "$@" ;;
+              sessions) shift; exec "$CROW_ENGINE/bin/crow-sessions" "$@" ;;
+              relaunch) shift; exec "$CROW_ENGINE/bin/crow-relaunch" "$@" ;;
+              stop)     shift; exec "$CROW_ENGINE/bin/crow-runs" stop "$@" ;;
+              *)        exec "$CROW_ENGINE/bin/crow-runs" list "$@" ;;
             esac ;;
-  rescue)   exec "$CROW_HOME/bin/crow-relaunch" rescue "$@" ;;
-  dispatch) exec "$CROW_HOME/bin/crow-runs" dispatch "$@" ;;
-  json)     exec "$CROW_HOME/bin/crow-runs" json "$@" ;;
-  report)   exec "$CROW_HOME/bin/crow-runs" report "$@" ;;
-  watch)    exec "$CROW_HOME/bin/crow" deck "$@" ;;   # alias of the deck (req_007)
+  rescue)   exec "$CROW_ENGINE/bin/crow-relaunch" rescue "$@" ;;
+  dispatch) exec "$CROW_ENGINE/bin/crow-runs" dispatch "$@" ;;
+  json)     exec "$CROW_ENGINE/bin/crow-runs" json "$@" ;;
+  report)   exec "$CROW_ENGINE/bin/crow-runs" report "$@" ;;
+  watch)    exec "$CROW_ENGINE/bin/crow" deck "$@" ;;   # alias of the deck (req_007)
   deck)     # the control room (skeleton): rebuild when its source is newer than the binary
-            src="$CROW_HOME/tools/crow-deck"; bin="$src/crow-deck"
+            src="$CROW_ENGINE/tools/crow-deck"; bin="$src/crow-deck"
             if [[ ! -x "$bin" || -n "$(find "$src" -name '*.go' -newer "$bin" -o -name go.mod -newer "$bin")" ]]; then
               (cd "$src" && go build -o crow-deck .) || exit 1
             fi
             exec "$bin" "$@" ;;
-  focus)    exec "$CROW_HOME/bin/crow-focus" "$@" ;;
-  sessions) hint "crow sessions" "crow runs sessions"; exec "$CROW_HOME/bin/crow-sessions" "$@" ;;
-  relaunch) hint "crow relaunch" "crow runs relaunch"; exec "$CROW_HOME/bin/crow-relaunch" "$@" ;;
-  usage)    exec "$CROW_HOME/bin/crow-usage" "$@" ;;
-  activity) exec "$CROW_HOME/bin/crow-activity" "$@" ;;
-note) exec "$CROW_HOME/bin/crow-note" "$@" ;;
-notes) exec "$CROW_HOME/bin/crow-notes" "$@" ;;
-  projects) exec "$CROW_HOME/bin/crow-releases" "$@" ;;
-  releases) hint "crow releases" "crow projects"; exec "$CROW_HOME/bin/crow-releases" "$@" ;;
+  focus)    exec "$CROW_ENGINE/bin/crow-focus" "$@" ;;
+  sessions) hint "crow sessions" "crow runs sessions"; exec "$CROW_ENGINE/bin/crow-sessions" "$@" ;;
+  relaunch) hint "crow relaunch" "crow runs relaunch"; exec "$CROW_ENGINE/bin/crow-relaunch" "$@" ;;
+  usage)    exec "$CROW_ENGINE/bin/crow-usage" "$@" ;;
+  activity) exec "$CROW_ENGINE/bin/crow-activity" "$@" ;;
+note) exec "$CROW_ENGINE/bin/crow-note" "$@" ;;
+notes) exec "$CROW_ENGINE/bin/crow-notes" "$@" ;;
+  projects) exec "$CROW_ENGINE/bin/crow-releases" "$@" ;;
+  releases) hint "crow releases" "crow projects"; exec "$CROW_ENGINE/bin/crow-releases" "$@" ;;
   release)  case "${1:-}" in
-              propose) shift; exec "$CROW_HOME/bin/crow-release-propose" "$@" ;;
+              propose) shift; exec "$CROW_ENGINE/bin/crow-release-propose" "$@" ;;
               *) echo "usage: crow release propose [--json]" >&2; exit 1 ;;
             esac ;;
-  doctor)   exec "$CROW_HOME/bin/crow-doctor" "$@" ;;
-  secret)   exec "$CROW_HOME/bin/crow-secret" "$@" ;;
+  doctor)   exec "$CROW_ENGINE/bin/crow-doctor" "$@" ;;
+  secret)   exec "$CROW_ENGINE/bin/crow-secret" "$@" ;;
   -h|--help|help) sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;
   *)        echo "crow: unknown command '$cmd' (crow help)" >&2; exit 1 ;;
 esac

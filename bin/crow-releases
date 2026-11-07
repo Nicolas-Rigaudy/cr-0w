@@ -15,7 +15,9 @@ import sys
 
 import yaml
 
-CROW_HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+CROW_HOME = crow_lib.data_home()
 REGISTRY = os.path.join(CROW_HOME, "local", "projects.yaml")
 MILESTONE = re.compile(r"^## (\d+(?:\.\d+)*)\s+-\s+(.+?)\s*$")
 

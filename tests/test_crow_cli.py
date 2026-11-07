@@ -30,4 +30,4 @@ def test_new_names_print_no_hint(hub):
 def test_watch_is_an_alias_of_the_deck(hub):
     import pathlib
     text = (pathlib.Path(__file__).parent.parent / "bin/crow").read_text()
-    assert 'watch)    exec "$CROW_HOME/bin/crow" deck "$@"' in text
+    assert 'watch)    exec "$CROW_ENGINE/bin/crow" deck "$@"' in text

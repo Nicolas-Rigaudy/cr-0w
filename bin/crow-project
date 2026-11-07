@@ -20,7 +20,9 @@ from pathlib import Path
 
 import yaml
 
-HOME = Path(os.environ.get("CROW_HOME") or Path(__file__).resolve().parent.parent)
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+HOME = Path(crow_lib.data_home())
 REG = yaml.safe_load(open(HOME / "local/projects.yaml"))
 STATE = Path(REG.get("vault", {}).get("crow_dir") or HOME / "local/state")
 

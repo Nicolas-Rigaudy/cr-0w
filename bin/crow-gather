@@ -24,7 +24,8 @@ from crow_vault import INBOX, WORK, daily_path, vault_path  # noqa: E402
 import yaml  # noqa: E402
 
 BIN = Path(__file__).resolve().parent
-ROOT = Path(os.environ.get("CROW_HOME") or BIN.parent)
+import crow_lib  # noqa: E402
+ROOT = Path(crow_lib.data_home())
 LOCAL = ROOT / "local"
 # AC: the JSON stays under 15k tokens. ~3.5 chars per token for this mixed EN/FR text.
 BUDGET_CHARS = int(os.environ.get("CROW_GATHER_BUDGET", "50000"))

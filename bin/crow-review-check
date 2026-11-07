@@ -12,7 +12,9 @@ the run and the repo's own file (if any) is put back afterwards. Exit 1 when a r
 import json, os, shutil, subprocess, sys
 from pathlib import Path
 
-HOME = Path(os.environ.get("CROW_HOME") or Path(__file__).resolve().parent.parent)
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+HOME = Path(crow_lib.data_home())
 
 
 def git(repo, *args):

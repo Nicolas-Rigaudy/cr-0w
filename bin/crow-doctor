@@ -145,7 +145,7 @@ def profiles(acc):
         return check("profiles", "ok", "no account data")
     sys.path.insert(0, HERE)
     import crow_lib
-    home = os.environ.get("CROW_HOME") or os.path.dirname(HERE)
+    home = crow_lib.data_home()
     root = crow_lib.profiles_dir()
     names = [a["name"] for a in acc["accounts"] if a["policy"] == "use" and a["memory"] == "permanent"
              and provider(a["name"]) == "claude"

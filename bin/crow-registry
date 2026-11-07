@@ -23,7 +23,9 @@ from pathlib import Path
 
 import yaml
 
-HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+HOME = crow_lib.data_home()
 
 
 def git(path, *args):

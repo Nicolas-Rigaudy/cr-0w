@@ -86,7 +86,7 @@ except ImportError:
     except ImportError:
         estimate_cost = token_prices = None
 
-CROW_HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+CROW_HOME = crow_lib.data_home()
 STATE = os.path.join(CROW_HOME, "local", "state")
 CACHE = os.path.join(STATE, "usage-cache.json")
 TITLES = os.path.join(STATE, "session-titles.json")

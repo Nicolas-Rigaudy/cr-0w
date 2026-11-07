@@ -12,6 +12,21 @@ def real_home():
     return pwd.getpwuid(os.getuid()).pw_dir
 
 
+ENGINE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+
+def data_home(env=None):
+    """Owner data root (holds local/): CROW_HOME, else the checkout when it has local/,
+    else $XDG_CONFIG_HOME/crow (default ~/.config/crow)."""
+    env = os.environ if env is None else env
+    if env.get("CROW_HOME"):
+        return env["CROW_HOME"]
+    if os.path.isdir(os.path.join(ENGINE, "local")):
+        return ENGINE
+    xdg = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME") or real_home(), ".config")
+    return os.path.join(xdg, "crow")
+
+
 def profiles_dir(env=None):
     """cdx profiles dir: CDX_PROFILES, else CDX_HOME/profiles, else ~/.cdx/profiles."""
     env = os.environ if env is None else env

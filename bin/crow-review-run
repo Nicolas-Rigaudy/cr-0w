@@ -36,7 +36,9 @@ from urllib.parse import quote
 import yaml
 
 BIN = Path(os.path.dirname(os.path.realpath(__file__)))
-HOME = Path(os.environ.get("CROW_HOME") or BIN.parent)
+sys.path.insert(0, str(BIN))
+import crow_lib  # noqa: E402
+HOME = Path(crow_lib.data_home())
 
 SCHEMA = 1
 SEVERITIES = ("blocking", "suggestion", "nit", "question")

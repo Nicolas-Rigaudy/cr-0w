@@ -15,7 +15,7 @@ import os, shutil, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_lib  # noqa: E402
 
-HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+HOME = crow_lib.data_home()
 STORE = os.path.join(HOME, "local", "memory")
 PROFILES = crow_lib.profiles_dir()
 
@@ -25,7 +25,7 @@ def projects_dir(account):
 
 
 def policy(account):
-    out = subprocess.run([os.path.join(HOME, "bin", "crow-accounts"), "policy", account],
+    out = subprocess.run([os.path.join(crow_lib.ENGINE, "bin", "crow-accounts"), "policy", account],
                          capture_output=True, text=True).stdout.strip()
     return out or "never"
 
