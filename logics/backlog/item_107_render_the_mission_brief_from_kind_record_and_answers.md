@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:50
 
 # AI Context
 - Summary: core writes `brief.md` from the kind file, the mission record, the owner prefs and every answers file, following the spec template.
@@ -52,7 +53,7 @@
 
 # Notes
 - Depends on item_104, item_106 and the core mission record (req_028, adr_001).
-- Code home waits on the backend choice (req_031) or decision D6.
+- Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
 
 # Executions

@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Safety
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:49
 
 # AI Context
 - Summary: core merges a personal mission branch only after the req_030 checklist: pause off, rebase clean, commit subjects, secret scan over the range, sensitive paths ask, size limit, full-suite receipt, green CI, then deploy hook.
@@ -24,15 +25,16 @@
   - Global sensitive path list in core plus per-repo globs in the registry.
   - Full-suite receipt `{sha, command, exit, duration}` from a fresh isolated workspace with network off.
   - Secret scan over merge base..head with the prepush deny list plus a scanner.
+  - Size limit: 400 changed lines and 20 files (owner decision 2026-11-07). Tune from the first month.
   - Test on one personal repo end to end.
 - Out:
-  - Choosing the scanner and the size limit (decisions 5 and the scanner question).
+  - Choosing the scanner (open question).
 
 # Acceptance criteria
 - AC1: A branch touching a sensitive path asks instead of merging.
 - AC2: A planted fake secret in the range blocks the merge.
 - AC3: A push to the default branch without a receipt for the head SHA is refused.
-- AC4: A diff above the limit asks instead of merging.
+- AC4: A diff above 400 lines or 20 files asks instead of merging.
 - AC5: One personal repo merges a clean mission branch through the gate and logs `publish`.
 
 # AC Traceability
@@ -60,4 +62,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:49
 
 # AI Context
 - Summary: Align crow's pick with the cdx ranking (usability, then cdx `--priority`, then room), then add per-scope ranks and room thresholds from local/accounts.yaml so `crow-accounts pick --scope` and every caller route by them.
@@ -67,10 +68,10 @@
 
 # Notes
 - Start from `crow_lib.pick_accounts` and `launch_pick`. New key: (policy != use, usability class, scope rank, not auto_ok, -cdx priority, -room).
+- Owner decision 2026-11-07: the 40% room floor of the work account on personal scope stays.
 - cdx priorities already set 2026-11-06: work-priority account 80, personal-priority 60, shared 20 (names in local/context.md). They only rank inside a usability class.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-06T19:47:47.173034+00:00 | afk | afk-2026-11-06-scope | scope-aware account pick | succeeded |  | commit fdf998b |
-

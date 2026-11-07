@@ -7,6 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Research spike. Pick the butler engine and define its tools, context rules, persona and surfaces. One scope-aware butler with a focus mode; full character persona; reachable from nest, the deck pane, voice, one chat bot and the Android assistant.
@@ -29,6 +30,7 @@
 
 # Context
 - Owner decisions 2026-11-06: one butler, scope-aware, focus mode, full persona, all listed surfaces.
+- Owner decisions 2026-11-07: see "Decisions" below.
 - Ultron dropped Discord and Telegram; Jarvis kept Discord only. One bot channel is enough.
 - Owner 2026-11-06: Discord chosen (no Telegram account). The butler reaches core through the core MCP server (adr_001). Built after core.
 
@@ -91,17 +93,19 @@ See `logics/specs/req_032_butler/README.md`. Summary: 11 core MCP tools in three
 ## Persona (Need 5)
 Skeleton and three candidates written as sample replies to the same three questions: `logics/specs/req_032_butler/persona.template.md`. Owner choice (AC3).
 
-## Open decisions (for the owner)
-1. Engine: A (recommended), C now, A now with C as a later swap, or B.
-2. Process routing: `work` and `both` turns on the work-allowed account, personal-only turns on the personal account (recommended); or one process per surface; or a single process on one account with core filtering.
-3. Butler model: Sonnet (recommended), Haiku for every turn, or Haiku on phone and voice with Sonnet elsewhere.
-4. Persona: A Steward, B Ship AI, C Familiar, or a mix. Name, address form and sounds with it.
-5. Persona at work: full, light (same structure, no tics), or neutral while in work focus.
+## Decisions (owner, 2026-11-07)
+1. **Engine.** A long-lived `claude -p` process in stream-json mode now, behind a thin bridge. The Agent SDK later.
+2. **Process routing.** Split by data scope. `work` and `both` turns run on a work-allowed account. `personal` turns and Discord run on the personal account.
+3. **Butler model.** Sonnet everywhere.
+4. **Persona.** A Steward base with a droid flavour (C-3PO-like: formal, fussy, polite, a little anxious). Written up in item_118.
+5. **Persona at work.** Neutral while work focus is on.
+
+Still open (owner): the persona name and the address form.
 
 # Acceptance criteria
 - AC1: An engine comparison with measured cost and latency for 10 scripted questions.
 - AC2: A tool list with input, output and preview rules.
-- AC3: A persona file draft the owner approves.
+- AC3: A persona file draft the owner approves (Steward base with a droid flavour, item_118; name and address form still open).
 - AC4: A prototype answering "what waits on me" and dispatching a research mission from nest and the bot.
 
 # Definition of Ready (DoR)
@@ -120,7 +124,7 @@ Skeleton and three candidates written as sample replies to the same three questi
 - `logics/request/req_027_conversations_feed_for_core_deck_nest.md`
 
 # Backlog
-- none
+- `item_118_butler_persona_file_steward_with_a_droid_flavour`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

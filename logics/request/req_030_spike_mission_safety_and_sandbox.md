@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-06 21:04:50
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Research spike. Pick the layered safety model for unattended missions from the two colleague designs and current Claude Code features: guard hook and validation records (Ultron), OS sandbox with egress rules and an engine that holds every key (Jarvis), native sandbox and permission modes, item_077 deny-by-default runs. Define the personal auto-merge gate.
@@ -29,6 +29,7 @@
 
 # Context
 - Owner decision 2026-11-06: research what is doable and recommended, steal from both.
+- Owner decisions 2026-11-07: see "Decisions" below (network, commits, resume, passt, size limit, take-control commits).
 - Memory: scrub-env broke headless runs until `--allowedTools` and socat; MCP inside sandboxes untested.
 - Builds on req_019 / item_077 and adr_001 (engine holds the keys).
 
@@ -128,7 +129,7 @@ core runs these in order on a mission branch and stops at the first failure, whi
 3. Commit range = merge base..head. Every subject passes `crow-commit-msg-check`.
 4. Secret scan over the range: the `crow-prepush-check` deny list plus a secret scanner (gitleaks over the range when installed). GitHub push protection (default on for public repos of user accounts) is the server-side backstop, not the gate.
 5. Sensitive paths always ask: CI workflows, sandbox and egress config, systemd units, kind and policy files, the merge gate itself, `.claude/` settings and hooks, `.mcp.json`, env files, git hooks and deny lists. Global list in core, extra globs per repo in the registry.
-6. Diff size limit; above it the mission asks instead of merging (limits are a decision below).
+6. Diff size limit: 400 changed lines and 20 files (owner decision 2026-11-07). Above either, the mission asks instead of merging. Tune from the first month.
 7. Full-suite receipt: core runs the registry's test command on the exact head SHA in a fresh isolated workspace with network off, and stores `{sha, command, exit, duration}`. A push to the default branch without a receipt for that SHA is refused.
 8. Green CI on the head SHA when the repo has CI (`gh pr checks`); a repo without CI relies on the receipt.
 9. core merges (squash through the forge, or fast-forward push when the repo has no PR flow) and logs `publish`.
@@ -144,20 +145,20 @@ core runs these in order on a mission branch and stops at the first failure, whi
 - Isolated runs are headless (`claude -p` inside bwrap): there is no terminal to attach to. "Take control" therefore means: core stops the run, the mission enters a `manual` sub-state, and the owner gets an interactive session in the same worktree (the `crow open` / `handoff` path), outside the sandbox under the owner's own permission mode.
 - core logs `manual_gesture` events at start and end with the worktree head before and after. Commits made in that window are tagged as owner work in the mission history.
 - Returning the mission to auto starts a fresh isolated run with the brief and the owner's notes (the RESUME NOTE pattern), since `--continue-run` cannot be isolated.
-- Open: whether owner commits made in take-control still pass the personal gate (decision below).
+- Owner decision 2026-11-07: owner commits made in take-control still pass the personal gate. Sensitive paths ask as usual.
 
-## Open decisions (for the owner)
-1. **Network for build missions.** Inference-only egress (needs a cdx change for local runs), public internet minus LAN (cdx today), or network off with a host-side dependency cache. Recommendation: public minus LAN now, inference-only later for work-scope runs.
-2. **Who commits in isolated runs.** core commits the worktree diff after the run (cdx as is), or ask cdx for an opt-in writable git index. Recommendation: core commits; it already owns publishing and the message check.
-3. **Resume of isolated missions.** Fresh isolated run from brief + answers, or ask cdx to allow `--continue-run` with isolation. Recommendation: fresh run now; raise the cdx ask only if resume quality suffers.
-4. **Install pasta (passt).** Needed for any online isolated run. A system package the owner installs. Recommendation: install it, then rerun the probe with pasta.
-5. **Diff size limit for auto-merge.** 200, 400 or 800 changed lines (and a file count). Recommendation: 400 lines, 20 files, tune from the first month.
-6. **Take-control commits and the gate.** Gate still runs on owner commits, or owner commits merge as manual work. Recommendation: the gate still runs; sensitive paths then ask as usual.
+## Decisions (owner, 2026-11-07)
+1. **Network for build missions.** Public internet minus LAN (cdx today). Inference-only egress stays a later option for work-scope runs.
+2. **Who commits in isolated runs.** core commits the worktree diff after the run.
+3. **Resume of isolated missions.** Both. A fresh isolated run from the brief and the files is the guaranteed path (needed anyway when a mission moves account). A cdx issue asks for native resume of isolated runs as a same-account optimisation (item_116). The owner OK'd an issue in principle; the exact text is shown before posting.
+4. **Install pasta (passt).** The owner installs it (`sudo pacman -S passt`), then the safety probe is rerun. Waiting on this: item_100 and AC3 below.
+5. **Diff size limit for auto-merge.** 400 lines and 20 files.
+6. **Take-control commits and the gate.** The gate still runs on owner commits (item_103).
 
 # Acceptance criteria
 - AC1: A threat × option table with a verdict per cell.
 - AC2: A recommended design split into run config, cdx, core and OS, with credential ownership.
-- AC3: A prototype run proves an agent cannot push, read the owner's credentials or reach the LAN, while core publishes its branch.
+- AC3: A prototype run proves an agent cannot push, read the owner's credentials or reach the LAN, while core publishes its branch. Blocked until the owner installs passt (decision 4); the probe is rerun with pasta.
 - AC4: The auto-merge gate written as a checklist core can run, tested on one personal repo.
 
 # Definition of Ready (DoR)
@@ -181,6 +182,7 @@ core runs these in order on a mission branch and stops at the first failure, whi
 - Mission guard hook for runs that cannot be isolated: `item_102_mission_guard_hook_for_runs_that_cannot_be_isolated` (Draft)
 - Take control of a mission as a logged manual gesture: `item_103_take_control_of_a_mission_as_a_logged_manual_gesture` (Draft)
 - Deny-by-default background runs: `item_077` stays the run-config layer, unchanged by this spike.
+- `item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

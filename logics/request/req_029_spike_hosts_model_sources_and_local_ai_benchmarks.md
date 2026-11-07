@@ -7,7 +7,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-06 18:12:01
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Research spike. Decide where core and missions run, what each of the owner's three machines can serve, which model sources to use for what (Claude accounts, Antigravity on Gmail accounts, local Ollama), and how quota is probed. Includes local AI benchmarks on laptop, tower and homelab.
@@ -29,6 +29,7 @@
 
 # Context
 - Folded in 2026-11-06: req_023 (scheduled jobs that survive the lid closed and offline). The control host choice answers it.
+- Owner decisions 2026-11-07: D1 to D6 of the spec settled (laptop control host now, homelab later; tower is also a Claude mission host, run records gathered from both; no Wake-on-LAN yet; private-data benchmarks first; one Antigravity account after a quota measurement; direct Ollama HTTP over tailscale).
 - Owner decisions 2026-11-06: laptop first, homelab later if it pays, tower idle only; Claude for anything that matters and all work data; Antigravity on Gmail accounts after a terms check; local after benchmarks.
 - cdx already has profiles with policy (`use`, `ask-first`, `never`), priority and budget; req_025 routes by scope.
 - Jarvis used Codex first, Claude second, Ollama for private and bulk; Ultron used 3 Claude accounts only.
@@ -43,9 +44,9 @@ Spec: `logics/specs/req_029_hosts/README.md` (answers, router table, decisions D
 - Needs env: Need 3 benchmarks on three machines, the tower's OS and GPU, `agy` login for the free-quota measurement.
 
 # Acceptance criteria
-- AC1: A host recommendation (control host now and later, tower rules) with the measured gain and cost.
+- AC1: A host recommendation (control host now and later, tower rules) with the measured gain and cost. Two mission hosts, laptop and tower; run records are gathered from both (item_120).
 - AC2: A benchmark table for 3 machines × chosen models × 5 tasks, with a go or no-go per task.
-- AC3: A written terms check for Antigravity on several Gmail accounts and a decision on how many to use.
+- AC3: A written terms check for Antigravity on several Gmail accounts and a decision on how many to use. Decided 2026-11-07: one account, after measuring the free weekly quota (item_121).
 - AC4: A probe script returning room per account for Claude and, if possible, Antigravity.
 - AC5: A router table ready to paste into core config.
 
@@ -66,7 +67,8 @@ Spec: `logics/specs/req_029_hosts/README.md` (answers, router table, decisions D
 - `logics/request/req_025_account_routing_by_scope.md`
 
 # Backlog
-- none
+- `item_120_tower_as_a_mission_host_for_claude_missions`
+- `item_121_antigravity_weekly_quota_measurement_for_one_overflow_account`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

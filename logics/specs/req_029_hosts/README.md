@@ -81,7 +81,7 @@ Yield when a signal flips back:
 Wake-on-LAN:
 - Mechanism: `ethtool -s <iface> wol g` enables the magic packet; `ethtool` options are listed in its [man page](https://man.archlinux.org/man/ethtool.8), read 2026-11-07, which does not say if the setting survives reboot (persist with a NetworkManager or systemd `.link` setting; not checked). BIOS must allow wake from the soft-off state. Wired only in practice.
 - A magic packet is a link-layer broadcast. Something on the tower's LAN must send it: the homelab (always on) or the router.
-- Recommendation: no wake-on-LAN in v1. The tower takes work only when already on and idle. Add WoL when the homelab exists and scheduled night jobs want the tower. Decision D3.
+- Owner decision 2026-11-07: no wake-on-LAN in v1 (later, not a priority). The tower takes work only when already on and idle. Add WoL when the homelab exists and scheduled night jobs want the tower. Decision D3.
 
 ## 5. Antigravity and Google free usage
 
@@ -153,35 +153,18 @@ Rules:
 - A data class is set by the source, not the kind (roadmap review).
 - A failed row falls to the next only if the next allows the same class.
 
-## Decisions
+## Decisions (owner, 2026-11-07)
 
-D1 Control host. Context: lid-closed jobs need an always-on box; cdx already runs remote workers.
-- A. Laptop only. No new parts. Misses lid-closed jobs, mitigated by AC power and inhibit suspend.
-- B. Laptop now, homelab later when the gaps are counted. Keeps paths movable. Recommended.
-- C. Homelab control now. Store move and secrets on a low-RAM box before slice 1 proves the loop.
+D1 Control host. Laptop now, homelab later when the gaps are counted (B). Keep config paths host-independent.
 
-D2 Tower scope. Context: the tower helps little for Claude missions.
-- A. Local inference and builds only, short restartable jobs. Recommended.
-- B. Also Claude missions. Needs remote `--continue-run` in cdx first.
-- C. Skip the tower.
+D2 Tower scope. Also Claude missions (B). The tower needs cdx config, accounts and worktrees, and run records are gathered from two hosts (item_120). Remote `--continue-run` is unsupported in cdx 0.26.6, so a resume on the tower is a cold run.
 
-D3 Wake-on-LAN.
-- A. None in v1. Recommended.
-- B. WoL from the homelab for scheduled night jobs. Needs the homelab and a BIOS check.
-- C. Tower always on. Power cost and noise.
+D3 Wake-on-LAN. Later, not a priority, none in v1. A magic packet from the homelab once it exists. Open point.
 
-D4 Which tasks to benchmark first.
-- A. Private-data tasks (bank, mail triage, weekly review, memo) on all machines; others later. Recommended.
-- B. All five tasks everywhere. More runs, little added value for cost.
-- C. Skip local; use Haiku for private data with an owner exception. Contradicts the settled rule.
+D4 Benchmarks first. Private-data tasks (A).
 
-D5 Antigravity use.
-- A. One account, overflow row for public personal code and public-text tasks, measure the weekly size first. Recommended.
-- B. Skip it; Haiku covers cheap text.
-- C. Several accounts. Reads as circumvention; the review settled against it.
+D5 Antigravity. One account as overflow after measuring the free weekly quota; public personal code and cheap text only (A, item_121).
 
-D6 Local call path.
-- A. Direct Ollama HTTP from core with a small adapter. Recommended.
-- B. Through cdx `--remote` Ollama profiles for run records and the relay. Adds ceremony for single text calls.
+D6 Local call path. Direct Ollama HTTP over tailscale (A).
 
 Needs env: the benchmark protocol on three machines; the tower's OS, GPU and VRAM; `agy` installed with one login for the Antigravity weekly-size measurement; personal mail and bank volumes.

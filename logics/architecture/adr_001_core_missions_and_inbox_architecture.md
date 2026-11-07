@@ -6,6 +6,7 @@
 > Related task: (none yet)
 > Drivers: hands-off work from nest and deck; park and resume without held sessions; one API for every surface; hard rules in one place; cheap to run on the laptop first.
 > Reminder: Update status, linked refs, decision rationale, consequences, and follow-up work when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:48
 
 # Flow
 ```mermaid
@@ -32,7 +33,7 @@ core is one always-on service. It owns missions, the inbox, the scheduler, the r
 - Ultron runs on one Mac: Node server, `node:sqlite`, launchd tick every 5 min, marker files per phase. Its lessons: schema first, one event log from day one, budget context early.
 - Jarvis runs on three hosts: Python stdlib server, JSON mission records, systemd timers, engine pushes and merges. Its lessons: core before UI, data contract before screens, cache from day one (mission views grew to 5 to 8 s).
 - cdx already gives `run --detach`, `--continue-run`, `--failover`, `select` and `conversation`. core builds on those and does not reimplement agent control.
-- Hosts, safety, backend language and butler engine are open (req_029 to req_032). This decision must hold whatever they pick.
+- Owner decisions 2026-11-07 settled the spikes: Go core plus Python sidecars (req_031), laptop and tower as mission hosts (req_029), long-lived `claude -p` butler engine (req_032), sandbox choices (req_030). This decision holds with them.
 
 # Decision
 ## One process
@@ -114,7 +115,7 @@ The answer is appended to the brief. core calls `cdx run --continue-run <run>`. 
 - Groom req_028 slices 1 to 3 against this decision, with req_037 first.
 - Today's `crow dispatch` records (item_074) are written as core-shaped events, so the store can import them on day one.
 - AFK batches (req_028 slice 10) and the news scout (req_039) run as core jobs.
-- Confirm store and backend language with req_031, publish path with req_030, hosts with req_029.
+- Backend language is decided (Go core, req_031). Confirm the store on the Go side, the publish path with req_030, hosts with req_029.
 
 # References
 - Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`

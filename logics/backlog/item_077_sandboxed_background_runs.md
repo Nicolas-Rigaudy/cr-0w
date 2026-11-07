@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:48
 
 # AI Context
 - Summary: Move crow background runs from auto mode (allowed unless blocked) to deny by default with a per-kind tool allowlist, scrubbed credentials and only declared MCP servers.
@@ -56,6 +57,7 @@
 - Rationale: background runs act unattended with full credentials today.
 
 # Notes
+- Blocked (owner decision 2026-11-07): the allowlists wait for cdx issue 120 (per-run `--extra-args`). AC1, AC3 and AC4 stay open until it ships.
 - Depends on the cdx-manager design check (item_015, 2026-11-03 follow-up). Prior proof: scrub-env on plus `--allowedTools` passed the probe on 2026-10-29 once socat was installed; MCP tools untested.
 
 # Progress 2026-11-07
@@ -71,4 +73,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 01:33:55
+> Indicators reviewed: 2026-11-07 11:21:50
 
 # AI Context
 - Summary: Give every kind a skill: reuse corpus, review, review-threads and implement-task, and fill the gaps for research, design, repair and generic write.
@@ -51,7 +51,7 @@
 - Rationale: Phase 1 kinds need it before their first mission.
 
 # Notes
-- Waits on D5.
+- D5 decided 2026-11-07: one skill per kind, each in its own phase (research and design first, repair and write later). Ready for phase 1.
 - Map in the spec README.
 
 # Executions

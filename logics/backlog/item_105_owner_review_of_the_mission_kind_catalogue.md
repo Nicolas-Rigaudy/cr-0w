@@ -8,6 +8,7 @@
 > Complexity: Low
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:49
 
 # AI Context
 - Summary: The owner reviews the 8 draft kind files (gates, autonomy, caps, models, publish, preflight) and settles where kind files live.
@@ -30,7 +31,7 @@
 
 # Acceptance criteria
 - AC1: The owner has reviewed all 8 kind files and every change is applied.
-- AC2: D1 is decided and req_028 slice 1 matches it.
+- AC2: D1 is decided (tracked files plus private overrides) and req_028 slice 1 matches it. Done 2026-11-07.
 
 # AC Traceability
 - request-AC1 -> AC1. Proof: owner review recorded in req_037.
@@ -50,7 +51,7 @@
 - Rationale: Every kind default waits on it.
 
 # Notes
-- Waits on the owner (review and D1).
+- Waits on the owner review of the 8 files. D1 is decided (2026-11-07): tracked kind files plus private overrides in `local/` (item_117); req_028 slice 1 is updated.
 - Spec: `logics/specs/req_037_run_contract/`.
 
 # Executions

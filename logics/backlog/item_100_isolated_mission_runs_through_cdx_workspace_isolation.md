@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Safety
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:49
 
 # AI Context
 - Summary: Mission runs start through cdx --isolate-workspace (bwrap, volatile home, read-only git, env allowlist, pasta + nftables egress) and core commits the worktree diff afterwards.
@@ -24,11 +25,12 @@
   - Add `--isolate-workspace` to the kinds that allow it in `RUN_KINDS`, read-only for review.
   - Preflight: pasta, nft and a setup token present, else refuse the isolated kind with a clear message.
   - core commits the worktree diff after the run with a checked message.
-  - Resume as a fresh isolated run from brief and answers.
+  - Resume as a fresh isolated run from brief and answers (item_116 adds the cdx issue for native resume).
   - A probe test: no credential files or env, no push, no LAN or tailnet, public inference reachable.
+  - Network: public internet minus LAN (owner decision 2026-11-07).
 - Out:
   - Installing pasta (owner, system package).
-  - Inference-only egress for local runs (cdx change, decision 1).
+  - Inference-only egress for local runs (cdx change, later).
 
 # Acceptance criteria
 - AC1: An isolated run cannot read forge config, ssh or cloud dirs, nor see token env vars.
@@ -55,11 +57,10 @@
 
 # Notes
 - Proposed by the req_030 spike (2026-11-06); Draft until the owner grooms it.
-- Blocked until the owner installs passt (decision 4).
+- Blocked until the owner installs passt (`sudo pacman -S passt`, owner decision 2026-11-07). Then rerun the safety probe with pasta.
 - Aligns with item_077: that item is the run-config layer, this one the OS layer.
-- Decisions 1 to 3 in req_030 shape the scope.
+- Decisions 2026-11-07 in req_030: public minus LAN, core commits the diff, fresh run from files for resume.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

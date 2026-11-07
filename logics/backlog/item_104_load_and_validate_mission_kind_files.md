@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 01:59:45
+> Indicators reviewed: 2026-11-07 11:21:49
 
 # AI Context
 - Summary: A stdlib validator for the JSON Schema subset the spec uses and a repo test that validates every spec file, so the spec stays valid while it is reviewed.
@@ -59,7 +59,7 @@
 - Spec: `logics/specs/req_037_run_contract/`.
 - A throwaway prototype of the validator passed on the spec files during grooming.
 - First item to build: it needs no owner answer.
-- Python because `bin/` and logics-manager are Python. A Go backend (req_031) ports the loader, the schemas stay.
+- Python because `bin/` and logics-manager are Python. The backend is a Go core (owner decision 2026-11-07), which ports the loader; the schemas stay and shared fixtures guard them (item_119).
 - Task `task_011_load_and_validate_mission_kind_files` was finished via `logics-manager flow finish task` on 2026-11-07.
 
 # Executions

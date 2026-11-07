@@ -7,7 +7,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-06 18:12:20
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Research spike. Pick the nest stack and app shape: React front end (owner decision), Go or Python backend, live update method, push mechanism, terminal attach, and PWA vs web app vs TWA or native shell on Android.
@@ -30,6 +30,7 @@
 
 # Context
 - Owner decisions 2026-11-06: React (work team stack, strong ecosystem); Go or Python backend; app shape by research.
+- Owner decisions 2026-11-07: see "Decisions" below. Backend is a Go core plus Python sidecars; live terminal AC3 rewritten.
 - Jarvis lessons: data contract before screens, cache from day one. Ultron lesson: one event log.
 - deck is Go and Bubble Tea; scripts and logics-manager are Python.
 
@@ -92,7 +93,7 @@ Probe: one ETag section endpoint and one SSE stream, stdlib only, 3 SSE clients 
 | Sharing | Would re-implement `crow_lib`, registry, kinds and policy, or exec the scripts like deck | Imports `crow_lib`, registry, kinds files and logics-manager directly |
 | Idle cost | Negligible | Negligible |
 
-Recommendation: Python core. The domain code it needs (kinds, accounts, registry, runs, Logics docs) is Python today and deck is a thin client of it. Performance is not a criterion at one owner (both probes idle near zero). Go keeps deck. Decision 1.
+Spike recommendation (overruled 2026-11-07, see Decisions): Python core. The domain code it needs (kinds, accounts, registry, runs, Logics docs) is Python today and deck is a thin client of it. Performance is not a criterion at one owner (both probes idle near zero). Go keeps deck. Decision 1.
 
 ## Need 3: front end
 - React 19 (19.3.0 latest, 2026-09-09) with Vite 8 (Rolldown bundler), TypeScript.
@@ -125,7 +126,7 @@ Recommendation: SSE for "section X changed, version N" only; the client refetche
 ## Need 6: live terminal
 - A running cdx run has no terminal to attach to (headless `--print`). The live view of a run is its transcript: core tails the JSONL for the run's session id and streams new entries over SSE, rendered as a timeline (text, tool calls, results). Same trace for isolated runs if cdx exposes it (req_030: isolated runs are headless too).
 - A real terminal exists only in take control. core stops the run, starts the interactive session in the mission worktree under a pty it owns (or tmux), and nest attaches with xterm.js 6.0 plus `@xterm/addon-attach` over a WebSocket. Read-only attach drops input server side. core records the pty output to the mission dir and logs `manual_gesture` at start and end (req_030 escape hatch).
-- AC3 asks for a terminal attach to a running cdx run; that object does not exist. Decision 4.
+- AC3 asked for a terminal attach to a running cdx run; that object does not exist. Owner decision 2026-11-07: AC3 is rewritten (see below).
 
 ## Need 7: app shape
 | | Installed PWA | TWA (Bubblewrap) | Native shell |
@@ -159,19 +160,19 @@ Recommendation: installed PWA first. TWA when req_033 extras are groomed and nee
 - Nothing public: no Funnel (Funnel traffic carries no identity headers).
 
 ## Recommended stack
-- core: Python, stdlib HTTP server (threaded), stdlib `sqlite3` store rebuilt from the JSONL event log, `cryptography` for Web Push, stdlib `pty` for take control, systemd user unit.
+- core: Go (owner decision 2026-11-07): HTTP/SSE, state, dispatch to laptop and tower, supervision, a module shared with crow-deck. Python sidecars for the AI pieces (butler/Agent SDK, STT, embeddings) over local JSON. The CLI stays Python. Shared fixtures guard the formats (item_119). The spike's Python core table above is superseded.
 - nest: React 19, Vite 8, TypeScript, URL routes, section queries over ETag with SSE invalidation, hand-made components over req_038 tokens, installed PWA with a service worker for push and share target.
 - Live: SSE invalidation, ETag refetch, 5 s polling fallback; WebSocket only for take control.
 - Terminal: transcript timeline for runs; xterm.js over a core-owned pty for take control.
 - Auth: `tailscale serve` identity header on a dedicated loopback port, unix socket for local clients, CSRF header and Origin check.
 - deck stays Go and reads core over the unix socket once core exists.
 
-## Open decisions (for the owner)
-1. **Backend language.** Python (shares `crow_lib`, registry, kinds, logics-manager; stdlib sqlite and pty) or Go (single binary, one language with deck, would re-implement or exec the Python domain code). Recommendation: Python.
-2. **Live updates.** SSE invalidation plus ETag refetch with polling fallback, polling with ETags only (simplest, Jarvis), or WebSocket for everything. Recommendation: SSE plus ETag with polling fallback.
-3. **Component kit.** Hand-made over req_038 tokens with headless primitives for sheets and palette, a headless library everywhere, or a styled kit themed to the tokens. Recommendation: hand-made plus headless primitives where needed.
-4. **Live terminal scope (AC3).** Rewrite AC3 as "live transcript timeline of a running run, plus a read-only xterm attach in take control", ask cdx for a pty-backed run mode, or trial an existing mobile client for live sessions first (the roadmap review lists one). Recommendation: rewrite AC3 as the first option.
-5. **App shape.** Installed PWA now, TWA later for req_033 widgets and tiles; TWA from day one; or PWA only and drop native extras. Recommendation: PWA now, TWA later.
+## Decisions (owner, 2026-11-07)
+1. **Backend language.** Go core (HTTP/SSE, state, dispatch to laptop and tower, supervision, a module shared with crow-deck) plus Python sidecars for the AI pieces (butler/Agent SDK, STT, embeddings) over local JSON. The CLI stays Python. Shared fixtures guard the formats (item_119). This overrules the spike recommendation of a Python core.
+2. **Live updates.** SSE hints plus ETag refetch, with a 5 s polling fallback. WebSocket only later if a live terminal needs it. A live terminal could also be plain SSH.
+3. **Component kit.** Hand-made components over the req_038 tokens, with headless primitives for sheets, palette and focus traps.
+4. **Live terminal scope (AC3).** Rewritten as a live transcript timeline from stream-json plus a read-only xterm in take control.
+5. **App shape.** Installed PWA now. A TWA wrapper later, when the req_033 widgets and tiles start.
 
 ## Hand checks for the owner (AC2 and Fold rows)
 - On the Fold 6 in Chrome: `Notification.maxActions`, one push with two buttons from a tailnet origin with the app closed, install result (app or shortcut), share target listed, two segments in Flex mode, no reload across fold and unfold. Samsung Internet: same segment and posture checks.
@@ -179,7 +180,7 @@ Recommendation: installed PWA first. TWA when req_033 extras are groomed and nee
 # Acceptance criteria
 - AC1: A comparison table for backend, live updates and app shape with a recommendation each.
 - AC2: A hello-world slice: core API section with ETag, a React page reading it, one Web Push with an action button received on the owner's Android phone over the tailnet.
-- AC3: A read-only terminal attach to a running cdx run in the browser.
+- AC3: A live transcript timeline of a running run built from stream-json, plus a read-only xterm attach in take control (rewritten by owner decision 2026-11-07; there is no terminal to attach to on a headless run).
 
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.
@@ -196,7 +197,7 @@ Recommendation: installed PWA first. TWA when req_033 extras are groomed and nee
 - `logics/request/req_020_terminal_design_system_and_design_review_workflow.md`
 
 # Backlog
-- none
+- `item_119_go_core_and_python_sidecar_contract_with_shared_fixtures`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

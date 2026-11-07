@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Management
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:48
 
 # AI Context
 - Summary: Every Home row carries an action spec: a default enter action plus shared keys (o open, enter session, x done, s snooze, d dismiss), with key hints in the footer.
@@ -23,7 +24,7 @@
   - Row type gains `Actions` (kind, label, command). Sources fill it: MR rows open the MR, review rows start the review session, check rows run the suggested action, Today mail rows follow item_062.
   - One dispatcher in main.go maps keys to the row's actions; missing actions are hidden in the footer.
   - Session actions reuse the `crow handoff` launcher with a prompt built from the row.
-  - Done, snooze and dismiss write through the source's own command (crow-checks, crow-today).
+  - Done, snooze and dismiss write through the source's own command (crow-checks, crow-today). Home thread snooze writes the open-threads marker (item_114, owner decision 2026-11-07).
 - Out:
   - Mouse.
   - Outward actions without a draft step (065 owns invites).

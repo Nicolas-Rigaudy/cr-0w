@@ -106,7 +106,7 @@ Sections, in order: Goal, Mission, Owner preferences, Preflight, Answers so far,
 
 - The run writes one version file and ends the turn. It never waits for an answer inside the run.
 - A usage limit, a budget stop (`cdx --budget` exits 125) or a timeout ends the run. core records it and resumes later.
-- A resume after the owner's answer uses the same session where the tool allows it. A resume on another account is a cold run from the files (decision D2).
+- A resume after the owner's answer uses the same session where the tool allows it. A resume on another account is a cold run from the files. Owner decision D2 (2026-11-07): at night wait for the reset; by day restart cold when the reset is more than about 1 hour away, otherwise wait.
 - A stop guard hook can refuse to stop when no valid version file was written. Claude Code Stop hooks can block with exit code 2 and see the last assistant message. `stop_hook_active` is true on a stop that follows a block; the hook allows the stop then, so a run cannot loop. The hook needs hooks to run in headless mode (sandbox item).
 
 ## Crow today
@@ -133,4 +133,4 @@ The kind files replace `RUN_KINDS` once a loader exists.
 
 ## Open decisions
 
-Listed in req_037 under Decisions. None is settled by this spec.
+All six were settled by the owner on 2026-11-07. See req_037 under Decisions.

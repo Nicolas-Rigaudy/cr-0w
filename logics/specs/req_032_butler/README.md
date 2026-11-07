@@ -11,7 +11,7 @@ Draft from the 2026-11-07 spike. Nothing here is wired into code. The butler is 
 
 ## Engine (Need 1)
 
-Recommended shape, pending the owner's decision: one long-lived `claude -p` process per conversation in stream-json mode, with the core MCP server as its only tool source. A small bridge in core owns the process, tags each message with its surface and fans the output stream out to every surface. Details and the comparison sit in the request (`req_032`, Spike findings).
+Shape (owner decision 2026-11-07, Agent SDK later): one long-lived `claude -p` process per conversation in stream-json mode, with the core MCP server as its only tool source. A small bridge in core owns the process, tags each message with its surface and fans the output stream out to every surface. Details and the comparison sit in the request (`req_032`, Spike findings).
 
 Process flags (Claude Code 2.1.319, checked 2026-11-07):
 
@@ -74,7 +74,7 @@ A message to a mission after its OK reopens it and drops the validation (core ru
 - Focus mode `work` or `personal` is a core setting (nest toggle, deck key, schedule). In focus, core filters tool results and pushes to that side. The butler does not mention hidden items; `brief` returns a count line "N items hidden by focus".
 - A cross-scope question in focus gets "that is on the other side, switch focus in nest" with no content.
 - Private personal data (bank, mail bodies, health) never reaches the butler model. Tools return a count and a nest link, or a summary a local-model core job already wrote.
-- Process routing (owner decision pending): `work` and `both` turns run on the process of a work-allowed Claude account; `personal` turns (personal focus, Discord) run on the personal account's process.
+- Process routing (owner decision 2026-11-07): `work` and `both` turns run on the process of a work-allowed Claude account; `personal` turns (personal focus, Discord) run on the personal account's process.
 - Scope filtering happens in core on every tool result. The prompt states the rule too, but core is the gate.
 
 ## Surfaces (Need 6)

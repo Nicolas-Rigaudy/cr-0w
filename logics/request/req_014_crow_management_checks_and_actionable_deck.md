@@ -7,6 +7,7 @@
 > Complexity: High
 > Theme: Management
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Crow watches calendar, mail, Jira and the vault for management gaps (sprint rituals not booked, 1:1s due, mail left unanswered) and turns each into an actionable deck row with a drafted fix.
@@ -74,6 +75,7 @@
 - item_065_calendar_actions_propose_and_book_meetings
 - item_066_one_on_one_prep_and_capture_per_dev
 - item_067_sprint_rituals_planning_review_retro_prep
+- `item_114_home_snooze_marker_in_open_threads_honoured_by_deck_brief_and_wrap`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

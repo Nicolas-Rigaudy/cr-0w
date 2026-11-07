@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-06 17:39:05
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Turn crow into a hands-off assistant. Work runs as background missions through cdx. Decisions, approvals and proposals land in one inbox shown in deck, nest and comlink. A butler chat talks to everything going on. A router picks the model and account per mission kind and data class. Status is told in short human sentences; detail stays one step away.
@@ -56,7 +56,7 @@
 ```
 
 # Slices (to groom into backlog items, in order)
-1. **Mission model.** `crow mission new|list|show|cancel`; mission record (goal, kind, scope, budget, end state, autonomy, state `queued → running → waiting → review → done|failed`); one mission maps to one or more cdx runs; kinds and defaults in `local/missions.yaml`. Depends on item_077 (allowlist per kind) and req_025 (scope → account).
+1. **Mission model.** `crow mission new|list|show|cancel`; mission record (goal, kind, scope, budget, end state, autonomy, state `queued → running → waiting → review → done|failed`); one mission maps to one or more cdx runs; kinds and defaults in tracked `kinds/<kind>.yaml` files with optional private overrides in `local/` (owner decision 2026-11-07, req_037 D1). Depends on item_077 (allowlist per kind) and req_025 (scope → account).
    - AC: a dispatched mission shows its state and runs in `crow mission list --json`.
 2. **Inbox and park/resume.** File contract a run writes (question or proposal + artifacts dir); core turns it into an inbox item, parks the mission, resumes it with `--continue-run` on answer; `crow inbox list|show|answer`.
    - AC: a test mission asks a choice, exits, and resumes with the answer in its prompt.
@@ -75,9 +75,9 @@
 11. **Later.** Voice in and out, mission screensaver (req_015), multi-machine routing (req_016), report pipelines.
 
 # Open questions (grooming)
-- Butler: one scope-aware butler with a focus mode (decided); engine in req_032.
-- Mission store: SQLite proposed in adr_001; confirm with req_031.
-- Hosts and local models: req_029 (laptop first).
+- Butler: one scope-aware butler with a focus mode (decided); engine decided 2026-11-07 in req_032 (long-lived `claude -p` stream-json, Sonnet, routing by data scope).
+- Mission store: SQLite proposed in adr_001. Backend decided 2026-11-07: Go core plus Python sidecars (req_031); the store follows the Go core.
+- Hosts and local models: req_029 (decided 2026-11-07: laptop is the control host now, laptop and tower are both mission hosts).
 - Gemini and Antigravity free usage: req_029 (Antigravity via cdx is the Google path; terms check first).
 
 # Acceptance criteria

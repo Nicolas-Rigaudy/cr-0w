@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 01:59:44
+> Indicators reviewed: 2026-11-07 11:21:57
 
 # AI Context
 - Summary: Define every mission kind (gates, autonomy, account, effort, outputs) and the file contract between a run and core: brief, plan and report with a fenced `crow` block, outbox, versions, answer verbs. Schema first, before the first mission runs.
@@ -34,6 +34,7 @@
 # Context
 - Owner decisions 2026-11-06: gates per kind; preflight plus park and resume; personal repos auto-merge; work hard rules unchanged.
 - Owner decisions 2026-11-06 (review): 8 kinds, phase 1 kinds research, plan, review, design; proof of work in reports; kinds as data files.
+- Owner decisions 2026-11-07: D1 to D6 below, all settled.
 - AFK runs become batches of missions with preflight up front; their reports use this contract.
 - Ultron lesson 2: define the plan and report schema first. Free text in a hook is hard to parse.
 - crow already has: skills per task type, `crow dispatch` prompts, `local/owner-prefs.md`, review ledgers.
@@ -47,37 +48,16 @@ Grooming findings:
 - One version counter per mission so `answers.vN.md` always answers version N.
 - The validation record matches req_030 Need 5 and item_099: one hash-chained record per publish action.
 - cdx `--continue-run` pins the parent's account, model and effort and cannot be combined with `--failover` (cdx-manager README, v0.26.6, checked 2026-11-06). Need 10's "resumes on the next account" needs a cold run. See D2.
-- Backend language is still open (req_031). Only the spec validator (item_104) is Ready: it is a repo test, useful whatever the backend. The parser waits on D6.
+- Backend: Go core plus Python sidecars (req_031, decided 2026-11-07). The spec validator (item_104) is a repo test. The crow-block parser lives in Python `bin/` now (D6). The renderer and outbox wait for the core.
 - Stop hooks carry `stop_hook_active`, so the stop guard (item_110) needs no retry counter of its own (hooks docs, Claude Code 2.1.319, checked 2026-11-07).
 
-# Decisions (open, for the owner)
-- **D1. Where kind files live.** req_028 slice 1 says a private `missions.yaml`; the spec uses one tracked file per kind.
-  - A. Tracked `kinds/<kind>.yaml` with generic defaults, plus optional private overrides. Shareable, no names in tracked files.
-  - B. One private `missions.yaml` as req_028 says. Simple, but the catalogue is not publishable.
-  - C. Tracked files only, no overrides. Simplest; private tuning goes through scope routing only.
-  - Recommendation: A, and update req_028 slice 1.
-- **D2. Resume after a usage limit on another account.** `--continue-run` keeps the parent's account.
-  - A. Cold run on the next allowed account from `brief.md` and the version files. Works now; loses the session cache.
-  - B. Wait for the same account to reset, then continue the session. Cheapest in tokens; can stall for hours.
-  - C. A then B: cold run when the reset is more than an hour away, otherwise wait.
-  - Recommendation: C. item_100 already resumes isolated runs cold.
-- **D3. What `go` does for the plan kind.** The plan file is the content; there is no report gate.
-  - A. `go` commits the docs on a mission branch; landing follows the scope rules (work needs a push OK). Safe and traceable.
-  - B. `go` commits straight to the default branch on personal and crow repos. Fastest; no branch to clean up.
-  - C. Add a report gate: `go` writes the docs, `ok` lands them. Owner sees the final files; one more round trip.
-  - Recommendation: A.
-- **D4. What design `approve` does before the build kind exists.** Build is phase 3; design is phase 1.
-  - A. Commit the pages to `docs/design/` and open a plan mission instead. Keeps the chain moving.
-  - B. Commit the pages only and leave a note. Simplest.
-  - Recommendation: A, switch to the build mission in phase 3.
-- **D5. Skills for research, design, repair and a generic write.**
-  - A. New skills for research and design in phase 1, repair and write in their phases. Same pattern as other kinds.
-  - B. Instructions in the brief only, no skill. Fewer files; behaviour drifts between runs.
-  - Recommendation: A.
-- **D6. Where the contract code lives before the backend is picked.**
-  - A. Python in `bin/` now, shared by crow dispatch and the tests; core ports it if req_031 picks Go. Usable for AFK runs today.
-  - B. Wait for req_031. No throwaway risk; nothing reads the contract meanwhile.
-  - Recommendation: A for the parser (item_106) so AFK reports can use the contract now, B for the rest. The spec validator (item_104) is a test and does not wait on D6.
+# Decisions (owner, 2026-11-07)
+- **D1. Where kind files live.** Shared tracked `kinds/<kind>.yaml` with generic defaults, plus optional private overrides in `local/` (item_117). req_028 slice 1 is updated.
+- **D2. Resume after a usage limit.** Depends on context (item_115). AFK or night: waiting for the reset is fine (a 4 hour wait at night is OK). Daytime: restart cold on the next account when the reset is more than about 1 hour away, otherwise wait.
+- **D3. What `go` does for the plan kind.** `go` commits the docs on the mission branch. Normal landing rules apply (work needs a push OK).
+- **D4. What design `approve` does before the build kind exists.** Commit the pages to `docs/design/` and open a plan mission. Switch to the build mission in phase 3.
+- **D5. Skills.** One skill per kind, each in its own phase: research and design in phase 1, repair and write in theirs (item_112).
+- **D6. Where the contract code lives.** The crow-block parser (item_106) is Python in `bin/` now. The renderer and the outbox wait for the backend choice; the backend is now a Go core (req_031) and they port to it.
 
 # Acceptance criteria
 - AC1: A kind file with every column of need 1 filled for the 8 kinds, phase 1 kinds first, reviewed by the owner.
@@ -113,6 +93,8 @@ Grooming findings:
 - `item_111_files_only_dry_run_of_a_two_gate_mission_and_a_mockup_loop`
 - `item_112_skill_and_reply_contract_for_each_mission_kind`
 - `item_113_preflight_questions_per_mission_kind_at_dispatch`
+- `item_115_usage_limit_mid_mission_policy_by_context`
+- `item_117_mission_kind_private_overrides_in_local`
 
 # Execution order
 | Order | Item | Waits on | Status |

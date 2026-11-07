@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:50
 
 # AI Context
 - Summary: After a turn core ingests listed outbox files within the kind caps and parks the mission on `outbox/questions.json`.
@@ -53,7 +54,7 @@
 # Notes
 - Depends on item_104, item_106 and the core mission record.
 - Caps per kind in the kind files.
-- Code home waits on req_031 or D6.
+- Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

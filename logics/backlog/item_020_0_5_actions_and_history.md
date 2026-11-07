@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub observability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:48
 
 # AI Context
 - Summary: Actions that change things: answer an agent, handoff to a repo session, start a review, snooze, edit roadmap. Session History behind `/` in Agents.
@@ -42,7 +43,7 @@
 - Shots: local/state/afk/shots/2026-11-06-deck-actions/ (README maps board to build).
 
 # Follow-ups
-- Home `x` snooze is not built: where a snooze is kept is an owner decision (deck file, a marker in open threads, or no snooze).
+- Home `x` snooze is not built. Owner decision 2026-11-07: the snooze is a `snoozed until` marker in open-threads that deck, brief and wrap honour. Tracked in item_114.
 - Usage `P` policy edit and the MRs keys g, R and s are not wired yet.
 
 # Decision framing

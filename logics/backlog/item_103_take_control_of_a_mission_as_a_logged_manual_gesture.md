@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Safety
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:49
 
 # AI Context
 - Summary: Take control stops the headless run, opens an interactive session in the same worktree, logs `manual_gesture` start and end with heads before and after, and returns to auto with a fresh isolated run.
@@ -32,6 +33,7 @@
 - AC2: Any pending validation record is dropped on take control.
 - AC3: Publishing after take control still goes through core.
 - AC4: Return to auto starts a fresh run carrying the owner's notes.
+- AC5: A commit made in the manual window goes through the full merge gate; sensitive paths still ask.
 
 # AC Traceability
 - request-AC2 -> escape hatch in the layered design.
@@ -52,9 +54,8 @@
 
 # Notes
 - Proposed by the req_030 spike (2026-11-06); Draft until the owner grooms it.
-- Decision 6 in req_030: the gate still runs on take-control commits (recommended).
+- Owner decision 2026-11-07 (req_030 decision 6): the merge gate still runs on take-control commits.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

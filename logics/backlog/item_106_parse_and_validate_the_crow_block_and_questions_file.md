@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 01:33:54
+> Indicators reviewed: 2026-11-07 11:21:50
 
 # AI Context
 - Summary: Extract the one fenced crow block from a plan, report or mockup file, validate it and `outbox/questions.json` against the spec schemas, and report clear errors.
@@ -55,7 +55,7 @@
 
 # Notes
 - Depends on item_104 (validator).
-- Waits on D6: the parser is runtime code, its home is Python in `bin/` (D6 A) or core (D6 B). Ready once D6 is answered.
+- D6 decided 2026-11-07: the parser is Python in `bin/` now. Ready. A Go core ports it later against the shared fixtures (item_119).
 - Spec: `logics/specs/req_037_run_contract/`.
 - Usable by AFK run reports before core exists.
 

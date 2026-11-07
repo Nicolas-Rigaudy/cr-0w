@@ -8,6 +8,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 11:21:50
 
 # AI Context
 - Summary: core keeps every version file with its answers file, checks the Responses section, and writes one hash-chained validation record per publish action on ok.
@@ -56,7 +57,7 @@
 # Notes
 - Record shape shared with item_099 and req_030 Need 5.
 - Depends on item_106 and the core event log (adr_001).
-- Code home waits on req_031 or D6.
+- Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
 
 # Executions
