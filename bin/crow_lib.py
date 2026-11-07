@@ -251,6 +251,24 @@ def cap_block(acct, row, now):
     return None
 
 
+DAY_MOVE_MIN = 60  # daytime: a reset further away than this moves the run to the next account
+
+
+def limit_policy(context, left_min, has_target):
+    """What to do with a run cut by a usage limit: ("wait", reason) or ("move", reason).
+    afk (night batch): always wait for the reset on the same account, a long wait is fine.
+    day (default): restart cold on the next allowed account when the reset is more than DAY_MOVE_MIN
+    away and one is free; otherwise wait. left_min None means the reset time is unknown."""
+    left = "unknown" if left_min is None else f"{round(left_min)} min"
+    if context == "afk" and not (left_min is None and has_target):  # unknown reset (weekly limit): move if possible
+        return "wait", f"afk run: waits for the reset ({left}) on the same account"
+    if left_min is not None and left_min <= DAY_MOVE_MIN:
+        return "wait", f"day run: reset in {left}, within {DAY_MOVE_MIN} min, waits"
+    if has_target:
+        return "move", f"day run: reset in {left}, over {DAY_MOVE_MIN} min, restarts on the next account"
+    return "wait", f"day run: reset in {left} but no account is free, waits"
+
+
 def pick_accounts(accts, rows, current, now, scope=None):
     """Every allowed account with its state and the targets crow may pick.
 

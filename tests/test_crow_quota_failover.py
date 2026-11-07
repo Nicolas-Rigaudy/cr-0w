@@ -160,6 +160,7 @@ def requeue_env(cr, monkeypatch, tmp_path, rows, ledger_extra=()):
            "prompt_file": str(prompt), "power": "medium"}
     monkeypatch.setattr(cr, "ledger", lambda: [rec, *ledger_extra])
     monkeypatch.setattr(cr, "STATE", tmp_path / "state")
+    monkeypatch.setattr(cr, "EVENTS", tmp_path / "state" / "runs-events.jsonl")
     monkeypatch.setattr(crow_lib, "account_state", lambda cur: pick(rows))
     calls, sleeps = [], []
 
@@ -226,3 +227,46 @@ def test_rescue_lists_every_stopped_and_open_session(rl, monkeypatch, capsys):
         assert sid in out
     for sid in ("stale9", "moved", "other", "run1"):
         assert sid not in out
+
+
+# ---------- usage limit policy by context (item_115) ----------
+
+def events(cr):
+    f = cr.EVENTS
+    return [json.loads(l) for l in f.read_text().splitlines()] if f.exists() else []
+
+
+def test_limit_policy_rules():
+    assert crow_lib.limit_policy("afk", 240, True)[0] == "wait"
+    assert crow_lib.limit_policy("day", 180, True)[0] == "move"
+    assert crow_lib.limit_policy("day", 20, True)[0] == "wait"
+    assert crow_lib.limit_policy("day", 180, False)[0] == "wait"
+    assert crow_lib.limit_policy("afk", None, True)[0] == "move"
+
+
+def test_afk_run_waits_on_same_account_despite_free_target(cr, monkeypatch, tmp_path):
+    rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=240), row("shared", 20)])
+    rec["context"] = "afk"
+    assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"
+    assert sleeps and sleeps[0] > 240 * 60
+    cmd = calls[0]
+    assert cmd[cmd.index("--account") + 1] == "main" and cmd[cmd.index("--context") + 1] == "afk"
+    ev = events(cr)[-1]
+    assert ev["type"] == "run.limit_policy" and ev["data"]["choice"] == "wait"
+    assert ev["data"]["reset_5h_at"] == (NOW + timedelta(minutes=240)).isoformat()
+
+
+def test_day_run_with_far_reset_moves_cold(cr, monkeypatch, tmp_path):
+    rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=180), row("shared", 20)])
+    rec["context"] = "day"
+    assert cr.requeue(rec, deadline=1e12) == "resumed on shared"
+    assert sleeps == []
+    ev = events(cr)[-1]["data"]
+    assert ev["choice"] == "move" and ev["reset_in_min"] == 180
+
+
+def test_day_run_with_near_reset_waits(cr, monkeypatch, tmp_path):
+    rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=20), row("shared", 20)])
+    rec["context"] = "day"
+    assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"
+    assert events(cr)[-1]["data"]["choice"] == "wait"

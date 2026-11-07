@@ -366,8 +366,17 @@ def requeue(rec, deadline):
             "--resumes", rec["run_id"], *(["--logics", rec["logics_ref"]] if rec.get("logics_ref") else [])]
     if rec.get("cwd") and rec["cwd"] != project(rec["project"])["path"]:
         base += ["--cwd", rec["cwd"]]
+    row = next((a for a in st["accounts"] if a["name"] == acct), {})
+    left = crow_lib.minutes_to(row.get("reset_5h_at_iso"), datetime.now().astimezone()) if st["current_blocked"] else 0
+    if "weekly" in (st["current_blocked"] or ""):
+        left = None  # the week resets too far away to wait for in a run
     target = st["auto_target"] if st["current_blocked"] else None
-    if target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists():
+    ctx = rec.get("context") or "day"
+    choice, why = crow_lib.limit_policy(ctx, left, bool(target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists()))
+    log_event(rec, "run.limit_policy", {"choice": choice, "reason": why, "context": ctx, "account": acct,
+                                        "reset_5h_at": row.get("reset_5h_at_iso"), "reset_in_min": left})
+    base += ["--context", ctx]
+    if choice == "move":
         f = STATE / "dispatch" / f"resume-{rec['run_id'][:8]}.md"
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(RESUME_NOTE + Path(rec["prompt_file"]).read_text())
@@ -377,11 +386,8 @@ def requeue(rec, deadline):
                       *(["--permission", rec["permission"]] if rec.get("permission") else [])]
         where = f"resumed on {target}"
     else:
-        row = next((a for a in st["accounts"] if a["name"] == acct), {})
         if "weekly" in (st["current_blocked"] or ""):
             return "not requeued: weekly limit, no other account free without an OK"
-        left = crow_lib.minutes_to(row.get("reset_5h_at_iso"), datetime.now().astimezone()) \
-            if st["current_blocked"] else 0
         if left is None or time.time() + left * 60 + RESET_GRACE_S > deadline:
             return "not requeued: no account free and no reset in time (see `crow runs relaunch status`)"
         time.sleep(max(0, left * 60) + RESET_GRACE_S)
@@ -762,7 +768,7 @@ def dispatch(a):
         "start_sha": sh("git", "rev-parse", "HEAD", cwd=cwd),
         "branch": sh("git", "branch", "--show-current", cwd=cwd),
         "account": acct, "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
-        "kind": a.kind,
+        "kind": a.kind, "context": a.context,
     }
     if a.logics:
         rec["logics_ref"] = a.logics
@@ -874,6 +880,7 @@ def main():
     d.add_argument("--model", help="model for this run (opus, sonnet); default from the run kind, pinned to its exact id")
     d.add_argument("--budget", type=float, help="USD cap for this run (default: the kind's budget, crow_lib.RUN_KINDS)")
     d.add_argument("--kind", choices=tuple(crow_lib.RUN_KINDS), default="task", help="budget, timeout and defaults (crow_lib.RUN_KINDS)")
+    d.add_argument("--context", choices=("afk", "day"), default="day", help="afk: a usage limit waits for the reset on the same account; day: moves to the next account when the reset is over an hour away")
     d.add_argument("--dry-run", action="store_true", help="print the cdx command and env, start nothing")
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
