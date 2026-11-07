@@ -2,7 +2,7 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 80%
+> Understanding: 60%
 > Confidence: 65%
 > Complexity: High
 > Theme: Hub strategy
@@ -55,6 +55,11 @@
 - AC4: build two Claude Design design systems (modern, cyber) on the picked board directions. Build them from one token set shared with the deck (req_038 status colours, terminal kit, archeotech Protocol register).
 - AC5: draw the nest key screens on those systems from the picked world concept and cast.
 - Model the picked cast and world kit in Blender as glTF, then measure on the Fold before any effect.
+
+# Owner review of the design passes (2026-11-07)
+- Both AFK passes (58d5c24d, d490afb6) are rejected as a whole: "very blocky, not inspired, too copied from Thao, no character, no personal design, no wow factor". The light vs dark base gets the same verdict. No world, cast or board pick stands.
+- Cause: procedural Python primitives and a brief anchored on Thao's Cockpit.
+- Next: the owner makes concept art in an image model and drops the picks in `local/state/research/nest-design/refs/` with a note on each. The next pass works only from those, without the Thao rooms or factory line. AI images serve as references only (Need 7 still holds for shipped assets).
 
 # Acceptance criteria
 - AC1: A research board per theme with cited references and a short "why it fits" per reference.
