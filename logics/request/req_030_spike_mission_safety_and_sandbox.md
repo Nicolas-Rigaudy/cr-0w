@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:57
+> Indicators reviewed: 2026-11-07 17:31:34
 
 # AI Context
 - Summary: Research spike. Pick the layered safety model for unattended missions from the two colleague designs and current Claude Code features: guard hook and validation records (Ultron), OS sandbox with egress rules and an engine that holds every key (Jarvis), native sandbox and permission modes, item_077 deny-by-default runs. Define the personal auto-merge gate.
@@ -80,6 +80,7 @@ Throwaway script and raw output kept outside the repo (path in the private note)
 - After the run, the host pushed the agent's commit on `mission/probe` to the remote: core can publish what the sandbox produced.
 - With `.git` bound read-only (cdx layout) the agent edits files but `git commit` fails: core must commit, or cdx must offer writable git metadata.
 - Verdict: credentials and push are contained by bwrap alone. Network must be off, or go through pasta + nftables: a shared network namespace exposes the LAN and host loopback services. AC3 is met for "cannot push" and "cannot read credentials", not for "online but no LAN" until pasta is installed. No agent ran inside the probe: cdx refuses isolated Claude without pasta.
+- Rerun with pasta 2026-11-07 (`bin/crow-isolation-probe`, item_100): every check held. The LAN gateway, host loopback and tailnet listeners are refused inside the sandbox and open from the host; `api.anthropic.com:443` stays reachable; the host commits and pushes the sandbox diff. AC3 is met.
 
 ## Threats by option (AC1)
 Verdict per cell: **stops** (holds against an injected agent), **partial** (holds for an honest agent or for part of the threat), **no**.
@@ -151,14 +152,14 @@ core runs these in order on a mission branch and stops at the first failure, whi
 1. **Network for build missions.** Public internet minus LAN (cdx today). Inference-only egress stays a later option for work-scope runs.
 2. **Who commits in isolated runs.** core commits the worktree diff after the run.
 3. **Resume of isolated missions.** Both. A fresh isolated run from the brief and the files is the guaranteed path (needed anyway when a mission moves account). A cdx issue asks for native resume of isolated runs as a same-account optimisation (item_116). The owner OK'd an issue in principle; the exact text is shown before posting.
-4. **Install pasta (passt).** The owner installs it (`sudo pacman -S passt`), then the safety probe is rerun. Waiting on this: item_100 and AC3 below.
+4. **Install pasta (passt).** The owner installs it (`sudo pacman -S passt`), then the safety probe is rerun. Installed 2026-11-07 and the probe rerun (item_100).
 5. **Diff size limit for auto-merge.** 400 lines and 20 files.
 6. **Take-control commits and the gate.** The gate still runs on owner commits (item_103).
 
 # Acceptance criteria
 - AC1: A threat × option table with a verdict per cell.
 - AC2: A recommended design split into run config, cdx, core and OS, with credential ownership.
-- AC3: A prototype run proves an agent cannot push, read the owner's credentials or reach the LAN, while core publishes its branch. Blocked until the owner installs passt (decision 4); the probe is rerun with pasta.
+- AC3: A prototype run proves an agent cannot push, read the owner's credentials or reach the LAN, while core publishes its branch. Met 2026-11-07 by the pasta rerun of the probe (item_100).
 - AC4: The auto-merge gate written as a checklist core can run, tested on one personal repo.
 
 # Definition of Ready (DoR)

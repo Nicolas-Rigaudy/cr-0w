@@ -1,14 +1,15 @@
 ## item_100_isolated_mission_runs_through_cdx_workspace_isolation - Isolated mission runs through cdx workspace isolation
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Safety
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:14:57
+> Indicators reviewed: 2026-11-07 17:28:22
+> Owner: crow
 
 # AI Context
 - Summary: Mission runs start through cdx --isolate-workspace (bwrap, volatile home, read-only git, env allowlist, pasta + nftables egress) and core commits the worktree diff afterwards.
@@ -41,6 +42,13 @@
 # AC Traceability
 - request-AC3 -> sandboxed agent cannot push, read credentials or reach the LAN.
 
+# Proof (bin/crow-isolation-probe, 2026-11-07, pasta + bwrap, all checks held)
+- AC1: no readable file under the forge, ssh, cloud, cdx and claude dirs; no token env var (fake tokens planted in the launcher env).
+- AC2: no git remote visible; `git commit` and push to origin fail; an HTTPS push fails on missing credentials. The LAN gateway, host loopback and tailnet listeners are refused inside the sandbox and open from the host. `api.anthropic.com:443` is reachable.
+- AC3: the host commits the sandbox diff with `crow_lib.commit_run_diff` as `new[TXT]: probe run (run probe000)`, which passes `crow-commit-msg-check`.
+- AC4: with a PATH without pasta, cdx refuses the run and `crow_lib.isolation_preflight` returns the pacman fix. No shared-network fallback.
+- Unit tests: `python3 -m pytest tests/test_crow_isolation.py` (11 passed).
+
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
@@ -49,6 +57,7 @@
 - Product brief(s): (none yet)
 - Architecture decision(s): `adr_001`
 - Request: `logics/request/req_030_spike_mission_safety_and_sandbox.md`
+- Commits: `1d7bdd1` probe, `7be7c82` dispatch and commit, `4cefc45` runbook
 - Primary task(s): (none yet)
 
 # Priority
@@ -60,6 +69,9 @@
 - passt installed by the owner 2026-11-07: unblocked. Rerun the safety probe with pasta as the first step of this item.
 - Aligns with item_077: that item is the run-config layer, this one the OS layer.
 - Decisions 2026-11-07 in req_030: public minus LAN, core commits the diff, fresh run from files for resume.
+- Built 2026-11-07: `crow dispatch --isolate` for task (read-write) and review (read-only). The commit lives in bin/ (`crow-runs notify` calls `crow_lib.commit_run_diff`) until the core (item_119) owns mission commits.
+- A live isolated Claude run needs a cdx setup-token profile. No allowed account has one yet: owner action (`cdx add <account>-runs`, then `cdx login <account>-runs`).
+- Pasta chosen over Claude Code `settings.sandbox`: Claude enforces that one itself and a bypass run skips its domain list.
 - Prior art for the OS layer: Claude Code `settings.sandbox` (bubblewrap + socat), writes limited to the run folder, home and secrets hidden, per-run domain list. Compare with pasta before building; same bypass caveat as item_077.
 
 # Executions
