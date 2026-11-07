@@ -654,7 +654,7 @@ def collect(since="today", include_unledgered=False):
             "run_id": rec["run_id"], "project": rec["project"], "label": rec["label"], "status": st,
             "duration_s": int(r["duration_seconds"]) if r and r.get("duration_seconds") else None,
             "ended_at": r.get("ended_at") if r else None,
-            "cost_usd": run_cost(r), "budget_usd": rec.get("budget_usd"),
+            "cost_usd": run_cost(r), "budget_usd": rec.get("budget_usd"), "denials": crow_lib.run_denials(r),
             "resumed_from": [k for k, v in superseded.items() if v == rec["run_id"]],
             "commits": commits_since(rec["cwd"], rec.get("start_sha"), r.get("ended_at") if r else None),
         })
@@ -665,7 +665,7 @@ def collect(since="today", include_unledgered=False):
                 past.append({"run_id": rid, "project": project_name(r["cwd"]), "label": "(not dispatched by crow)",
                              "status": "done" if r.get("exit_code") == 0 else "failed",
                              "duration_s": int(r.get("duration_seconds") or 0), "ended_at": r.get("ended_at"), "commits": [],
-                             "cost_usd": run_cost(r), "budget_usd": None})
+                             "cost_usd": run_cost(r), "budget_usd": None, "denials": crow_lib.run_denials(r)})
 
     busy = len(running_runs())
     pu = project_usage()
@@ -846,6 +846,8 @@ def render(data, color=True, width=None):
             cost = fmt_cost(f.get("cost_usd"), f.get("budget_usd"))
             cost = f" · {cost}" if cost else ""
             out.append(clip(f"    {c['dim']}{f['status']} after {d}{ended}{cost} · {len(f['commits'])} commits{resumed} · {f['run_id'][:8]}{c['0']}"))
+            for x in f.get("denials") or []:  # a tool outside the kind's allowlist: widen it on purpose (runbook)
+                out.append(clip(f"    {c['y']}denied {x}{c['0']}"))
         if len(data["finished"]) > FINISHED_SHOWN:
             out.append(f"  {c['dim']}… {len(data['finished']) - FINISHED_SHOWN} older (crow runs --all){c['0']}")
         total = day_cost(data["finished"])

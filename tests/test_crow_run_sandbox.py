@@ -120,3 +120,21 @@ def test_dispatch_hands_cdx_a_credential_free_env(tmp_path, monkeypatch):
     cr.main()
     argv, env = next(x for x in seen if x[0][:2] == ["cdx", "run"])
     assert "GH_TOKEN" not in env and env["CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"] == "1"
+
+
+def test_crow_runs_lists_denials_under_a_finished_run():
+    import importlib.machinery
+    import importlib.util
+    import os
+    os.environ.setdefault("CROW_ACCOUNT", "test")
+    loader = importlib.machinery.SourceFileLoader("crow_runs_dn", str(BIN / "crow-runs"))
+    spec = importlib.util.spec_from_loader("crow_runs_dn", loader)
+    cr = importlib.util.module_from_spec(spec)
+    loader.exec_module(cr)
+    row = {"run_id": "aaaaaaaa", "project": "p", "label": "l", "status": "done", "duration_s": 60, "ended_at": None,
+           "commits": [], "cost_usd": None, "budget_usd": None, "denials": ["Bash: touch x"]}
+    out = "\n".join(cr.render({"agents": [], "slots": {"busy": 0, "max": 2}, "finished": [row]}, color=False, width=200))
+    assert "denied Bash: touch x" in out
+    row["denials"] = []
+    assert "denied" not in "\n".join(cr.render({"agents": [], "slots": {"busy": 0, "max": 2}, "finished": [row]},
+                                                color=False, width=200))

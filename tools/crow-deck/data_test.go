@@ -632,3 +632,25 @@ func TestFinishedRunCost(t *testing.T) {
 		t.Errorf("meta %q lacks cost", done.Meta)
 	}
 }
+
+func TestFinishedRunDenialsShow(t *testing.T) {
+	r := testRuns()
+	r.Finished[0].Denials = []string{"Bash: touch x", "WebFetch"}
+	for _, row := range agentRows(testNow(), r, nil, testReg()) {
+		if row.Session != "ffff0001" {
+			continue
+		}
+		if !strings.Contains(row.Meta, "2 denied") {
+			t.Errorf("meta %q lacks the denial count", row.Meta)
+		}
+		var tail []string
+		for _, l := range row.Tail {
+			tail = append(tail, l.Text)
+		}
+		if !strings.Contains(strings.Join(tail, "|"), "denied Bash: touch x|denied WebFetch") {
+			t.Errorf("tail %v lacks the denials", tail)
+		}
+		return
+	}
+	t.Fatal("finished run row missing")
+}

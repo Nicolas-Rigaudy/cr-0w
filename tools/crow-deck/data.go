@@ -64,6 +64,7 @@ type finishedRun struct {
 	Commits   []string `json:"commits"`
 	CostUSD   *float64 `json:"cost_usd"`   // nil: cdx has no figure, show nothing
 	BudgetUSD *float64 `json:"budget_usd"` // the run's --budget cap
+	Denials   []string `json:"denials"`    // tool calls the run's allowlist refused ("Bash: touch x")
 }
 
 // runCost renders "$0.71" or "$0.71 of $25"; empty when the run has no cost.
@@ -610,6 +611,12 @@ func agentRows(now time.Time, runs *runsSnap, intr []intrSession, reg *registry)
 		if c := runCost(f.CostUSD, f.BudgetUSD); c != "" {
 			meta += " · " + c
 			tail = append(tail, tailLine{Text: "cost " + c})
+		}
+		if n := len(f.Denials); n > 0 {
+			meta += fmt.Sprintf(" · %d denied", n)
+			for _, d := range f.Denials {
+				tail = append(tail, tailLine{Text: "denied " + d})
+			}
 		}
 		rows = append(rows, agentRow{
 			Group: gDone, State: "done", Name: name, Short: name + " " + cmpOr(f.Label, short4(f.RunID)), Account: "",
