@@ -1,10 +1,10 @@
 ## item_034_add_install_script_and_the_crow_update_command - Add install script and the crow update command
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 30%
+> Progress: 100%
 > Complexity: Medium
 > Theme: release
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -63,6 +63,7 @@
 
 # Notes
 - Planned 2026-10-29. Execution happens in a fresh, clear-context session started from this doc and the request; do not execute from the planning session.
+- Task `task_014_add_install_script_and_the_crow_update_command` was finished via `logics-manager flow finish task` on 2026-11-07.
 
 # Tasks
 - `task_014_add_install_script_and_the_crow_update_command`

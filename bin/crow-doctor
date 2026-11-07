@@ -10,6 +10,8 @@ quota      warn when every `use` account is blocked or past 90% of its 5h window
 worktrees  <repo>.wt/* trees already merged into the default branch (crow tidy --apply removes them)
 profiles   each claude `use` account with permanent memory: memory links into local/memory, crow env and hooks,
            empty commit/PR attribution, crow skills/ linked (fix: crow-memory link <account>, copy settings from the default)
+data       the data repo (<CROW_HOME>/local): warn when it is not a git repo, has no remote, uncommitted changes
+           or commits not pushed to its upstream (restore on a new machine needs it pushed)
 
 Exit 1 when a check fails, 0 otherwise (warnings do not fail).
 """
@@ -174,6 +176,36 @@ def stale_worktrees(reg, mod):
     return check("worktrees", "ok", "no merged worktrees left behind")
 
 
+def data_repo():
+    sys.path.insert(0, HERE)
+    import crow_lib
+    local = os.path.join(crow_lib.data_home(), "local")
+    if not os.path.isdir(local):
+        return check("data", "warn", f"no data dir at {local}")
+
+    def g(*args):
+        return subprocess.run(["git", "-C", local, *args], capture_output=True, text=True, check=False)
+
+    top = g("rev-parse", "--show-toplevel")
+    if top.returncode != 0 or os.path.realpath(top.stdout.strip()) != os.path.realpath(local):
+        return check("data", "warn", f"{local} is not a git repo: nothing backs it up (runbooks/install-and-update.md)")
+    issues = []
+    if not g("remote").stdout.strip():
+        issues.append("no remote: add one and push (git -C <data>/local remote add origin <url>)")
+    dirty = [line for line in g("status", "--porcelain").stdout.splitlines() if line.strip()]
+    if dirty:
+        issues.append(f"{len(dirty)} uncommitted change(s)")
+    ahead = g("rev-list", "--count", "@{u}..HEAD")
+    if ahead.returncode != 0:
+        if g("remote").stdout.strip():
+            issues.append("current branch has no upstream: push it with -u")
+    elif int(ahead.stdout.strip() or 0):
+        issues.append(f"{ahead.stdout.strip()} commit(s) not pushed")
+    if issues:
+        return check("data", "warn", f"data repo {local} is not backed up", issues)
+    return check("data", "ok", "data repo clean and pushed")
+
+
 def main(argv):
     if argv not in ([], ["--json"]):
         sys.exit(__doc__)
@@ -181,7 +213,7 @@ def main(argv):
     reg = mod.load()
     acc = accounts_json()
     checks = [identity(reg), accounts(acc), quota((acc or {}).get("default")), profiles(acc),
-              stale_worktrees(reg, mod)]
+              stale_worktrees(reg, mod), data_repo()]
     ok = all(c["level"] != "fail" for c in checks)
     if argv:
         json.dump({"ok": ok, "checks": checks}, sys.stdout)

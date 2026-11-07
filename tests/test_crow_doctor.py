@@ -109,3 +109,32 @@ def test_doctor_lists_what_a_bare_profile_misses(hub, tmp_path):
     for gap in ("memory not linked: -proj", "env CROW_HOME missing", "hook rtk-rewrite missing",
                 "attribution commit/pr not empty", "skill wrap not linked"):
         assert f"main: {gap}" in prof["details"]
+
+
+def test_doctor_warns_on_a_data_dir_without_git(hub):
+    data = checks(run(hub, "crow-doctor", "--json"))["data"]
+    assert data["level"] == "warn" and "not a git repo" in data["summary"]
+
+
+def test_doctor_flags_the_data_repo_gaps(hub, tmp_path):
+    home, _ = hub
+    local = home / "local"
+    make_repo(local, "me@example.org")
+    data = checks(run(hub, "crow-doctor", "--json"))["data"]
+    assert data["level"] == "warn"
+    assert any("no remote" in d for d in data["details"])
+    assert any("uncommitted" in d for d in data["details"])  # accounts.yaml and state/ are untracked
+
+    git("-C", str(local), "add", "-A")
+    git("-C", str(local), "commit", "-q", "-m", "data")
+    origin = tmp_path / "data.git"
+    git("init", "-q", "--bare", str(origin))
+    git("-C", str(local), "remote", "add", "origin", str(origin))
+    git("-C", str(local), "push", "-q", "-u", "origin", "main")
+    assert checks(run(hub, "crow-doctor", "--json"))["data"]["level"] == "ok"
+
+    (local / "b.txt").write_text("y")
+    git("-C", str(local), "add", "b.txt")
+    git("-C", str(local), "commit", "-q", "-m", "more")
+    data = checks(run(hub, "crow-doctor", "--json"))["data"]
+    assert data["level"] == "warn" and data["details"] == ["1 commit(s) not pushed"]
