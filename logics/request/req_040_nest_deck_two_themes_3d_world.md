@@ -7,6 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 12:18:35
 
 # AI Context
 - Summary: Nest and deck keep two themes only, modern (work default) and cyber (personal default). A theme changes look, motion, 2D/3D elements and the butler voice. Nest gets a 3D world that shows missions and agents at work. One focus switch later drives the whole desktop. Design research comes first.
@@ -47,6 +48,7 @@
 - Cast sheets: modern M1 scale-model people and M2 toy crew; cyber C1 utility droids and C2 protocol droids. Same framing, four roles each.
 - Contact sheets and `bin/crow-compare` specs for four decisions: world concept, modern cast, cyber cast, board direction.
 - Tech note: three.js or react-three-fiber with glTF from Blender, the Fold GPU budget, reduced motion, the 2D fallback.
+- Second pass: the modern theme on a light base next to the dark one, a wider cast framing, bloom on cyber, checked reference links, 1920x1080 laptop hero frames, and a fifth decision on the modern base (light or dark).
 - Pending: the owner's picks. No build has started.
 
 ## Next steps
