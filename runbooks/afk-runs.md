@@ -52,3 +52,4 @@ Unattended work while the owner is away. The hub session is the orchestrator; ru
 Since cdx 0.24.2 it forces the default permission mode: allow tools with `cdx set A --extra-args '--allowedTools Bash'` (add MCP tools the job needs). It also needs `socat` installed (Claude sandbox). With both, the Bash probe passes 3/3; MCP tools untested. Left off by default. With it off the run env holds only 3 credential-like variables; gh and glab use their keyrings.
 Probe: `cdx set A --scrub-env on`, `cdx run A --cwd <scratch dir> --prompt-file <probe> --permission auto`, then `cdx unset A --scrub-env`.
 Headless probes started in the hub folder are blocked by the hub guard whatever the setting: run them from a scratch folder.
+Crow's own sandbox for runs (credential-free env, per-kind allowlists, denials) is in dispatch-background-runs.md "Run sandbox".

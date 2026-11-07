@@ -1,10 +1,10 @@
 ## item_077_sandboxed_background_runs - Background runs start with no authorisation and whitelist tools
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 60%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,6 +57,16 @@
 
 # Notes
 - Depends on the cdx-manager design check (item_015, 2026-11-03 follow-up). Prior proof: scrub-env on plus `--allowedTools` passed the probe on 2026-10-29 once socat was installed; MCP tools untested.
+
+# Progress 2026-11-07
+- Done: per-kind allowlists, shared denials, credential filter and denial parsing in `crow_lib` (`RUN_SANDBOX`, `RUN_DENY`, `CREDENTIAL_ENV`, `RUN_KEEP_ENV`, `sandbox_args`, `run_denials`); every dispatch path (crow-runs, crow-retro, crow oneshot) starts cdx without credential variables; `crow runs` and the deck show denials; runbook `dispatch-background-runs.md` "Run sandbox".
+- AC2 holds. Probe (scratch folder, `cdx run rk1 --permission auto`, haiku): `GH_TOKEN`, `AWS_SECRET_ACCESS_KEY` and `FAKE_PROBE_TOKEN` set in the dispatching env were absent from the run's `env`. gh and glab keep their config dirs. Test: `tests/test_crow_run_sandbox.py::test_dispatch_hands_cdx_a_credential_free_env`.
+- AC5 holds: the runbook lists each kind's allowlist and the widening steps.
+- AC1 partial: denials are reported (probe with `--permission default`: both Bash calls came back as `permission_denials`, parsed by `run_denials`, shown in `crow runs` and the deck). Passing the kind's allowlist per run needs `cdx run --extra-args` (upstream cdx-manager issue 120). `cdx set --extra-args` is per account and also changes interactive launches.
+- AC3 open: the probe showed a scratch folder's `.mcp.json` server loading in a headless run. `--strict-mcp-config` needs the same per-run transport.
+- AC4 open: the allowlist probes run once the transport exists.
+- Workspace isolation (item_076): kept as worktrees here; the OS boundary is item_100 (cdx `--isolate-workspace`, needs pasta).
+- Next once cdx ships per-run args: dispatch passes `--permission default --extra-args` with `sandbox_args(kind)`, then review, task and retro probes.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
