@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from crow_vault import INBOX, WORK, daily_path, vault_path  # noqa: E402
+from crow_vault import DAILY_DIR, INBOX, WORK, crow_lines, daily_path, vault_path  # noqa: E402
 
 import yaml  # noqa: E402
 
@@ -136,12 +136,21 @@ def threads(state, sections=None, width=None, tags=None):
     return out
 
 
+def activity_days(state):
+    """{date: text} of crow activity: the daily note's CR-0W section, plus legacy local/state/activity files."""
+    days = {p.stem: read(p, 200000) or "" for p in (state / "activity").glob("*.md")}
+    vault = vault_path()
+    if vault is not None and (vault / DAILY_DIR).is_dir():
+        for path in (vault / DAILY_DIR).glob("20??-??-??.md"):
+            lines = crow_lines(vault, dt.date.fromisoformat(path.stem))
+            if lines:
+                days[path.stem] = "\n".join(filter(None, [days.get(path.stem, "").rstrip(), *lines]))
+    return days
+
+
 def activity_logs(state, since, per_day=4000):
-    out = {}
-    for path in sorted((state / "activity").glob("*.md")):
-        if path.stem >= since.isoformat():
-            out[path.stem] = read(path, per_day)
-    return out
+    return {day: cap(text, per_day) for day, text in sorted(activity_days(state).items())
+            if day >= since.isoformat()}
 
 
 def decisions_since(state, since):
@@ -159,9 +168,9 @@ def decisions_since(state, since):
 
 
 def last_brief(state):
-    for path in sorted((state / "activity").glob("*.md"), reverse=True):
-        if "[hub] brief" in (read(path, 50000) or ""):
-            return path.stem
+    for day, text in sorted(activity_days(state).items(), reverse=True):
+        if "[hub] brief" in text:
+            return day
     return None
 
 
@@ -275,7 +284,7 @@ def brief(state, vault, apply=True):
         "open_threads": threads(state, {"Me", "Waiting"}),
         "status": read(note("status"), 4000),
         **sources,
-        "targets": {"activity_log": str(state / "activity" / f"{TODAY}.md")},
+        "targets": {"activity_log": "bin/crow-log '[tag] text'"},
     }
 
 
@@ -299,7 +308,7 @@ def daily(state, vault, since):
         "targets": {"daily_note": str(daily_path(vault, TODAY)) if vault else None,
                     "template": str(vault / "90 Templates" / "Daily Note.md") if vault else None,
                     "last_daily": str(state / "last-daily"),
-                    "activity_log": str(state / "activity" / f"{TODAY}.md")},
+                    "activity_log": "bin/crow-log '[tag] text'"},
     }
 
 

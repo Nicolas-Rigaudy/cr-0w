@@ -82,5 +82,5 @@ Outcome: <done / partly / abandoned, one line>
 
 Batch mode: write the single report path named in the manifest (`local/state/retros/YYYY-MM-DD-batch.md`) instead, titled `# Retro batch: <date>`, with one `## <project> <session8>` section per session holding the Task / Outcome / Findings / Hub handoff / Risks left lines above (at most 30 lines each). Don't write a skipped list: the script appends it. One activity line for the whole batch: `- HH:MM [retro] batch: <n> sessions, <n> applied, <n> proposed`.
 
-Then append `- HH:MM [retro] <project> <session8>: <n> applied, <n> proposed` to today's activity log (`local/state/activity/YYYY-MM-DD.md`).
+Then run `bin/crow-log "[retro] <project> <session8>: <n> applied, <n> proposed"`.
 Final message: the report path and one line per applied change.

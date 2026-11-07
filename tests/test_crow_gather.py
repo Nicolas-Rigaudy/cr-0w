@@ -62,7 +62,7 @@ def test_brief_keeps_me_and_waiting_with_stale_flag(hub):
     assert threads["_skipped_counts"] == {"Crow": 1}
     assert data["activity"] == {"skipped": "offline"}
     assert data["checks"] == {"skipped": "offline"}
-    assert data["targets"]["activity_log"].endswith(f"{TODAY}.md")
+    assert data["targets"]["activity_log"].startswith("bin/crow-log")
 
 
 def test_daily_since_last_daily_and_work_threads_only(hub):

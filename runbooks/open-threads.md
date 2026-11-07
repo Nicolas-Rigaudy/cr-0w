@@ -18,7 +18,7 @@ One file in the state dir (`vault.crow_dir` or `local/state/`): `open-threads.md
 - Moving an item to another actor means moving the line and re-dating it.
 
 ## Rules
-- Done means gone. A ticked item leaves the file in the same write and goes to `activity/YYYY-MM-DD.md` as `- HH:MM [project] done: text`.
+- Done means gone. A ticked item leaves the file in the same write and is logged with `bin/crow-log "[project] done: text"` (daily note, CR-0W section).
 - Never write a status note here. Project state goes to `status.md`, constraints and decisions to `decisions.md`.
 - Stale: no touch for 14 days (date older than today minus 14). Readers list stale lines and ask keep, re-date or drop. Drop means the line leaves the file.
 - One line per item. Update a line in place, never duplicate it.

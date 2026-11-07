@@ -14,7 +14,7 @@ release passes through as written in projects.yaml; release.date (YYYY-MM-DD) an
 for projects without a roadmap doc. work counts the scope identity's commits per day over the last WORK_DAYS days, on
 every branch (the subdir only, when the project has one).
 
-state_dir is the machine state dir (local/state); threads_file is the open threads note (vault crow folder once vault.crow_dir is set). short is the first alias, else the name. stale_trees counts <path>.wt/* worktrees already merged into
+state_dir is the machine state dir (local/state); threads_file is the open threads note (vault crow folder once vault.crow_dir is set); daily_dir holds the vault daily notes ("" without a vault). short is the first alias, else the name. stale_trees counts <path>.wt/* worktrees already merged into
 the default branch. Read only.
 """
 import datetime as dt
@@ -27,6 +27,13 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_lib  # noqa: E402
 HOME = crow_lib.data_home()
 
+
+
+def daily_dir(reg):
+    """Vault daily notes folder: CROW_VAULT, else vault.path ("" without a vault)."""
+    from crow_vault import DAILY_DIR
+    vault = os.environ.get("CROW_VAULT") or (reg.get("vault") or {}).get("path")
+    return str(Path(vault) / DAILY_DIR) if vault else ""
 
 def git(path, *args):
     r = subprocess.run(["git", "-C", str(path), *args], capture_output=True, text=True, timeout=15)
@@ -131,7 +138,8 @@ def load():
         })
     state = str(crow_lib.machine_dir(HOME))
     return {"identities": reg.get("identities") or {}, "state_dir": state,
-            "threads_file": str(crow_lib.crow_path("threads", reg, HOME)), "projects": out}
+            "threads_file": str(crow_lib.crow_path("threads", reg, HOME)),
+            "daily_dir": daily_dir(reg), "projects": out}
 
 
 if __name__ == "__main__":

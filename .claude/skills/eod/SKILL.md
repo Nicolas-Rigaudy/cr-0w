@@ -26,7 +26,7 @@ One `AskUserQuestion` call, one question per topic, each self-contained: the top
 | A blocker | `bin/crow-note "<text> #blocage" --section eod` |
 | A project fact | the project note under `10 Work`, appended as one bullet |
 | A new open item | `<state>/open-threads.md`, one line `- [ ] YYYY-MM-DD [project] text → next step` under `## Me`, `## Crow` or `## Waiting` (Waiting starts with the person) |
-| An open item now finished | remove its line from `open-threads.md` and log `- HH:MM [project] done: text` in `activity/YYYY-MM-DD.md` |
+| An open item now finished | remove its line from `open-threads.md` and run `bin/crow-log "[project] done: text"` |
 | "Not touched" / skipped | nothing |
 
 Rules: never write a status note into `open-threads.md`; write in the language of the note (French in the vault), short and declarative. Never edit outside the agreed sections, never rewrite existing lines, never touch another person's content. Tags: #team #naval #blocage #decision #demo (extend only when asked).

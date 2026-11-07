@@ -34,8 +34,8 @@ Commit doc changes following the hub autonomy rules (`$CROW_HOME/CLAUDE.md`):
 
 ## 4. Save. Always (hub state)
 In the state dir:
-- `activity/YYYY-MM-DD.md`: append `- HH:MM [project] one-line summary` per notable item done (non-git work matters most: meetings, decisions, R&D, ops)
-- `open-threads.md` (format and rules: `runbooks/open-threads.md`): put each open item as one line `- [ ] YYYY-MM-DD [project] text → next step` under `## Me` (owner acts), `## Crow` (point to the Logics item if any) or `## Waiting` (start with the person's name); update a line in place and re-date it when touched. An item finished this session is removed from the file in the same write and logged in `activity/` as `- HH:MM [project] done: text`. Never write a status note here (use `status.md`, or `decisions.md` for constraints)
+- Activity: run `bin/crow-log "[project] one-line summary"` (daily note, CR-0W section) per notable item done (non-git work matters most: meetings, decisions, R&D, ops)
+- `open-threads.md` (format and rules: `runbooks/open-threads.md`): put each open item as one line `- [ ] YYYY-MM-DD [project] text → next step` under `## Me` (owner acts), `## Crow` (point to the Logics item if any) or `## Waiting` (start with the person's name); update a line in place and re-date it when touched. An item finished this session is removed from the file in the same write and logged with `bin/crow-log "[project] done: text"`. Never write a status note here (use `status.md`, or `decisions.md` for constraints)
 - `decisions.md` (only for decisions with lasting impact): `## YYYY-MM-DD [project] title` + 1–3 lines of why
 - `status.md` (hub mode, or if a project's status changed): one row per project: status, current focus, next step, blocked by
 
