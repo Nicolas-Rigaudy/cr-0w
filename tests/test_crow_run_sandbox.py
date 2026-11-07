@@ -89,3 +89,34 @@ def test_run_denials_from_cdx_warnings():
         {"code": "other"}]}}
     assert crow_lib.run_denials(run) == ["Bash: touch x", "Write: /p/f", "mcp__echo__ping"]
     assert crow_lib.run_denials({}) == [] and crow_lib.run_denials(None) == []
+
+
+def test_dispatch_hands_cdx_a_credential_free_env(tmp_path, monkeypatch):
+    """crow-runs dispatch starts cdx without the hub's tokens (the run inherits cdx's env)."""
+    import importlib.machinery
+    import importlib.util
+    (tmp_path / "local").mkdir()
+    (tmp_path / "local" / "projects.yaml").write_text(f"projects:\n  - {{name: demo, path: {tmp_path}}}\n")
+    (tmp_path / "bin").mkdir()
+    monkeypatch.setenv("CROW_HOME", str(tmp_path))
+    monkeypatch.setenv("CROW_ACCOUNT", "main")
+    monkeypatch.setenv("GH_TOKEN", "secret")
+    loader = importlib.machinery.SourceFileLoader("crow_runs_sb", str(BIN / "crow-runs"))
+    spec = importlib.util.spec_from_loader("crow_runs_sb", loader)
+    cr = importlib.util.module_from_spec(spec)
+    loader.exec_module(cr)
+    seen = []
+
+    class R:
+        returncode = 0
+        stdout = '{"ok": true, "run_id": "sb000001-full"}'
+
+    monkeypatch.setattr(cr.subprocess, "run", lambda argv, **k: seen.append((argv, k.get("env"))) or R())
+    monkeypatch.setattr(cr.subprocess, "Popen", lambda *a, **k: None)
+    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(cr.crow_lib, "provider_of", lambda acct: "claude")
+    monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
+    monkeypatch.setattr(sys, "argv", ["crow-runs", "dispatch", "demo", "t-1", "--prompt", "p"])
+    cr.main()
+    argv, env = next(x for x in seen if x[0][:2] == ["cdx", "run"])
+    assert "GH_TOKEN" not in env and env["CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"] == "1"

@@ -124,11 +124,13 @@ oneshot() {
   local prompt out
   "$CROW_HOME/bin/crow-accounts" require "$CROW_ACCOUNT"
   prompt=$("$CROW_HOME/bin/crow-accounts" prompt "$CROW_ACCOUNT" "$@")
-  # Headless flags and env (crow_lib.run_flags): one line of KEY=VALUE pairs, then one argument per line.
+  # Headless flags and env (crow_lib.run_flags): one line of `env` arguments (-u for each credential variable the
+  # run must not inherit, crow_lib.sandbox_env, then KEY=VALUE pairs), then one argument per line.
   local spec env=() flags=() line
-  spec=$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import crow_lib as c
+  spec=$(python3 -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import crow_lib as c
 f, e = c.run_flags("oneshot", c.provider_of(sys.argv[2]))
-print(" ".join(f"{k}={v}" for k, v in e.items())); print("\n".join(f))' "$CROW_HOME/bin" "$CROW_ACCOUNT")
+drop = c.sandbox_env(dict(os.environ), "oneshot")[1]
+print(" ".join([f"-u {n}" for n in drop] + [f"{k}={v}" for k, v in e.items()])); print("\n".join(f))' "$CROW_HOME/bin" "$CROW_ACCOUNT")
   read -r -a env <<<"$(head -1 <<<"$spec")"
   while IFS= read -r line; do [[ -n "$line" ]] && flags+=("$line"); done < <(tail -n +2 <<<"$spec")
   out=$(env "${env[@]}" cdx run "$CROW_ACCOUNT" --cwd "$CROW_HOME" --prompt "$prompt" "${flags[@]}" \

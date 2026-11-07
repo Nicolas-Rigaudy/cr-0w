@@ -742,7 +742,7 @@ def dispatch(a):
     if a.dry_run:
         print(" ".join(f"{k}={v}" for k, v in env.items()), " ".join(cmd))
         return
-    out = subprocess.run(cmd, capture_output=True, text=True, env=crow_lib.run_env(env)).stdout.strip()
+    out = subprocess.run(cmd, capture_output=True, text=True, env=crow_lib.run_env(env, a.kind)).stdout.strip()
     try:
         res = json.loads(out)
     except ValueError:

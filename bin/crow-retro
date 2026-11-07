@@ -266,7 +266,7 @@ def run_batch(manifest, n):
     flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL, budget=batch_budget(n))
     out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags, "--label", "retro-batch",
                           "--permission", permission, "--prompt", prompt, "--json"],
-                         capture_output=True, text=True, env={**crow_lib.run_env(env), "CROW_RETRO": "1"})
+                         capture_output=True, text=True, env={**crow_lib.run_env(env, "retro"), "CROW_RETRO": "1"})
     try:
         return json.loads(out.stdout)
     except json.JSONDecodeError:
@@ -463,7 +463,7 @@ def analyze(entry):
     flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL)
     out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags,
                           "--permission", permission, "--prompt", prompt, "--json"],
-                         capture_output=True, text=True, env=crow_lib.run_env(env))
+                         capture_output=True, text=True, env=crow_lib.run_env(env, "retro"))
     try:
         result = json.loads(out.stdout)
     except json.JSONDecodeError:
