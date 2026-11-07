@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 70
-> Confidence: 60
+> Understanding: 85
+> Confidence: 70
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -32,6 +32,15 @@
 - Owner decisions 2026-11-06: laptop first, homelab later if it pays, tower idle only; Claude for anything that matters and all work data; Antigravity on Gmail accounts after a terms check; local after benchmarks.
 - cdx already has profiles with policy (`use`, `ask-first`, `never`), priority and budget; req_025 routes by scope.
 - Jarvis used Codex first, Claude second, Ollama for private and bulk; Ultron used 3 Claude accounts only.
+
+# Spike findings (2026-11-07)
+
+Spec: `logics/specs/req_029_hosts/README.md` (answers, router table, decisions D1 to D6) and `benchmark-protocol.md`.
+- Need 4: measured about 12 to 22 headless runs a day; bulk text costs cents on Haiku. Local is justified by data class (bank, personal mail), not by cost.
+- Need 6: `cdx status --json` already gives both windows, reset times and a burn projection; no one-token probe for Claude. Antigravity quota only appears after an interactive launch.
+- Need 5: one account; free weekly quota has no published number; interactions are stored and human-reviewable unless opted out. Primary pages cited in the spec.
+- Need 2: idle signals and yield strategy defined; remote `--continue-run` is unsupported in cdx 0.26.6, so long Claude missions stay off the tower.
+- Needs env: Need 3 benchmarks on three machines, the tower's OS and GPU, `agy` login for the free-quota measurement.
 
 # Acceptance criteria
 - AC1: A host recommendation (control host now and later, tower rules) with the measured gain and cost.
