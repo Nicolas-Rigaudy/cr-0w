@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 16:38:24
+> Indicators reviewed: 2026-11-07 17:03:34
 
 # AI Context
 - Summary: Nest and deck keep two themes only, modern (work default) and cyber (personal default). A theme changes look, motion, 2D/3D elements and the butler voice. Nest gets a 3D world that shows missions and agents at work. One focus switch later drives the whole desktop. Design research comes first.
@@ -113,3 +113,4 @@ After pass 3 (Blender kits) was rejected ("shows nothing the system is doing, ra
 - **Main world: the droid workshop.** Droids carry their mission crate from bench to bench along one loop: intake hatch, power cells per account, workbenches, scan arch, the owner's desk with an amber lamp (needs you), review counter, rest racks (done). The base is the cyber take 1. Modern is the atelier version with a redesigned original cast (no film droid look-alikes).
 - **Kept in mind:** the hangar (biggest wow, ships), the grid city (simplest, closest to a node view) and the war table ("your move" signal). They are candidates for later views or extra rooms, not dropped.
 - How the concepts got there: purpose first, then content, then flat annotated sketches, then image prompts that name a game genre and never "dashboard/UI". This replaces the rejected render passes 1 to 3.
+- Next: `item_125_workshop_concept_art_round_2_original_cast_states_phone_and_night_views`, then `item_126_plan_the_workshop_nest_build_from_the_approved_concept_art`.
