@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 75%
-> Confidence: 65%
+> Understanding: 85%
+> Confidence: 75%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub strategy
@@ -23,13 +23,13 @@
 - In:
   - A Stop hook that runs the item_106 parser on the expected `phase.vN.md`.
   - Block with the parser errors as the reason; allow the stop once the file is valid.
-  - A retry cap so a run cannot loop forever.
+  - Allow the stop when `stop_hook_active` is true and the file is still invalid, so the run cannot loop; core logs a contract failure. Claude Code also caps consecutive stop-hook continuations at 8.
 - Out:
   - Runs where hooks do not load (`--bare`).
 
 # Acceptance criteria
 - AC1: A run that ends without the file is blocked once with the reason, then writes it.
-- AC2: After the retry cap the stop is allowed and core logs a contract failure.
+- AC2: On a second stop with `stop_hook_active` true and no valid file, the stop is allowed and core logs a contract failure.
 
 # AC Traceability
 - request-AC4 -> AC1. Proof: a scripted run in the dry run.
@@ -50,7 +50,7 @@
 
 # Notes
 - Depends on item_106, and on how isolated runs load hooks (item_100, item_077).
-- Confirm the loop-guard field of Stop hooks before building; the docs fetch was truncated.
+- Stop input carries `stop_hook_active` and `last_assistant_message`; continuations are capped at 8 (https://code.claude.com/docs/en/hooks, Claude Code 2.1.319, checked 2026-11-07).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -2,37 +2,39 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 90%
-> Confidence: 85%
+> Understanding: 92%
+> Confidence: 88%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 
 # AI Context
-- Summary: A stdlib validator for the JSON Schema subset the spec uses, a loader that reads kind files from a configured path, and a test that validates every spec file.
+- Summary: A stdlib validator for the JSON Schema subset the spec uses and a repo test that validates every spec file, so the spec stays valid while it is reviewed.
 - Keywords: kind file, loader, validator, json schema subset, spec test
 - Use when: Reading kind files or checking the spec files stay valid.
-- Skip when: Wiring kinds into dispatch (needs the owner review item).
+- Skip when: Reading kinds at runtime (the loader waits on D6 and the owner review).
 
 # Problem
 - The spec defines kinds as YAML files and a JSON Schema, but nothing checks them.
 - `jsonschema` is not installed and the repo avoids new dependencies.
-- core needs one loader; crow dispatch can share it while core is not built.
+- A spec check is a test, not core code: it is useful whatever backend req_031 picks.
 
 # Scope
 - In:
-  - A stdlib validator for the keywords the spec schemas use: type, enum, const, required, properties, additionalProperties, pattern, min and max, items, minItems, uniqueItems, $ref, allOf, if and then, propertyNames.
-  - A loader that reads `<dir>/<kind>.yaml`, validates it and returns the kind. The dir comes from config, never a hard-coded path.
-  - A test that validates the 8 kind files and every example against its schema, plus negative cases.
+  - A stdlib validator for the keywords the spec schemas use: type, enum, const, required, properties, additionalProperties, pattern, minimum, maximum, minLength, maxLength, items, minItems, uniqueItems, $ref with $defs, allOf, if and then, propertyNames. `format` is an annotation only. YAML through PyYAML, already used by `bin/`.
+  - A repo test that validates the 8 kind files, the three schemas' examples and the example mission against their schemas, plus negative cases.
+  - The validator fails on a keyword it does not know, so a schema edit cannot pass silently.
 - Out:
+  - A runtime loader that reads kinds from a configured dir (waits on D6 and item_105; goes with the first consumer).
   - Replacing `RUN_KINDS` in dispatch (after the owner review).
   - The core port if req_031 picks Go.
 
 # Acceptance criteria
 - AC1: The validator accepts the 8 kind files and rejects a file with a bad phase, duplicate gates or an unknown field.
-- AC2: The loader reads the kind dir from config and fails with the file and field on an invalid kind.
-- AC3: A test in the repo suite validates every file under the spec dir against its schema.
+- AC2: An invalid file fails with the file path and the JSON path of the bad field.
+- AC3: A test in the repo suite validates every file under the spec dir against its schema and runs in `bin/crow-check`.
+- AC4: A schema using a keyword outside the subset fails the test.
 
 # AC Traceability
 - request-AC1 -> AC1. Proof: the 8 kind files validate in the test suite.
@@ -55,6 +57,7 @@
 # Notes
 - Spec: `logics/specs/req_037_run_contract/`.
 - A throwaway prototype of the validator passed on the spec files during grooming.
+- First item to build: it needs no owner answer.
 - Python because `bin/` and logics-manager are Python. A Go backend (req_031) ports the loader, the schemas stay.
 
 # Executions

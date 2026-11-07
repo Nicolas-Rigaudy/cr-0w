@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 01:33:55
 
 # AI Context
 - Summary: Give every kind a skill: reuse corpus, review, review-threads and implement-task, and fill the gaps for research, design, repair and generic write.
@@ -28,7 +29,8 @@
   - Changing bundled logics-manager skills (upstream).
 
 # Acceptance criteria
-- AC1: Every kind file names a skill with status exists, local or bundled.
+- AC1: Every kind file names a skill with status `exists`, local or bundled.
+- AC3: Each existing skill reused by a kind (corpus, review, review-threads, implement-task) ends its turn by writing the version file when the brief asks, without edits to bundled skills.
 - AC2: A run of each phase 1 kind with its skill writes a valid version file.
 
 # AC Traceability

@@ -1,13 +1,14 @@
 ## item_106_parse_and_validate_the_crow_block_and_questions_file - Parse and validate the crow block and questions file
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Draft
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 01:33:54
 
 # AI Context
 - Summary: Extract the one fenced crow block from a plan, report or mockup file, validate it and `outbox/questions.json` against the spec schemas, and report clear errors.
@@ -54,6 +55,7 @@
 
 # Notes
 - Depends on item_104 (validator).
+- Waits on D6: the parser is runtime code, its home is Python in `bin/` (D6 A) or core (D6 B). Ready once D6 is answered.
 - Spec: `logics/specs/req_037_run_contract/`.
 - Usable by AFK run reports before core exists.
 

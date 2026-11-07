@@ -107,7 +107,7 @@ Sections, in order: Goal, Mission, Owner preferences, Preflight, Answers so far,
 - The run writes one version file and ends the turn. It never waits for an answer inside the run.
 - A usage limit, a budget stop (`cdx --budget` exits 125) or a timeout ends the run. core records it and resumes later.
 - A resume after the owner's answer uses the same session where the tool allows it. A resume on another account is a cold run from the files (decision D2).
-- A stop guard hook can refuse to stop when no valid version file was written. Claude Code Stop hooks can block with exit code 2 and see the last assistant message. The hook needs hooks to run in headless mode (sandbox item).
+- A stop guard hook can refuse to stop when no valid version file was written. Claude Code Stop hooks can block with exit code 2 and see the last assistant message. `stop_hook_active` is true on a stop that follows a block; the hook allows the stop then, so a run cannot loop. The hook needs hooks to run in headless mode (sandbox item).
 
 ## Crow today
 
@@ -128,6 +128,7 @@ The kind files replace `RUN_KINDS` once a loader exists.
 | `cdx run` flags: `--kind`, `--permission`, `--timeout-seconds`, `--budget`, `--label`, `--detach`, `--failover` | `cdx run --help` | 0.26.6, 2026-11-06 |
 | `--output-format json --json-schema` returns `structured_output`; `--bare` skips hooks, CLAUDE.md and MCP; `--resume <session>` | https://code.claude.com/docs/en/headless | Claude Code 2.1.319, 2026-11-06 |
 | Stop hook blocks with exit 2 or `{"decision":"block"}`, receives `last_assistant_message` | https://code.claude.com/docs/en/hooks | 2026-11-06 |
+| Stop input has `stop_hook_active`; consecutive stop-hook continuations are capped at 8 | https://code.claude.com/docs/en/hooks | Claude Code 2.1.319, 2026-11-07 |
 | JSON Schema draft 2020-12 meta-schema | https://json-schema.org/draft/2020-12/schema | published 2022-06-16, checked 2026-11-06 |
 
 ## Open decisions

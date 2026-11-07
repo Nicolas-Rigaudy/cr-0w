@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 01:33:54
 
 # AI Context
 - Summary: Run one two-gate mission and one mockup loop by hand from files, resuming on a cold session, to prove the contract is enough.
@@ -52,7 +53,7 @@
 - Rationale: Last check before core builds on the contract.
 
 # Notes
-- Waits on D2 (resume model) and item_106.
+- Waits on D2 (resume model), item_106 and item_107 (brief for the cold resume).
 - Uses the scope-aware account pick (item_095).
 
 # Executions

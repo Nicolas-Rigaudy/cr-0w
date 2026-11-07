@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 90
-> Confidence: 80
+> Understanding: 92
+> Confidence: 82
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -46,7 +46,8 @@ Grooming findings:
 - One version counter per mission so `answers.vN.md` always answers version N.
 - The validation record matches req_030 Need 5 and item_099: one hash-chained record per publish action.
 - cdx `--continue-run` pins the parent's account, model and effort and cannot be combined with `--failover` (cdx-manager README, v0.26.6, checked 2026-11-06). Need 10's "resumes on the next account" needs a cold run. See D2.
-- Backend language is still open (req_031). Only the validator and the parser are Ready.
+- Backend language is still open (req_031). Only the spec validator (item_104) is Ready: it is a repo test, useful whatever the backend. The parser waits on D6.
+- Stop hooks carry `stop_hook_active`, so the stop guard (item_110) needs no retry counter of its own (hooks docs, Claude Code 2.1.319, checked 2026-11-07).
 
 # Decisions (open, for the owner)
 - **D1. Where kind files live.** req_028 slice 1 says a private `missions.yaml`; the spec uses one tracked file per kind.
@@ -75,7 +76,7 @@ Grooming findings:
 - **D6. Where the contract code lives before the backend is picked.**
   - A. Python in `bin/` now, shared by crow dispatch and the tests; core ports it if req_031 picks Go. Usable for AFK runs today.
   - B. Wait for req_031. No throwaway risk; nothing reads the contract meanwhile.
-  - Recommendation: A for the validator and the parser (items 104 and 106), B for the rest.
+  - Recommendation: A for the parser (item_106) so AFK reports can use the contract now, B for the rest. The spec validator (item_104) is a test and does not wait on D6.
 
 # Acceptance criteria
 - AC1: A kind file with every column of need 1 filled for the 8 kinds, phase 1 kinds first, reviewed by the owner.
@@ -111,6 +112,20 @@ Grooming findings:
 - `item_111_files_only_dry_run_of_a_two_gate_mission_and_a_mockup_loop`
 - `item_112_skill_and_reply_contract_for_each_mission_kind`
 - `item_113_preflight_questions_per_mission_kind_at_dispatch`
+
+# Execution order
+| Order | Item | Waits on | Status |
+| --- | --- | --- | --- |
+| 1 | item_104 spec validator and spec test | nothing | Ready |
+| 2 | item_105 owner review of the kind files | owner review, D1 | Draft |
+| 3 | item_106 crow block and questions parser | item_104, D6 | Draft |
+| 4 | item_112 skill per kind | D5, item_105 | Draft |
+| 5 | item_107 brief rendering | item_106, core mission record, D6 | Draft |
+| 6 | item_108 versions and validation record | item_106, core event log, D6 | Draft |
+| 7 | item_109 outbox ingest | item_106, core mission record | Draft |
+| 8 | item_111 files-only dry run | item_106, item_107, D2 | Draft |
+| 9 | item_110 stop guard | item_106, headless hook loading (sandbox items) | Draft |
+| 10 | item_113 preflight at dispatch | item_105, item_107 | Draft |
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
