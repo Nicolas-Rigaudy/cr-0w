@@ -2,12 +2,12 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 60%
-> Confidence: 65%
+> Understanding: 85%
+> Confidence: 75%
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 12:18:35
+> Indicators reviewed: 2026-11-07 16:38:24
 
 # AI Context
 - Summary: Nest and deck keep two themes only, modern (work default) and cyber (personal default). A theme changes look, motion, 2D/3D elements and the butler voice. Nest gets a 3D world that shows missions and agents at work. One focus switch later drives the whole desktop. Design research comes first.
@@ -95,3 +95,21 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Purpose of the world (owner, 2026-11-07, restart from zero)
+After pass 3 (Blender kits) was rejected ("shows nothing the system is doing, random models in groups with no purpose"), the design restarts from the purpose.
+- **When:** glanced at all day on a second screen, on return from AFK or a meeting, on the phone while away, and shown to other people.
+- **Answers at a glance:** something needs me; the work is moving or stuck; where my quota goes; what happened while I was away (a quick overview or a shortcut to a dedicated view, not the detail).
+- **Mode:** mostly watch, with a few actions. An interactive board: zones and droids open their panel (an MR area opens the MR panel, a droid opens its mission), a few launch buttons, like the buttons in Thao's renders.
+- **Why a world:** fun, reads better at a glance (a schematic beats a list), and a portfolio showpiece.
+- **Order:** purpose, then the content inventory (what the board shows), then the rendering choice. No render before the owner agrees on the content.
+- **Content (owner answers):** decisions show as "something needs me" and open a panel or the decision page on click, never the full detail in the world. Runs: simple status. Quota: a small bar, low priority. Away summary: no text, finished work waits in one place (end of a factory line, a spaceport, a spot on a grid). Few actions, mostly a viewer. No vault, Jira backlog or calendar detail.
+- **Core idea (owner):** see the flows crow is built from: when things happen and what state they are in. Comparable: a teammate's Jarvis view, 2D nodes per machine and per function with glowing orbs travelling the links between services.
+- **No orbs (owner):** a living world where droids walk from one workshop station to the next, keeping the simplicity of the orb view. Dispatch, AFK and MR are one mission workflow, and each kind of mission shows differently on it. Retro, quota and the rest are background items, maybe later.
+- **Sketch round (concepts4/sketches.html, flat annotated):** the owner understands all four ideas (hangar, workshop, grid city, holo war table). War table: no cards in hand. Hangar: it read as an airport. It must be a sci-fi Star Wars hangar.
+
+# World pick (owner, 2026-11-07)
+- Concept images v4 were made with Gemini from the v4 prompts, one per world in both themes. They sit in the hub's private research folder (refs/v4, compare-concepts-v4).
+- **Main world: the droid workshop.** Droids carry their mission crate from bench to bench along one loop: intake hatch, power cells per account, workbenches, scan arch, the owner's desk with an amber lamp (needs you), review counter, rest racks (done). The base is the cyber take 1. Modern is the atelier version with a redesigned original cast (no film droid look-alikes).
+- **Kept in mind:** the hangar (biggest wow, ships), the grid city (simplest, closest to a node view) and the war table ("your move" signal). They are candidates for later views or extra rooms, not dropped.
+- How the concepts got there: purpose first, then content, then flat annotated sketches, then image prompts that name a game genre and never "dashboard/UI". This replaces the rejected render passes 1 to 3.
