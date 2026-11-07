@@ -290,20 +290,23 @@ def log_event(rec, etype, data):
 
 def record_run(rec, state):
     """Record a run in its linked Logics doc. A warning at most: it never fails a dispatch or a notify.
-    Work repos are skipped: the doc write would be an uncommitted change in someone's checkout."""
+    Work repos keep Logics local and git-ignored, so worktrees lack it: record in the main checkout."""
     ref = rec.get("logics_ref")
     if not ref:
         return
     log_event(rec, "run." + state, {"label": rec.get("label"), "state": state})
     try:
         proj = next((p for p in REG["projects"] if p["name"] == rec.get("project")), {})
+        cwd = rec["cwd"]
         if proj.get("scope") == "work":
-            print(f"crow: warning: {ref} not updated, '{rec.get('project')}' is a work repo", file=sys.stderr)
-            return
+            cwd = proj.get("path") or cwd
+            if not (Path(cwd) / "logics").is_dir():
+                print(f"crow: warning: {ref} not updated, no local logics/ in '{rec.get('project')}'", file=sys.stderr)
+                return
         if not shutil.which("logics-manager"):
             print("crow: warning: logics-manager not found, run not recorded in the Logics doc", file=sys.stderr)
             return
-        r = subprocess.run(record_run_cmd(ref, rec["run_id"], state, rec.get("label", "")), cwd=rec["cwd"],
+        r = subprocess.run(record_run_cmd(ref, rec["run_id"], state, rec.get("label", "")), cwd=cwd,
                            capture_output=True, text=True, timeout=60)
         if r.returncode:
             print(f"crow: warning: record-run {ref} failed: {(r.stderr or r.stdout).strip()[:160]}", file=sys.stderr)
@@ -874,7 +877,7 @@ def main():
     d.add_argument("--dry-run", action="store_true", help="print the cdx command and env, start nothing")
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
-    d.add_argument("--logics", metavar="REF", help="Logics doc (item_074, req_019...) to record the run in; skipped in work repos")
+    d.add_argument("--logics", metavar="REF", help="Logics doc (item_074, req_019...) to record the run in; work repos record in their local logics/")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     d.add_argument("--cwd", help="run in this worktree of the project (<path>.wt/...) instead of the main checkout")
     d.add_argument("--account", help="run on this account (an ask-first account needs the owner's OK first)")

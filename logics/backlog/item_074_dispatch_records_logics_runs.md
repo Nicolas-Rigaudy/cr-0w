@@ -54,7 +54,7 @@
 
 # Notes
 - 2026-11-06 (Jarvis review): write each dispatch record as a core-shaped event (`{ts, mission, type, actor, data}`, adr_001) so the core store imports them on day one.
-- record-run writes to the target repo's working tree: in a work repo that is an uncommitted change in someone's checkout. Decide while building whether work repos are skipped or only hub docs get rows.
+- record-run writes to the target repo's working tree. Work repos keep logics/ local and git-ignored (owner decision 2026-11-07), so the row goes to the main checkout's logics/; no local logics/ means skip with a warning.
 
 # Delivery
 - Done 2026-11-06. `crow dispatch --logics <ref>` stores `logics_ref` in the ledger; dispatch and the notify loop call `flow record-run` (running, then succeeded/failed/cancelled with the crow state in Notes) via `record_run` in `bin/crow-runs`. The same run id updates the same row (checked with `--dry-run`).

@@ -60,12 +60,25 @@ def test_missing_tool_and_failure_only_warn(monkeypatch, tmp_path, capsys):
     assert "bad ref" in capsys.readouterr().err
 
 
-def test_work_repo_skipped(monkeypatch, tmp_path, capsys):
+def test_work_repo_records_in_main_checkout(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(cr, "EVENTS", tmp_path / "ev.jsonl")
-    monkeypatch.setattr(cr, "REG", {"projects": [{"name": "hub", "scope": "work"}]})
+    main = tmp_path / "repo"
+    (main / "logics").mkdir(parents=True)
+    monkeypatch.setattr(cr, "REG", {"projects": [{"name": "hub", "scope": "work", "path": str(main)}]})
+    monkeypatch.setattr(cr.shutil, "which", lambda n: "/bin/lm")
+    seen = {}
+    monkeypatch.setattr(cr.subprocess, "run",
+                        lambda *a, **k: seen.update(k) or type("R", (), {"returncode": 0, "stderr": "", "stdout": ""})())
+    cr.record_run(REC, "running")
+    assert seen["cwd"] == str(main)
+
+
+def test_work_repo_without_logics_skipped(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(cr, "EVENTS", tmp_path / "ev.jsonl")
+    monkeypatch.setattr(cr, "REG", {"projects": [{"name": "hub", "scope": "work", "path": str(tmp_path)}]})
     monkeypatch.setattr(cr.subprocess, "run", lambda *a, **k: 1 / 0)
     cr.record_run(REC, "running")
-    assert "work repo" in capsys.readouterr().err
+    assert "no local logics/" in capsys.readouterr().err
 
 
 def test_run_cost_with_and_without():
