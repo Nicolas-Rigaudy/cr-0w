@@ -1,13 +1,14 @@
 ## item_130_vault_side_dashboard_templates_and_folder_conventions - Vault side: dashboard, templates and folder conventions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 75%
 > Complexity: Low
 > Theme: Hub data
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-07 17:27:07
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -47,4 +48,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

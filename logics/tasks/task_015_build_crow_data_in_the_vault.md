@@ -1,13 +1,15 @@
 ## task_015_build_crow_data_in_the_vault - Build crow data in the vault
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 75%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-08 07:43:04
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -40,12 +42,12 @@
 - [ ] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
 
 # AC Traceability
-- request-AC1 -> `item_127_path_helper_separating_vault_notes_from_machine_state`. Proof deferred to slice closeout.
-- request-AC2 -> `item_127_path_helper_separating_vault_notes_from_machine_state`. Proof deferred to slice closeout.
-- request-AC3 -> `item_128_activity_lines_in_the_daily_note`. Proof deferred to slice closeout.
-- request-AC1 -> `item_129_move_owner_notes_into_the_vault_and_switch_on_crow_dir`. Proof deferred to slice closeout.
-- request-AC4 -> `item_129_move_owner_notes_into_the_vault_and_switch_on_crow_dir`. Proof deferred to slice closeout.
-- request-AC3 -> `item_130_vault_side_dashboard_templates_and_folder_conventions`. Proof deferred to slice closeout.
+- request-AC1 -> This task. Proof: Implemented in cb902fc, c284dfd, 8b8939e, 0ed4e98; validated with python3 -m pytest -q tests (444 passed) and go test ./... Source: `0ed4e98`
+- request-AC2 -> This task. Proof: Implemented in cb902fc, c284dfd, 8b8939e, 0ed4e98; validated with python3 -m pytest -q tests (444 passed) and go test ./... Source: `0ed4e98`
+- request-AC3 -> This task. Proof: Implemented in cb902fc, c284dfd, 8b8939e, 0ed4e98; validated with python3 -m pytest -q tests (444 passed) and go test ./... Source: `0ed4e98`
+- request-AC1 -> This task. Proof: Implemented in cb902fc, c284dfd, 8b8939e, 0ed4e98; validated with python3 -m pytest -q tests (444 passed) and go test ./... Source: `0ed4e98`
+- request-AC4 -> This task. Proof: Implemented in cb902fc, c284dfd, 8b8939e, 0ed4e98; validated with python3 -m pytest -q tests (444 passed) and go test ./... Source: `0ed4e98`
+- request-AC3 -> This task. Proof: Implemented in cb902fc, c284dfd, 8b8939e, 0ed4e98; validated with python3 -m pytest -q tests (444 passed) and go test ./... Source: `0ed4e98`
 
 # Validation
 - (no validation recorded yet)
@@ -61,4 +63,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
