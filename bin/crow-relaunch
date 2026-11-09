@@ -137,12 +137,7 @@ def resolve(ref):
         die(f"{len(hits)} interrupted sessions start with '{ref}'; give more of the id")
     if hits:
         return hits[0]["conversation_id"], hits[0]["transcript"]
-    paths = []
-    for acct in sorted(os.listdir(PROFILES)) if os.path.isdir(PROFILES) else []:
-        base = os.path.join(PROFILES, acct, "claude-home", ".claude", "projects")
-        for slug in sorted(os.listdir(base)) if os.path.isdir(base) else []:
-            if os.path.isfile(os.path.join(base, slug, ref + ".jsonl")):
-                paths.append(os.path.join(base, slug, ref + ".jsonl"))
+    paths = [p for _, p in crow_lib.find_transcripts(ref, PROFILES)]
     if len(paths) != 1:
         die(f"conversation '{ref}' matches {len(paths)} transcripts; use a full id from `crow runs sessions`")
     return ref, paths[0]

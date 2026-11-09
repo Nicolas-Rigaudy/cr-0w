@@ -175,8 +175,7 @@ def run_transcript(row):
     sid = row.get("conversation_id") or row.get("provider_session_id")
     if not sid:
         return None
-    return next((t for base in Path(crow_lib.profiles_dir()).glob("*/claude-home/.claude/projects")
-                 for t in base.glob(f"*/{sid}.jsonl")), None)
+    return next((Path(t) for _, t in crow_lib.find_transcripts(sid)), None)
 
 
 def watchdog(row, now=None):
@@ -474,7 +473,7 @@ def report(run_id, since="7d"):
 
 
 def report_from_transcript(session_id):
-    pats = [Path.home() / ".claude/projects", *Path(crow_lib.profiles_dir()).glob("*/claude-home/.claude/projects")]
+    pats = [Path.home() / ".claude/projects", *(Path(d) for _, d in crow_lib.transcript_dirs())]
     for base in pats:
         for t in base.glob(f"*/{session_id}.jsonl"):
             texts = []

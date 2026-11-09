@@ -80,12 +80,11 @@ def audit(days, hub=None, profiles=None):
     registry = cu.load_registry()
     cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
     since = cutoff.isoformat(timespec="seconds")
-    pattern = os.path.join(profiles or cu.PROFILES, "*", "claude-home", ".claude", "projects", "*", "*.jsonl")
     total = {"turns": 0, "cost": 0.0}
     by_model, buckets, by_project, by_skill = {}, {}, {}, {}
     top_ctx, top_proj, start = [], {}, []
     hub_root = os.path.realpath(hub).rstrip("/") if hub else None
-    for path in glob.glob(pattern):
+    for _, path in cu.crow_lib.claude_transcripts(profiles or cu.PROFILES):
         if dt.datetime.fromtimestamp(os.stat(path).st_mtime, dt.timezone.utc) < cutoff:
             continue
         turns, prompt, entry, cwd = read_transcript(path, cu)

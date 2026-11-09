@@ -1,14 +1,15 @@
 ## item_136_read_cdx_profiles_through_the_cli - Read cdx profiles through the cdx CLI: profile dirs, relaunch by conversation, live sessions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 35%
 > Complexity: Medium
 > Theme: Hub portability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 17:28:44
+> Indicators reviewed: 2026-11-10 00:11:32
+> Owner: crow
 
 # AI Context
 - Summary: Replace crow's hand-built cdx profile paths with the cdx JSON CLI in three slices: profile and transcript dirs, relaunch by conversation id, live sessions.
@@ -25,7 +26,7 @@
   - S2 relaunch by conversation. `crow-relaunch` checks `cdx can-resume <account> --conversation <id> --json` before launching and resumes with `--conversation <id>`; `conversation_not_found` is a clear error, no fallback to `--last`. Works for Codex accounts too.
   - S3 live sessions. `crow-usage` `live_session_ids` (:616) and `crow-runs` `collect` (:628) take cdx-launched sessions from `cdx sessions --json` (pid, provider, cwd, conversation_id); `agent_procs` (/proc) stays for sessions started outside cdx, deduplicated by pid.
 - Out:
-  - `crow-usage` `rtk_homes` (rtk data, not cdx), `crow-ctx` settings.json, `crow-doctor` profile checks, `crow_lib` setup-token file: no cdx CLI equivalent, keep as is.
+  - `crow-usage` `rtk_homes` (rtk data, not cdx), `crow-ctx` settings.json, `crow-doctor` profile checks, `crow_lib` setup-token file, `crow-skills-ext` skills dirs: no cdx CLI equivalent, keep as is.
 
 # Acceptance criteria
 - AC1: S1 done: `grep -rn 'claude-home' bin` only hits crow_lib's fallback and the Out list.

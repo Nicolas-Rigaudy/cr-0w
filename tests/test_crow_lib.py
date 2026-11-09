@@ -131,3 +131,31 @@ def test_crow_path_in_vault_when_set(tmp_path):
 def test_crow_dir_absolute(tmp_path):
     reg = _reg(tmp_path, str(tmp_path / "elsewhere"))
     assert crow_lib.crow_dir(reg, tmp_path) == tmp_path / "elsewhere"
+
+
+def _profile_rows(root):
+    return [{"session": n, "provider": prov, "profile_dir": str(root / n), "transcripts_dir": str(root / n / td)}
+            for n, prov, td in (("cl", "claude", "x/projects"), ("cx", "codex", "codex-home/sessions"))]
+
+
+def test_cdx_profiles_reads_cdx_rows_inside_the_profiles_dir(tmp_path, monkeypatch):
+    root = tmp_path / "profiles"
+    rows = _profile_rows(root) + [{"session": "far", "provider": "claude", "profile_dir": "/elsewhere/far",
+                                   "transcripts_dir": "/elsewhere/far/p"}]
+    monkeypatch.setattr(crow_lib, "cdx_sessions", lambda all_profiles=False: rows)
+    assert [p["name"] for p in crow_lib.cdx_profiles(str(root))] == ["cl", "cx"]
+    (root / "cl" / "x" / "projects" / "-ws").mkdir(parents=True)
+    (root / "cl" / "x" / "projects" / "-ws" / "s1.jsonl").write_text("{}")
+    (root / "cx" / "codex-home" / "sessions").mkdir(parents=True)
+    assert crow_lib.transcript_dirs(str(root)) == [("cl", str(root / "cl" / "x" / "projects"))]
+    assert crow_lib.find_transcripts("s1", str(root)) == [("cl", str(root / "cl/x/projects/-ws/s1.jsonl"))]
+    assert crow_lib.account_transcripts_dir("cx", str(root)) == str(root / "cx" / "codex-home" / "sessions")
+
+
+def test_cdx_profiles_falls_back_to_the_layout_without_cdx(tmp_path, monkeypatch):
+    monkeypatch.setattr(crow_lib, "cdx_sessions", lambda all_profiles=False: [])
+    (tmp_path / "a").mkdir()
+    (tmp_path / ".hidden").mkdir()
+    (p,) = crow_lib.cdx_profiles(str(tmp_path))
+    assert p["name"] == "a" and p["transcripts_dir"] == str(tmp_path / "a/claude-home/.claude/projects")
+    assert crow_lib.account_transcripts_dir("new", str(tmp_path)).endswith("new/claude-home/.claude/projects")

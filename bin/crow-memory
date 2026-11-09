@@ -21,7 +21,7 @@ PROFILES = crow_lib.profiles_dir()
 
 
 def projects_dir(account):
-    return os.path.join(PROFILES, account, "claude-home", ".claude", "projects")
+    return crow_lib.account_transcripts_dir(account, PROFILES)
 
 
 def policy(account):
@@ -44,10 +44,7 @@ def git(*a):
 
 
 def status():
-    for acct in sorted(a for a in os.listdir(PROFILES) if not a.startswith(".")):
-        base = projects_dir(acct)
-        if not os.path.isdir(base):
-            continue
+    for acct, base in crow_lib.transcript_dirs(PROFILES):
         for slug in sorted(os.listdir(base)):
             m = os.path.join(base, slug, "memory")
             if os.path.islink(m):

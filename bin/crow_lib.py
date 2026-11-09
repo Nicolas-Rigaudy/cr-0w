@@ -1,4 +1,5 @@
 """crow_lib: helpers shared by the crow scripts."""
+import functools
 import json
 import os
 import pwd
@@ -93,15 +94,79 @@ def profiles_dir(env=None):
     return os.path.join(os.path.expanduser(root), "profiles")
 
 
+@functools.cache
+def _cdx_sessions(all_profiles, path_env):
+    """Rows of `cdx sessions [--all] --json`, or None when cdx is missing or fails (path_env keys the cache)."""
+    cmd = ["cdx", "sessions", "--json"] + (["--all"] if all_profiles else [])
+    try:
+        r = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=20)
+        doc = json.loads(r.stdout)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+    rows = doc.get("sessions") if isinstance(doc, dict) and doc.get("ok") else None
+    return tuple(rows) if isinstance(rows, list) else None
+
+
+def cdx_sessions(all_profiles=False):
+    """cdx session rows (session, provider, active, pid, cwd, conversation_id, profile_dir, transcripts_dir)."""
+    return list(_cdx_sessions(all_profiles, os.environ.get("PATH", "")) or [])
+
+
+def _layout_profile(profiles, name):
+    """Fallback for cdx < 0.23 or no cdx: the claude-home layout cdx used so far."""
+    return {"name": name, "provider": "claude", "profile_dir": os.path.join(profiles, name),
+            "transcripts_dir": os.path.join(profiles, name, "claude-home", ".claude", "projects")}
+
+
+def _layout_profiles(profiles):
+    if not os.path.isdir(profiles):
+        return []
+    return [_layout_profile(profiles, n) for n in sorted(os.listdir(profiles))
+            if not n.startswith(".") and os.path.isdir(os.path.join(profiles, n))]
+
+
+def cdx_profiles(profiles=None):
+    """cdx profiles under the profiles dir: name, provider, profile_dir, transcripts_dir.
+
+    Read from `cdx sessions --all --json`. Only rows whose profile_dir sits in `profiles` count,
+    so a temp profiles dir never mixes with the real ones; none at all falls back to the layout."""
+    profiles = profiles or profiles_dir()
+    root = os.path.realpath(profiles)
+    out = [{"name": r["session"], "provider": r.get("provider") or "claude", "profile_dir": r["profile_dir"],
+            "transcripts_dir": r["transcripts_dir"]}
+           for r in cdx_sessions(all_profiles=True)
+           if r.get("session") and r.get("profile_dir") and r.get("transcripts_dir")
+           and os.path.realpath(os.path.dirname(r["profile_dir"])) == root]
+    return sorted(out, key=lambda p: p["name"]) or _layout_profiles(profiles)
+
+
+def account_transcripts_dir(account, profiles=None):
+    """Transcripts dir of one account (the layout path when cdx does not list it, which may not exist yet)."""
+    profiles = profiles or profiles_dir()
+    p = next((p for p in cdx_profiles(profiles) if p["name"] == account), None)
+    return (p or _layout_profile(profiles, account))["transcripts_dir"]
+
+
+def transcript_dirs(profiles=None, provider="claude"):
+    """(account, transcripts_dir) for every cdx profile of `provider` whose transcripts dir exists."""
+    return [(p["name"], p["transcripts_dir"]) for p in cdx_profiles(profiles)
+            if p["provider"] == provider and os.path.isdir(p["transcripts_dir"])]
+
+
+def find_transcripts(session_id, profiles=None):
+    """(account, path) of every Claude transcript named <session_id>.jsonl in any cdx profile."""
+    hits = []
+    for acct, base in transcript_dirs(profiles):
+        for slug in sorted(os.listdir(base)):
+            path = os.path.join(base, slug, session_id + ".jsonl")
+            if os.path.isfile(path):
+                hits.append((acct, path))
+    return hits
+
+
 def claude_transcripts(profiles=None):
     """(account, path) for every top-level Claude transcript in every cdx profile."""
-    profiles = profiles or profiles_dir()
-    if not os.path.isdir(profiles):
-        return
-    for acct in sorted(os.listdir(profiles)):
-        base = os.path.join(profiles, acct, "claude-home", ".claude", "projects")
-        if acct.startswith(".") or not os.path.isdir(base):
-            continue
+    for acct, base in transcript_dirs(profiles):
         for slug in sorted(os.listdir(base)):
             d = os.path.join(base, slug)
             if not os.path.isdir(d):

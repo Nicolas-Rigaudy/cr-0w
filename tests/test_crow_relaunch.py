@@ -107,7 +107,7 @@ def test_dry_run_checks_cdx_and_launches_nothing(hub, cdx, session):
     assert r.returncode == 0, r.stderr
     assert "cdx handoff main shared --source-conversation abc-123" in r.stdout
     assert "nothing launched" in r.stdout
-    assert [c["argv"][0] for c in cdx[1]() if c["argv"][0] != "configs"] == ["can-resume", "status"]
+    assert [c["argv"][0] for c in cdx[1]() if c["argv"][0] not in ("configs", "sessions")] == ["can-resume", "status"]
     assert not (hub[0] / "local" / "state" / "relaunches.jsonl").exists()
 
 

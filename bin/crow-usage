@@ -572,6 +572,9 @@ def generate_titles():
         return done
 
 
+GIVE_UP = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).isoformat(timespec="seconds")
+
+
 def dispatch_titles(titles):
     """Background runs started by crow: their session takes the dispatch label (mapped once, then cached)."""
     mapped = set(titles.get("_runs") or [])
@@ -580,22 +583,19 @@ def dispatch_titles(titles):
             recs = [json.loads(l) for l in fh if l.strip()]
     except (OSError, json.JSONDecodeError):
         return False
+    todo = [r for r in recs if r.get("run_id") and r["run_id"] not in mapped]
+    if not todo:
+        return False
+    sids = cdx_conversations()
     changed = False
-    for rec in recs:
-        rid = rec.get("run_id")
-        if not rid or rid in mapped:
-            continue
-        logs = glob.glob(os.path.join(PROFILES, "*", "claude-home", "log", f"cdx-run-{rid}.stdout.log"))
-        sid = None
-        for log in logs:
-            with open(log, encoding="utf-8", errors="replace") as fh:
-                for line in fh:
-                    m = re.search(r'"session_id":\s*"([0-9a-f-]{36})"', line)
-                    if m:
-                        sid = m[1]
-                        break
+    for rec in todo:
+        rid = rec["run_id"]
+        sid = sids.get(rid)
         if not sid:
-            continue  # still running, or no log: try again on a later poll
+            if (rec.get("started_at") or "9") < GIVE_UP:
+                mapped.add(rid)  # older than cdx's window: stop asking
+                changed = True
+            continue  # still running: try again on a later poll
         titles[sid] = {"title": rec.get("label"), "source": "dispatch", "prompts": 10 ** 6}
         mapped.add(rid)
         changed = True
@@ -603,6 +603,33 @@ def dispatch_titles(titles):
         titles["_runs"] = sorted(mapped)
         save_titles(titles)
     return changed
+
+
+def cdx_conversations(since="30d"):
+    """Conversation id per cdx run id, from `cdx runs --json` (empty when cdx is missing).
+    The stdout log path comes from cdx too, never built by hand."""
+    try:
+        r = subprocess.run(["cdx", "runs", "--since", since, "--limit", "1000", "--json"],
+                           check=False, capture_output=True, text=True, timeout=30)
+        runs = json.loads(r.stdout).get("runs") or []
+    except (OSError, ValueError, AttributeError, subprocess.TimeoutExpired):
+        return {}
+    return {x["run_id"]: x.get("conversation_id") or x.get("provider_session_id")
+            or session_from_stdout((x.get("artifacts") or {}).get("stdout_path"))
+            for x in runs if isinstance(x, dict) and x.get("run_id")}
+
+
+def session_from_stdout(path):
+    """Claude session id in a run's stdout log (runs from cdx before conversation_id was recorded)."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                m = re.search(r'"session_id":\s*"([0-9a-f-]{36})"', line)
+                if m:
+                    return m[1]
+    except (OSError, TypeError):
+        return None
+    return None
 
 
 def save_titles(titles):
@@ -746,7 +773,7 @@ def collect_sessions(days):
     dispatch_titles(titles)
     live = live_session_ids()
     due = False
-    for path in glob.glob(os.path.join(PROFILES, "*", "claude-home", ".claude", "projects", "*", "*.jsonl")):
+    for account, path in crow_lib.claude_transcripts(PROFILES):
         st = os.stat(path)
         if st.st_mtime < cutoff:
             continue
@@ -757,7 +784,6 @@ def collect_sessions(days):
         fresh[path] = {"key": key, "data": data}
         if not data["per_model"]:
             continue
-        account = path.split(os.sep + "profiles" + os.sep, 1)[1].split(os.sep, 1)[0]
         f = figures(data["per_model"])
         totals, cost, priced = f["totals"], f["cost_usd"], f["priced"]
         by_day = {d: figures(models) for d, models in (data.get("per_day") or {}).items()}
