@@ -4,6 +4,7 @@ local/
 *.bak
 tools/crow-watch/crow-watch
 tools/crow-deck/crow-deck
+tools/crow-core/crow-core
 __pycache__/
 .pytest_cache/
 .claude/skills/daily
