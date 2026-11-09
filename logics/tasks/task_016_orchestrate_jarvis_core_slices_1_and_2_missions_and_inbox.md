@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 20%
+> Progress: 50%
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -28,7 +28,7 @@
 - [x] 2. item_131 core skeleton: config, event log, SQLite store, rebuild.
 - [x] 3. item_132 mission record, states, `crow mission new|list|show|cancel`.
 - [x] 4. item_107 brief rendering (Go).
-- [ ] 5. item_133 tick: admit, dispatch through `crow-runs`, finish runs. Slice 1 exit: a dispatched mission shows its state and runs in `crow mission list --json`.
+- [x] 5. item_133 tick: admit, dispatch through `crow-runs`, finish runs. Slice 1 exit: a dispatched mission shows its state and runs in `crow mission list --json`.
 - [ ] 6. item_109 outbox ingest and parking on `questions.json`.
 - [ ] 7. item_108 versions, answers files, validation record.
 - [ ] 8. item_134 inbox rows and `crow inbox list|show|answer`.
@@ -71,6 +71,7 @@
 - 2026-11-09 step 2 (item_131) done: `tools/crow-core` event log, store, rebuild, `crow core`. Next: step 3, item_132 mission record and `crow mission`. Ruff is red on about 90 pre-existing findings in bin/ and tests/ (PLW1510, F811, SIM115...), tracked as a separate chore.
 - 2026-11-09 step 3 (item_132) done: mission record, legal moves, `crow mission new|list|show|cancel` (a29413a, 3560404). Next: step 4, item_107 brief rendering.
 - 2026-11-09 step 4 (item_107) done: brief rendering, prefs file, `crow core mission brief` (5113cc4). Next: step 5, item_133 tick. Open spec gap: build `by_scope.crow` gates are [plan] while the example log shows plan, report.
+- 2026-11-09 step 5 (item_133) done: `crow-core tick` admits queued phase-1 missions through `crow-runs dispatch --mission` and finishes their runs (913630a). Slice 1 exit met: a dispatched mission shows `running` and its run in `crow mission list --json`. Next: step 6, item_109 outbox ingest. Open: admission cap on cdx `launch.max_parallel`, `flow record-run` for missions with a Logics ref.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`

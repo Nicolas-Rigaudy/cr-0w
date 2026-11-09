@@ -1,14 +1,15 @@
 ## item_133_dispatch_queued_missions_as_cdx_runs_and_track_them_in_a_tick - Dispatch queued missions as cdx runs and track them in a tick
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85
-> Confidence: 80
-> Progress: 0%
+> Status: Done
+> Understanding: 95
+> Confidence: 90
+> Progress: 100%
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 17:49:40
+> Indicators reviewed: 2026-11-09 18:13:12
+> Owner: crow
 
 # AI Context
 - Summary: `crow-core tick` admits queued missions, renders the brief, starts a detached cdx run through the existing dispatch path, and closes finished runs into mission state.
@@ -38,7 +39,11 @@
 - AC4: The run goes through `crow-runs dispatch` (one account pick and allowlist path), checked by a test with a fake cdx.
 
 # AC Traceability
-- request-AC1 -> AC1. Proof: tick test with a fake cdx and the real dispatch path.
+- request-AC1 -> AC1. Proof: Implemented in 913630a; validated with go test -count=1 ./... (tick_test.go, tick_cmd_test.go) and bin/crow-check (test_crow_runs_mission.py runs crow-runs dispatch with a fake cdx). Source: `913630a`
+- AC1 -> `internal/mission` TestTickStartsThenFinishesStraightThrough and TestTickGatedMissionGoesToReview: one tick shows `running` with run r1, a tick after the run ends shows `done` (no gates, ready) or `review` (gated), with run_end and gate events.
+- AC2 -> `internal/mission` TestTickCapsAdmission: the third queued mission stays `queued` with "2 of 2 runs busy"; a too_many_runs refusal also leaves it queued.
+- AC3 -> `internal/mission` TestTickNoVersionFileFails: no version file moves the mission to `failed` with a no_version_file incident naming "ended error (exit 2)".
+- AC4 -> `tick_cmd_test.go` TestCrowRunsDispatchFlags checks the exact `crow-runs dispatch --mission` args; tests/test_crow_runs_mission.py runs `crow-runs dispatch --mission` against a fake cdx.
 
 # Decision framing
 - Product framing: Not needed
@@ -61,6 +66,10 @@
 - 2026-11-09 tool pass (owner picked): cdx 0.26.8 `cdx run --extra-args 'ARGS'` is per run. Dispatch passes each mission's allowlist per run, no per-account extra-args edits (memory: background runs deny by default).
 - 2026-11-09: cdx 0.26.0 per-profile `launch.max_parallel` (0-5, 0 = no automatic missions; `cdx set <name> --max-parallel N`, shown in list/status JSON). The tick admits runs against it instead of crow's own cap.
 - 2026-11-09: logics-manager 2.24.2 `flow record-run <ref> --runner cdx --run-id <id> --state <state>` writes each run into the Executions table of the mission's Logics doc. Call it on run start and end when a mission has a Logics ref.
+- 2026-11-09 built (913630a): `crow-core tick [--json]` finishes ended mission runs, then admits queued phase-1 missions oldest first. It dispatches through `crow-runs dispatch --mission <id> --json` with the kind's model, effort, budget and timeout; read-only and review kinds run as crow-runs review runs. `crow-runs state <run>` reports the end and, for usage limits, the item_115 policy. Mission runs skip the detached notify and requeue: the tick finishes them.
+- Cause map from crow-runs states: done, limit to usage_limit, budget, stuck to timeout, stopped, failed to error. usage_limit and budget park the mission in `waiting` with an incident for item_135.
+- The admission cap is `CROW_MAX_RUNS` (default 2). Moving it to cdx `launch.max_parallel` is open.
+- Missions have no Logics ref field yet, so `flow record-run` is not called for mission runs.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
