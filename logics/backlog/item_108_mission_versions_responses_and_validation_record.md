@@ -1,14 +1,15 @@
 ## item_108_mission_versions_responses_and_validation_record - Mission versions, responses and validation record
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85%
 > Confidence: 75%
-> Progress: 0%
+> Progress: 100%
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 11:24:43
+> Indicators reviewed: 2026-11-09 20:02:38
+> Owner: crow
 
 # AI Context
 - Summary: core keeps every version file with its answers file, checks the Responses section, and writes one hash-chained validation record per publish action on ok.
@@ -38,7 +39,10 @@
 - AC4: A version 2 that skips an answer point is refused with the missing point named.
 
 # AC Traceability
-- request-AC4 -> AC1. Proof: replay of the example mission from files in the test suite.
+- request-AC4 -> AC1. Proof: Implemented in 0e7b72f; validated with go test ./... and bin/crow-check. TestAnswerReplaysTheExampleMission replays the example mission: all 22 log lines and answers.v1-v3 match byte for byte, both validation hashes included. Source: `0e7b72f`
+- AC2 -> `internal/mission` TestVerifyPassesThenRefusesAChangedEntry (a publish entry changed after ok gives a `validation_mismatch` incident and a refusal) and TestMessageAfterOkDropsTheValidation (a msg after ok writes `validation_dropped`; a new ok chains after the first two).
+- AC3 -> `internal/mission` TestChainBreaksOnEditOrReplay: an edited line, a replayed line and a forged actor each fail `CheckChain` with the line named.
+- AC4 -> `internal/mission` TestCoverageNamesTheMissingPoint and TestTickRefusesAVersionThatSkipsAPoint: a v2 that skips a2 fails the mission with "v2 responses miss a2".
 
 # Decision framing
 - Product framing: Not needed
@@ -57,6 +61,11 @@
 # Notes
 - Record shape shared with item_099 and req_030 Need 5.
 - Depends on item_106 and the core event log (adr_001).
+- 2026-11-09 built (0e7b72f): `internal/mission/answer.go`. `env.Answer(ref, Reply)` writes `answers.vN.md`, the owner `answer` event, a `validation_dropped` per live validation, then one `validation` per publish entry on ok/go/approve. `Verify` checks the chain and the payload hashes against the file on disk. `CheckChain` checks the owner actor, `prev_sha256` continuity and the owner event.
+- Event lines are now canonical JSON (sorted keys, `contract.Canonical`), like the spec example.
+- The `answer` event omits the surface; it lives in the answers file, as in the example.
+- A Verify mismatch keeps the mission in `review` (no legal move to a parked state from there).
+- Nothing moves review -> running after dig/msg yet. For item_134: `crow inbox answer` calls `env.Answer`, then that move.
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
 - 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core`; event log from item_131. Called by `crow inbox answer` (item_134).
