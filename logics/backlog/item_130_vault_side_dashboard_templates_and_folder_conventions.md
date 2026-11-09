@@ -1,14 +1,14 @@
 ## item_130_vault_side_dashboard_templates_and_folder_conventions - Vault side: dashboard, templates and folder conventions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 75%
+> Progress: 100%
 > Complexity: Low
 > Theme: Hub data
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:27:07
+> Indicators reviewed: 2026-11-09 10:46:09
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -48,3 +48,9 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_015_build_crow_data_in_the_vault`
+
+# Notes
+- Task `task_015_build_crow_data_in_the_vault` was finished via `logics-manager flow finish task` on 2026-11-09.

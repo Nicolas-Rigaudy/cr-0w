@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub data
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:27:07
+> Indicators reviewed: 2026-11-09 10:46:09
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -55,3 +55,9 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_015_build_crow_data_in_the_vault`
+
+# Notes
+- Task `task_015_build_crow_data_in_the_vault` was finished via `logics-manager flow finish task` on 2026-11-09.

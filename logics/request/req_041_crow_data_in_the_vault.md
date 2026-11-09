@@ -1,12 +1,13 @@
 ## req_041_crow_data_in_the_vault - Crow data in the vault
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: High
 > Theme: Hub data
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 10:46:08
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -53,4 +54,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
