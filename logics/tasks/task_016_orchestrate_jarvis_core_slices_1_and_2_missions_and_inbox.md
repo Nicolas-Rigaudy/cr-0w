@@ -1,13 +1,15 @@
 ## task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox - Orchestrate Jarvis core slices 1 and 2: missions and inbox
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 85%
 > Confidence: 80%
 > Progress: 0%
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-09 16:46:42
 
 # AI Context
 - Summary: Build req_028 slices 1 (mission model) and 2 (inbox and park/resume) as a Go core in `tools/crow-core` driven from the Python CLI, one fresh session per item, in the order below.

@@ -1,14 +1,14 @@
 ## item_119_go_core_and_python_sidecar_contract_with_shared_fixtures - Go core and Python sidecar contract with shared fixtures
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 11:24:43
+> Indicators reviewed: 2026-11-09 16:33:30
 
 # AI Context
 - Summary: Define the contract between the Go core and the Python sidecars: local JSON messages, versions and shared fixtures that both sides test against.
@@ -37,8 +37,8 @@
 - AC4: The shared Go module boundary with crow-deck is written down.
 
 # AC Traceability
-- request-AC1 -> AC1 to AC4. Proof: the contract doc and the shared fixtures.
-- request-AC2 -> AC2. Proof: the hello-world slice uses the Go core and one sidecar message.
+- request-AC1 -> AC1 to AC4. Proof: Implemented in c2e7799, 9ae4701, 923eae4, d524c68. `logics/specs/core_contract` lists hello, health and shutdown with request and reply fixtures (AC1); `tests/test_core_contract.py` and `tools/crow-core/contract` read the same fixtures, 30 and 9 tests pass (AC2); a fixture field added on one side fails both suites, checked by hand (AC3); README section "Shared Go module boundary with crow-deck" (AC4).
+- request-AC2 -> AC2. Proof: Implemented in c2e7799, 9ae4701, 923eae4, d524c68. `TestPythonSidecar` runs `bin/crow_sidecar.py` from Go over a real pipe and matches the lifecycle fixtures.
 
 # Decision framing
 - Product framing: Not needed
@@ -58,6 +58,7 @@
 - 2026-11-07 owner decision 22 (req_031 decision 1).
 - Frees the code homes of items 107, 108 and 109 to be Go.
 - 2026-11-09 groomed into task_016 (first step). Fixtures also cover the mission record, the run entry and the inbox row read by items 132 and 134. Go side lives in `tools/crow-core` (item_131).
+- 2026-11-09 done. Go package `crow-core/contract` holds envelope, mission, run, inbox, event, crow block, questions and kind types. A schema walk test ties Go json tags to the schemas. Python base sidecar `bin/crow_sidecar.py`. CI runs `go test -count=1` because the Go test cache does not track files outside the module. Event names are `run_start`/`run_end` everywhere; the req_037 build example log now carries the full state chain.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

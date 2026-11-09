@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 16:47:13
 
 # AI Context
 - Summary: Start the Go core as `tools/crow-core`: config paths, the append-only mission event log and a SQLite store rebuilt from it. No HTTP yet; a one-shot binary the Python CLI calls.
@@ -23,7 +24,7 @@
 - In:
   - Go module `tools/crow-core` (own `go.mod`, next to `tools/crow-deck`), binary `crow-core`, built by `bin/crow` the way the deck is built. CI already loops over Go dirs; check it picks the new one up.
   - Config: mission dir root, store path, kind files dir, private overrides dir. Defaults under `$CROW_HOME/local/state/missions/` (machine state). Paths from config so core can move host later.
-  - Event log per mission `missions/<id>/events.jsonl` with `{ts, mission, type, actor, data}` (req_037 spec "Mission dir"). Append with fsync and a file lock. Types used by slices 1-2: `created`, `state`, `run_start`, `run_end`, `question`, `answer`, `incident`.
+  - Event log per mission `missions/<id>/events.jsonl` with `{ts, mission, type, actor, data}` (req_037 spec "Mission dir"). Append with fsync and a file lock. Types used by slices 1-2: `created`, `state`, `run_start`, `run_end`, `gate`, `question`, `answer`, `validation`, `publish`, `incident`. Event, mission, run and inbox shapes are fixed by `logics/specs/core_contract` (item_119); decode them with the `crow-core/contract` package and add fixtures there for any new type.
   - Store: SQLite through a pure-Go driver (no cgo). Tables for missions, runs, inbox. `crow-core rebuild` drops and replays every `events.jsonl`; the store records the last applied offset per mission so normal writes replay only the tail.
   - Event fixtures from item_119 drive the Go tests.
 - Out:
