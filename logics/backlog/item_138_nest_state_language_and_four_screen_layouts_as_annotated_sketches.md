@@ -1,10 +1,10 @@
 ## item_138_nest_state_language_and_four_screen_layouts_as_annotated_sketches - Nest state language and four screen layouts as annotated sketches
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 60%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -73,6 +73,21 @@
 - Hybrid rationale: Derived from request `req_043_nest_design_scope_and_jarvis_3d_hero_option` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_043_nest_design_scope_and_jarvis_3d_hero_option.md`.
 - Generated locally by logics-manager.
+
+# Owner review (2026-11-09, laptop pass 1)
+- Sheets and compare page: vault `CR-0W/Research/nest-design/item138/` (generator `src138/gen.py`, page `compare-item138.html`).
+- Verdict: good first draft, base kept for both themes. Some rework needed.
+- Home density: dense.
+- Hero: dimmed at 50% behind Missions and Inbox.
+- Fonts: undecided. Compare pairs on the same screen. Cyber needs themed fonts throughout, body text included.
+- Missing content to add in pass 2:
+  - calendar access with upcoming meeting reminders
+  - mail access
+  - a stronger Missions dashboard
+  - the day's missions timeline
+  - a dedicated MR screen
+  - reports, and validation of questions and designs
+- Fold cover and inner screens wait for pass 2.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
