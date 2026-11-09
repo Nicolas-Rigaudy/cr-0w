@@ -67,6 +67,11 @@
 # Notes
 - References: vault `CR-0W/Research/nest-design/Nest Hero References.md` and `Nest Moodboard.html`. The owner prunes the moodboard before the sketches start; use only the kept images.
 - Reference layers: Iron Man HUD (panels on a sphere), Capri (the core as an apparition), Star Wars holoprojector (projection from a base, flicker for failed, dim for sleeping), Cyberpunk 2077 (glitch as a state), owner's Obsidian graph (real density).
+- Droid passes 5-7 (2026-11-09, vault `Research/nest-design/item139/pass5`, `pass6`, `pass7`, renderer `src139/pass7/hero7.html`):
+  - pass 5: arms C picked, A arms with B two-finger pincers;
+  - pass 6: visor band hull picked, at the pass 2 screen size, with a slit-eye tech face;
+  - pass 7: dorsal fin picked to replace the antenna; no ring (A halo, O orbit, B HUD arcs and C tick crown were rejected).
+  - Final renders: `pass7/hero-{idle,run,ask,fail}.png` and `pass7/heads-final.png`.
 - Hybrid rationale: Derived from request `req_043_nest_design_scope_and_jarvis_3d_hero_option` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_043_nest_design_scope_and_jarvis_3d_hero_option.md`.
 - Generated locally by logics-manager.
