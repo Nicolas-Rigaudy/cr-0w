@@ -9,7 +9,7 @@
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-09 22:08:34
+> Indicators reviewed: 2026-11-09 23:08:29
 
 # AI Context
 - Summary: The tick resumes an answered mission: rebuilt brief, then `cdx run --continue-run` for non-isolated runs or a cold run from files for isolated ones (item_116), with a resume cap.
@@ -57,6 +57,7 @@
 - Groomed 2026-11-09 from req_028 slice 2. Waits on item_134, item_133 and item_116 (cold path).
 - 2026-11-09 built in c440791 (ADR in fad796d): tick resumes answered missions through `env.resume`, cold after a usage limit. Resume cap: `budget.resumes` resumes in a row without a gate park the mission `queued -> waiting` on a core `resume-cap` question (continue/stop). Continue allows one more resume, stop cancels. Unit tests cover resume, cold resume, cap ask (AC3), cap stop and the gate reset.
 - 2026-11-09 real end-to-end (AC1) blocked: a research mission on rk1 (Sonnet low) ran in plan mode and wrote no questions file or version file; tick failed it "no plan, report or mockup v1". Cause is in dispatch, not resume: read-only kinds run in plan mode and the brief never names the mission folder. Captured as req_046. AC1 and AC2 wait on it.
+- 2026-11-09 item_143 (2bcaf72) unblocked the first run: the e2e mission parked its question and the answer queued it. The continue run then failed in cdx (inlined settings over the 512-char cap, AlexAgo83/cdx-manager#131). AC1 and AC2 wait on that fix.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

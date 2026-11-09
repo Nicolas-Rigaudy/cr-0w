@@ -9,7 +9,7 @@
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-09 17:49:36
+> Indicators reviewed: 2026-11-09 23:08:29
 
 # AI Context
 - Summary: Build req_028 slices 1 (mission model) and 2 (inbox and park/resume) as a Go core in `tools/crow-core` driven from the Python CLI, one fresh session per item, in the order below.
@@ -33,7 +33,7 @@
 - [x] 7. item_108 versions, answers files, validation record.
 - [x] 8. item_134 inbox rows and `crow inbox list|show|answer`.
 - [x] 9. item_116 cold resume of isolated missions from files.
-- [ ] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer.
+- [ ] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer. Blocked on AlexAgo83/cdx-manager#131 (continue-run inlines settings over 512 chars); park and answer proven live 2026-11-09.
 - [ ] Steps 6 and 7 can run in parallel sessions after step 5; everything else is sequential.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] Keep commit creation under operator control; do not force one commit per micro-step.

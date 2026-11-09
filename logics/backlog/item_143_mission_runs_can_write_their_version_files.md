@@ -1,10 +1,10 @@
 ## item_143_mission_runs_can_write_their_version_files - Mission runs can write their version files
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Blocked
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 85%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -68,6 +68,8 @@ Writes stay limited to that folder for read-only kinds; the project stays read-o
 # Notes
 - Risk: confirm on cdx that `--extra-args` carries `--add-dir` and the per-run `--settings` path within CDX_EXTRA_ARGS_MAX (512).
 - Risk: confirm headless Claude refuses (not prompts) an Edit outside the allowed path in default mode; test it in the e2e.
+- 2026-11-09 built in 2bcaf72: crow-runs `--write-dir` (realpath, must exist, refused on codex and isolated runs) adds `Edit(//DIR/**)` and `Write(//DIR/**)` to a per-run settings file `<kind>-<hash>.json` plus `--add-dir`; a review run with it leaves plan mode for default; read-only runs skip the busy-cwd check on Claude. Core passes the mission folder on every dispatch and resume; the brief names it and prefixes every path. Go and Python tests cover the flags, the allowlist, the refusals and the brief (AC2).
+- 2026-11-09 real e2e on rk1 (scratch store): run 4972d707 (review kind, default mode, Sonnet low, $0.13) wrote `report.v1.md` and `outbox/questions.json` in the mission folder and nothing in the repo (AC1); its brief named the absolute folder and paths (AC2). Tick parked q1, `crow inbox answer` queued it, tick started continue run 22eaa53c. cdx 0.26.11 failed it at launch: `--continue-run` inlines the `--settings` JSON, which breaks its own 512-char extra_args cap (`cdx_error`, status `stale_process`). Every continue of a sandboxed Claude run hits it. Filed upstream as AlexAgo83/cdx-manager#131 (owner chose the cdx fix over a crow cold-resume workaround). AC3 waits on it; the edit-refusal probe outside the folder runs in the same rerun.
 - Hybrid rationale: Derived from request `req_046_mission_runs_can_write_their_version_files` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_046_mission_runs_can_write_their_version_files.md`.
 - Generated locally by logics-manager.
