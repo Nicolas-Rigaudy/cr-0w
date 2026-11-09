@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09
+> Indicators reviewed: 2026-11-10 00:29:12
 
 # AI Context
 - Summary: First nest web app code: an installable React PWA shell with Home, Missions and Mission detail rendered from the item_119 fixtures, in the look approved in item_138 (laptop and Fold boards, both themes), with the Home hero slot from item_126. No live API yet.
@@ -63,6 +63,7 @@
 # Notes
 - 2026-11-09 owner picked option 3: design track first, shell once item_126 fixes the look. Not before the art is approved (memory design-renders-need-wow).
 - Order: item_138 → item_137, alongside task_016 (item_119 first). item_126 runs in parallel; its first build item fills the hero slot.
+- 2026-11-10 item_126 planned the hero: item_155 (static hero) fills the Home slot, item_156 to item_159 add the WebGL2 ASCII hero.
 - 2026-11-10 realigned by item_140: item_138 boards approved (canvas artifact MyPAqSwJFddMnSR4grm2g6, sources in vault `CR-0W/Research/nest-design/item138/fold-src/`), hero = Jarvis graph with the droid core (item_139), item_125 withdrawn. The shell can start now; item_126 fills the hero slot later.
 
 # Executions
