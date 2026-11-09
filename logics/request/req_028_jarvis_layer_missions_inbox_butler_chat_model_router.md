@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 11:24:42
+> Indicators reviewed: 2026-11-09 23:36:16
 
 # AI Context
 - Summary: Turn crow into a hands-off assistant. Work runs as background missions through cdx. Decisions, approvals and proposals land in one inbox shown in deck, nest and comlink. A butler chat talks to everything going on. A router picks the model and account per mission kind and data class. Status is told in short human sentences; detail stays one step away.
@@ -55,7 +55,7 @@
                    └─ gemini API key (cheap text tasks)
 ```
 
-# Slices (to groom into backlog items, in order; 1-2 groomed 2026-11-09 into task_016)
+# Slices (to groom into backlog items, in order; 1-2 groomed 2026-11-09 into task_016, 3-5 into task_017)
 1. **Mission model.** `crow mission new|list|show|cancel`; mission record (goal, kind, scope, budget, end state, autonomy, state `queued → running → waiting → review → done|failed`); one mission maps to one or more cdx runs; kinds and defaults in tracked `kinds/<kind>.yaml` files with optional private overrides in `local/` (owner decision 2026-11-07, req_037 D1). Depends on item_077 (allowlist per kind) and req_025 (scope → account).
    - AC: a dispatched mission shows its state and runs in `crow mission list --json`.
 2. **Inbox and park/resume.** File contract a run writes (question or proposal + artifacts dir); core turns it into an inbox item, parks the mission, resumes it with `--continue-run` on answer; `crow inbox list|show|answer`.
@@ -120,6 +120,16 @@
 - `item_134_inbox_items_and_the_crow_inbox_cli`
 - `item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume`
 - `item_135_resume_a_parked_mission_from_the_owner_s_answer`
+- Slices 3-5 groomed 2026-11-09, run order in `task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy`:
+- `item_144_core_http_service_with_read_endpoints_on_the_tailnet`
+- `item_145_deck_inbox_pane_reads_the_core_api`
+- `item_147_core_action_endpoints_for_dispatch_answer_stop_cancel_and_hide`
+- `item_146_section_change_stream_over_sse_with_a_polling_fallback`
+- `item_148_run_conversation_poller_with_cursors_in_core`
+- `item_149_one_line_run_summaries_from_a_cheap_model_cached_per_cursor`
+- `item_150_deck_agents_panel_shows_the_run_summary_first_and_the_trail_on_a_key`
+- `item_151_autonomy_dial_per_kind_and_mission_under_the_hard_rules`
+- `item_152_turn_on_full_auto_for_the_first_mission_kinds`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
