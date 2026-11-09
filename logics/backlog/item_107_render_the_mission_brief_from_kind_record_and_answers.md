@@ -1,14 +1,14 @@
 ## item_107_render_the_mission_brief_from_kind_record_and_answers - Render the mission brief from kind, record and answers
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 75%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 11:24:42
+> Indicators reviewed: 2026-11-09 17:45:03
 
 # AI Context
 - Summary: core writes `brief.md` from the kind file, the mission record, the owner prefs and every answers file, following the spec template.
@@ -36,6 +36,9 @@
 
 # AC Traceability
 - request-AC3 -> AC1. Proof: rendered brief compared to the spec example.
+- AC1 -> `internal/brief` TestFirstBriefIsTheExample: the render of the example mission equals `examples/20261109-build-item-095/brief.md` byte for byte, sections in template order.
+- AC2 -> `internal/brief` TestResumeBriefCarriesTheAnswers: with answers v1 and v2 the brief lists both verbs and the owner's words, asks for `report.v3.md` and names `answers.v3.md`.
+- AC3 -> `internal/brief` TestBriefNamesNoAccountOrPath: a record with an account and a worktree path renders neither, and no absolute path.
 
 # Decision framing
 - Product framing: Not needed
@@ -56,6 +59,12 @@
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
 - 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core` (D6 resolved by req_031). Mission record comes from item_132.
+
+- 2026-11-09 built in `internal/brief` (5113cc4). `crow core mission brief <id> [--write]` prints or writes `brief.md`; the write is atomic.
+- Owner prefs come from `prefs` in core config (default `local/mission-prefs.yaml`), a YAML list of `rule` plus optional `kinds`. `prefs.example.yaml` in the spec shows the shape.
+- The key comes from the created event, since the id lowercases it. Repo and worktree stay placeholders (`<repo>`) so the brief names no local path.
+- The example brief.md was regenerated from the renderer: Preflight section, data classes from the kind, full reply contract.
+- item_133 renders the brief at admission and before each resume.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
