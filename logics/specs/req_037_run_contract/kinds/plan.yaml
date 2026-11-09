@@ -20,5 +20,3 @@ publish: {actions: [commit-docs], needs_validation: true}
 preflight:
   - {id: milestone, text: "Roadmap milestone to place it under?", safest: none (left unplaced)}
   - {id: ready, text: "May items be set Ready when nothing waits on you?", choices: ["yes", "no"], safest: "no"}
-by_scope:
-  work: {publish: {actions: [commit-docs], needs_validation: true}}

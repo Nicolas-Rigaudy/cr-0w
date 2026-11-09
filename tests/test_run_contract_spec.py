@@ -45,6 +45,14 @@ def test_kind_file_valid(path):
     check("kind.schema.json", data, rel(path))
 
 
+@pytest.mark.parametrize("path", KINDS, ids=lambda p: p.name)
+def test_ask_actions_are_published_actions(path):
+    data = yaml.safe_load(path.read_text())
+    publishes = [data["publish"]] + [o["publish"] for o in data.get("by_scope", {}).values() if "publish" in o]
+    for pub in publishes:
+        assert set(pub.get("ask_actions", [])) <= set(pub["actions"]), rel(path)
+
+
 @pytest.mark.parametrize("path", BLOCK_FILES, ids=lambda p: p.name)
 def test_crow_block_valid(path):
     m = FENCE.search(path.read_text())

@@ -1,4 +1,5 @@
 # Address review threads on the owner's MR. Auto up to a local commit when every thread matches a ledger pattern.
+# Personal repos: fixes push on their own; reply texts are public, so they wait for an ok.
 name: review-fix
 schema_version: 1
 phase: 2
@@ -19,4 +20,4 @@ publish: {actions: [push, reply-resolve], needs_validation: true}
 preflight:
   - {id: skip, text: "Threads to leave alone?", safest: none}
 by_scope:
-  personal: {gates: [], autonomy: auto, publish: {actions: [push, reply-resolve], needs_validation: false}}
+  personal: {gates: [], autonomy: auto, publish: {actions: [push, reply-resolve], needs_validation: false, ask_actions: [reply-resolve]}}

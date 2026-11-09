@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:53:38
+> Indicators reviewed: 2026-11-09 11:13:14
 
 # AI Context
 - Summary: Define every mission kind (gates, autonomy, account, effort, outputs) and the file contract between a run and core: brief, plan and report with a fenced `crow` block, outbox, versions, answer verbs. Schema first, before the first mission runs.
@@ -60,7 +60,7 @@ Grooming findings:
 - **D6. Where the contract code lives.** The crow-block parser (item_106) is Python in `bin/` now. The renderer and the outbox wait for the backend choice; the backend is now a Go core (req_031) and they port to it.
 
 # Acceptance criteria
-- AC1: A kind file with every column of need 1 filled for the 8 kinds, phase 1 kinds first, reviewed by the owner.
+- AC1: A kind file with every column of need 1 filled for the 8 kinds, phase 1 kinds first, reviewed by the owner. Owner review done 2026-11-09 (item_105).
 - AC2: A JSON schema for the `crow` block and for `outbox/questions.json`, with one valid example per gate shape.
 - AC3: A brief template core renders, including owner prefs and the reply contract.
 - AC4: A dry run of one two-gate mission and one mockup loop with files only (no core yet) shows the contract is enough to resume.
@@ -100,7 +100,7 @@ Grooming findings:
 | Order | Item | Waits on | Status |
 | --- | --- | --- | --- |
 | 1 | item_104 spec validator and spec test | nothing | Ready |
-| 2 | item_105 owner review of the kind files | owner review, D1 | Draft |
+| 2 | item_105 owner review of the kind files | owner review, D1 | Done 2026-11-09 |
 | 3 | item_106 crow block and questions parser | item_104, D6 | Draft |
 | 4 | item_112 skill per kind | D5, item_105 | Draft |
 | 5 | item_107 brief rendering | item_106, core mission record, D6 | Draft |

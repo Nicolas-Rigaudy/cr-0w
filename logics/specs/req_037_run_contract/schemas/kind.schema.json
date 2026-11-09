@@ -71,7 +71,8 @@
       "required": ["actions"],
       "properties": {
         "actions": {"type": "array", "items": {"enum": ["none", "commit-docs", "push", "merge", "mr", "post-comments", "reply-resolve", "page", "mail-draft", "vault-note", "next-mission"]}},
-        "needs_validation": {"type": "boolean", "description": "True when core refuses to publish without a valid validation record."}
+        "needs_validation": {"type": "boolean", "description": "True when core refuses to publish without a valid validation record."},
+        "ask_actions": {"type": "array", "items": {"enum": ["commit-docs", "push", "merge", "mr", "post-comments", "reply-resolve", "page", "mail-draft", "vault-note", "next-mission"]}, "description": "Actions that still need an ok on the exact text when needs_validation is false (public posts)."}
       }
     },
     "preflight": {

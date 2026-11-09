@@ -1,10 +1,10 @@
 ## item_105_owner_review_of_the_mission_kind_catalogue - Owner review of the mission kind catalogue
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
-> Understanding: 80%
-> Confidence: 70%
-> Progress: 0%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Low
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -30,7 +30,7 @@
   - Account names in kind files (scope routing through item_095).
 
 # Acceptance criteria
-- AC1: The owner has reviewed all 8 kind files and every change is applied.
+- AC1: The owner has reviewed all 8 kind files and every change is applied. Done 2026-11-09.
 - AC2: D1 is decided (tracked files plus private overrides) and req_028 slice 1 matches it. Done 2026-11-07.
 
 # AC Traceability
@@ -53,6 +53,12 @@
 # Notes
 - Waits on the owner review of the 8 files. D1 is decided (2026-11-07): tracked kind files plus private overrides in `local/` (item_117); req_028 slice 1 is updated.
 - Spec: `logics/specs/req_037_run_contract/`.
+- Owner review 2026-11-09:
+  - Models: Opus stays on research, plan, review, design, review-fix and build (judgment under ambiguity). Sonnet on write (works from a planned brief or template) and repair (catalogue fixes). Change: repair moved to Sonnet, subagents Haiku.
+  - review-fix personal: fixes push on their own, reply texts wait for an ok (public posts). New schema field `publish.ask_actions`, checked against `actions` by a spec test.
+  - build defaults kept: crow merges after the plan ok, personal auto-merges, sensitive paths ask.
+  - Caps kept as drafted; tune later from the cost per run in `crow runs`.
+  - Cleanup: plan's `by_scope.work` repeated the defaults and is removed.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
