@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:57
+> Indicators reviewed: 2026-11-09 13:07:27
 
 # AI Context
 - Summary: Research spike. Pick the butler engine and define its tools, context rules, persona and surfaces. One scope-aware butler with a focus mode; full character persona; reachable from nest, the deck pane, voice, one chat bot and the Android assistant.
@@ -97,7 +97,7 @@ Skeleton and three candidates written as sample replies to the same three questi
 1. **Engine.** A long-lived `claude -p` process in stream-json mode now, behind a thin bridge. The Agent SDK later.
 2. **Process routing.** Split by data scope. `work` and `both` turns run on a work-allowed account. `personal` turns and Discord run on the personal account.
 3. **Butler model.** Sonnet everywhere.
-4. **Persona.** A Steward base with a droid flavour (C-3PO-like: formal, fussy, polite, a little anxious). Written up in item_118.
+4. **Persona.** A Steward base with a droid flavour: formal and polite. The butler is CR-0W, the droid the project is named after; it addresses the owner as "Sir" (owner, 2026-11-09). Written up in item_118.
 5. **Persona at work.** Neutral while work focus is on.
 
 Still open (owner): the persona name and the address form.
