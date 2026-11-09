@@ -1,10 +1,10 @@
 ## item_139_jarvis_graph_and_droid_workshop_hero_sketches_on_one_compare_page - Jarvis graph and droid workshop hero sketches on one compare page
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -51,6 +51,8 @@
 - 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed; purple accent next to the cyan and neon blue, no Capri magenta or green), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
 - 2026-11-09 owner, step 2 follow-up: themes share colours for now and differ by shapes, effects, decorations, animations (and sounds with voice); density medium, sketch several levels; item_138 sketches the hero both dimmed behind Missions/Inbox and Home only. Extra refs gathered first: talking pixel faces, blue + purple hologram UIs, condensed header fonts, agent hub UIs.
 - 2026-11-09 owner face pick (vault `refs/step2/faces-sheet.jpg`): the pixel face direction builds on LED and dot-matrix eyes and mouth (F1, F4, F9, F10, F12): eyes change with mood, mouth opens with the voice. Still sketch the other core forms next to it.
+- 2026-11-09 sketches done (vault `CR-0W/Research/nest-design/item139/`, generator `src139/gen.py`): Jarvis graph and droid workshop on the item_138 data, each full screen and inside the Home dense layout, plus a core forms sheet (shard glyph, holo bust, light figure, LED face, each in 4 moods). Laptop views replace the phone views per the laptop-first rule; Fold cover and inner views follow with item_140.
+- 2026-11-09 owner pick on `item139/compare-item139.html`: hero = Jarvis graph (orbit of projects around the CR-0W core, state as motion, React Three Fiber + bloom with a 2D SVG fallback). Core form = LED face (dot-matrix eyes for mood, mouth with the voice). The droid workshop is dropped as the hero.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`

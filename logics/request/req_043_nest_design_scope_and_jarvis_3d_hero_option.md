@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 90%
-> Confidence: 85%
+> Understanding: 95%
+> Confidence: 90%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
@@ -57,6 +57,9 @@
 # Companion docs
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
+
+# Decisions
+- 2026-11-09 hero pick (item_139): Jarvis graph on Home, core form LED face. The workshop direction (req_040, item_125) is not the hero. item_140 realigns items 126, 137 and 125 to this pick.
 
 # References
 - `logics/request/req_040_nest_deck_two_themes_3d_world.md`
