@@ -50,6 +50,7 @@
 
 - 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed; purple accent next to the cyan and neon blue, no Capri magenta or green), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
 - 2026-11-09 owner, step 2 follow-up: themes share colours for now and differ by shapes, effects, decorations, animations (and sounds with voice); density medium, sketch several levels; item_138 sketches the hero both dimmed behind Missions/Inbox and Home only. Extra refs gathered first: talking pixel faces, blue + purple hologram UIs, condensed header fonts, agent hub UIs.
+- 2026-11-09 owner face pick (vault `refs/step2/faces-sheet.jpg`): the pixel face direction builds on LED and dot-matrix eyes and mouth (F1, F4, F9, F10, F12): eyes change with mood, mouth opens with the voice. Still sketch the other core forms next to it.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
@@ -71,4 +72,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-- 2026-11-09 owner face pick (vault `refs/step2/faces-sheet.jpg`): the pixel face direction builds on LED and dot-matrix eyes and mouth (F1, F4, F9, F10, F12): eyes change with mood, mouth opens with the voice. Still sketch the other core forms next to it.

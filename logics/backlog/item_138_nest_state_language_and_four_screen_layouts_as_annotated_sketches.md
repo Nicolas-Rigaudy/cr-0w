@@ -52,6 +52,7 @@
 - 2026-11-09 owner, step 2 follow-up: themes share colours for now and differ by shapes, effects, decorations, animations (and sounds with voice); density medium, sketch several levels; item_138 sketches the hero both dimmed behind Missions/Inbox and Home only. Extra refs gathered first: talking pixel faces, blue + purple hologram UIs, condensed header fonts, agent hub UIs.
 - 2026-11-09 owner font picks (sheet `refs/step2/fonts/fonts-sheet.png`): three layers, display (logo, screen titles, big counters) / header (panels, labels) / FiraCode (data, body). Cyber: display Orbitron, header Chakra Petch or Oxanium. Modern: display Michroma, Quantico or Russo One, header Rajdhani or FiraCode. Sketches try the pairs.
 - 2026-11-09 owner: reuse the archeotech cyberdeck pack work, especially motion. Read-back section "Cyberdeck carry-over": cyber = netrunner entrance (glitch, scan, land, decode, bracket lock; small surfaces stagger only), modern = megacorp flat square hairlines with code tabs and a plain fade. Same colours in both.
+- 2026-11-09 owner ref picks (vault `refs/step2/`): palette blue frame and data with purple for CR-0W and selection (P2, P3, P4, P7). Hub patterns to borrow: coordinator thread ending in a question (H4, H11), live run graph (H1), status words with parked and blocked states and one resume action (H8, H9, H12), mission detail with a properties rail and a run ledger (H10, H13).
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
@@ -73,4 +74,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-- 2026-11-09 owner ref picks (vault `refs/step2/`): palette blue frame and data with purple for CR-0W and selection (P2, P3, P4, P7). Hub patterns to borrow: coordinator thread ending in a question (H4, H11), live run graph (H1), status words with parked and blocked states and one resume action (H8, H9, H12), mission detail with a properties rail and a run ledger (H10, H13).
