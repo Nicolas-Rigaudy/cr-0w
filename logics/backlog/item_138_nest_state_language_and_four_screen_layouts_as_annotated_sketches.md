@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 14:01:24
+> Indicators reviewed: 2026-11-09 14:39:33
 
 # AI Context
 - Summary: Sketch the nest state language (working, needs you, failed, sleeping, queued) and the Home, Missions, Mission detail and Inbox layouts on the Fold 6 cover and inner screens, independent of the hero.
@@ -44,6 +44,9 @@
 - Architecture framing: Not needed
 - Architecture signals: (none detected)
 - Architecture follow-up: No architecture decision follow-up is expected based on current signals.
+- 2026-11-09 owner: laptop layout first, Fold cover and inner derived from it. Scope to be updated before redrawing.
+- 2026-11-09 owner: design from the approved Moodboard v2 and the vault note 'Github repos and websites' (see local/runbooks/design-toolkit.md), never from a generic palette.
+- 2026-11-09 first canvas pass (artifact K4pqN8J7QHo69LrSdx3n5U, state sheet + Home cover/inner) rejected by the owner; item paused until step 2 (references and moodboard read-back with confidence per area) is approved.
 
 # Links
 - Product brief(s): `prod_005`
