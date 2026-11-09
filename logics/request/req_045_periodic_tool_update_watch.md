@@ -50,6 +50,8 @@
 # Backlog
 - `item_141_tool_update_watch_ritual`
 - `item_142_logics_fleet_in_the_brief`
+- `item_153_upgrade_claude_code_to_2_1_321_and_fix_the_dispatch_timeout_wording`
+- `item_154_check_crow_against_rtk_1_x_before_upgrading`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
