@@ -1,4 +1,5 @@
 """Background run sandbox: per-kind allowlists, credential-free env, denials (item_077)."""
+import json
 import shlex
 import sys
 
@@ -56,15 +57,16 @@ def test_run_flags_extra_args_fit_cdx_cap(tmp_path):
         assert shlex.split(extra)[:2] == ["--strict-mcp-config", "--settings"]
 
 
-def test_continue_run_carries_no_settings(tmp_path):
+def test_continue_run_keeps_the_permissions_only_settings(tmp_path):
     flags, _ = crow_lib.run_flags("task", "claude", continue_run="r1", state=tmp_path)
-    assert flags[flags.index("--extra-args") + 1] == "--strict-mcp-config"
+    extra = shlex.split(flags[flags.index("--extra-args") + 1])
+    assert extra[:2] == ["--strict-mcp-config", "--settings"]
+    assert set(json.loads(open(extra[2]).read())) == {"permissions"}  # cdx 0.26.11 refuses any other key here
     assert "--extra-args" not in crow_lib.run_flags("task", "codex", state=tmp_path)[0]
 
 
-def test_permission_default_unless_continued():
+def test_permission_is_default():
     assert crow_lib.permission("claude") == "default"
-    assert crow_lib.permission("claude", continued=True) == "auto"
     assert crow_lib.permission("codex") == "default"
 
 

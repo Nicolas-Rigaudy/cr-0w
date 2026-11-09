@@ -200,11 +200,10 @@ def oneshot_prompt(provider, hub, skill, args=""):
             f"{args}").strip()
 
 
-def permission(provider, continued=False):
-    """cdx permission for headless runs. Claude: default mode, so only the kind's sandbox allowlist runs; a
-    --continue-run cannot carry that allowlist (cdx refuses --settings there) and keeps auto. Codex keeps writes
-    in the workspace, no network."""
-    return "auto" if provider == "claude" and continued else "default"
+def permission(provider):
+    """cdx permission for headless runs, fresh or continued: default mode. Claude then runs only the kind's
+    sandbox allowlist; Codex keeps writes in the workspace, no network."""
+    return "default"
 
 
 def hub_session_refusal(provider):
@@ -576,8 +575,8 @@ def run_flags(kind, provider="claude", model=None, power=None, continue_run=None
     --failover moves a run stopped by a usage limit to another allowed account. cdx run has no --fallback-model
     flag: the fallback model is a per-account setting (`cdx set <account> --fallback-model M`).
     budget (USD) overrides the kind's budget for this run; Claude only.
-    A fresh Claude run carries the kind's sandbox (sandbox_args) through --extra-args. A continued run cannot:
-    cdx refuses --settings with --continue-run, so it only gets --strict-mcp-config."""
+    A Claude run, fresh or continued, carries the kind's sandbox (sandbox_args) through --extra-args: since
+    cdx 0.26.11 --continue-run accepts a --settings that only sets permissions."""
     env = os.environ if env is None else env
     k = RUN_KINDS[kind]
     budget = float(budget if budget is not None else env.get(f"CROW_{kind.upper()}_BUDGET") or k["budget"])
@@ -591,7 +590,7 @@ def run_flags(kind, provider="claude", model=None, power=None, continue_run=None
         args += ["--kind", CDX_KINDS[kind]]
     if provider == "claude":  # cdx measures spend from Claude usage; Codex budgets fail as unverifiable without model evidence
         args += ["--budget", f"{budget:g}"]
-        extra = shlex.join(["--strict-mcp-config"] if continue_run else sandbox_args(kind, state))
+        extra = shlex.join(sandbox_args(kind, state))
         if len(extra) > CDX_EXTRA_ARGS_MAX:
             raise ValueError(f"sandbox args for {kind} exceed cdx's {CDX_EXTRA_ARGS_MAX}-character --extra-args cap")
         args += ["--extra-args", extra]

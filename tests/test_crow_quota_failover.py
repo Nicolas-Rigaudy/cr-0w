@@ -182,13 +182,12 @@ def test_requeue_moves_to_auto_fallback_with_resume_note(cr, monkeypatch, tmp_pa
     assert sleeps == []
 
 
-def test_requeue_waits_for_reset_then_restarts_claude_fresh(cr, monkeypatch, tmp_path):
+def test_requeue_waits_for_reset_then_continues_claude(cr, monkeypatch, tmp_path):
     rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=30), row("shared", 80)])
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct: "claude")
-    assert cr.requeue(rec, deadline=1e12) == "restarted on main after the reset"
+    assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"
     cmd = calls[0]
-    assert "--continue-run" not in cmd and cmd[cmd.index("--account") + 1] == "main"
-    assert "RESUME NOTE" in open(cmd[cmd.index("--prompt-file") + 1]).read()
+    assert cmd[cmd.index("--continue-run") + 1] == "r1" and cmd[cmd.index("--account") + 1] == "main"
 
 
 def test_requeue_waits_for_reset_then_continues_codex(cr, monkeypatch, tmp_path):
@@ -258,7 +257,7 @@ def test_afk_run_waits_on_same_account_despite_free_target(cr, monkeypatch, tmp_
     rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=240), row("shared", 20)])
     rec["context"] = "afk"
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct: "claude")
-    assert cr.requeue(rec, deadline=1e12) == "restarted on main after the reset"
+    assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"
     assert sleeps and sleeps[0] > 240 * 60
     cmd = calls[0]
     assert cmd[cmd.index("--account") + 1] == "main" and cmd[cmd.index("--context") + 1] == "afk"
@@ -280,5 +279,5 @@ def test_day_run_with_near_reset_waits(cr, monkeypatch, tmp_path):
     rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=20), row("shared", 20)])
     rec["context"] = "day"
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct: "claude")
-    assert cr.requeue(rec, deadline=1e12) == "restarted on main after the reset"
+    assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"
     assert events(cr)[-1]["data"]["choice"] == "wait"
