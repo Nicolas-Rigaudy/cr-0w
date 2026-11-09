@@ -1,10 +1,10 @@
 ## item_134_inbox_items_and_the_crow_inbox_cli - Inbox items and the crow inbox CLI
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 85
 > Confidence: 80
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -36,8 +36,9 @@
 - AC3: `crow inbox list --json` matches the item_119 inbox fixture shape.
 
 # AC Traceability
-- request-AC1 -> AC1. Proof: CLI test answering a parked mission.
-- request-AC3 -> AC2. Proof: verb refusal test.
+- request-AC1 -> AC1. Proof: `TestInboxAnswersAParkedQuestion` (tools/crow-core/internal/mission/inbox_test.go): one row, answer writes `answers.v1.md` and an `answer` event, the row closes, the mission queues.
+- request-AC3 -> AC2. Proof: `TestInboxRefusesWrongVerbAndOpenBlockingQuestion` and `TestInboxQuestionBlocksGoOnTheSameMission`: wrong verb refused with the allowed list, `go` refused while blocking q1 is open.
+- AC3. Proof: `TestInboxMatchesTheFixtureShape`: rows from the research fixture log have the keys of `fixtures/records/inbox.json` and the same id, type, source, verbs, state and timestamps.
 
 # Decision framing
 - Product framing: Not needed
@@ -55,6 +56,9 @@
 
 # Notes
 - Groomed 2026-11-09 from req_028 slice 2. Waits on item_109 and item_108.
+- 2026-11-09 done. `internal/mission/inbox.go` fills the ask, blocking flag and artifacts from the files on disk; `inbox_cmd.go` and `bin/crow` route `crow inbox`. Answers go through `env.reply` with the row id and surface on the event.
+- New legal moves: waiting -> queued and review -> queued. The tick holds a queued mission that already ran until item_135 lands the resume.
+- A question row needs the verb `answer` and words. A validating verb (go, ok, approve) is refused while a blocking question row of the same mission is open.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -120,6 +120,11 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: fmt.Sprintf("kind %s: %v", m.Kind, err)})
 			continue
 		}
+		if len(m.Runs) > 0 {
+			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State,
+				Detail: "answered; the resume lands with item_135"})
+			continue
+		}
 		if k.Phase > LivePhase {
 			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State,
 				Detail: fmt.Sprintf("kind %s is phase %d; the live phase is %d", k.Name, k.Phase, LivePhase)})

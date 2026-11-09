@@ -34,14 +34,14 @@ type Mission struct {
 var States = []string{"preflight", "queued", "running", "waiting", "review", "publishing", "done", "failed", "cancelled"}
 
 // Moves lists the legal state moves of adr_001. waiting and review are parked: an answer
-// sends them back to running. done reopens (`dig` on an FYI report) and failed retries,
-// both through queued. cancelled is final.
+// sends them back to queued for a resume (item_135). done reopens (`dig` on an FYI
+// report) and failed retries, both through queued. cancelled is final.
 var Moves = map[string][]string{
 	"preflight":  {"queued", "cancelled"},
 	"queued":     {"running", "failed", "cancelled"},
 	"running":    {"waiting", "review", "done", "failed", "cancelled"},
-	"waiting":    {"running", "failed", "cancelled"},
-	"review":     {"running", "publishing", "done", "cancelled"},
+	"waiting":    {"queued", "running", "failed", "cancelled"},
+	"review":     {"queued", "running", "publishing", "done", "cancelled"},
 	"publishing": {"done", "failed"},
 	"done":       {"queued"},
 	"failed":     {"queued", "cancelled"},

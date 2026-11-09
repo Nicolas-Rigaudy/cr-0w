@@ -31,6 +31,10 @@ const usage = `usage: crow-core <command>
   mission show <id|prefix> [--json]
   mission cancel <id|prefix> [--reason R] [--json]
   mission brief <id|prefix> [--write]   print the brief a run reads first, or write brief.md
+  inbox list [--json] [--all]           open items, oldest first (--all: answered too)
+  inbox show <item|prefix> [--json]     block summary, questions, options and artifacts
+  inbox answer <item|prefix> <verb> [words] [--json]
+                    answer with a gate verb, or with plain words for a question
   tick [--json]     finish the mission runs that ended, then start queued missions through
                     crow-runs (oldest first, CROW_MAX_RUNS at once, default 2)
   config            print the resolved paths as JSON
@@ -80,6 +84,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	switch cmd {
 	case "mission":
 		return missionCmd(env, rest, stdout)
+	case "inbox":
+		return inboxCmd(env, rest, stdout)
 	case "tick":
 		return tickCmd(env, cfg.Engine, rest, stdout)
 	case "append":

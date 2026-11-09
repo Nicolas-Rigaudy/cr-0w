@@ -68,6 +68,13 @@ func (env Env) Answer(ref string, r Reply) (AnswerResult, error) {
 	if m.State != "review" {
 		return res, fmt.Errorf("%s is %s; an answer needs a mission in review", m.ID, m.State)
 	}
+	return env.reply(m, r, nil)
+}
+
+// reply writes the answer of m on its current version. An inbox answer passes its row id;
+// the event then carries the row and the surface.
+func (env Env) reply(m contract.Mission, r Reply, item *string) (AnswerResult, error) {
+	var res AnswerResult
 	if !slices.Contains(surfaces, r.Surface) {
 		return res, fmt.Errorf("surface %q: want one of %v", r.Surface, surfaces)
 	}
@@ -77,8 +84,9 @@ func (env Env) Answer(ref string, r Reply) (AnswerResult, error) {
 	if cb == nil {
 		return res, fmt.Errorf("%s v%d: %s", m.ID, n, why)
 	}
+	// An inbox answer was checked against its row, which knows the FYI shape.
 	phase, _, _ := strings.Cut(file, ".")
-	if !slices.Contains(Verbs[phase], r.Verb) {
+	if item == nil && !slices.Contains(Verbs[phase], r.Verb) {
 		return res, fmt.Errorf("%s: verb %q, want one of %v", file, r.Verb, Verbs[phase])
 	}
 
@@ -119,8 +127,14 @@ func (env Env) Answer(ref string, r Reply) (AnswerResult, error) {
 	if err != nil {
 		return res, err
 	}
-	// The surface is in the answers file front matter, as in the spec example.
-	if err := env.append(m.ID, "owner", "answer", ts, contract.AnswerData{File: res.File, Verb: r.Verb}); err != nil {
+	// The surface is in the answers file front matter, as in the spec example. An inbox
+	// answer also names its row.
+	ad := contract.AnswerData{File: res.File, Verb: r.Verb}
+	if item != nil {
+		surface := r.Surface
+		ad.Item, ad.Surface = item, &surface
+	}
+	if err := env.append(m.ID, "owner", "answer", ts, ad); err != nil {
 		return res, err
 	}
 	for _, v := range live {

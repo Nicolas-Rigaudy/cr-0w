@@ -31,7 +31,7 @@
 - [x] 5. item_133 tick: admit, dispatch through `crow-runs`, finish runs. Slice 1 exit: a dispatched mission shows its state and runs in `crow mission list --json`.
 - [x] 6. item_109 outbox ingest and parking on `questions.json`.
 - [x] 7. item_108 versions, answers files, validation record.
-- [ ] 8. item_134 inbox rows and `crow inbox list|show|answer`.
+- [x] 8. item_134 inbox rows and `crow inbox list|show|answer`.
 - [ ] 9. item_116 cold resume of isolated missions from files.
 - [ ] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer.
 - [ ] Steps 6 and 7 can run in parallel sessions after step 5; everything else is sequential.
@@ -74,6 +74,7 @@
 - 2026-11-09 step 5 (item_133) done: `crow-core tick` admits queued phase-1 missions through `crow-runs dispatch --mission` and finishes their runs (913630a). Slice 1 exit met: a dispatched mission shows `running` and its run in `crow mission list --json`. Next: step 6, item_109 outbox ingest. Open: admission cap on cdx `launch.max_parallel`, `flow record-run` for missions with a Logics ref.
 - 2026-11-09 step 6 (item_109) done: the tick ingests listed outbox files within the kind caps, refuses paths outside `outbox/`, and parks the mission on `outbox/questions.json` (74075f4). Next: step 7, item_108 versions and answers files.
 - 2026-11-09 step 7 (item_108) done: answers files, response coverage at run end, hash-chained validation per publish entry, drop on any later owner message, `Verify` before publish (0e7b72f). Event lines are now canonical JSON. Next: step 8, item_134 inbox CLI, which calls `env.Answer` and moves review -> running after dig/msg.
+- 2026-11-09 step 8 (item_134) done: `crow inbox list|show|answer` over the store rows, verbs per gate shape, blocking questions refuse validating verbs. Answers move the mission to queued (held by the tick) or to its end state. Next: step 9, item_116 cold resume; item_135 then releases the held queued missions.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`

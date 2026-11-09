@@ -35,6 +35,7 @@
 #   crow notes [--since 7d]  vault notes of the last days as compact JSON (recap input)
 #   crow core <cmd>      mission core: append, sync, rebuild, dump (see crow core help)
 #   crow mission new|list|show|cancel  missions recorded by the core (see crow core help)
+#   crow inbox list|show|answer        what missions ask the owner, answered with gate verbs
 #   crow projects [...]  release tracks: roadmap progress toward public releases
 #   crow release propose  draft the next version and notes from commits since the last tag (no tagging)
 #   crow doctor [--json] identity, accounts, profiles, stale worktrees (read only)
@@ -228,12 +229,12 @@ for p in yaml.safe_load(open('$REGISTRY'))['projects']:
               (cd "$src" && go build -o crow-deck .) || exit 1
             fi
             exec "$bin" "$@" ;;
-  core|mission)  # mission core (adr_001): event logs and the store rebuilt from them
+  core|mission|inbox)  # mission core (adr_001): event logs and the store rebuilt from them
             src="$CROW_ENGINE/tools/crow-core"; bin="$src/crow-core"
             if [[ ! -x "$bin" || -n "$(find "$src" -name '*.go' -newer "$bin" -o -name go.mod -newer "$bin")" ]]; then
               (cd "$src" && go build -o crow-core .) || exit 1
             fi
-            [[ "$cmd" == mission ]] && set -- mission "$@"
+            [[ "$cmd" != core ]] && set -- "$cmd" "$@"
             exec "$bin" "$@" ;;
   focus)    exec "$CROW_ENGINE/bin/crow-focus" "$@" ;;
   sessions) hint "crow sessions" "crow runs sessions"; exec "$CROW_ENGINE/bin/crow-sessions" "$@" ;;
