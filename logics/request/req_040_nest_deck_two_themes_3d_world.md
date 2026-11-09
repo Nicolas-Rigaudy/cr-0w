@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 13:37:36
+> Indicators reviewed: 2026-11-09 13:47:38
 
 # AI Context
 - Summary: Nest and deck keep two themes only, modern (work default) and cyber (personal default). A theme changes look, motion, 2D/3D elements and the butler voice. Nest gets a 3D world that shows missions and agents at work. One focus switch later drives the whole desktop. Design research comes first.
@@ -121,3 +121,12 @@ After pass 3 (Blender kits) was rejected ("shows nothing the system is doing, ra
 - Dropped: 3#7, 5#4, 5#5, 5#8, 7#1, 7#3, 7#4, 7#5, 7#8.
 - **No state colours (owner):** state shows through pose and props only (working at a bench, holding a crate at the desk, slumped by a smoking part, docked in a rack, in line with a ticket). Neon is free: each family gets its own body colour and neon accent. This replaces the v4/v5 rule that reserved blue, amber, red and green.
 - **Cyber first (owner):** modern cast, states, phone and night move to a later round.
+
+# Cast v5b takes, cyber (owner, 2026-11-09)
+- Two takes of prompt 1b: ChatGPT (3D) and Gemini (comic cel). Compare page `compare-castb-v5.html` in the vault nest-design folder.
+- Style: ChatGPT 3D is the base for 3b, 5b and 6b.
+- Swap: the Floater projects its route on the floor (from the Gemini take). Other droids stay as in the ChatGPT take.
+- Names: none yet. Family names until the look is final.
+- Both takes left most bodies grey. Prompt 1c names one body colour and one neon accent per family and removes the menu chrome.
+- Family sheets (Gemini, `v5/family-*-gemini.jpg`): Lanky B (four tool arms, paper tape from the chest). Floater is a glass sphere that projects a blueprint map on the floor. Walker is a spider with many thin arms and a magnifier, no crate. Tracked A = builder, B = courier. Alchemist C (magenta tank pouring into itself).
+- Gemini reused one triple-lens head on four families. Every droid gets its own head shape.
