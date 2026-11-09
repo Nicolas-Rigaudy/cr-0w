@@ -183,7 +183,7 @@ def test_continuing_an_isolated_run_stays_in_its_sandbox(tmp_path, monkeypatch):
     a = types.SimpleNamespace(project="proj", label="apply-1", prompt_file="/p.md", prompt=None, kind="review",
                               model=None, power=None, continue_run="par", account=None, isolate=False, cwd=str(wt),
                               permission=None, force=False, budget=None, dry_run=True, context=None, logics=None,
-                              resumes=None)
+                              resumes=None, mission=None, timeout_min=None, json=False)
     cr.dispatch(a)
     cmd = printed[-1]
     assert a.isolate and "--isolate-workspace" in cmd and "--continue-run par" in cmd

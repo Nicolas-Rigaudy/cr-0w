@@ -31,6 +31,8 @@ const usage = `usage: crow-core <command>
   mission show <id|prefix> [--json]
   mission cancel <id|prefix> [--reason R] [--json]
   mission brief <id|prefix> [--write]   print the brief a run reads first, or write brief.md
+  tick [--json]     finish the mission runs that ended, then start queued missions through
+                    crow-runs (oldest first, CROW_MAX_RUNS at once, default 2)
   config            print the resolved paths as JSON
   version           print the core and contract versions
 `
@@ -71,13 +73,15 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 	defer s.Close()
+	env := mission.Env{
+		Store: s, Kinds: kinds, KindDirs: []string{cfg.Overrides, cfg.Kinds},
+		Projects: cfg.Projects, Prefs: cfg.Prefs, Now: time.Now, StopRun: stopRun(cfg.Engine),
+	}
 	switch cmd {
 	case "mission":
-		env := mission.Env{
-			Store: s, Kinds: kinds, KindDirs: []string{cfg.Overrides, cfg.Kinds},
-			Projects: cfg.Projects, Prefs: cfg.Prefs, Now: time.Now, StopRun: stopRun(cfg.Engine),
-		}
 		return missionCmd(env, rest, stdout)
+	case "tick":
+		return tickCmd(env, cfg.Engine, rest, stdout)
 	case "append":
 		return appendEvent(s, stdin, stdout)
 	case "sync":

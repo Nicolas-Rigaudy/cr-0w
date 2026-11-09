@@ -2,7 +2,9 @@
 """crow-runs: dispatch background runs and see what every agent is doing.
 
   crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--kind task|review|retro] [--power P] [--model M]
-                     [--permission review] [--logics REF] [--dry-run]   every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
+                     [--permission review] [--logics REF] [--mission ID] [--timeout-min N] [--json] [--dry-run]
+                                                     every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
+  crow-runs state <run_id>                           JSON: has the run ended, its end state, the usage-limit policy (crow-core tick)
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
   crow-runs json                                     same data as JSON (for widgets)
   crow-runs report <run_id>                          final report of a finished run
@@ -366,6 +368,36 @@ def chain_depth(rec):
     return n
 
 
+def limit_inputs(st, acct):
+    """The account row, the minutes to its 5 h reset (None for a weekly limit) and the account to move to."""
+    row = next((a for a in st["accounts"] if a["name"] == acct), {})
+    left = crow_lib.minutes_to(row.get("reset_5h_at_iso"), datetime.now().astimezone()) if st["current_blocked"] else 0
+    if "weekly" in (st["current_blocked"] or ""):
+        left = None  # the week resets too far away to wait for in a run
+    target = st["auto_target"] if st["current_blocked"] else None
+    return row, left, target
+
+
+def run_end_state(run_id):
+    """What crow-core tick reads of a run: ended or not, its end state (run_state) and exit code. A run cut by a
+    usage limit also carries the item_115 policy (wait for the reset or move) for the mission to park with."""
+    rid = next((r["run_id"] for r in ledger() if r["run_id"].startswith(run_id)), run_id)
+    r = finished_rows("7d", ttl=0).get(rid)
+    if not r or not r.get("ended_at"):
+        return {"run_id": rid, "ended": False}
+    out = {"run_id": rid, "ended": True, "state": run_state(r), "exit_code": r.get("exit_code"), "ended_at": r["ended_at"]}
+    if out["state"] == "limit":
+        rec = parent_run(rid)
+        acct = rec.get("account") or r.get("account") or ACCOUNT
+        try:
+            _, left, target = limit_inputs(crow_lib.account_state(acct), acct)
+            choice, why = crow_lib.limit_policy(rec.get("context") or "day", left, bool(target))
+            out["policy"] = {"choice": choice, "reason": why, "account": acct, "reset_in_min": left, "target": target}
+        except Exception as e:  # no usable account data: the mission still parks, without a policy
+            out["policy"] = {"choice": "wait", "reason": f"no account data: {e}", "account": acct}
+    return out
+
+
 def requeue(rec, deadline):
     """A run stopped on a usage limit: move it to an account crow may use without asking (fresh run with a
     RESUME NOTE), else wait for its own window to reset and continue the conversation there.
@@ -378,11 +410,7 @@ def requeue(rec, deadline):
             "--resumes", rec["run_id"], *(["--logics", rec["logics_ref"]] if rec.get("logics_ref") else [])]
     if rec.get("cwd") and rec["cwd"] != project(rec["project"])["path"]:
         base += ["--cwd", rec["cwd"]]
-    row = next((a for a in st["accounts"] if a["name"] == acct), {})
-    left = crow_lib.minutes_to(row.get("reset_5h_at_iso"), datetime.now().astimezone()) if st["current_blocked"] else 0
-    if "weekly" in (st["current_blocked"] or ""):
-        left = None  # the week resets too far away to wait for in a run
-    target = st["auto_target"] if st["current_blocked"] else None
+    row, left, target = limit_inputs(st, acct)
     ctx = rec.get("context") or "day"
     choice, why = crow_lib.limit_policy(ctx, left, bool(target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists()))
     log_event(rec, "run.limit_policy", {"choice": choice, "reason": why, "context": ctx, "account": acct,
@@ -757,6 +785,14 @@ def parent_run(run_id):
     return next((r for r in ledger() if r["run_id"].startswith(run_id)), {})
 
 
+def dispatch_fail(a, code, message):
+    """End a dispatch that started nothing: an error JSON on stdout with --json, else the message on stderr."""
+    if a.json:
+        print(json.dumps({"ok": False, "error": {"code": code, "message": message}}))
+        sys.exit(1)
+    sys.exit(f"crow: {message}")
+
+
 def dispatch(a):
     if a.continue_run and parent_run(a.continue_run).get("isolated"):
         a.isolate = True  # cdx continues an isolated run only inside its sandbox, read-only for a review
@@ -783,7 +819,7 @@ def dispatch(a):
     runs = running_runs()
     # A review run cannot write, so it may share the folder with another run.
     if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
-        sys.exit(f"crow: a run is already working in {cwd}; --force to override")
+        dispatch_fail(a, "cwd_busy", f"a run is already working in {cwd}; --force to override")
     provider = crow_lib.provider_of(acct)
     src = ["--prompt-file", a.prompt_file] if a.prompt_file else ["--prompt", a.prompt]
     if provider == "codex":  # Codex does not load CLAUDE.md: start the prompt with the read-first list
@@ -796,7 +832,9 @@ def dispatch(a):
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
     # The sandbox mounts only the worktree: an isolated run reads its settings file from there.
     state = crow_lib.isolated_state_dir(cwd) if a.isolate else STATE
-    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget, state=state)
+    over = {f"CROW_{a.kind.upper()}_TIMEOUT_MIN": str(a.timeout_min)} if a.timeout_min else {}
+    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, env={**os.environ, **over},
+                                    budget=a.budget, state=state)
     if a.isolate:  # cdx failover could land on a full-login account, which refuses isolation; requeue moves it
         flags = [f for f in flags if f != "--failover"]
         # cdx allowlists toolchains under Path.home(); a crow session's HOME is the cdx profile home, which
@@ -817,10 +855,11 @@ def dispatch(a):
         res = {"ok": False}
     if not res.get("ok"):
         if "too_many_runs" in out:
-            sys.exit(f"crow: {MAX_PARALLEL} runs already running; --force to override")
+            dispatch_fail(a, "too_many_runs", f"{MAX_PARALLEL} runs already running; --force to override")
         err = res.get("error")
-        sys.exit(f"crow: dispatch failed: {err.get('code', '') + ': ' if isinstance(err, dict) and err.get('code') else ''}"
-                 f"{err.get('message') if isinstance(err, dict) else err}")
+        code = err.get("code", "") if isinstance(err, dict) else ""
+        dispatch_fail(a, code or "dispatch_failed", f"dispatch failed: {code + ': ' if code else ''}"
+                      f"{err.get('message') if isinstance(err, dict) else err}")
     rec = {
         "run_id": res["run_id"], "project": p["name"], "label": a.label, "cwd": cwd,
         "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -833,6 +872,8 @@ def dispatch(a):
         rec["isolated"] = True
     if a.logics:
         rec["logics_ref"] = a.logics
+    if a.mission:
+        rec["mission"] = a.mission
     if "--budget" in flags:
         rec["budget_usd"] = float(flags[flags.index("--budget") + 1])
     if a.continue_run:
@@ -843,8 +884,14 @@ def dispatch(a):
     with LEDGER.open("a") as f:
         f.write(json.dumps(rec) + "\n")
     record_run(rec, "running")
+    if a.json:
+        print(json.dumps({"ok": True, "run_id": rec["run_id"], "account": acct}))
+    if a.mission:  # crow-core tick finishes mission runs and parks them on a limit: no notify, no requeue
+        return
     subprocess.Popen([sys.executable, os.path.realpath(__file__), "notify", rec["run_id"]],
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if a.json:
+        return
     print(f"dispatched {rec['run_id'][:8]}  {p['name']}  {a.label}" + ("" if acct == ACCOUNT else f"  on {acct}"))
     print(f"NEXT: start `bin/crow-runs wait {rec['run_id'][:8]}` as a background Bash command now (wakes this session when the run ends)")
 
@@ -952,6 +999,10 @@ def main():
     d.add_argument("--isolate", action="store_true", help="run in cdx's OS sandbox (--isolate-workspace): no credentials, "
                    "no git push, public internet minus LAN; crow commits the diff after the run. Kinds: task (rw), review (ro)")
     d.add_argument("--continue-run", metavar="RUN_ID", help="resume that finished run's conversation (cdx --continue-run; its model and effort)")
+    d.add_argument("--mission", metavar="ID", help="crow-core mission this run belongs to (the tick finishes it: no notify, no requeue)")
+    d.add_argument("--timeout-min", type=int, help="wall-clock cap in minutes for this run (default: the kind's)")
+    d.add_argument("--json", action="store_true", help="print {ok, run_id, account} or {ok: false, error: {code, message}}")
+    sub.add_parser("state").add_argument("run_id")
     sub.add_parser("report").add_argument("run_id")
     fp = sub.add_parser("final")
     fp.add_argument("stdout_path")
@@ -973,6 +1024,8 @@ def main():
         wait(a.run_ids)
     elif a.cmd == "stop":
         stop(a.run_id)
+    elif a.cmd == "state":
+        print(json.dumps(run_end_state(a.run_id)))
     elif a.cmd == "notify":
         notify(a.run_ids)
     elif a.cmd == "inbox":
