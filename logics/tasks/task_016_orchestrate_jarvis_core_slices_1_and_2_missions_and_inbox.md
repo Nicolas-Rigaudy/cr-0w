@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 20%
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -24,8 +24,8 @@
 - No HTTP, no service, no UI here: `crow-core` is a one-shot binary; `crow-core tick` is run by hand or by a test until slice 3 wraps it in the service.
 
 # Plan
-- [ ] 1. item_119 Go/Python contract and shared fixtures (also creates the `tools/crow-core` module for its Go tests).
-- [ ] 2. item_131 core skeleton: config, event log, SQLite store, rebuild.
+- [x] 1. item_119 Go/Python contract and shared fixtures (also creates the `tools/crow-core` module for its Go tests).
+- [x] 2. item_131 core skeleton: config, event log, SQLite store, rebuild.
 - [ ] 3. item_132 mission record, states, `crow mission new|list|show|cancel`.
 - [ ] 4. item_107 brief rendering (Go).
 - [ ] 5. item_133 tick: admit, dispatch through `crow-runs`, finish runs. Slice 1 exit: a dispatched mission shows its state and runs in `crow mission list --json`.
@@ -67,7 +67,8 @@
 - (no validation recorded yet)
 
 # Report
-- Not started.
+- 2026-11-09 step 1 (item_119) done in bba2e52. Next: step 2, item_131 Go core skeleton, in a fresh session. crow-check ruff red on pre-existing re.I aliases in bin/.
+- 2026-11-09 step 2 (item_131) done: `tools/crow-core` event log, store, rebuild, `crow core`. Next: step 3, item_132 mission record and `crow mission`. Ruff is red on about 90 pre-existing findings in bin/ and tests/ (PLW1510, F811, SIM115...), tracked as a separate chore.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
@@ -77,3 +78,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Notes
+- item_119: CI runs go test -count=1 because the Go test cache ignores spec files outside the module.

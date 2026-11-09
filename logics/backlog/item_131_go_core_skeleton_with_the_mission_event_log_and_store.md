@@ -1,10 +1,10 @@
 ## item_131_go_core_skeleton_with_the_mission_event_log_and_store - Go core skeleton with the mission event log and store
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85
-> Confidence: 80
-> Progress: 0%
+> Status: Done
+> Understanding: 95
+> Confidence: 90
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -40,6 +40,10 @@
 
 # AC Traceability
 - request-AC1 -> AC1, AC3. Proof: replay tests on fixture missions.
+- AC1 -> `internal/store` TestOneByOneEqualsRebuild: each fixture event appended through the log and synced alone gives the same dump as a rebuild; applied offset equals the log end after each sync.
+- AC2 -> `internal/eventlog` TestParallelAppendsInOneProcess (8 goroutines x 25 lines of 70 KB) and TestParallelAppendsAcrossProcesses (4 re-exec writer processes x 20): every line decodes and the count matches.
+- AC3 -> `internal/store` TestDeletedStoreRebuilds (db, -wal and -shm removed, rebuild, identical dump: 2 missions, 4 runs, 4 inbox rows). Also checked end to end through `crow core append|dump|rebuild` on a scratch CROW_HOME.
+- AC4 -> `.github/workflows/ci.yml` already loops over `tools/crow-core` with `go vet ./... && go test -count=1 ./...`.
 
 # Decision framing
 - Product framing: Not needed
@@ -58,6 +62,13 @@
 # Notes
 - Groomed 2026-11-09 from req_028 slice 1. Waits on item_119 (fixtures and envelope).
 - Code home `tools/crow-core` chosen at grooming to match `tools/crow-deck`. The req_020 shared Go kit repo is UI only and does not host core.
+- 2026-11-09 built. Packages: `internal/config` (paths, optional `local/core.yaml`), `internal/eventlog` (append under flock + fsync, tail read that leaves a partial last line), `internal/project` (pure fold of events into mission, runs, inbox rows), `internal/store` (modernc SQLite, WAL, immediate tx; Sync, SyncAll, Rebuild, Append, Dump). `crow core <cmd>` builds and runs the binary like the deck.
+- `crow-core append` goes through `Store.Append`: the event must apply to the mission as it stands before it reaches the log, under the store write lock. A refused event never poisons the log. Writers must use it rather than append to `events.jsonl` directly.
+- Inbox rows carry only what events say. `ask`, `artifacts` and `blocking` stay empty for item_134 to fill from the version files and `questions.json`.
+- A row's `created` is the ts of the event that opens it (`gate` ready or `question`). The research fixture had the following `state` ts; `fixtures/records/inbox.json` was aligned (14:52:01).
+- A straight-through report row is `fyi` with verbs `[dig]`, as in the fixture. The req_037 table says "none (msg reopens it)"; reconcile there when item_134 lands.
+- A `created` event without gates, autonomy or budget takes the kind file defaults (override dir first). item_132 should write the resolved values into `created` so replay never depends on kind files changing.
+- `validation_dropped` is accepted but not folded; item_108 owns the record chain.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
