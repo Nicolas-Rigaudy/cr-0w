@@ -1,7 +1,7 @@
 ## req_042_crow_reads_cdx_through_its_cli - Finish moving crow onto the cdx CLI (crow #6)
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium

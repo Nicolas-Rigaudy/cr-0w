@@ -1,10 +1,10 @@
 ## item_136_read_cdx_profiles_through_the_cli - Read cdx profiles through the cdx CLI: profile dirs, relaunch by conversation, live sessions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
-> Progress: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub portability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -35,10 +35,10 @@
 - AC4: tests fake `cdx sessions` / `can-resume` output; full suite green. Closing comment on #6 drafted for the owner's OK.
 
 # AC Traceability
-- request-AC1 -> S1. Proof: AC1 grep.
-- request-AC2 -> S2. Proof: AC2 live check.
-- request-AC3 -> S3. Proof: AC3 live check.
-- request-AC4 -> all slices. Proof: AC4.
+- request-AC1 -> S1. Proof: e73c95f; `grep -n claude-home bin/*` only hits the crow_lib fallback and the Out list (after b236d7d).
+- request-AC2 -> S2. Proof: 05ff723; live `crow-relaunch <real id> rk1 --dry-run` passes, an unknown id fails with conversation_not_found. Codex path covered by test_hands_off_a_codex_conversation (no Codex account on this machine for a live run).
+- request-AC3 -> S3. Proof: b236d7d; live_session_ids returns the same two ids as `crow runs json` (/proc).
+- request-AC4 -> all slices. Proof: pytest -q 521 passed, ruff clean; fake cdx sessions/can-resume in test_crow_lib, test_crow_relaunch, test_crow_usage_live. Closing comment on #6 drafted for the owner's OK.
 
 # Decision framing
 - Product framing: Not needed
