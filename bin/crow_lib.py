@@ -1,5 +1,6 @@
 """crow_lib: helpers shared by the crow scripts."""
 import functools
+import glob
 import json
 import os
 import pwd
@@ -153,14 +154,19 @@ def transcript_dirs(profiles=None, provider="claude"):
             if p["provider"] == provider and os.path.isdir(p["transcripts_dir"])]
 
 
-def find_transcripts(session_id, profiles=None):
-    """(account, path) of every Claude transcript named <session_id>.jsonl in any cdx profile."""
+def find_transcripts(session_id, profiles=None, codex=False):
+    """(account, path) of every Claude transcript named <session_id>.jsonl in any cdx profile.
+    With codex, also the Codex rollouts (<sessions>/YYYY/MM/DD/rollout-<time>-<session_id>.jsonl)."""
     hits = []
     for acct, base in transcript_dirs(profiles):
         for slug in sorted(os.listdir(base)):
             path = os.path.join(base, slug, session_id + ".jsonl")
             if os.path.isfile(path):
                 hits.append((acct, path))
+    if codex and re.fullmatch(r"[A-Za-z0-9_-]+", session_id):
+        for acct, base in transcript_dirs(profiles, "codex"):
+            hits += [(acct, p) for p in sorted(glob.glob(os.path.join(base, "**", f"rollout-*-{session_id}.jsonl"),
+                                                         recursive=True))]
     return hits
 
 

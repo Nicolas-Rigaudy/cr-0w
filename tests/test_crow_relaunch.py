@@ -15,7 +15,9 @@ with open(log, "a") as fh:
                          "account": os.environ.get("CROW_ACCOUNT")}) + "\\n")
 cmd = sys.argv[1]
 if cmd == "can-resume":
-    print(json.dumps({"ok": True, "resumable": sys.argv[2] != "stuck", "reason": "supported"}))
+    lost = "--conversation" in sys.argv and sys.argv[sys.argv.index("--conversation") + 1] in os.environ.get("FAKE_LOST", "")
+    print(json.dumps({"ok": True, "resumable": sys.argv[2] != "stuck" and not lost,
+                      "reason": "conversation_not_found" if lost else "supported"}))
 elif cmd == "status":
     rows = [{"session_name": n, "enabled": True, "auth_status": "authenticated",
              "remaining_5h_pct": 0 if n in os.environ.get("FAKE_BLOCKED", "").split(",") else 60,
@@ -73,7 +75,7 @@ def test_refuses_never_and_unknown_targets(hub, cdx, session):
 def test_refuses_unknown_ambiguous_and_same_account(hub, cdx, session):
     transcript(hub, "main", "abd-456", [user("x"), LIMIT], cwd=session)
     assert "2 interrupted sessions" in relaunch(hub, cdx, "ab", "spare", "--yes").stderr
-    assert "matches 0 transcripts" in relaunch(hub, cdx, "zzz", "spare", "--yes").stderr
+    assert "conversation_not_found" in relaunch(hub, cdx, "zzz", "spare", "--yes").stderr
     assert "already belongs" in relaunch(hub, cdx, "abc", "main", "--yes").stderr
     assert handoffs(cdx) == []
 
@@ -107,7 +109,7 @@ def test_dry_run_checks_cdx_and_launches_nothing(hub, cdx, session):
     assert r.returncode == 0, r.stderr
     assert "cdx handoff main shared --source-conversation abc-123" in r.stdout
     assert "nothing launched" in r.stdout
-    assert [c["argv"][0] for c in cdx[1]() if c["argv"][0] not in ("configs", "sessions")] == ["can-resume", "status"]
+    assert [c["argv"][0] for c in cdx[1]() if c["argv"][0] not in ("configs", "sessions")] == ["can-resume", "can-resume", "status"]
     assert not (hub[0] / "local" / "state" / "relaunches.jsonl").exists()
 
 
@@ -224,3 +226,30 @@ def test_without_kitty_prints_the_window_command(hub, cdx, session):
     assert "run this in a new terminal" in r.stdout
     assert f"_run abc-123 main spare {session}" in r.stdout
     assert handoffs(cdx) == []
+
+
+def test_source_must_still_hold_the_conversation(hub, cdx, session):
+    r = relaunch(hub, cdx, "abc", "spare", "--yes", "--here", extra={"FAKE_LOST": "abc-123"})
+    assert r.returncode == 1 and "conversation_not_found" in r.stderr and "no fallback" in r.stderr
+    assert ["can-resume", "main", "--conversation", "abc-123", "--json"] in [c["argv"] for c in cdx[1]()]
+    assert handoffs(cdx) == []
+
+
+def test_hands_off_a_codex_conversation(hub, cdx, tmp_path):
+    ws = tmp_path / "cx-ws"
+    ws.mkdir()
+    cid = "019a2b3c-0000-7000-8000-00000000c0de"
+    day = hub[1] / "main" / "claude-home" / ".codex" / "sessions" / "2026" / "11" / "10"
+    day.mkdir(parents=True)
+    (day / f"rollout-2026-11-10T09-00-00-{cid}.jsonl").write_text(
+        json.dumps({"type": "session_meta", "payload": {"id": cid, "cwd": str(tmp_path / "gone")}}) + "\n"
+        + json.dumps({"type": "turn_context", "payload": {"cwd": str(ws)}}) + "\n")
+    rows = [{"session": "main", "provider": "codex", "profile_dir": str(hub[1] / "main"),
+             "transcripts_dir": str(hub[1] / "main" / "claude-home" / ".codex" / "sessions")}]
+    fake = tmp_path / "fakebin" / "cdx"
+    fake.write_text(fake.read_text().replace('elif cmd == "handoff":',
+                    f'elif cmd == "sessions":\n    print({json.dumps(json.dumps({"ok": True, "sessions": rows}))})\nelif cmd == "handoff":'))
+    r = relaunch(hub, cdx, cid, "spare", "--yes", "--here")
+    assert r.returncode == 0, r.stderr
+    (h,) = handoffs(cdx)
+    assert h["argv"] == ["handoff", "main", "spare", "--source-conversation", cid] and h["cwd"] == str(ws.resolve())

@@ -14,7 +14,8 @@ full id of any top-level transcript. The relaunch refuses when:
   - no id is given, or it does not resolve to exactly one transcript;
   - the target (or the profile holding the source) has policy never, or the target is the source;
   - none of the workspaces the transcript worked in still exists;
-  - `cdx can-resume <target>` says no, or `cdx status` shows the target blocked.
+  - `cdx can-resume <source> --conversation <id>` does not find it (conversation_not_found),
+    `cdx can-resume <target>` says no, or `cdx status` shows the target blocked.
 Then it asks: a `use` account takes y (or --yes); an `ask-first` account needs a typed "yes"
 on a terminal every time, --yes does not count. --picked is that yes from an interactive picker
 (crow-deck's Relaunch table): the owner chose this account for this session, so it counts for
@@ -137,8 +138,10 @@ def resolve(ref):
         die(f"{len(hits)} interrupted sessions start with '{ref}'; give more of the id")
     if hits:
         return hits[0]["conversation_id"], hits[0]["transcript"]
-    paths = [p for _, p in crow_lib.find_transcripts(ref, PROFILES)]
-    if len(paths) != 1:
+    paths = [p for _, p in crow_lib.find_transcripts(ref, PROFILES, codex=True)]
+    if not paths:
+        die(f"conversation '{ref}': conversation_not_found in any cdx profile; use a full id from `crow runs sessions`")
+    if len(paths) > 1:
         die(f"conversation '{ref}' matches {len(paths)} transcripts; use a full id from `crow runs sessions`")
     return ref, paths[0]
 
@@ -161,6 +164,9 @@ def workspace(path, cid):
                 continue
             if not isinstance(ev, dict) or ev.get("isSidechain"):
                 continue
+            if ev.get("type") in ("session_meta", "turn_context") and isinstance(ev.get("payload"), dict):
+                ev = {"cwd": ev["payload"].get("cwd"),  # Codex rollout
+                      "sessionId": ev["payload"].get("id") if ev["type"] == "session_meta" else None}
             if ev.get("sessionId"):
                 ids.add(ev["sessionId"])
             if isinstance(ev.get("cwd"), str):
@@ -211,6 +217,11 @@ def relaunch(argv):
         die(f"the session already belongs to '{target}'; pick another account")
     ws = workspace(path, cid)
 
+    src = cdx_json("can-resume", source, "--conversation", cid)
+    if src.get("reason") == "conversation_not_found":
+        die(f"cdx can-resume {source} --conversation {cid}: conversation_not_found (no fallback to the last session)")
+    if not src.get("ok") or not src.get("resumable"):
+        die(f"cdx can-resume {source} --conversation {cid}: {src.get('reason') or src.get('message') or 'not resumable'}")
     cap = cdx_json("can-resume", target)
     if not cap.get("ok") or not cap.get("resumable"):
         die(f"cdx can-resume {target}: {cap.get('reason') or cap.get('message') or 'not resumable'}")
