@@ -24,6 +24,15 @@ Each board keeps the `<script src="./support.js">` line and the `data-dc-script`
 9. A nav change (new tab, renumbering) touches every board and the notes that cite tab numbers. Apply it to all of them in one pass.
 10. Do not verify with screenshots. Open the link with `bin/crow-open <url>` (real browser).
 
+## Phone and foldable screens
+
+1. Ask the owner for the CSS viewport of each screen (outer and inner on a foldable). Draw boards at that size, not at a preset.
+2. A small cover screen shows one thing per tab. Use glance tabs: a tab strip, one short list or count per tab, one action. Full lists stay on the large screen.
+3. A large inner screen reflows to two columns. Never stretch a phone layout across it.
+4. After the owner approves the layout, run the `better-interface` skill on every board and apply the fixes in a script. Then derive the second theme with the converter from step 8.
+5. Web boards (laptop size) get the same pass. Usual fixes are dim text raised to 4.5:1, dimmed rows coloured instead of faded, a danger outline on destructive buttons, a hit area of at least 24px on small controls, tabular numbers on counters and a `:focus-visible` ring.
+6. Boards are static. Write what they cannot show (real buttons and links, aria labels, a drag alternative) as build notes in the spec. Mark rendering, fit and keyboard checks as not verified.
+
 ## Showing choices
 
 Draw every visual option as its own board beside the original, add a blue note naming the boards, then ask with AskUserQuestion. Say when the data is invented.
