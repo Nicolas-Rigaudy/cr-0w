@@ -1,10 +1,10 @@
 ## item_073_deck_logics_viewer_keys - Deck v and V keys open the Logics viewer
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -38,6 +38,12 @@
 # AC Traceability
 - request-AC1 -> This backlog slice. Proof: AC1 to AC4 above.
 
+# Proof (2026-11-09)
+- AC1: `v` starts `logics-manager view --open` detached (setsid) in the card's registry path, with the real HOME and `BROWSER=bin/crow-open`; the deck flashes, then reports within 2 s.
+- AC2: `V` runs `logics-manager view --fleet --open`. logics-manager reuses its running server itself (`~/.cache/logics-manager/viewers.json`): a second start exits 0 with "Reusing the viewer already running", and the deck says "opened on the running server". Checked live with `BROWSER=true`.
+- AC3: `v` flashes "v: <name> has no Logics corpus" or "v: no project selected"; a failed start flashes its last output line.
+- AC4: `tools/crow-deck/logics_test.go` covers routing, the command per case, reuse, failure, other pages and the env. `go vet ./... && go test ./...` passed.
+
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
@@ -46,6 +52,7 @@
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
 - Request: `req_019_release_leverage_cdx_0_25_logics_2_24`
+- Commits: `347ce95`
 - Primary task(s): (none yet)
 
 # Priority
@@ -54,6 +61,9 @@
 
 # Notes
 - Check `cdx view` first: if it adds nothing over `logics-manager view` for this case, call logics-manager directly. Check how the fleet view finds projects (registry vs its own config).
+
+- `cdx view` has no `--fleet`; the deck calls logics-manager directly. The fleet view reads its own `fleetRoots` (viewer preferences), not the crow registry.
+- Start output goes to `local/state/logics-viewer.log`.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
