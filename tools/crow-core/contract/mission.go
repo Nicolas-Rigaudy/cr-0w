@@ -35,10 +35,11 @@ var States = []string{"preflight", "queued", "running", "waiting", "review", "pu
 
 // Moves lists the legal state moves of adr_001. waiting and review are parked: an answer
 // sends them back to queued for a resume (item_135). done reopens (`dig` on an FYI
-// report) and failed retries, both through queued. cancelled is final.
+// report) and failed retries, both through queued. queued parks on waiting when core asks
+// the owner at the resume cap (item_135). cancelled is final.
 var Moves = map[string][]string{
 	"preflight":  {"queued", "cancelled"},
-	"queued":     {"running", "failed", "cancelled"},
+	"queued":     {"running", "waiting", "failed", "cancelled"},
 	"running":    {"waiting", "review", "done", "failed", "cancelled"},
 	"waiting":    {"queued", "running", "failed", "cancelled"},
 	"review":     {"queued", "running", "publishing", "done", "cancelled"},

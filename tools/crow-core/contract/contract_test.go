@@ -455,11 +455,11 @@ func typeEnum(doc schemaDoc) []string {
 }
 
 // AC3 (item_132): every from x to pair is legal exactly when Moves lists it. item_134
-// adds waiting and review back to queued.
+// adds waiting and review back to queued, item_135 queued to waiting.
 func TestStateMoves(t *testing.T) {
 	legal := map[[2]string]bool{
 		{"preflight", "queued"}: true, {"preflight", "cancelled"}: true,
-		{"queued", "running"}: true, {"queued", "failed"}: true, {"queued", "cancelled"}: true,
+		{"queued", "running"}: true, {"queued", "waiting"}: true, {"queued", "failed"}: true, {"queued", "cancelled"}: true,
 		{"running", "waiting"}: true, {"running", "review"}: true, {"running", "done"}: true,
 		{"running", "failed"}: true, {"running", "cancelled"}: true,
 		{"waiting", "queued"}: true, {"waiting", "running"}: true, {"waiting", "failed"}: true, {"waiting", "cancelled"}: true,

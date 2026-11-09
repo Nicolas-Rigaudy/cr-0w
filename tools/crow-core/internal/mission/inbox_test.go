@@ -61,7 +61,7 @@ func lastEvent(t *testing.T, root, id string) contract.Event {
 }
 
 // AC1: a parked mission shows one item; the answer closes it, writes answers.v1.md and an
-// answer event, and queues the mission. Tick holds it until the resume of item_135.
+// answer event, and queues the mission. The next tick resumes it (item_135).
 func TestInboxAnswersAParkedQuestion(t *testing.T) {
 	env, root, id := parked(t, false)
 	items, err := env.Inbox(false)
@@ -98,11 +98,11 @@ func TestInboxAnswersAParkedQuestion(t *testing.T) {
 	if len(all) != 1 || all[0].State != "answered" || all[0].Answered == nil {
 		t.Errorf("answered item = %+v", all)
 	}
-	rep, err := env.Tick(&fakeRunner{ends: map[string]RunState{}}, 2)
+	rep, err := env.Tick(&seqRunner{}, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rep.Started) != 0 || len(rep.Held) != 1 || !strings.Contains(rep.Held[0].Detail, "item_135") {
+	if len(rep.Started) != 1 || len(rep.Held) != 0 || !strings.Contains(rep.Started[0].Detail, "resume of r1") {
 		t.Errorf("tick = %+v", rep)
 	}
 }

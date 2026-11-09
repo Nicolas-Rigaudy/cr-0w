@@ -122,15 +122,21 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: fmt.Sprintf("kind %s: %v", m.Kind, err)})
 			continue
 		}
-		if len(m.Runs) > 0 {
-			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State,
-				Detail: "answered; the resume lands with item_135"})
-			continue
-		}
 		if k.Phase > LivePhase {
 			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State,
 				Detail: fmt.Sprintf("kind %s is phase %d; the live phase is %d", k.Name, k.Phase, LivePhase)})
 			continue
+		}
+		resuming := len(m.Runs) > 0
+		if resuming {
+			line, err := env.beforeResume(m)
+			if err != nil {
+				return rep, err
+			}
+			if line != nil {
+				rep.Finished = append(rep.Finished, *line)
+				continue
+			}
 		}
 		if full == "" && running >= maxRuns {
 			full = fmt.Sprintf("%d of %d runs busy", running, maxRuns)
@@ -139,7 +145,16 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: full})
 			continue
 		}
-		line, err := env.start(r, m, k)
+		var line *TickLine
+		if resuming {
+			// A run cut by the usage limit resumes on another account or after the reset:
+			// its session does not carry over, so it starts cold from the brief.
+			prev := lastRun(m)
+			cold := prev != nil && prev.Cause != nil && *prev.Cause == "usage_limit"
+			line, err = env.resume(r, m, k, cold)
+		} else {
+			line, err = env.start(r, m, k)
+		}
 		var de *DispatchError
 		if errors.As(err, &de) || (err != nil && line == nil) {
 			full = "dispatch refused: " + err.Error()
