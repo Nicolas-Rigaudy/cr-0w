@@ -1,7 +1,7 @@
 ## req_046_mission_runs_can_write_their_version_files - Mission runs can write their version files
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
@@ -46,9 +46,8 @@
 - `bin/crow-runs`
 
 # Backlog
-- none
+- `item_143_mission_runs_can_write_their_version_files`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
