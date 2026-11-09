@@ -71,3 +71,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+- 2026-11-09 owner face pick (vault `refs/step2/faces-sheet.jpg`): the pixel face direction builds on LED and dot-matrix eyes and mouth (F1, F4, F9, F10, F12): eyes change with mood, mouth opens with the voice. Still sketch the other core forms next to it.

@@ -73,3 +73,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+- 2026-11-09 owner ref picks (vault `refs/step2/`): palette blue frame and data with purple for CR-0W and selection (P2, P3, P4, P7). Hub patterns to borrow: coordinator thread ending in a question (H4, H11), live run graph (H1), status words with parked and blocked states and one resume action (H8, H9, H12), mission detail with a properties rail and a run ledger (H10, H13).
