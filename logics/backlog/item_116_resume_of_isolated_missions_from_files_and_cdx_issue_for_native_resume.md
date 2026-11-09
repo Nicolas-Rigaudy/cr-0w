@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 11:24:43
+> Indicators reviewed: 2026-11-09 17:28:44
 
 # AI Context
 - Summary: Isolated missions resume as a fresh run from the brief and version files. A cdx issue asks for native resume of isolated runs as a same-account optimisation.
@@ -57,6 +57,7 @@
 - Cost after `--resume`: `total_cost_usd` is the running total of the whole Claude thread. Cost per turn = increase since the previous total of the same thread (or the total itself when it drops: new thread). Summing raw totals overcounts quadratically; check `cdx runs` cost for resumed runs.
 - If `--resume` fails because Claude purged the transcript, start a new thread from the mission files and log a note; keep the displayed history.
 - 2026-11-09 groomed into task_016: the cold resume path used by item_135. cdx issue #122 still open upstream.
+- 2026-11-09 tool pass (owner picked): cdx 0.26.10 `cdx run --continue-run RUN_ID` resumes an isolated run in its own sandbox. 0.26.11 keeps the allowlist through a permissions-only `--settings` (crow adopted it in ac1d396 for review runs). Resume missions natively with it first; fall back to the file-based resume on `continue_run_workspace_gone` or `continue_run_settings_mismatch`.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

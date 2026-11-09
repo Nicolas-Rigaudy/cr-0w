@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub portability
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 17:28:44
 
 # AI Context
 - Summary: Replace crow's hand-built cdx profile paths with the cdx JSON CLI in three slices: profile and transcript dirs, relaunch by conversation id, live sessions.
@@ -56,6 +57,7 @@
 - Line numbers checked 2026-11-09 against main ac1d396.
 - `cdx sessions --all --json` checked live on cdx 0.26.11: rows carry session, provider, active, pid, cwd, conversation_id, profile_dir, transcripts_dir.
 - Fresh session: `implement-task` on this item, one slice per commit.
+- 2026-11-09 tool pass (owner picked), extra slice S4: cdx 0.26.7 status JSON `quota_windows.5h|weekly` (source, observed at, available, unavailable reason, stale flag) replaces crow-usage's own quota reads and drives `crow runs relaunch` status. cdx 0.26.0+ `cdx conversation <name> --json` (resolution_method, resolution_scope; 0.26.2 `--cwd/--since`) and 0.26.3 `cdx history --cwd/--interactive` replace transcript parsing in crow runs/sessions.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
