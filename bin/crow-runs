@@ -2,7 +2,8 @@
 """crow-runs: dispatch background runs and see what every agent is doing.
 
   crow-runs dispatch <project> <label> (--prompt-file F | --prompt T) [--kind task|review|retro] [--power P] [--model M]
-                     [--permission review] [--logics REF] [--mission ID] [--timeout-min N] [--json] [--dry-run]
+                     [--permission review] [--logics REF] [--mission ID] [--write-dir DIR] [--timeout-min N]
+                     [--json] [--dry-run]
                                                      every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
   crow-runs state <run_id>                           JSON: has the run ended, its end state, the usage-limit policy (crow-core tick)
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
@@ -415,7 +416,8 @@ def requeue(rec, deadline):
     choice, why = crow_lib.limit_policy(ctx, left, bool(target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists()))
     log_event(rec, "run.limit_policy", {"choice": choice, "reason": why, "context": ctx, "account": acct,
                                         "reset_5h_at": row.get("reset_5h_at_iso"), "reset_in_min": left})
-    base += ["--context", ctx, *(["--isolate"] if rec.get("isolated") else [])]
+    base += ["--context", ctx, *(["--isolate"] if rec.get("isolated") else []),
+             *(["--write-dir", rec["write_dir"]] if rec.get("write_dir") else [])]
 
     def fresh(account):
         """A new run from the brief plus the resume note (isolated runs cannot continue a conversation)."""
@@ -816,11 +818,23 @@ def dispatch(a):
             a.permission = "review"  # the sandbox mounts the tree read-only
         elif a.continue_run:  # cdx refuses any permission but the parent's
             a.permission = parent_run(a.continue_run).get("permission") or crow_lib.permission(crow_lib.provider_of(acct))
-    runs = running_runs()
-    # A review run cannot write, so it may share the folder with another run.
-    if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
-        dispatch_fail(a, "cwd_busy", f"a run is already working in {cwd}; --force to override")
     provider = crow_lib.provider_of(acct)
+    a.write_dir = getattr(a, "write_dir", None)  # callers that build the namespace by hand may omit it
+    if a.write_dir:
+        a.write_dir = os.path.realpath(a.write_dir)
+        if provider != "claude":
+            dispatch_fail(a, "write_dir_unsupported", "--write-dir needs a Claude account (its rules are Claude settings)")
+        if a.isolate:
+            dispatch_fail(a, "write_dir_unsupported", "--write-dir does not apply to an isolated run")
+        if not os.path.isdir(a.write_dir):
+            dispatch_fail(a, "write_dir_missing", f"--write-dir {a.write_dir} is not a folder")
+        if a.permission == "review":
+            a.permission = None  # plan mode refuses every edit; the review allowlist keeps the project read only
+    runs = running_runs()
+    # A review run cannot write in its cwd (plan mode, or the review allowlist on Claude), so it may share it.
+    read_only = a.permission == "review" or (a.kind == "review" and provider == "claude")
+    if any(x["cwd"] == cwd for x in runs) and not a.force and not read_only:
+        dispatch_fail(a, "cwd_busy", f"a run is already working in {cwd}; --force to override")
     src = ["--prompt-file", a.prompt_file] if a.prompt_file else ["--prompt", a.prompt]
     if provider == "codex":  # Codex does not load CLAUDE.md: start the prompt with the read-first list
         task = Path(a.prompt_file).read_text() if a.prompt_file else a.prompt
@@ -834,7 +848,7 @@ def dispatch(a):
     state = crow_lib.isolated_state_dir(cwd) if a.isolate else STATE
     over = {f"CROW_{a.kind.upper()}_TIMEOUT_MIN": str(a.timeout_min)} if a.timeout_min else {}
     flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, env={**os.environ, **over},
-                                    budget=a.budget, state=state)
+                                    budget=a.budget, state=state, write_dir=a.write_dir)
     if a.isolate:  # cdx failover could land on a full-login account, which refuses isolation; requeue moves it
         flags = [f for f in flags if f != "--failover"]
         # cdx allowlists toolchains under Path.home(); a crow session's HOME is the cdx profile home, which
@@ -874,6 +888,8 @@ def dispatch(a):
         rec["logics_ref"] = a.logics
     if a.mission:
         rec["mission"] = a.mission
+    if a.write_dir:
+        rec["write_dir"] = a.write_dir
     if "--budget" in flags:
         rec["budget_usd"] = float(flags[flags.index("--budget") + 1])
     if a.continue_run:
@@ -999,6 +1015,8 @@ def main():
     d.add_argument("--isolate", action="store_true", help="run in cdx's OS sandbox (--isolate-workspace): no credentials, "
                    "no git push, public internet minus LAN; crow commits the diff after the run. Kinds: task (rw), review (ro)")
     d.add_argument("--continue-run", metavar="RUN_ID", help="resume that finished run's conversation (cdx --continue-run; its model and effort)")
+    d.add_argument("--write-dir", metavar="DIR", help="the run may also edit files under this folder (Claude only; "
+                   "a review run then leaves plan mode and keeps the project read only through its allowlist)")
     d.add_argument("--mission", metavar="ID", help="crow-core mission this run belongs to (the tick finishes it: no notify, no requeue)")
     d.add_argument("--timeout-min", type=int, help="wall-clock cap in minutes for this run (default: the kind's)")
     d.add_argument("--json", action="store_true", help="print {ok, run_id, account} or {ok: false, error: {code, message}}")

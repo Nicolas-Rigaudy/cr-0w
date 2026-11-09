@@ -70,7 +70,7 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold bool)
 		if err != nil {
 			return nil, err
 		}
-		d := dispatchFor(m, k, label, note)
+		d := dispatchFor(m, k, dir, label, note)
 		d.ContinueRun = prev.Run
 		s, err = r.Dispatch(d)
 		var de *DispatchError
@@ -84,7 +84,7 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold bool)
 		}
 	}
 	if mode == ResumeCold {
-		d := dispatchFor(m, k, label, filepath.Join(dir, "brief.md"))
+		d := dispatchFor(m, k, dir, label, filepath.Join(dir, "brief.md"))
 		d.Resumes = prev.Run
 		if s, err = r.Dispatch(d); err != nil {
 			return nil, err

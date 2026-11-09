@@ -45,7 +45,7 @@ def args(**kw):
             "kind": "review", "model": "opus", "power": "medium", "continue_run": None, "account": None,
             "isolate": False, "cwd": None, "permission": "review", "force": False, "budget": 5.0, "dry_run": False,
             "context": None, "logics": None, "resumes": None, "mission": "20261109-research-x", "timeout_min": 60,
-            "json": True}
+            "json": True, "write_dir": None}
     return types.SimpleNamespace(**{**base, **kw})
 
 
@@ -95,3 +95,41 @@ def test_state_of_a_live_a_done_and_a_limit_run(fake, monkeypatch):
     assert done["ended"] and done["state"] == "done" and done["exit_code"] == 0 and "policy" not in done
     lim = cr.run_end_state("cc")
     assert lim["state"] == "limit" and lim["policy"]["choice"] == "move" and lim["policy"]["target"] == "spare"
+
+
+def test_write_dir_leaves_plan_mode_and_allows_only_the_mission_folder(fake, capsys):
+    """item_143 AC1: a read-only mission run edits its folder only; the review allowlist keeps the project read only."""
+    import shlex
+    from pathlib import Path
+    mdir = fake.tmp / "missions" / "20261109-research-x"
+    mdir.mkdir(parents=True)
+    cr.dispatch(args(write_dir=str(mdir)))
+    cdx = next(c for c in fake.calls if c["cmd"][:2] == ["cdx", "run"])["cmd"]
+    assert cdx[cdx.index("--permission") + 1] == "default"
+    extra = shlex.split(cdx[cdx.index("--extra-args") + 1])
+    assert len(cdx[cdx.index("--extra-args") + 1]) <= crow_lib.CDX_EXTRA_ARGS_MAX
+    assert extra[extra.index("--add-dir") + 1] == os.path.realpath(mdir)
+    allow = json.loads(Path(extra[extra.index("--settings") + 1]).read_text())["permissions"]["allow"]
+    d = "/" + os.path.realpath(mdir)
+    assert f"Edit({d}/**)" in allow and f"Write({d}/**)" in allow
+    assert "Edit" not in allow and "Write" not in allow  # nothing else is writable
+    assert json.loads(cr.LEDGER.read_text())["write_dir"] == os.path.realpath(mdir)
+
+
+def test_write_dir_must_exist(fake, capsys):
+    with pytest.raises(SystemExit):
+        cr.dispatch(args(write_dir=str(fake.tmp / "nope")))
+    assert json.loads(capsys.readouterr().out)["error"]["code"] == "write_dir_missing"
+
+
+def test_write_dir_refused_on_codex(fake, capsys, monkeypatch, tmp_path):
+    monkeypatch.setattr(crow_lib, "provider_of", lambda acct, status=None: "codex")
+    with pytest.raises(SystemExit):
+        cr.dispatch(args(write_dir=str(tmp_path)))
+    assert json.loads(capsys.readouterr().out)["error"]["code"] == "write_dir_unsupported"
+
+
+def test_review_kind_on_claude_shares_a_busy_cwd(fake, capsys, monkeypatch):
+    monkeypatch.setattr(cr, "running_runs", lambda: [{"cwd": str(fake.tmp)}])
+    cr.dispatch(args(permission=None, write_dir=str(fake.tmp)))
+    assert json.loads(capsys.readouterr().out)["ok"] is True

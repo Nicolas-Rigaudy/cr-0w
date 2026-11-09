@@ -527,21 +527,36 @@ def sandbox_allow(kind):
     return list(k["tools"]) + [f"Bash({c}:*)" for c in bash] + [f"mcp__{s}" for s in k["mcp"]]
 
 
-def sandbox_settings(kind):
-    """Claude settings for a sandboxed run of this kind: its allow rules and the shared denials."""
-    return {"permissions": {"allow": sandbox_allow(kind), "deny": list(RUN_DENY)}}
+def write_dir_allow(write_dir):
+    """Allow rules that let a run edit files under write_dir only (Claude's //abs/path rule syntax)."""
+    d = "/" + os.path.realpath(write_dir).rstrip("/")
+    return [f"Edit({d}/**)", f"Write({d}/**)"]
 
 
-def sandbox_args(kind, state=None):
+def sandbox_settings(kind, write_dir=None):
+    """Claude settings for a sandboxed run of this kind: its allow rules and the shared denials.
+    With write_dir, edits are also allowed under that folder (a mission run's own folder)."""
+    allow = sandbox_allow(kind) + (write_dir_allow(write_dir) if write_dir else [])
+    return {"permissions": {"allow": allow, "deny": list(RUN_DENY)}}
+
+
+def sandbox_args(kind, state=None, write_dir=None):
     """Claude CLI arguments for a sandboxed run of this kind: --settings with the allowlist and denials, no MCP
     server it does not list. The rules go in files under <state>/run-sandbox/: cdx caps --extra-args at
-    CDX_EXTRA_ARGS_MAX characters and the lists are longer."""
+    CDX_EXTRA_ARGS_MAX characters and the lists are longer. With write_dir, the run may also edit under that
+    folder: its rules go in a file of their own (named by the folder) and the folder is added with --add-dir."""
+    import hashlib
     from pathlib import Path
     d = Path(state or machine_dir()) / "run-sandbox"
     d.mkdir(parents=True, exist_ok=True)
-    f = d / f"{kind}.json"
-    f.write_text(json.dumps(sandbox_settings(kind), indent=1) + "\n")
+    name = kind
+    if write_dir:
+        name += "-" + hashlib.sha256(os.path.realpath(write_dir).encode()).hexdigest()[:10]
+    f = d / f"{name}.json"
+    f.write_text(json.dumps(sandbox_settings(kind, write_dir), indent=1) + "\n")
     args = ["--strict-mcp-config", "--settings", str(f)]
+    if write_dir:
+        args += ["--add-dir", os.path.realpath(write_dir)]
     servers = RUN_SANDBOX[kind]["mcp"]
     if servers:
         m = d / f"{kind}.mcp.json"
@@ -569,12 +584,14 @@ def model_id(model):
     return CLAUDE_MODEL_IDS.get((model or "").strip().lower(), model)
 
 
-def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None, budget=None, state=None):
+def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None, budget=None, state=None,
+              write_dir=None):
     """cdx run arguments and environment every headless launch carries.
     With continue_run, cdx pins the parent's model, effort and account, so none of them nor --failover is passed.
     --failover moves a run stopped by a usage limit to another allowed account. cdx run has no --fallback-model
     flag: the fallback model is a per-account setting (`cdx set <account> --fallback-model M`).
     budget (USD) overrides the kind's budget for this run; Claude only.
+    write_dir lets the run edit files under that folder too (Claude only, see sandbox_args).
     A Claude run, fresh or continued, carries the kind's sandbox (sandbox_args) through --extra-args: since
     cdx 0.26.11 --continue-run accepts a --settings that only sets permissions."""
     env = os.environ if env is None else env
@@ -590,7 +607,7 @@ def run_flags(kind, provider="claude", model=None, power=None, continue_run=None
         args += ["--kind", CDX_KINDS[kind]]
     if provider == "claude":  # cdx measures spend from Claude usage; Codex budgets fail as unverifiable without model evidence
         args += ["--budget", f"{budget:g}"]
-        extra = shlex.join(sandbox_args(kind, state))
+        extra = shlex.join(sandbox_args(kind, state, write_dir))
         if len(extra) > CDX_EXTRA_ARGS_MAX:
             raise ValueError(f"sandbox args for {kind} exceed cdx's {CDX_EXTRA_ARGS_MAX}-character --extra-args cap")
         args += ["--extra-args", extra]

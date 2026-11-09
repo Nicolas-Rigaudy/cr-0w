@@ -87,9 +87,12 @@ func TestTickStartsThenFinishesStraightThrough(t *testing.T) {
 		t.Fatalf("report = %+v", rep)
 	}
 	d := r.dispatched[0]
-	if d.Mission != m.ID || d.Project != "demo" || d.Kind != "review" || d.Permission != "review" ||
+	if d.Mission != m.ID || d.Project != "demo" || d.Kind != "review" || d.Permission != "" ||
 		d.Model != "opus" || d.Power != "medium" || d.BudgetUSD != 5 || d.TimeoutMin != 60 {
 		t.Errorf("dispatch = %+v", d)
+	}
+	if abs, _ := filepath.Abs(filepath.Join(root, m.ID)); d.WriteDir != abs {
+		t.Errorf("write dir = %s, want %s", d.WriteDir, abs)
 	}
 	if d.PromptFile != filepath.Join(root, m.ID, "brief.md") {
 		t.Errorf("prompt = %s", d.PromptFile)
@@ -291,8 +294,8 @@ func TestDispatchForWritableKind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := dispatchFor(contract.Mission{ID: "x", Project: "demo"}, k, "x", "/b.md")
-	if d.Kind != "task" || d.Permission != "" {
+	d := dispatchFor(contract.Mission{ID: "x", Project: "demo"}, k, "/m/x", "x", "/b.md")
+	if d.Kind != "task" || d.Permission != "" || d.WriteDir != "/m/x" {
 		t.Errorf("dispatch = %+v", d)
 	}
 }

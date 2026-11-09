@@ -131,6 +131,30 @@ func TestBriefNamesNoAccountOrPath(t *testing.T) {
 	}
 }
 
+// item_143 AC2: with the mission folder set, the brief names it and every path the run writes,
+// and still no repo path.
+func TestBriefNamesTheMissionFolder(t *testing.T) {
+	in := exampleInput(t)
+	in.Dir = "/state/core/missions/" + example
+	home, _ := os.UserHomeDir()
+	wt := filepath.Join(home, "Projects", "secret-repo.wt", example)
+	in.Mission.Worktree = &wt
+	got := Render(in)
+	for _, want := range []string{
+		"- mission folder: `" + in.Dir + "`",
+		"`" + in.Dir + "/" + Phase(in.Mission.Gates, nil) + ".v1.md`",
+		"`" + in.Dir + "/outbox/`",
+		"`" + in.Dir + "/outbox/questions.json`",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("brief misses %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "secret-repo") {
+		t.Error("brief leaks the repo path")
+	}
+}
+
 func TestPhaseWalksTheGates(t *testing.T) {
 	go1 := []Answer{{Version: 1, Verb: "go"}}
 	dig := []Answer{{Version: 1, Verb: "dig"}}

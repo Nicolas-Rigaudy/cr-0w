@@ -129,6 +129,7 @@ func parseAnswer(b []byte) (Answer, error) {
 type Input struct {
 	Mission   contract.Mission
 	Key       string // from the created event; derived from the id when empty
+	Dir       string // absolute mission folder; the brief names it so the run writes there
 	Kind      *contract.Kind
 	Prefs     []string          // already filtered by kind
 	Answers   []Answer          // in version order
@@ -216,6 +217,9 @@ func Render(in Input) string {
 	}
 	line("- caps: %s", caps)
 	line("- current version: %d (write `%s`)", n, file)
+	if in.Dir != "" {
+		line("- mission folder: `%s`", in.Dir)
+	}
 	line("")
 
 	line("## Owner preferences")
@@ -268,12 +272,16 @@ func Render(in Input) string {
 	line("")
 
 	line("## Constraints")
+	inDir := ""
+	if in.Dir != "" {
+		inDir = " in the mission folder"
+	}
 	if worktree {
 		line("- Allowed: read and edit inside the worktree, run the repo checks, commit on the mission branch.")
 		line("- Not allowed: push, merge, post, install packages, touch files outside the worktree.")
 	} else {
 		line("- Allowed: %s", readOnlyAllowed(k))
-		line("- Not allowed: push, merge, post, install packages, write anywhere but `outbox/` and the version file.")
+		line("- Not allowed: push, merge, post, install packages, write anywhere but `outbox/` and the version file%s.", inDir)
 	}
 	dc := "none"
 	if k.DataClasses != nil && len(*k.DataClasses) > 0 {
@@ -283,13 +291,18 @@ func Render(in Input) string {
 	line("")
 
 	line("## Reply contract")
-	line("- Write exactly one file for this turn: `%s`, with one fenced `crow` block (schema `crow-block.schema.json`, contract %d).", file, contract.Version)
-	outbox := "- Put any file you want shown under `outbox/` and list it in `artifacts`."
+	at := func(p string) string { return p }
+	if in.Dir != "" {
+		at = func(p string) string { return filepath.Join(in.Dir, p) }
+		line("- Paths below are in the mission folder `%s`, not in the repo. List `artifacts` relative to it.", in.Dir)
+	}
+	line("- Write exactly one file for this turn: `%s`, with one fenced `crow` block (schema `crow-block.schema.json`, contract %d).", at(file), contract.Version)
+	outbox := fmt.Sprintf("- Put any file you want shown under `%s/` and list it in `artifacts`.", at("outbox"))
 	if k.Caps.OutboxFileMB != nil && k.Caps.OutboxTotalMB != nil {
 		outbox += fmt.Sprintf(" Caps: %s MB per file, %s MB in total.", num(*k.Caps.OutboxFileMB), num(*k.Caps.OutboxTotalMB))
 	}
 	line("%s", outbox)
-	line("- A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn. Outside a plan or report, write `outbox/questions.json`.")
+	line("- A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn. Outside a plan or report, write `%s`.", at("outbox/questions.json"))
 	line("- Never wait for an answer inside the run. End the turn. core resumes you with `answers.v%d.md`.", n)
 	line("- From version 2, start the file with a `## Responses` section and fill `responses`.")
 	line("- A report with `verdict: ready` carries `proof`.")

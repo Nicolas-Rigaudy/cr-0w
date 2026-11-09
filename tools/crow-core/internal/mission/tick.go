@@ -23,7 +23,8 @@ type Dispatch struct {
 	Mission, Project, Label, PromptFile string
 	Kind                                string // crow-runs run kind: task or review
 	Model, Power                        string
-	Permission                          string // "review" for a read-only run, else empty
+	Permission                          string // "review" for a plan-mode run, else empty
+	WriteDir                            string // the mission folder: the run may edit only there besides its kind's rights
 	BudgetUSD                           float64
 	TimeoutMin                          int
 	ContinueRun                         string // cdx --continue-run of this run (same account and sandbox)
@@ -171,14 +172,16 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 }
 
 // dispatchFor turns a kind into crow-runs flags. A read-only or review permission runs as
-// a crow-runs review run (read only); every other kind as a task run.
-func dispatchFor(m contract.Mission, k *contract.Kind, label, prompt string) Dispatch {
+// a crow-runs review run: its allowlist keeps the project read only. Every other kind runs
+// as a task run. Both may write in the mission folder dir (version file, outbox), so none
+// runs in plan mode, which refuses every edit.
+func dispatchFor(m contract.Mission, k *contract.Kind, dir, label, prompt string) Dispatch {
 	d := Dispatch{
-		Mission: m.ID, Project: m.Project, Label: label, PromptFile: prompt, Kind: "task",
+		Mission: m.ID, Project: m.Project, Label: label, PromptFile: prompt, Kind: "task", WriteDir: dir,
 		Model: k.Account.Model, Power: k.Effort, BudgetUSD: m.Budget.BudgetUSD, TimeoutMin: m.Budget.TimeMin,
 	}
 	if k.Permission != nil && (*k.Permission == "read-only" || *k.Permission == "review") {
-		d.Kind, d.Permission = "review", "review"
+		d.Kind = "review"
 	}
 	return d
 }
@@ -197,7 +200,7 @@ func (env Env) start(r Runner, m contract.Mission, k *contract.Kind) (*TickLine,
 	if label == "" {
 		label = brief.Key(m)
 	}
-	s, err := r.Dispatch(dispatchFor(m, k, label, filepath.Join(dir, "brief.md")))
+	s, err := r.Dispatch(dispatchFor(m, k, dir, label, filepath.Join(dir, "brief.md")))
 	if err != nil {
 		return nil, err
 	}

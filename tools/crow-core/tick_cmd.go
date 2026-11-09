@@ -30,6 +30,9 @@ func (c crowRuns) Dispatch(d mission.Dispatch) (mission.Started, error) {
 	if d.Permission != "" {
 		args = append(args, "--permission", d.Permission)
 	}
+	if d.WriteDir != "" {
+		args = append(args, "--write-dir", d.WriteDir)
+	}
 	if d.BudgetUSD > 0 {
 		args = append(args, "--budget", strconv.FormatFloat(d.BudgetUSD, 'f', -1, 64))
 	}

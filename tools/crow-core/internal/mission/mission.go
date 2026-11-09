@@ -340,7 +340,11 @@ func (env Env) Brief(ref string) (string, brief.Input, error) {
 		return "", brief.Input{}, fmt.Errorf("%s: kind %s: %w", m.ID, m.Kind, err)
 	}
 	in := brief.Input{Mission: m, Kind: k}
-	dir := filepath.Join(env.Store.Root(), m.ID)
+	dir, err := filepath.Abs(filepath.Join(env.Store.Root(), m.ID))
+	if err != nil {
+		return "", in, err
+	}
+	in.Dir = dir
 	recs, err := eventlog.Read(eventlog.Path(env.Store.Root(), m.ID), 0)
 	if err != nil {
 		return "", in, err

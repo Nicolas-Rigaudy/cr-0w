@@ -27,14 +27,14 @@ func TestCrowRunsDispatchFlags(t *testing.T) {
 	c, log := fakeCrowRuns(t, `echo '{"ok": true, "run_id": "ab12", "account": "main"}'`)
 	s, err := c.Dispatch(mission.Dispatch{
 		Mission: "20261109-research-x", Project: "demo", Label: "x", PromptFile: "/m/brief.md",
-		Kind: "review", Model: "opus", Power: "medium", Permission: "review", BudgetUSD: 5, TimeoutMin: 60,
+		Kind: "review", Model: "opus", Power: "medium", WriteDir: "/m", BudgetUSD: 5, TimeoutMin: 60,
 	})
 	if err != nil || s != (mission.Started{RunID: "ab12", Account: "main"}) {
 		t.Fatalf("started = %+v, %v", s, err)
 	}
 	b, _ := os.ReadFile(log)
 	want := "dispatch demo x --prompt-file /m/brief.md --mission 20261109-research-x --kind review --json " +
-		"--model opus --power medium --permission review --budget 5 --timeout-min 60"
+		"--model opus --power medium --write-dir /m --budget 5 --timeout-min 60"
 	if got := strings.TrimSpace(string(b)); got != want {
 		t.Errorf("args = %s\nwant   %s", got, want)
 	}
