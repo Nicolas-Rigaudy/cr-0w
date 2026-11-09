@@ -56,6 +56,8 @@
 - Rationale: Unblocks item_137 whatever hero wins. Runs in parallel with item_139.
 
 # Notes
+- References: vault `CR-0W/Research/nest-design/Nest Hero References.md` (Fold 6 screens, jakubkrehel `state-machine` and `variant` skills, reduced-motion rules).
+- Fold 6: cover 2376 x 968 px (about 22:9, CSS ~402 x 956 unverified); inner 2160 x 1856 px (nearly square). Measure the CSS viewports on the phone before the layouts are final.
 - Hybrid rationale: Derived from request `req_043_nest_design_scope_and_jarvis_3d_hero_option` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_043_nest_design_scope_and_jarvis_3d_hero_option.md`.
 - Generated locally by logics-manager.

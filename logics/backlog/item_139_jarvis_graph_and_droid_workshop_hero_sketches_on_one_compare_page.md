@@ -59,6 +59,8 @@
 - Rationale: The hero choice gates item_126 and item_140. Runs in parallel with item_138.
 
 # Notes
+- References: vault `CR-0W/Research/nest-design/Nest Hero References.md` and `Nest Moodboard.html`. The owner prunes the moodboard before the sketches start; use only the kept images.
+- Reference layers: Iron Man HUD (panels on a sphere), Capri (the core as an apparition), Star Wars holoprojector (projection from a base, flicker for failed, dim for sleeping), Cyberpunk 2077 (glitch as a state), owner's Obsidian graph (real density).
 - Hybrid rationale: Derived from request `req_043_nest_design_scope_and_jarvis_3d_hero_option` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_043_nest_design_scope_and_jarvis_3d_hero_option.md`.
 - Generated locally by logics-manager.
