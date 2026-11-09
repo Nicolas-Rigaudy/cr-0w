@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Clone, update and link third-party skills listed in skills/ext.list.
+
+Usage: crow-skills-ext sync      clone missing repos, fast-forward existing ones
+       crow-skills-ext link      link every listed skill into each Claude profile
+       crow-skills-ext status    show what is cloned and linked
+
+Clones live in vendor/skills/<owner>__<repo> (gitignored). Each skill is linked
+under the name in its SKILL.md frontmatter, so two repos can ship the same folder name.
+"""
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+import crow_lib  # noqa: E402
+
+MANIFEST = ROOT / "skills" / "ext.list"
+VENDOR = ROOT / "vendor" / "skills"
+
+
+def entries():
+    for line in MANIFEST.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            repo, sub = line.split()[:2]
+            yield repo, sub
+
+
+def clone_dir(repo):
+    return VENDOR / repo.replace("/", "__")
+
+
+def skill_name(folder):
+    m = re.search(r"^name:\s*(\S+)", (folder / "SKILL.md").read_text(), re.M)
+    return m.group(1) if m else folder.name
+
+
+def claude_skill_dirs():
+    root = Path(crow_lib.profiles_dir())
+    return sorted(p for p in root.glob("*/claude-home/.claude/skills") if p.is_dir())
+
+
+def sync():
+    VENDOR.mkdir(parents=True, exist_ok=True)
+    for repo in sorted({r for r, _ in entries()}):
+        d = clone_dir(repo)
+        if d.is_dir():
+            cmd = ["git", "-C", str(d), "pull", "-q", "--ff-only"]
+        else:
+            cmd = ["git", "clone", "-q", "--depth", "1", f"https://github.com/{repo}", str(d)]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        print(f"{repo}: {'ok' if r.returncode == 0 else r.stderr.strip()}")
+
+
+def link():
+    targets = claude_skill_dirs()
+    for repo, sub in entries():
+        src = (clone_dir(repo) / sub).resolve()
+        if not (src / "SKILL.md").is_file():
+            print(f"missing {repo}/{sub} (run sync)")
+            continue
+        name = skill_name(src)
+        for t in targets:
+            dst = t / name
+            if dst.is_symlink() and dst.resolve() == src:
+                continue
+            if dst.exists() or dst.is_symlink():
+                print(f"skip {dst}: something else is there")
+                continue
+            dst.symlink_to(src)
+            print(f"linked {name} -> {t.parent.parent.parent.name}")
+
+
+def status():
+    targets = claude_skill_dirs()
+    for repo, sub in entries():
+        src = (clone_dir(repo) / sub).resolve()
+        if not (src / "SKILL.md").is_file():
+            print(f"{repo}/{sub}: not cloned")
+            continue
+        name = skill_name(src)
+        n = sum((t / name).is_symlink() and (t / name).resolve() == src for t in targets)
+        print(f"{name}: linked in {n}/{len(targets)} profiles")
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    {"sync": sync, "link": link, "status": status}.get(cmd, lambda: sys.exit(__doc__))()

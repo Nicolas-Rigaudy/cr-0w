@@ -1,0 +1,18 @@
+# Third-party skills linked into every Claude profile by bin/crow-skills-ext.
+# Format: <github owner/repo> <path of the skill folder inside the repo>
+# Read a skill's SKILL.md and scripts before adding it here.
+jakubkrehel/skills skills/better-accessibility
+jakubkrehel/skills skills/better-colors
+jakubkrehel/skills skills/better-interface
+jakubkrehel/skills skills/better-layout
+jakubkrehel/skills skills/better-typography
+jakubkrehel/skills skills/better-ui
+jakubkrehel/skills skills/build-design
+jakubkrehel/skills skills/explain-interface
+jakubkrehel/skills skills/interface-review
+jakubkrehel/skills skills/state-machine
+jakubkrehel/skills skills/teardown
+jakubkrehel/skills skills/variant
+Leonxlnx/taste-skill skills/taste-skill
+senlindesign/taste-skill .
+Nutlope/hallmark skills/hallmark
