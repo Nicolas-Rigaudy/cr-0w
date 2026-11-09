@@ -53,6 +53,7 @@
 - 2026-11-09 owner font picks (sheet `refs/step2/fonts/fonts-sheet.png`): three layers, display (logo, screen titles, big counters) / header (panels, labels) / FiraCode (data, body). Cyber: display Orbitron, header Chakra Petch or Oxanium. Modern: display Michroma, Quantico or Russo One, header Rajdhani or FiraCode. Sketches try the pairs.
 - 2026-11-09 owner: reuse the archeotech cyberdeck pack work, especially motion. Read-back section "Cyberdeck carry-over": cyber = netrunner entrance (glitch, scan, land, decode, bracket lock; small surfaces stagger only), modern is not megacorp (owner: Arasaka-inspired, still cyber); modern shapes and motion need their own refs. Same colours in both.
 - 2026-11-09 owner ref picks (vault `refs/step2/`): palette blue frame and data with purple for CR-0W and selection (P2, P3, P4, P7). Hub patterns to borrow: coordinator thread ending in a question (H4, H11), live run graph (H1), status words with parked and blocked states and one resume action (H8, H9, H12), mission detail with a properties rail and a run ledger (H10, H13).
+- 2026-11-09 owner: modern theme feels like the archeotech-shell base pack (rounded panels, translucent surfaces, mauve active pill, quiet fades; vault `refs/step2/base-pack/`). Default palette is Catppuccin Macchiato with the mauve accent (`themes/archeotech-macchiato`), replacing the deck shades. Both themes start from it; cyber may push glow saturation.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
