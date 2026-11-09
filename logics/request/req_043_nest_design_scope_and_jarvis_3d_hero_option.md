@@ -1,7 +1,7 @@
 ## req_043_nest_design_scope_and_jarvis_3d_hero_option - Nest design scope and Jarvis 3D hero option
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium
@@ -65,7 +65,9 @@
 - `logics/backlog/item_137_nest_app_shell_on_core_fixtures.md`
 
 # Backlog
-- none
+- `item_138_nest_state_language_and_four_screen_layouts_as_annotated_sketches`
+- `item_139_jarvis_graph_and_droid_workshop_hero_sketches_on_one_compare_page`
+- `item_140_realign_nest_build_items_to_the_chosen_hero`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
