@@ -55,6 +55,7 @@
 - 2026-11-09 owner ref picks (vault `refs/step2/`): palette blue frame and data with purple for CR-0W and selection (P2, P3, P4, P7). Hub patterns to borrow: coordinator thread ending in a question (H4, H11), live run graph (H1), status words with parked and blocked states and one resume action (H8, H9, H12), mission detail with a properties rail and a run ledger (H10, H13).
 - 2026-11-09 owner: modern theme feels like the archeotech-shell base pack (rounded panels, translucent surfaces, mauve active pill, quiet fades; vault `refs/step2/base-pack/`). Default palette is Catppuccin Macchiato with the mauve accent (`themes/archeotech-macchiato`), replacing the deck shades. That is the modern palette.
 - 2026-11-09 owner: cyber is neon, not pastel (vault `refs/step2/palette-cyber/s-Z2.png`). Background is a radial haze, teal core to deep purple edges, never black (`#1d6470` > `#174a5c` > `#182650` > `#120b2c`). Frames `#4fc3ff`, live `#2ef2ff`, CR-0W and selection `#c05cff`, needs you `#ffb800`, failed `#ff2e63`. Themes no longer share colours; roles stay the same.
+- 2026-11-09 owner: cyber background texture over the haze, fading to the edges: dot matrix 16 px, hex grid, or polar rings and spokes around the core (vault `refs/step2/palette-cyber/cyber-bg-textures.jpg`, D1, D4, D5). Try them per screen or state.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
