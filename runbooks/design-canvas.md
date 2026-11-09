@@ -19,7 +19,10 @@ Each board keeps the `<script src="./support.js">` line and the `data-dc-script`
 4. Right before touching the index, read the live one: Artifact read with `path: project/canvas.json` and an `out_dir` (e.g. `<canvas>/live`).
 5. Merge only your boards and notes into that live file (check for overlaps with existing boxes), write it to `project/canvas.json`, publish it the same way.
 6. Never overwrite an original board: new ideas are copies with a new name, placed next to what they change.
-7. Do not verify with screenshots. Open the link with `bin/crow-open <url>` (real browser).
+7. One publish can carry `file_path` = the index plus a `files` map of several boards. A `null` value in `files` removes a retired board; drop it from `boards` and `order` in the same publish.
+8. Second theme from the first: map CSS classes, colour tokens and fonts in one converter script, and keep terminals in a monospace face. Keep the generators and a copy of the boards in the vault next to the design notes before the session ends: the scratchpad is wiped.
+9. A nav change (new tab, renumbering) touches every board and the notes that cite tab numbers. Apply it to all of them in one pass.
+10. Do not verify with screenshots. Open the link with `bin/crow-open <url>` (real browser).
 
 ## Showing choices
 

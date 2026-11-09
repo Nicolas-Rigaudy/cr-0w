@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 60%
+> Progress: 75%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -88,6 +88,23 @@
   - a dedicated MR screen
   - reports, and validation of questions and designs
 - Fold cover and inner screens wait for pass 2.
+
+# Owner review (2026-11-09, laptop pass 2)
+- Canvas: Claude Design artifact MyPAqSwJFddMnSR4grm2g6 ("Nest laptop pass 2"), co-edited by the owner. Rows: Home, Missions, MRs, Agenda and mail, Reports and validation, font pairs. Modern left, cyber right.
+- Home: side rails. Hero slot free in the centre, dense rails left and right. Day strip dropped (owner removed it on the canvas).
+- Home content: one card per tab, in tab order (Missions, Inbox, MRs, Agenda, Reports), each with its key count, top items and an open link. Blocking items sit in their tab's card. The meeting reminder sits in the Agenda card.
+- Cyber Home: owner made the rails see-through and set the hero rings; kept.
+- Fonts picked. Modern M4: Michroma display, Fira Code headers and body. Cyber C2: Orbitron display, Oxanium headers and body. Applied on every board.
+- Owner: Missions, MRs, Agenda and mail, Reports approved. Go Fold.
+- Home (canvas v19): mix of the side-rails version and the one-card-per-tab version. Needs you on top with the primary action inline and a tab key per row; Missions card with big KPI numbers on top; Agenda card with a big countdown header for the next meeting. Every tab card keeps its number, key count and open link. Owner asked for the big reminder header and the numbered KPIs.
+- Owner: Nest must be a place to work from, not only a status view (launch, queue and steer runs without a terminal). Three launch layouts compared (butler desk, workbench, pipeline board).
+- Desk and Missions split (canvas v23), approved in both themes. Tabs grow to 7: Home, Desk, Missions, Inbox, MRs, Agenda, Reports.
+  - Desk (tab 2): butler desk. Needs you and Ready to run left, CR-0W chat centre (dispatch, queue, explain), slots, queue, live run and sessions right.
+  - Desk mission view: opening a mission toggles the centre between Chat, Transcript, Terminal and Graph. Terminal is take control (run pauses, pty session, Hand back resumes). Right rail: properties and run ledger.
+  - Missions (tab 3): pipeline board (Ready, Queued, Running, Needs you, Done today) with the day timeline and runs per day. Big KPI numbers on top of both tabs.
+  - The old Missions dashboard and the three option boards are retired from the canvas.
+  - Generators and a copy of the v23 boards: vault `CR-0W/Research/nest-design/item138/pass2-src/` (scripts point at a scratchpad path, update `P` before reuse).
+- Next: Fold cover and inner, derived from the laptop boards.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
