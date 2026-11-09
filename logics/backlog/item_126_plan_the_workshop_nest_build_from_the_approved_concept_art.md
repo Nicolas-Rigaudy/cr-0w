@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 13:23:18
 
 # AI Context
 - Summary: Turn the approved workshop concept art into a build plan for the nest view: one illustrated room with droids moving along the mission loop, driven by real crow data, with click targets that open panels. Planning only.
@@ -52,6 +53,7 @@
 
 # Notes
 - Depends on item_125. Nest stack itself: req_031.
+- 2026-11-09: the first build item is item_137 (nest app shell on core fixtures). Plan the visual layer to plug into it.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
