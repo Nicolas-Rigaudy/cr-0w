@@ -36,6 +36,7 @@ NOTES = {
     "drafts": ("Drafts", "drafts"),
     "research": ("Research", "research"),
     "retros": ("Retros", "retros"),
+    "toolwatch": ("Tool updates", "tool-updates"),
 }
 
 

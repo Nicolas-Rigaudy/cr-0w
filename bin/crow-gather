@@ -183,6 +183,15 @@ def retros(state, since):
             "status": run([str(BIN / "crow-retro"), "status"], 1500)}
 
 
+def toolwatch():
+    """Latest tool-update note while it still has unchecked proposals (crow-toolwatch, weekly)."""
+    notes = sorted(note("toolwatch").glob("Tool updates *.md"))
+    if not notes:
+        return None
+    props = [line.strip() for line in (read(notes[-1], 100000) or "").splitlines() if line.lstrip().startswith("- [ ]")]
+    return {"note": str(notes[-1]), "open_proposals": props} if props else None
+
+
 def afk(state):
     """Last AFK run: its summary when it started since yesterday, else only the log tail."""
     root = state / "afk"
@@ -277,6 +286,7 @@ def brief(state, vault, apply=True):
         "vault_tasks": lambda: vault_tasks(vault),
         "checks": lambda: run([str(BIN / "crow-checks"), "json"], 3000, as_json=True),
         "retros": lambda: retros(state, since_brief),
+        "toolwatch": toolwatch,
     })
     return {
         "today_priorities": today_md if dated else None,

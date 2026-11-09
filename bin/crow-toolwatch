@@ -1,0 +1,461 @@
+#!/usr/bin/env python3
+"""Tool update watch: read what changed in the tools crow is built on, once per release, and file proposals.
+
+  crow-toolwatch check [--json]      installed vs latest version and the unread changelog entries (no model)
+  crow-toolwatch run [--dry-run]     check; when entries are unread, one small-model run writes a dated vault
+                                     note (changes, what they touch in crow, proposals), then bumps last_read
+  crow-toolwatch install-timer       write and enable the weekly systemd user timer (Monday morning)
+  crow-toolwatch status              last note, its open proposals, and the log tail
+
+Config: local/tools.yaml (one entry per tool: version command, changelog source, uses pattern, last_read).
+Sources: `github_releases: owner/repo` (published, non-prerelease releases) or
+`github_file: owner/repo:path` (a markdown changelog with one `## <version>` heading per release), both via `gh api`.
+The run never edits code or installs anything; upgrades belong to the owner's dotfiles repo.
+"""
+import argparse
+import datetime as dt
+import fcntl
+import json
+import os
+import re
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+CROW_HOME = crow_lib.data_home()
+BIN = os.path.dirname(os.path.realpath(__file__))
+CONFIG = os.path.join(CROW_HOME, "local", "tools.yaml")
+STATE = os.path.join(CROW_HOME, "local", "state", "toolwatch")
+LOG = os.path.join(STATE, "worker.log")
+LOCK = os.path.join(STATE, ".lock")
+NOTES = str(crow_lib.crow_path("toolwatch", home=CROW_HOME))
+
+MAX_ENTRIES = 12          # newest unread releases kept per tool; older ones are listed as skipped
+MAX_ENTRY_CHARS = 3000    # one release's notes
+MAX_PAGES = 8            # release pages (100 each) read per tool
+MAX_USES = 40             # distinct invocations listed per tool
+USE_FILES = 3             # files shown per invocation
+USE_ROOTS = ["bin", "runbooks", "skills", ".claude/skills", "tools/crow-core", "integrations", "local/runbooks"]
+LOGICS_DIRS = ["logics/request", "logics/backlog", "logics/tasks"]
+CLOSED = re.compile(r"^> Status: (Done|Obsolete|Archived|Withdrawn)", re.M)
+VERSION = re.compile(r"(\d+(?:\.\d+)+)")
+HEADING = re.compile(r"^##\s+\[?v?(\d+(?:\.\d+)+)\]?", re.M)
+
+
+def log(msg):
+    os.makedirs(STATE, exist_ok=True)
+    with open(LOG, "a", encoding="utf-8") as fh:
+        fh.write(f"{dt.datetime.now():%F %T} {msg}\n")
+
+
+def vkey(v):
+    return tuple(int(x) for x in v.split("."))
+
+
+def parse_version(text):
+    m = VERSION.search(text or "")
+    return m.group(1) if m else None
+
+
+# ---------- config ----------
+
+def load_config(path=None):
+    import yaml
+    with open(path or CONFIG, encoding="utf-8") as fh:
+        return (yaml.safe_load(fh) or {}).get("tools") or {}
+
+
+def bump_last_read(name, version, path=None):
+    """Set one tool's last_read in place, keeping the file's comments and order."""
+    path = path or CONFIG
+    with open(path, encoding="utf-8") as fh:
+        lines = fh.read().splitlines(keepends=True)
+    inside = False
+    for i, line in enumerate(lines):
+        if re.match(rf"^  {re.escape(name)}:\s*$", line):
+            inside = True
+            continue
+        if inside and re.match(r"^  \S", line):
+            break
+        if inside and re.match(r"^    last_read:", line):
+            lines[i] = f"    last_read: {version}\n"
+            break
+    else:
+        raise ValueError(f"no last_read line for {name} in {path}")
+    with open(path + ".tmp", "w", encoding="utf-8") as fh:
+        fh.write("".join(lines))
+    os.replace(path + ".tmp", path)
+
+
+# ---------- versions and changelogs ----------
+
+def installed(cmd):
+    try:
+        out = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return parse_version(out.stdout) if out.returncode == 0 else None
+
+
+def gh_api(path, raw=False):
+    cmd = ["gh", "api", path] + (["-H", "Accept: application/vnd.github.raw"] if raw else [])
+    out = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    if out.returncode:
+        raise RuntimeError(f"gh api {path}: {(out.stderr or out.stdout).strip()[:200]}")
+    return out.stdout if raw else json.loads(out.stdout)
+
+
+COMMIT_LINK = re.compile(r"\s*\(\[[0-9a-f]{7,40}\]\([^)]*\)\)|\s*\(#\d+\)|\s*\[#\d+\]\([^)]*\)")
+
+
+def slim(text):
+    """Release notes without commit and PR links or blank runs, to keep the prompt small."""
+    text = re.sub(r" \(\)", "", COMMIT_LINK.sub("", text))
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def releases(source, fetch=gh_api, floor=None):
+    """[(version, date, notes)] newest first, from a github_releases or github_file source.
+    Releases are paged until one at or below floor shows up (prerelease-heavy repos bury stable tags)."""
+    if "github_releases" in source:
+        rows = []
+        page = []
+        for n in range(1, MAX_PAGES + 1):
+            size = 100 if floor else 20  # no floor: only the latest version is wanted
+            batch = fetch(f"repos/{source['github_releases']}/releases?per_page={size}&page={n}")
+            page += batch
+            seen = [parse_version(r.get("tag_name") or "") for r in batch if not r.get("prerelease")]
+            if len(batch) < size or not floor or any(v and vkey(v) <= vkey(floor) for v in seen):
+                break
+        for r in page:
+            if r.get("draft") or r.get("prerelease"):
+                continue
+            tag = r.get("tag_name") or ""
+            v = parse_version(tag)
+            if not v or re.search(r"\d(?:-|\.?(?:alpha|beta|rc|dev))", tag[tag.find(v):].replace(v, "", 1) or ""):
+                continue
+            rows.append((v, (r.get("published_at") or "")[:10], slim(r.get("body") or "")))
+        return sorted(rows, key=lambda r: vkey(r[0]), reverse=True)
+    if "github_file" in source:
+        repo, path = source["github_file"].split(":", 1)
+        text = fetch(f"repos/{repo}/contents/{path}", raw=True)
+        heads = list(HEADING.finditer(text))
+        rows = []
+        for i, m in enumerate(heads):
+            body = text[m.end():heads[i + 1].start() if i + 1 < len(heads) else len(text)].strip()
+            date = re.search(r"\d{4}-\d{2}-\d{2}", text[m.start():m.end() + 200])
+            rows.append((m.group(1), date.group(0) if date else "", slim(body)))
+        return sorted(rows, key=lambda r: vkey(r[0]), reverse=True)
+    raise ValueError(f"unknown changelog source {source}")
+
+
+def check(tools=None, fetch=gh_api):
+    """One row per tool: installed, latest, unread entries (newest first, capped) or an error."""
+    rows = []
+    for name, t in (tools if tools is not None else load_config()).items():
+        row = {"tool": name, "installed": installed(str(t["version"])), "last_read": str(t.get("last_read") or "") or None,
+               "latest": None, "unread": [], "skipped": 0}
+        try:
+            rel = releases(t["source"], fetch, row["last_read"] or row["installed"])
+        except (RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:
+            row["error"] = str(e)
+            rows.append(row)
+            continue
+        row["latest"] = rel[0][0] if rel else None
+        if row["installed"] is None and not t.get("follow_uninstalled"):
+            rows.append(row)  # not installed here: nothing in crow can use it yet
+            continue
+        floor = row["last_read"] or row["installed"]
+        unread = [r for r in rel if not floor or vkey(r[0]) > vkey(floor)]
+        row["skipped"] = max(0, len(unread) - MAX_ENTRIES)
+        row["unread"] = [{"version": v, "date": d, "notes": n[:MAX_ENTRY_CHARS] + (" [cut]" if len(n) > MAX_ENTRY_CHARS else "")}
+                         for v, d, n in unread[:MAX_ENTRIES]]
+        rows.append(row)
+    return rows
+
+
+# ---------- crow's own uses ----------
+
+def uses(name, pattern, home=None):
+    """{'invocation': [files]} for lines in crow's code and docs that call the tool, plus open Logics items naming it."""
+    home = home or CROW_HOME
+    rx = re.compile(pattern)
+    word = re.compile(r"\s+(-{0,2}[a-z][\w-]*)")
+    found = {}
+    files = []
+    for root in USE_ROOTS:
+        base = os.path.join(home, root)
+        for d, _, names in os.walk(base):
+            files += [os.path.join(d, n) for n in names if not n.endswith((".pyc", ".png", ".jpg", ".svg", ".gif"))]
+    for f in sorted(files):
+        try:
+            with open(f, encoding="utf-8", errors="ignore") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        rel = os.path.relpath(f, home)
+        for m in rx.finditer(text):
+            tail = text[m.end():text.find("\n", m.end()) if "\n" in text[m.end():] else len(text)]
+            toks = [w for w in word.findall(" " + tail[:160])][:6]
+            sub = next((w for w in toks if not w.startswith("-")), "")
+            flags = sorted({w for w in toks if w.startswith("--")})
+            key = " ".join([name] + ([sub] if sub else []) + flags)
+            hit = found.setdefault(key, [])
+            if rel not in hit:
+                hit.append(rel)
+    items = []
+    for d in LOGICS_DIRS:
+        base = os.path.join(home, d)
+        for n in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+            try:
+                with open(os.path.join(base, n), encoding="utf-8") as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            if not CLOSED.search(text) and rx.search(text):
+                items.append(n.split("_", 2)[0] + "_" + n.split("_", 2)[1] if n.count("_") >= 2 else n)
+    top = sorted(found.items(), key=lambda kv: -len(kv[1]))[:MAX_USES]
+    return {"invocations": {k: v[:USE_FILES] for k, v in top}, "open_items": items}
+
+
+# ---------- run ----------
+
+PROMPT = """You read release notes for the tools crow is built on and say what they mean for crow.
+Answer with the note body only, in Markdown, English, short declarative sentences, no em-dashes. No preamble.
+Do not read or edit any file. Everything you need is below.
+
+For each tool with unread releases, one section `## <tool> <first>..<last>`:
+- `Changes that matter`: bullets, only changes that touch something crow does (a call it makes, a workaround it keeps,
+  a feature an open Logics item waits for). Name the crow file or item from "crow uses". Skip the rest.
+- `Proposals`: one checkbox per action, `- [ ] <action> (<file or item>)`. Proposals only: adopt a flag, drop a
+  workaround, update an item, upgrade the tool. Write `none` when nothing matters.
+End with `## Ignored` listing in one line per tool what you skipped and why (e.g. "UI fixes, Windows only").
+
+"""
+
+
+def build_prompt(rows, uses_by_tool):
+    parts = [PROMPT]
+    for r in rows:
+        if not r["unread"]:
+            continue
+        parts.append(f"# {r['tool']}: installed {r['installed']}, last read {r['last_read']}, latest {r['latest']}")
+        if r["skipped"]:
+            parts.append(f"({r['skipped']} older unread release(s) left out)")
+        for e in reversed(r["unread"]):
+            parts.append(f"## {r['tool']} {e['version']} ({e['date']})\n{e['notes']}")
+        u = uses_by_tool.get(r["tool"]) or {}
+        parts.append(f"### crow uses of {r['tool']}")
+        parts += [f"- `{k}`: {', '.join(v)}" for k, v in (u.get("invocations") or {}).items()] or ["- none found"]
+        if u.get("open_items"):
+            parts.append(f"- open Logics items naming it: {', '.join(u['open_items'])}")
+        parts.append("")
+    return "\n".join(parts)
+
+
+def behind_lines(rows):
+    out = []
+    for r in rows:
+        if r.get("error"):
+            out.append(f"- {r['tool']}: changelog not read ({r['error']})")
+        elif r["installed"] is None:
+            out.append(f"- {r['tool']}: not installed (latest {r['latest']})")
+        elif r["latest"] and vkey(r["latest"]) > vkey(r["installed"]):
+            out.append(f"- {r['tool']}: installed {r['installed']}, latest {r['latest']}: update due")
+        else:
+            out.append(f"- {r['tool']}: {r['installed']}, up to date")
+    return out
+
+
+def note_path(day):
+    os.makedirs(NOTES, exist_ok=True)
+    return os.path.join(NOTES, f"Tool updates {day}.md")
+
+
+def write_note(day, rows, body):
+    read = ", ".join(f"{r['tool']} {r['unread'][-1]['version']}..{r['unread'][0]['version']}" for r in rows if r["unread"])
+    text = (f"---\ntype: crow-tool-updates\ncreated: {day}\n---\n\n# Tool updates {day}\n\nRead: {read}\n\n"
+            f"{body.strip()}\n\n## Installed vs latest\n" + "\n".join(behind_lines(rows)) + "\n")
+    path = note_path(day)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    return path
+
+
+def account():
+    return (os.environ.get("CROW_ACCOUNT") or os.environ.get("CROW_SESSION_ACCOUNT")
+            or subprocess.check_output([os.path.join(BIN, "crow-accounts"), "default"], text=True).strip())
+
+
+def analyse(prompt_file):
+    """One small-model run on the prompt file; returns (ok, text or error)."""
+    acct = account()
+    provider = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "provider", acct], text=True).strip()
+    model = os.environ.get("CROW_TOOLWATCH_MODEL", "sonnet") if provider == "claude" else os.environ.get("CROW_TOOLWATCH_CODEX_MODEL")
+    bad = crow_lib.check_model(provider, model)
+    if bad:
+        return False, bad
+    budget = float(os.environ.get("CROW_TOOLWATCH_BUDGET", "1.5"))
+    flags, env = crow_lib.run_flags("oneshot", provider, model, power="low", budget=budget,
+                                    state=crow_lib.machine_dir(CROW_HOME))
+    permission = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "permission", acct], text=True).strip()
+    prompt = f"Read {prompt_file} and follow it. Answer with the note body only."
+    out = subprocess.run(["cdx", "run", acct, "--cwd", CROW_HOME, *flags, "--label", "toolwatch",
+                          "--permission", permission, "--prompt", prompt, "--json"],
+                         capture_output=True, text=True, env={**crow_lib.run_env(env, "oneshot"), "CROW_TOOLWATCH": "1"})
+    try:
+        res = json.loads(out.stdout)
+    except json.JSONDecodeError:
+        return False, (out.stderr or out.stdout)[-400:]
+    if not res.get("ok"):
+        return False, str(res.get("error") or res.get("message"))[:400]
+    path = res.get("stdout_path") or (res.get("artifacts") or {}).get("stdout_path")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            objs = crow_lib._json_objects(fh.read())
+    except (OSError, TypeError):
+        return False, f"run {res.get('run_id')}: no stdout log"
+    text = next((o.get("result") for o in reversed(objs) if o.get("type") == "result" and o.get("result")), None)
+    return (True, text) if text else (False, f"run {res.get('run_id')}: no result text")
+
+
+def cmd_check(args, tools=None, fetch=gh_api):
+    rows = check(tools, fetch)
+    if args.json:
+        print(json.dumps(rows, indent=1))
+        return 0
+    for r in rows:
+        state = r.get("error") or (f"{len(r['unread'])} unread" + (f" (+{r['skipped']} left out)" if r["skipped"] else "")
+                                   if r["unread"] else "nothing new")
+        print(f"{r['tool']:<16} installed {r['installed'] or '-':<10} last read {r['last_read'] or '-':<10} "
+              f"latest {r['latest'] or '-':<10} {state}")
+    return 0
+
+
+def cmd_run(args, tools=None, fetch=gh_api, model=None, today=None, config=None):
+    """check, then one run when something is unread. model(prompt_file) -> (ok, text); injectable for tests."""
+    os.makedirs(STATE, exist_ok=True)
+    lock = open(LOCK, "w")  # noqa: SIM115 (held for the whole run)
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("crow-toolwatch: another run is in progress")
+        return 1
+    tools = tools if tools is not None else load_config(config)
+    rows = check(tools, fetch)
+    fresh = [r for r in rows if r["unread"]]
+    errors = [r for r in rows if r.get("error")]
+    for r in errors:
+        log(f"check: {r['tool']}: {r['error']}")
+    if not fresh:
+        log("check: nothing new" + (f" ({len(errors)} source error(s))" if errors else ""))
+        print("crow-toolwatch: nothing new")
+        return 1 if errors and len(errors) == len(rows) else 0
+    day = today or dt.date.today().isoformat()
+    u = {r["tool"]: uses(r["tool"], tools[r["tool"]].get("uses") or rf"\b{re.escape(r['tool'])}\b") for r in fresh}
+    prompt = build_prompt(rows, u)
+    prompt_file = os.path.join(STATE, f"prompt-{day}.md")
+    with open(prompt_file, "w", encoding="utf-8") as fh:
+        fh.write(prompt)
+    print(f"{len(fresh)} tool(s) with unread releases, prompt {prompt_file} ({len(prompt)} chars)")
+    if args.dry_run:
+        return 0
+    ok, text = (model or analyse)(prompt_file)
+    if not ok:
+        log(f"run: FAILED: {text}")
+        print(f"crow-toolwatch: run failed, last_read kept: {text}")
+        return 1
+    path = write_note(day, rows, text)
+    for r in fresh:
+        bump_last_read(r["tool"], r["unread"][0]["version"], config)
+    log(f"run: wrote {path}; read " + ", ".join(f"{r['tool']} {r['unread'][0]['version']}" for r in fresh))
+    print(path)
+    return 0
+
+
+def open_proposals(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return [line.strip() for line in fh if line.lstrip().startswith("- [ ]")]
+    except OSError:
+        return []
+
+
+def latest_note():
+    if not os.path.isdir(NOTES):
+        return None
+    notes = sorted(n for n in os.listdir(NOTES) if n.startswith("Tool updates ") and n.endswith(".md"))
+    return os.path.join(NOTES, notes[-1]) if notes else None
+
+
+def cmd_status():
+    note = latest_note()
+    if note:
+        props = open_proposals(note)
+        print(f"last note: {note} ({len(props)} open proposal(s))")
+    else:
+        print("last note: never")
+    if os.path.exists(LOG):
+        with open(LOG, encoding="utf-8") as fh:
+            print("".join(fh.readlines()[-6:]), end="")
+    return 0
+
+
+TIMER = """[Unit]
+Description=crow weekly tool update watch
+
+[Timer]
+OnCalendar=Mon *-*-* 09:30:00
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target
+"""
+SERVICE = """[Unit]
+Description=crow weekly tool update watch
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PATH={home}/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart={bin} run
+"""
+
+
+def cmd_install_timer():
+    d = os.path.join(crow_lib.real_home(), ".config", "systemd", "user")
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, "crow-toolwatch.timer"), "w", encoding="utf-8") as fh:
+        fh.write(TIMER)
+    with open(os.path.join(d, "crow-toolwatch.service"), "w", encoding="utf-8") as fh:
+        fh.write(SERVICE.format(home=crow_lib.real_home(), bin=os.path.realpath(__file__)))
+    for cmd in (["daemon-reload"], ["enable", "--now", "crow-toolwatch.timer"]):
+        subprocess.run(["systemctl", "--user", *cmd], check=True)
+    subprocess.run(["systemctl", "--user", "list-timers", "crow-toolwatch.timer", "--no-pager"])
+    return 0
+
+
+def main():
+    argv = sys.argv[1:]
+    cmd, rest = (argv[0], argv[1:]) if argv else (None, [])
+    if cmd == "check":
+        p = argparse.ArgumentParser(prog="crow-toolwatch check")
+        p.add_argument("--json", action="store_true")
+        return cmd_check(p.parse_args(rest))
+    if cmd == "run":
+        p = argparse.ArgumentParser(prog="crow-toolwatch run")
+        p.add_argument("--dry-run", action="store_true")
+        return cmd_run(p.parse_args(rest))
+    if cmd == "install-timer" and not rest:
+        return cmd_install_timer()
+    if cmd == "status" and not rest:
+        return cmd_status()
+    print(__doc__.strip(), file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,7 +1,7 @@
 ## req_045_periodic_tool_update_watch - Periodic tool update watch: cdx, logics-manager, Claude Code and other tools, mapped to crow
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 85
 > Confidence: 80
 > Complexity: Medium

@@ -1,10 +1,10 @@
 ## item_141_tool_update_watch_ritual - Tool update watch ritual: changelogs since last check, mapped to crow uses, proposals in the vault
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 80
-> Confidence: 75
-> Progress: 0%
+> Status: Done
+> Understanding: 95
+> Confidence: 90
+> Progress: 100%
 > Complexity: Small
 > Theme: Hub upkeep
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -39,11 +39,11 @@
 - AC5: the runbook exists and is indexed.
 
 # AC Traceability
-- request-AC1 -> This backlog slice. Proof: pending.
-- request-AC2 -> This backlog slice. Proof: pending.
-- request-AC3 -> This backlog slice. Proof: pending.
-- request-AC4 -> This backlog slice. Proof: pending.
-- request-AC5 -> This backlog slice. Proof: pending.
+- request-AC1 -> This backlog slice. Proof: `tests/test_crow_toolwatch.py::test_nothing_new_starts_no_model` (fake tools.yaml, `echo` version commands, model stub that fails if called); live `crow-toolwatch run` after the first note prints "nothing new".
+- request-AC2 -> This backlog slice. Proof: `test_run_prompt_holds_unread_and_uses_then_bumps` (prompt holds only unread entries and crow uses, config unchanged during the model call, bumped after the note) and `test_failed_run_keeps_last_read`.
+- request-AC3 -> This backlog slice. Proof: `crow-toolwatch install-timer`; `systemctl --user list-timers` shows crow-toolwatch.timer, next Mon 2026-11-16 09:39.
+- request-AC4 -> This backlog slice. Proof: `crow-gather` source `toolwatch` (latest note while it has `- [ ]` lines) plus brief SKILL step 7 and output line; live gather lists the 2026-11-09 note with 9 open proposals.
+- request-AC5 -> This backlog slice. Proof: `runbooks/tool-update-watch.md`, indexed in `runbooks/README.md`.
 
 # Decision framing
 - Product framing: Not needed
@@ -61,6 +61,8 @@
 
 # Notes
 - 2026-11-09: first manual pass done by hand (cdx 0.26.0..0.26.11, logics-manager 2.24.x). Seed `last_read` with cdx 0.26.11 and logics-manager 2.24.3.
+
+- 2026-11-09: built in the hub session. Sources: GitHub releases (paged past prereleases) or a `## <version>` changelog file, both via `gh api`. Notes land in `Tool updates/` under the vault crow folder (new `toolwatch` note kind). Run = `cdx run --kind oneshot --power low`, Sonnet, 1.5 USD budget. First note read claude 2.1.321 and rtk 0.45.0..1.2.0 (17 older rtk releases left out by the 12-entry cap).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

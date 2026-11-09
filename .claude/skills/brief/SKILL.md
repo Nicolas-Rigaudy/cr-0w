@@ -16,7 +16,7 @@ Runs in its own context (no conversation history): everything needed is gathered
 Everything the brief needs from files and scripts, as one JSON (`bin/crow-gather brief`; keys below refer to it). Don't read state files or rerun these scripts.
 !`"${CLAUDE_PROJECT_DIR}/bin/crow-gather" brief --json 2>&1 || true`
 
-Keys: `today_priorities` (null unless dated today), `afk` (summary of a run since yesterday, log tail, report path), `open_threads` (`Me`, `Waiting` as "<age>d [tag] text", STALE past 14 days; other sections only counted), `status`, `activity` (crow-activity since yesterday), `notes` (vault notes, 3 days), `releases`, `tidy` (safe cleanups already applied, `runbooks/repo-tidy.md`), `fleet` (Logics next moves, reviews left out), `long_sessions` (past 120k, `runbooks/long-sessions.md`), `accounts` (headroom), `usage_split` (token cost split, 14 days; baseline in `local/state/research/token-baseline-2026-11.md`), `runs` (today's runs that did not succeed), `vault_tasks` (due on or before today, inbox count), `checks` (crow-checks rows: sprint rituals, 1:1s, old mail, rituals, overdue notes), `retros` (reports since the last brief, pending proposals, worker status), `targets.activity_log`. A source that failed is `{"error": ...}`; `_cut_to_fit` lists fields shortened to stay in budget.
+Keys: `today_priorities` (null unless dated today), `afk` (summary of a run since yesterday, log tail, report path), `open_threads` (`Me`, `Waiting` as "<age>d [tag] text", STALE past 14 days; other sections only counted), `status`, `activity` (crow-activity since yesterday), `notes` (vault notes, 3 days), `releases`, `tidy` (safe cleanups already applied, `runbooks/repo-tidy.md`), `fleet` (Logics next moves, reviews left out), `long_sessions` (past 120k, `runbooks/long-sessions.md`), `accounts` (headroom), `usage_split` (token cost split, 14 days; baseline in `local/state/research/token-baseline-2026-11.md`), `runs` (today's runs that did not succeed), `vault_tasks` (due on or before today, inbox count), `checks` (crow-checks rows: sprint rituals, 1:1s, old mail, rituals, overdue notes), `retros` (reports since the last brief, pending proposals, worker status), `toolwatch` (latest tool-update note while it has open proposals, else null), `targets.activity_log`. A source that failed is `{"error": ...}`; `_cut_to_fit` lists fields shortened to stay in budget.
 
 Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**. Gather cheaply, in this order.
 
@@ -38,6 +38,7 @@ Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**
    **Checks**: each row of `checks.rows` goes under "Needs you" as "what (why): action", the same rows as the deck's You decide. `checks.skipped` lists sources it could not read; say nothing about them.
    **Logics next moves**: from `fleet`, only moves that unblock work (blocked docs, a task at 100% in a repo in delivery); skip pure closeout chores unless nothing else is open.
 7. **Retros**: `retros.reports` (one line each: project, what was applied; open a report only when its name says nothing), `retros.pending_proposals`, and failures from `retros.status`.
+   **Tool updates**: when `toolwatch` is set, one line: the note name and its open proposals count, then the proposals (at most 5). In the main session, ask which to take up in one `AskUserQuestion` (multi-select); each pick becomes a Logics item or a line in an existing one, then tick it in the note (`- [x]`). Declined ones get ticked too, with "(declined)".
 8. **Mail + calendar**: only if Microsoft 365 tools are available in this session. Today's meetings, and unread mail that needs a reply. If unavailable, print one line saying so and move on.
 9. **Owner notes**: from `notes`, mention anything that changes the day (a #blocage, a #decision, a note for tomorrow) in one line each. Then pick at most three live topics (open threads, sprint tickets, release tracks) with no trace in the notes or activity for 3 days and ask them in one `AskUserQuestion` call, only in the main session; file answers with `bin/crow-note ... --section capture`. Nothing stale, nothing asked.
 
@@ -70,6 +71,7 @@ Skip any source that errors and note it in one line at the bottom.
 
 ## 🔁 Learned
 - one line per retro since the last brief (what changed); pending proposals to approve; failed retros
+- tool updates: note name, open proposals (from `toolwatch`)
 
 ## ✅ Suggested top 3
 1. …  (follow the priority order in CLAUDE.md)
