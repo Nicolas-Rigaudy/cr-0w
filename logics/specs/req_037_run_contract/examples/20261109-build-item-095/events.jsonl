@@ -1,4 +1,4 @@
-{"actor":"owner","data":{"key":"item_095","kind":"build","surface":"deck"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:00:00+01:00","type":"created"}
+{"actor":"owner","data":{"goal":"Pick the account for a dispatch from the scope of the target repo (backlog item item_095).","key":"item_095","kind":"build","scope":"crow","surface":"deck"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:00:00+01:00","type":"created"}
 {"actor":"core","data":{"from":"preflight","to":"queued"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:00:00+01:00","type":"state"}
 {"actor":"core","data":{"from":"queued","to":"running"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:01:00+01:00","type":"state"}
 {"actor":"core","data":{"account_class":"crow","cold":true,"run":"a1b2c3d4","version":1},"mission":"20261109-build-item-095","ts":"2026-11-09T09:01:00+01:00","type":"run_start"}

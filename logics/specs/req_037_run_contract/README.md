@@ -104,6 +104,8 @@ Same record as req_030 Need 5 and item_099: `{mission, version, action, target, 
 
 Sections, in order: Goal, Mission, Owner preferences, Preflight, Answers so far, Constraints, Reply contract. See `brief.template.md` and the example brief. core rebuilds it before every resume. A cold run on another account reads the brief and the version files and needs nothing else.
 
+Owner preferences come from `local/mission-prefs.yaml` (config key `prefs`): a list of one-line rules, each with optional `kinds`. See `prefs.example.yaml`. The brief names no account and no local path; the repo and worktree stay placeholders. `crow core mission brief <id> [--write]` prints or writes it.
+
 ## End of a turn
 
 - The run writes one version file and ends the turn. It never waits for an answer inside the run.

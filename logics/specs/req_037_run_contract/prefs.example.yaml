@@ -1,0 +1,10 @@
+# Owner prefs core puts in each brief (item_107). The live file is local/mission-prefs.yaml
+# (config key `prefs`). A pref with no kinds applies to every kind. Keep each rule one line:
+# the brief carries them verbatim to every run.
+- rule: "Prose: short and declarative. No em-dashes."
+- rule: "Commit subjects: `type[SCOPE]: message`."
+  kinds: [build, repair, review-fix, plan, design]
+- rule: "Never push or merge before the report gate passes."
+  kinds: [build, repair, review-fix]
+- rule: "Drafts for others: say who reads it in the first line."
+  kinds: [write]

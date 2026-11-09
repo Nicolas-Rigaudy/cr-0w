@@ -30,6 +30,7 @@ const usage = `usage: crow-core <command>
   mission list [--json]
   mission show <id|prefix> [--json]
   mission cancel <id|prefix> [--reason R] [--json]
+  mission brief <id|prefix> [--write]   print the brief a run reads first, or write brief.md
   config            print the resolved paths as JSON
   version           print the core and contract versions
 `
@@ -74,7 +75,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	case "mission":
 		env := mission.Env{
 			Store: s, Kinds: kinds, KindDirs: []string{cfg.Overrides, cfg.Kinds},
-			Projects: cfg.Projects, Now: time.Now, StopRun: stopRun(cfg.Engine),
+			Projects: cfg.Projects, Prefs: cfg.Prefs, Now: time.Now, StopRun: stopRun(cfg.Engine),
 		}
 		return missionCmd(env, rest, stdout)
 	case "append":

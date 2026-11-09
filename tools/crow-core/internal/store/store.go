@@ -63,6 +63,9 @@ func Open(path, root string, kinds project.Kinds) (*Store, error) {
 // Close closes the database.
 func (s *Store) Close() error { return s.db.Close() }
 
+// Root is the missions root: one dir per mission, holding its log and files.
+func (s *Store) Root() string { return s.root }
+
 func (s *Store) migrate() error {
 	if _, err := s.db.Exec(schema); err != nil {
 		return err

@@ -240,3 +240,27 @@ func TestCancelQueuedNeedsNoStop(t *testing.T) {
 		t.Errorf("cancel queued: %s %v", m.State, err)
 	}
 }
+
+// item_107: the brief takes the created key, the kind's prefs and the answers on disk.
+func TestBriefGathersKeyPrefsAndAnswers(t *testing.T) {
+	env, root := newEnv(t)
+	env.Prefs = filepath.Join(testfix.RunSpec, "prefs.example.yaml")
+	m, err := env.New(Spec{Kind: "build", Project: "shop", Key: "SHOP-12", Goal: "Fix the cart total.", EndState: "Green checks."})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ans := "---\nmission: " + m.ID + "\nversion: 1\nverb: dig\nsurface: cli\nts: 2026-11-09T14:10:00+01:00\n---\n1. Keep the old API.\n"
+	if err := os.WriteFile(filepath.Join(root, m.ID, "answers.v1.md"), []byte(ans), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	dir, in, err := env.Brief(m.ID[:12])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dir != filepath.Join(root, m.ID) || in.Key != "SHOP-12" || len(in.Answers) != 1 || len(in.Prefs) != 3 {
+		t.Errorf("dir %s key %s answers %v prefs %v", dir, in.Key, in.Answers, in.Prefs)
+	}
+	if in.Answers[0].Words != "1. Keep the old API." {
+		t.Errorf("words %q", in.Answers[0].Words)
+	}
+}

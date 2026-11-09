@@ -21,6 +21,7 @@ type Config struct {
 	Kinds     string `json:"kinds" yaml:"kinds"`         // shipped kind files
 	Overrides string `json:"overrides" yaml:"overrides"` // private kind overrides, same file names
 	Projects  string `json:"projects" yaml:"projects"`   // project registry (local/projects.yaml)
+	Prefs     string `json:"prefs" yaml:"prefs"`         // owner prefs for briefs, filtered by kind
 	Engine    string `json:"engine" yaml:"-"`            // CROW_ENGINE, holds bin/ (crow-runs stop)
 	File      string `json:"file" yaml:"-"`              // config file read, empty when none
 }
@@ -40,6 +41,7 @@ func Load(getenv func(string) string) (Config, error) {
 		Store:     filepath.Join(state, "core.db"),
 		Overrides: filepath.Join(home, "local", "kinds"),
 		Projects:  filepath.Join(home, "local", "projects.yaml"),
+		Prefs:     filepath.Join(home, "local", "mission-prefs.yaml"),
 	}
 	if engine := getenv("CROW_ENGINE"); engine != "" {
 		c.Engine = engine
@@ -66,7 +68,7 @@ func Load(getenv func(string) string) (Config, error) {
 		dst *string
 		v   string
 	}{
-		{&c.Missions, f.Missions}, {&c.Store, f.Store}, {&c.Kinds, f.Kinds}, {&c.Overrides, f.Overrides}, {&c.Projects, f.Projects},
+		{&c.Missions, f.Missions}, {&c.Store, f.Store}, {&c.Kinds, f.Kinds}, {&c.Overrides, f.Overrides}, {&c.Projects, f.Projects}, {&c.Prefs, f.Prefs},
 	} {
 		if p.v == "" {
 			continue

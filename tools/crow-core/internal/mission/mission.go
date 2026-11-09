@@ -18,6 +18,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"crow-core/contract"
+	"crow-core/internal/brief"
 	"crow-core/internal/eventlog"
 	"crow-core/internal/project"
 	"crow-core/internal/store"
@@ -39,6 +40,7 @@ type Env struct {
 	Kinds    project.Kinds
 	KindDirs []string // where kind files live, to list the valid names
 	Projects string   // project registry file
+	Prefs    string   // owner prefs for briefs (brief.LoadPrefs)
 	Now      func() time.Time
 	StopRun  func(run string) error // stops a live cdx run (crow runs stop)
 }
@@ -323,4 +325,44 @@ func (env Env) Cancel(ref, reason string, warn func(string)) (contract.Mission, 
 		return m, err
 	}
 	return env.find(m.ID)
+}
+
+// Brief gathers what the brief of a mission is built from: its record, kind file, the key
+// of its created event, the prefs for its kind and every answers file. It returns the
+// mission dir the brief belongs in.
+func (env Env) Brief(ref string) (string, brief.Input, error) {
+	m, err := env.find(ref)
+	if err != nil {
+		return "", brief.Input{}, err
+	}
+	k, err := env.Kinds(m.Kind)
+	if err != nil {
+		return "", brief.Input{}, fmt.Errorf("%s: kind %s: %w", m.ID, m.Kind, err)
+	}
+	in := brief.Input{Mission: m, Kind: k}
+	dir := filepath.Join(env.Store.Root(), m.ID)
+	recs, err := eventlog.Read(eventlog.Path(env.Store.Root(), m.ID), 0)
+	if err != nil {
+		return "", in, err
+	}
+	for _, r := range recs {
+		if r.Event.Type != "created" {
+			continue
+		}
+		d, err := contract.DecodeEventData(r.Event)
+		if err != nil {
+			return "", in, err
+		}
+		in.Key = d.(*contract.CreatedData).Key
+		break
+	}
+	ps, err := brief.LoadPrefs(env.Prefs)
+	if err != nil {
+		return "", in, err
+	}
+	in.Prefs = brief.ForKind(ps, k.Name)
+	if in.Answers, err = brief.ReadAnswers(dir); err != nil {
+		return "", in, err
+	}
+	return dir, in, nil
 }

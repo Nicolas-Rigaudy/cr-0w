@@ -17,6 +17,9 @@ func TestDefaults(t *testing.T) {
 	if c.Missions != filepath.Join(home, "local/state/missions") || c.Store != filepath.Join(c.Missions, "core.db") {
 		t.Errorf("paths: %+v", c)
 	}
+	if c.Prefs != filepath.Join(home, "local/mission-prefs.yaml") {
+		t.Errorf("prefs: %s", c.Prefs)
+	}
 	if c.Kinds != "/engine/logics/specs/req_037_run_contract/kinds" {
 		t.Errorf("kinds: %s", c.Kinds)
 	}

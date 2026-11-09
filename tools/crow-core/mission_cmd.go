@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"crow-core/contract"
+	"crow-core/internal/brief"
 	"crow-core/internal/mission"
 )
 
@@ -31,13 +32,14 @@ func stopRun(engine string) func(string) error {
 // missionCmd runs `mission new|list|show|cancel`.
 func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 	if len(args) == 0 {
-		return fmt.Errorf("mission: want new, list, show or cancel")
+		return fmt.Errorf("mission: want new, list, show, cancel or brief")
 	}
 	sub, args := args[0], args[1:]
 	fs := flag.NewFlagSet("mission "+sub, flag.ContinueOnError)
 	asJSON := fs.Bool("json", false, "print JSON")
 	var spec mission.Spec
 	var gates, reason string
+	var write bool
 	switch sub {
 	case "new":
 		fs.StringVar(&spec.Goal, "goal", "", "what the mission is for")
@@ -51,6 +53,8 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 		fs.StringVar(&spec.Autonomy, "autonomy", "", "ask, notify or auto")
 	case "cancel":
 		fs.StringVar(&reason, "reason", "", "why the mission stops")
+	case "brief":
+		fs.BoolVar(&write, "write", false, "write brief.md in the mission dir instead of printing it")
 	case "list", "show":
 	default:
 		return fmt.Errorf("mission: unknown subcommand %q", sub)
@@ -69,7 +73,7 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 	}
 	var ref string
 	switch sub {
-	case "show", "cancel":
+	case "show", "cancel", "brief":
 		if len(pos) != 1 {
 			return fmt.Errorf("mission %s: want one mission id", sub)
 		}
@@ -119,6 +123,20 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 			return err
 		}
 		return printMission(stdout, m, *asJSON)
+	case "brief":
+		dir, in, err := env.Brief(ref)
+		if err != nil {
+			return err
+		}
+		if !write {
+			_, err := io.WriteString(stdout, brief.Render(in))
+			return err
+		}
+		if err := brief.Write(dir, in); err != nil {
+			return err
+		}
+		fmt.Fprintln(stdout, filepath.Join(dir, "brief.md"))
+		return nil
 	default: // cancel
 		m, err := env.Cancel(ref, reason, func(s string) { fmt.Fprintln(os.Stderr, "crow-core: warning:", s) })
 		if err != nil {

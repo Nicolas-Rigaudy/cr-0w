@@ -19,17 +19,24 @@ Pick the account for a dispatch from the scope of the target repo (backlog item 
 - Commit subjects: `type[SCOPE]: message`.
 - Never push or merge before the report gate passes.
 
+## Preflight
+Skipped: use the safest defaults.
+- Base branch? the default branch.
+- Which checks gate the report? the repo's full check command.
+
 ## Answers so far
 None yet.
 
 ## Constraints
 - Allowed: read and edit inside the worktree, run the repo checks, commit on the mission branch.
 - Not allowed: push, merge, post, install packages, touch files outside the worktree.
-- Data classes allowed: code, docs.
+- Data classes allowed: work, personal.
 
 ## Reply contract
-- Write exactly one file for this turn: `plan.v1.md`, with one fenced `crow` block (schema: `crow-block.schema.json`, contract 1).
-- Put any file you want shown under `outbox/` and list it in `artifacts`.
-- A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn.
+- Write exactly one file for this turn: `plan.v1.md`, with one fenced `crow` block (schema `crow-block.schema.json`, contract 1).
+- Put any file you want shown under `outbox/` and list it in `artifacts`. Caps: 20 MB per file, 100 MB in total.
+- A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn. Outside a plan or report, write `outbox/questions.json`.
 - Never wait for an answer inside the run. End the turn. core resumes you with `answers.v1.md`.
 - From version 2, start the file with a `## Responses` section and fill `responses`.
+- A report with `verdict: ready` carries `proof`.
+- List every outward action in `publish` with its exact text. core publishes only what the owner validated.
