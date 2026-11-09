@@ -33,6 +33,12 @@ func (c crowRuns) Dispatch(d mission.Dispatch) (mission.Started, error) {
 	if d.BudgetUSD > 0 {
 		args = append(args, "--budget", strconv.FormatFloat(d.BudgetUSD, 'f', -1, 64))
 	}
+	if d.ContinueRun != "" {
+		args = append(args, "--continue-run", d.ContinueRun)
+	}
+	if d.Resumes != "" {
+		args = append(args, "--resumes", d.Resumes)
+	}
 	if d.TimeoutMin > 0 {
 		args = append(args, "--timeout-min", strconv.Itoa(d.TimeoutMin))
 	}

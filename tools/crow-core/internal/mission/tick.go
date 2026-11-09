@@ -26,6 +26,8 @@ type Dispatch struct {
 	Permission                          string // "review" for a read-only run, else empty
 	BudgetUSD                           float64
 	TimeoutMin                          int
+	ContinueRun                         string // cdx --continue-run of this run (same account and sandbox)
+	Resumes                             string // a cold run that resumes this run (crow-runs ledger chain)
 }
 
 // Started is what crow-runs reports for a dispatched run.
