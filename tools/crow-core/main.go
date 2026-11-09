@@ -13,6 +13,7 @@ import (
 
 	"crow-core/contract"
 	"crow-core/internal/config"
+	"crow-core/internal/mission"
 	"crow-core/internal/project"
 	"crow-core/internal/store"
 )
@@ -24,6 +25,11 @@ const usage = `usage: crow-core <command>
   sync [mission]    apply the new events of one mission, or of every mission
   rebuild           empty the store and replay every event log
   dump              print every mission, run and inbox row as JSON
+  mission new --goal G --kind K --project P --end-state E [--key K] [--scope S]
+              [--data-class D] [--gates a,b] [--autonomy A] [--json]
+  mission list [--json]
+  mission show <id|prefix> [--json]
+  mission cancel <id|prefix> [--reason R] [--json]
   config            print the resolved paths as JSON
   version           print the core and contract versions
 `
@@ -58,12 +64,19 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if cmd == "config" {
 		return printJSON(stdout, cfg)
 	}
-	s, err := store.Open(cfg.Store, cfg.Missions, project.KindDirs(cfg.Kinds, cfg.Overrides))
+	kinds := project.KindDirs(cfg.Kinds, cfg.Overrides)
+	s, err := store.Open(cfg.Store, cfg.Missions, kinds)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 	switch cmd {
+	case "mission":
+		env := mission.Env{
+			Store: s, Kinds: kinds, KindDirs: []string{cfg.Overrides, cfg.Kinds},
+			Projects: cfg.Projects, Now: time.Now, StopRun: stopRun(cfg.Engine),
+		}
+		return missionCmd(env, rest, stdout)
 	case "append":
 		return appendEvent(s, stdin, stdout)
 	case "sync":

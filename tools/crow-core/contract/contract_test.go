@@ -453,3 +453,29 @@ func typeEnum(doc schemaDoc) []string {
 	sort.Strings(out)
 	return out
 }
+
+// AC3 (item_132): every from x to pair is legal exactly when Moves lists it.
+func TestStateMoves(t *testing.T) {
+	legal := map[[2]string]bool{
+		{"preflight", "queued"}: true, {"preflight", "cancelled"}: true,
+		{"queued", "running"}: true, {"queued", "failed"}: true, {"queued", "cancelled"}: true,
+		{"running", "waiting"}: true, {"running", "review"}: true, {"running", "done"}: true,
+		{"running", "failed"}: true, {"running", "cancelled"}: true,
+		{"waiting", "running"}: true, {"waiting", "failed"}: true, {"waiting", "cancelled"}: true,
+		{"review", "running"}: true, {"review", "publishing"}: true, {"review", "done"}: true,
+		{"review", "cancelled"}: true,
+		{"publishing", "done"}:  true, {"publishing", "failed"}: true,
+		{"done", "queued"}:   true,
+		{"failed", "queued"}: true, {"failed", "cancelled"}: true,
+	}
+	for _, from := range States {
+		for _, to := range States {
+			if got, want := CanMove(from, to), legal[[2]string{from, to}]; got != want {
+				t.Errorf("CanMove(%s, %s) = %v, want %v", from, to, got, want)
+			}
+		}
+	}
+	if CanMove("nope", "queued") || CanMove("queued", "nope") {
+		t.Error("unknown states must not move")
+	}
+}

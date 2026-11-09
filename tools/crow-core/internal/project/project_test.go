@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"crow-core/contract"
@@ -114,6 +115,7 @@ func TestApplyRefusesBrokenSequences(t *testing.T) {
 		"created twice":    {created, created},
 		"wrong from":       {created, ev("state", `{"from":"running","to":"done"}`)},
 		"unknown run end":  {created, ev("run_end", `{"run":"aaaa1111","cause":"done","exit":0}`)},
+		"illegal move":     {created, ev("state", `{"from":"preflight","to":"running"}`)},
 	} {
 		var v View
 		var err error
@@ -126,4 +128,20 @@ func TestApplyRefusesBrokenSequences(t *testing.T) {
 			t.Errorf("%s: accepted", name)
 		}
 	}
+}
+
+func TestIllegalMoveNamesTheCurrentState(t *testing.T) {
+	var v View
+	for _, e := range []contract.Event{
+		{TS: "2026-11-09T14:00:00+01:00", Mission: "20261109-research-x", Type: "created", Actor: "core", Data: json.RawMessage(`{"kind":"research","batch":null}`)},
+		{TS: "2026-11-09T14:00:00+01:00", Mission: "20261109-research-x", Type: "state", Actor: "core", Data: json.RawMessage(`{"from":"preflight","to":"done"}`)},
+	} {
+		if err := Apply(&v, e, nil); err != nil {
+			if !strings.Contains(err.Error(), "illegal move preflight -> done (from preflight") {
+				t.Errorf("error = %v", err)
+			}
+			return
+		}
+	}
+	t.Error("preflight -> done accepted")
 }

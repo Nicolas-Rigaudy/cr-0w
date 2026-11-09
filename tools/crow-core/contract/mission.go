@@ -33,6 +33,31 @@ type Mission struct {
 // Mission states, in lifecycle order.
 var States = []string{"preflight", "queued", "running", "waiting", "review", "publishing", "done", "failed", "cancelled"}
 
+// Moves lists the legal state moves of adr_001. waiting and review are parked: an answer
+// sends them back to running. done reopens (`dig` on an FYI report) and failed retries,
+// both through queued. cancelled is final.
+var Moves = map[string][]string{
+	"preflight":  {"queued", "cancelled"},
+	"queued":     {"running", "failed", "cancelled"},
+	"running":    {"waiting", "review", "done", "failed", "cancelled"},
+	"waiting":    {"running", "failed", "cancelled"},
+	"review":     {"running", "publishing", "done", "cancelled"},
+	"publishing": {"done", "failed"},
+	"done":       {"queued"},
+	"failed":     {"queued", "cancelled"},
+	"cancelled":  {},
+}
+
+// CanMove reports whether a mission in state from may move to state to.
+func CanMove(from, to string) bool {
+	for _, s := range Moves[from] {
+		if s == to {
+			return true
+		}
+	}
+	return false
+}
+
 type Budget struct {
 	TimeMin   int     `json:"time_min"`
 	BudgetUSD float64 `json:"budget_usd"`

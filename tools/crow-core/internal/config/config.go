@@ -20,6 +20,8 @@ type Config struct {
 	Store     string `json:"store" yaml:"store"`         // SQLite store, a view rebuilt from the event logs
 	Kinds     string `json:"kinds" yaml:"kinds"`         // shipped kind files
 	Overrides string `json:"overrides" yaml:"overrides"` // private kind overrides, same file names
+	Projects  string `json:"projects" yaml:"projects"`   // project registry (local/projects.yaml)
+	Engine    string `json:"engine" yaml:"-"`            // CROW_ENGINE, holds bin/ (crow-runs stop)
 	File      string `json:"file" yaml:"-"`              // config file read, empty when none
 }
 
@@ -37,8 +39,10 @@ func Load(getenv func(string) string) (Config, error) {
 		Missions:  state,
 		Store:     filepath.Join(state, "core.db"),
 		Overrides: filepath.Join(home, "local", "kinds"),
+		Projects:  filepath.Join(home, "local", "projects.yaml"),
 	}
 	if engine := getenv("CROW_ENGINE"); engine != "" {
+		c.Engine = engine
 		c.Kinds = filepath.Join(engine, "logics", "specs", "req_037_run_contract", "kinds")
 	}
 	file := getenv("CROW_CORE_CONFIG")
@@ -62,7 +66,7 @@ func Load(getenv func(string) string) (Config, error) {
 		dst *string
 		v   string
 	}{
-		{&c.Missions, f.Missions}, {&c.Store, f.Store}, {&c.Kinds, f.Kinds}, {&c.Overrides, f.Overrides},
+		{&c.Missions, f.Missions}, {&c.Store, f.Store}, {&c.Kinds, f.Kinds}, {&c.Overrides, f.Overrides}, {&c.Projects, f.Projects},
 	} {
 		if p.v == "" {
 			continue

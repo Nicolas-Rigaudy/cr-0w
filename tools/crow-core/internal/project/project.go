@@ -106,6 +106,9 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 		if d.From != m.State {
 			return fmt.Errorf("%s: state %s -> %s, but the mission is %s", e.Mission, d.From, d.To, m.State)
 		}
+		if !contract.CanMove(d.From, d.To) {
+			return fmt.Errorf("%s: illegal move %s -> %s (from %s: %v)", e.Mission, d.From, d.To, d.From, contract.Moves[d.From])
+		}
 		m.State = d.To
 	case *contract.RunStartData:
 		for _, r := range m.Runs {
