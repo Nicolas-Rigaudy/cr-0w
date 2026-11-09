@@ -48,7 +48,7 @@
 - Architecture signals: (none detected)
 - Architecture follow-up: No architecture decision follow-up is expected based on current signals.
 
-- 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
+- 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed; purple accent next to the cyan and neon blue, no Capri magenta or green), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`

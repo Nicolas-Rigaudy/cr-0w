@@ -48,7 +48,7 @@
 - 2026-11-09 owner: design from the approved Moodboard v2 and the vault note 'Github repos and websites' (see local/runbooks/design-toolkit.md), never from a generic palette.
 - 2026-11-09 first canvas pass (artifact K4pqN8J7QHo69LrSdx3n5U, state sheet + Home cover/inner) rejected by the owner; item paused until step 2 (references and moodboard read-back with confidence per area) is approved.
 
-- 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
+- 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed; purple accent next to the cyan and neon blue, no Capri magenta or green), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
