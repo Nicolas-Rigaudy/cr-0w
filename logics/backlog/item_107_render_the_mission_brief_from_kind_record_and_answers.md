@@ -1,14 +1,14 @@
 ## item_107_render_the_mission_brief_from_kind_record_and_answers - Render the mission brief from kind, record and answers
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 85%
 > Confidence: 75%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:50
+> Indicators reviewed: 2026-11-09 11:24:42
 
 # AI Context
 - Summary: core writes `brief.md` from the kind file, the mission record, the owner prefs and every answers file, following the spec template.
@@ -45,7 +45,7 @@
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 - Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
-- Primary task(s): (none yet)
+- Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
 - Priority: Medium
@@ -55,6 +55,7 @@
 - Depends on item_104, item_106 and the core mission record (req_028, adr_001).
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
+- 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core` (D6 resolved by req_031). Mission record comes from item_132.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

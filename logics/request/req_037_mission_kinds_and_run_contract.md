@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 11:13:14
+> Indicators reviewed: 2026-11-09 11:25:38
 
 # AI Context
 - Summary: Define every mission kind (gates, autonomy, account, effort, outputs) and the file contract between a run and core: brief, plan and report with a fenced `crow` block, outbox, versions, answer verbs. Schema first, before the first mission runs.
@@ -102,7 +102,7 @@ Grooming findings:
 | 1 | item_104 spec validator and spec test | nothing | Ready |
 | 2 | item_105 owner review of the kind files | owner review, D1 | Done 2026-11-09 |
 | 3 | item_106 crow block and questions parser | item_104, D6 | Draft |
-| 4 | item_112 skill per kind | D5, item_105 | Draft |
+| 4 | item_112 skill per kind | D5, item_105 | Ready (D5 and item_105 settled) |
 | 5 | item_107 brief rendering | item_106, core mission record, D6 | Draft |
 | 6 | item_108 versions and validation record | item_106, core event log, D6 | Draft |
 | 7 | item_109 outbox ingest | item_106, core mission record | Draft |

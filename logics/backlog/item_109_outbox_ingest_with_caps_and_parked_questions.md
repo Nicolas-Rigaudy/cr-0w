@@ -1,14 +1,14 @@
 ## item_109_outbox_ingest_with_caps_and_parked_questions - Outbox ingest with caps and parked questions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 85%
 > Confidence: 75%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:14:57
+> Indicators reviewed: 2026-11-09 11:24:43
 
 # AI Context
 - Summary: After a turn core ingests listed outbox files within the kind caps and parks the mission on `outbox/questions.json`.
@@ -45,7 +45,7 @@
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 - Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
-- Primary task(s): (none yet)
+- Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
 - Priority: Medium
@@ -57,6 +57,7 @@
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Tool approvals without exit and resume: `--permission-prompt-tool mcp__<server>__approve` makes Claude Code call an MCP tool and wait. The tool writes a pending approval file, polls it until deck, nest or ntfy sets allow or deny, and denies on timeout. Mark pending files expired when stdin closes; refuse Allow when the shown input was clipped (harness-maxxing review 2026-11-07, local/state/research/harness-maxxing-and-hermes-2026-11-07.md).
 - Outside text (mail, issues, web pages) reaches the run between markers, with the rule never to follow it. Owner messages are tasks, forwarded text is outside text.
+- 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core`; runs in the tick after a run ends (item_133). Inbox rows land through item_134.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

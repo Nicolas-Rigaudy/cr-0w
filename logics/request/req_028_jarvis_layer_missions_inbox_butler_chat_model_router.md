@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:57
+> Indicators reviewed: 2026-11-09 11:24:42
 
 # AI Context
 - Summary: Turn crow into a hands-off assistant. Work runs as background missions through cdx. Decisions, approvals and proposals land in one inbox shown in deck, nest and comlink. A butler chat talks to everything going on. A router picks the model and account per mission kind and data class. Status is told in short human sentences; detail stays one step away.
@@ -55,7 +55,7 @@
                    └─ gemini API key (cheap text tasks)
 ```
 
-# Slices (to groom into backlog items, in order)
+# Slices (to groom into backlog items, in order; 1-2 groomed 2026-11-09 into task_016)
 1. **Mission model.** `crow mission new|list|show|cancel`; mission record (goal, kind, scope, budget, end state, autonomy, state `queued → running → waiting → review → done|failed`); one mission maps to one or more cdx runs; kinds and defaults in tracked `kinds/<kind>.yaml` files with optional private overrides in `local/` (owner decision 2026-11-07, req_037 D1). Depends on item_077 (allowlist per kind) and req_025 (scope → account).
    - AC: a dispatched mission shows its state and runs in `crow mission list --json`.
 2. **Inbox and park/resume.** File contract a run writes (question or proposal + artifacts dir); core turns it into an inbox item, parks the mission, resumes it with `--continue-run` on answer; `crow inbox list|show|answer`.
@@ -109,7 +109,17 @@
 - Design: `logics/request/req_037_mission_kinds_and_run_contract.md`, `logics/request/req_038_nest_design_rules.md`
 
 # Backlog
-- none
+- Slices 1-2 groomed 2026-11-09, run order in `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`:
+- `item_119_go_core_and_python_sidecar_contract_with_shared_fixtures`
+- `item_131_go_core_skeleton_with_the_mission_event_log_and_store`
+- `item_132_mission_record_states_and_the_crow_mission_cli`
+- `item_107_render_the_mission_brief_from_kind_record_and_answers`
+- `item_133_dispatch_queued_missions_as_cdx_runs_and_track_them_in_a_tick`
+- `item_109_outbox_ingest_with_caps_and_parked_questions`
+- `item_108_mission_versions_responses_and_validation_record`
+- `item_134_inbox_items_and_the_crow_inbox_cli`
+- `item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume`
+- `item_135_resume_a_parked_mission_from_the_owner_s_answer`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -1,14 +1,14 @@
 ## item_119_go_core_and_python_sidecar_contract_with_shared_fixtures - Go core and Python sidecar contract with shared fixtures
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:22:08
+> Indicators reviewed: 2026-11-09 11:24:43
 
 # AI Context
 - Summary: Define the contract between the Go core and the Python sidecars: local JSON messages, versions and shared fixtures that both sides test against.
@@ -48,7 +48,7 @@
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
 - Request: `req_031_spike_nest_stack_and_app_shape`
-- Primary task(s): (none yet)
+- Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
 - Priority: Medium
@@ -57,6 +57,7 @@
 # Notes
 - 2026-11-07 owner decision 22 (req_031 decision 1).
 - Frees the code homes of items 107, 108 and 109 to be Go.
+- 2026-11-09 groomed into task_016 (first step). Fixtures also cover the mission record, the run entry and the inbox row read by items 132 and 134. Go side lives in `tools/crow-core` (item_131).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

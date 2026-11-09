@@ -1,14 +1,14 @@
 ## item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume - Resume of isolated missions from files and cdx issue for native resume
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:14:58
+> Indicators reviewed: 2026-11-09 11:24:43
 
 # AI Context
 - Summary: Isolated missions resume as a fresh run from the brief and version files. A cdx issue asks for native resume of isolated runs as a same-account optimisation.
@@ -45,7 +45,7 @@
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
 - Request: `req_030_spike_mission_safety_and_sandbox`
-- Primary task(s): (none yet)
+- Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
 - Priority: Low
@@ -56,6 +56,7 @@
 - Related: item_100 (isolated runs), item_115 (limits), item_107 (brief).
 - Cost after `--resume`: `total_cost_usd` is the running total of the whole Claude thread. Cost per turn = increase since the previous total of the same thread (or the total itself when it drops: new thread). Summing raw totals overcounts quadratically; check `cdx runs` cost for resumed runs.
 - If `--resume` fails because Claude purged the transcript, start a new thread from the mission files and log a note; keep the displayed history.
+- 2026-11-09 groomed into task_016: the cold resume path used by item_135. cdx issue #122 still open upstream.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

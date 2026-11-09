@@ -1,14 +1,14 @@
 ## item_112_skill_and_reply_contract_for_each_mission_kind - Skill and reply contract for each mission kind
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 75%
 > Confidence: 65%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:50
+> Indicators reviewed: 2026-11-09 11:25:38
 
 # AI Context
 - Summary: Give every kind a skill: reuse corpus, review, review-threads and implement-task, and fill the gaps for research, design, repair and generic write.

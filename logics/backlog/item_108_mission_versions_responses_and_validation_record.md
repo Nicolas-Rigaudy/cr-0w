@@ -1,14 +1,14 @@
 ## item_108_mission_versions_responses_and_validation_record - Mission versions, responses and validation record
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Ready
 > Understanding: 85%
 > Confidence: 75%
 > Progress: 0%
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 11:21:50
+> Indicators reviewed: 2026-11-09 11:24:43
 
 # AI Context
 - Summary: core keeps every version file with its answers file, checks the Responses section, and writes one hash-chained validation record per publish action on ok.
@@ -48,7 +48,7 @@
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 - Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
-- Primary task(s): (none yet)
+- Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
 - Priority: High
@@ -59,6 +59,7 @@
 - Depends on item_106 and the core event log (adr_001).
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
+- 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core`; event log from item_131. Called by `crow inbox answer` (item_134).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

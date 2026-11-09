@@ -4,7 +4,7 @@
 > Related product: `prod_005_crow_jarvis_layer`
 > Related request: `req_000_crow_watch_and_bar_modules_ui_ux_pass_session_titles_savings_stats`, `req_001_crow_account_switching_and_session_resume`, `req_004_portfolio_readmes_profile_readme_and_personal_page`, `req_006_clean_crow_releases_versioning_test_pipeline_install_and_update_path`, `req_007_crow_deck_interface_redesign_tabbed_tui_4_themes_command_map`, `req_008_crow_cost_and_reliability_pass_batched_retros_script_gathers_session_names_account_choice`, `req_011_crow_deck_rework_terminal_true_mockups`, `req_014_crow_management_checks_and_actionable_deck`, `req_016_crow_everywhere_multi_machine_and_mobile_control`, `req_018_deck_review_confirm_shows_the_stale_mode_when_an_own_mr_got_threads_after_the_list_fetch`, `req_019_release_leverage_cdx_0_25_logics_2_24`, `req_020_terminal_design_system_and_design_review_workflow`, `req_021_load_plugins_and_mcp_per_session_kind`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`, `req_025_account_routing_by_scope`, `req_026_personal_butler`, `req_027_conversations_feed_for_core_deck_nest`, `req_039_news_board_for_tech_news_and_repos`
 > Reminder: Update status, milestone scope, linked refs, risks, and success signals when you edit this doc.
-> Indicators reviewed: 2026-11-06 17:39:05
+> Indicators reviewed: 2026-11-09 11:24:44
 
 # AI Context
 - Summary: Order for the remaining crow work: tidy, finish in-flight, safe runs, Jarvis core, Jarvis tracks, releases, design system, management deck, side projects. The cockpit milestone folded into the Jarvis tracks on 2026-11-06.
@@ -44,6 +44,7 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 - Scope: req_028 slices 1-5 (mission model, inbox with park and resume, core API and MCP server, human summaries, autonomy dial, reconciler), kinds `research`, `plan`, `review`, `design` (req_037), nest Home, Missions and Mission detail on both Fold 6 screens, deck inbox pane. Slices 6-9 (deck views, nest MVP, butler chat, model router) follow in J.
 - Exception (owner, 2026-11-06): ahead of 0.4 because the owner wants to steer from the interface and run more hands off. Needs 0.3 (deny-by-default runs) first.
 - Exit signal: a mission asks a question, exits, and resumes from an answer given in deck or nest.
+- Status: slices 1-2 groomed 2026-11-09 into task_016 (10 items, Go core in `tools/crow-core`); slices 3-5 still to groom.
 - Before it: spikes req_029 (hosts, models), req_030 (safety), req_031 (stack), req_032 (butler engine) run alongside 0.3. Brief: prod_005; architecture: adr_001. Design docs req_037 (mission kinds and run contract, first) and req_038 (nest design rules).
 
 ## J - Jarvis tracks (after 0.3b)
