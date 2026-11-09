@@ -246,10 +246,58 @@ func (env Env) finish(r Runner, m contract.Mission) (line *TickLine, live bool, 
 		return out, false, move("waiting", "parked: "+cause)
 	}
 
-	file, cb, why := versionFile(filepath.Join(env.Store.Root(), m.ID), m.ID, run.Version)
+	dir := filepath.Join(env.Store.Root(), m.ID)
+	var caps Caps
+	if k, err := env.Kinds(m.Kind); err == nil {
+		caps = capsOf(k)
+	} else {
+		caps = capsOf(nil)
+	}
+	dropped := func(paths []string) error {
+		_, drops := Ingest(dir, paths, caps)
+		for _, d := range drops {
+			if err := incident(d.Cause, d.Detail); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// A questions file ends the turn: park the mission, the fold puts the questions in
+	// the inbox. A bad file is noted and the turn ends as if it were absent.
+	q, asked, bad := readQuestions(dir, m.ID, run.Version)
+	endRun := func() error {
+		if err := env.append(m.ID, "core", "run_end", ts, end); err != nil {
+			return err
+		}
+		if bad != "" {
+			return incident("bad_questions", bad)
+		}
+		return nil
+	}
+	if asked {
+		if err := env.append(m.ID, "core", "run_end", ts, end); err != nil {
+			return nil, false, err
+		}
+		if err := dropped(previews(q)); err != nil {
+			return nil, false, err
+		}
+		ids := make([]string, len(q.Questions))
+		for i, x := range q.Questions {
+			ids[i] = x.ID
+		}
+		qd := contract.QuestionData{File: QuestionsFile, Version: q.Version, IDs: ids}
+		if err := env.append(m.ID, "run", "question", ts, qd); err != nil {
+			return nil, false, err
+		}
+		out.State, out.Detail = "waiting", fmt.Sprintf("%d question(s): %s", len(ids), strings.Join(ids, " "))
+		return out, false, move("waiting", "parked: questions")
+	}
+
+	file, cb, why := versionFile(dir, m.ID, run.Version)
 	if cb == nil {
 		detail := fmt.Sprintf("run %s ended %s (exit %s): %s", run.Run, cause, exitText(st.ExitCode), why)
-		if err := env.append(m.ID, "core", "run_end", ts, end); err != nil {
+		if err := endRun(); err != nil {
 			return nil, false, err
 		}
 		if err := incident("no_version_file", detail); err != nil {
@@ -259,7 +307,10 @@ func (env Env) finish(r Runner, m contract.Mission) (line *TickLine, live bool, 
 		return out, false, move("failed", "no version file")
 	}
 	end.File = &file
-	if err := env.append(m.ID, "core", "run_end", ts, end); err != nil {
+	if err := endRun(); err != nil {
+		return nil, false, err
+	}
+	if err := dropped(artifactPaths(cb)); err != nil {
 		return nil, false, err
 	}
 	if err := env.append(m.ID, "core", "gate", ts, contract.GateData{File: file, Verdict: cb.Verdict}); err != nil {

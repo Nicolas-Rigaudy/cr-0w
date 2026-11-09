@@ -97,8 +97,11 @@ Same record as req_030 Need 5 and item_099: `{mission, version, action, target, 
 - Everything the owner should see goes under `outbox/` and is listed in `artifacts`.
 - Types: html, image, video, diff, doc, data.
 - Caps per kind (`caps.outbox_file_mb`, `caps.outbox_total_mb`). Most kinds: 20 MB per file, 100 MB in total. design: 200 MB in total for video. write: 20 MB and 50 MB. review, review-fix and repair: 5 MB and 20 MB.
-- core ingests the outbox after the turn. A file over the cap is dropped and noted in the event log. A file not listed in `artifacts` is ignored.
-- `outbox/questions.json` is for questions outside a plan or report. Writing it ends the turn. core parks the mission and shows the questions in the inbox.
+- core ingests the outbox after the turn, in the order of `artifacts`. A file over the per-file cap, or over the total once earlier files filled it, is dropped and noted in the event log. A file not listed in `artifacts` is ignored. Dropped files stay on disk.
+- A listed path must start with `outbox/`, hold no `..` and resolve to a regular file inside `outbox/` (links that lead out are refused).
+- Each dropped file gives one `incident`: `artifact_over_cap`, `artifact_refused` or `artifact_missing`. The mission still reaches its gate.
+- `outbox/questions.json` is for questions outside a plan or report. Writing it ends the turn. core parks the mission (waiting), logs a `question` event and the fold shows the questions in the inbox. Choice previews go through the same caps.
+- A questions file whose `version` is below the run's version was already asked and is ignored. An invalid file gives a `bad_questions` incident and the turn ends on its version file.
 
 ## brief.md
 
