@@ -49,6 +49,17 @@ def test_preflight_refuses_a_full_login_claude_profile(tmp_path):
     assert crow_lib.isolation_preflight("codex", None, path=str(tmp_path)) is None
 
 
+def test_preflight_accepts_a_full_login_profile_that_stores_a_setup_token(tmp_path, monkeypatch):
+    for tool in crow_lib.ISOLATION_TOOLS:
+        (tmp_path / tool).symlink_to("/bin/true")
+    monkeypatch.setenv("CDX_PROFILES", str(tmp_path / "profiles"))
+    assert "setup token" in crow_lib.isolation_preflight("claude", "full-login", path=str(tmp_path), account="acct")
+    creds = tmp_path / "profiles/acct/claude-home/credentials"
+    creds.mkdir(parents=True)
+    (creds / "default.json").write_text("{}")
+    assert crow_lib.isolation_preflight("claude", "full-login", path=str(tmp_path), account="acct") is None
+
+
 def test_isolation_account_prefers_the_runs_profile():
     rows = [{"session_name": "alpha"}, {"session_name": "alpha-runs", "auth_type": "setup-token"}, {"session_name": "beta"}]
     assert crow_lib.isolation_account("alpha", rows) == "alpha-runs"
@@ -123,7 +134,8 @@ def args(**kw):
 
 def test_dispatch_refusals(tmp_path, monkeypatch):
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct, status=None: "claude")
-    assert "--continue-run" in cr.isolation_refusal(args(continue_run="abc"), "a", "/x", [])
+    monkeypatch.setattr(cr, "ledger", lambda: [{"run_id": "abc123", "isolated": False}])
+    assert "unisolated run" in cr.isolation_refusal(args(continue_run="abc"), "a", "/x", [])
     assert "--cwd" in cr.isolation_refusal(args(), "a", "/x", [])
     (tmp_path / ".git").mkdir()
     assert "worktree marker" in cr.isolation_refusal(args(cwd=str(tmp_path)), "a", str(tmp_path), [])
@@ -142,3 +154,38 @@ def test_notify_commits_only_writable_isolated_runs(monkeypatch):
     monkeypatch.setattr(cr, "log_event", lambda *a: None)
     cr.commit_isolated({"run_id": "r1", "cwd": "/x", "label": "l"})
     assert seen == ["r1"]
+
+
+def test_isolated_state_dir_is_in_the_worktree_and_git_excluded(repo):
+    d = crow_lib.isolated_state_dir(str(repo))
+    assert d == repo / ".crow-run"
+    crow_lib.isolated_state_dir(str(repo))
+    assert (repo / ".git/info/exclude").read_text().splitlines().count("/.crow-run/") == 1
+    crow_lib.sandbox_args("review", d)
+    assert (d / "run-sandbox/review.json").exists() and git(repo, "status", "--porcelain") == ""
+
+
+def test_continuing_an_isolated_run_stays_in_its_sandbox(tmp_path, monkeypatch):
+    """cdx 0.26.10 continues an isolated run inside the parent's boundary: same cwd, same permission."""
+    wt = tmp_path / "proj.wt" / "r"
+    wt.mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: /x\n")
+    monkeypatch.setattr(cr, "ledger", lambda: [{"run_id": "par123", "isolated": True, "account": "acct",
+                                                "permission": "review", "kind": "review"}])
+    monkeypatch.setattr(cr, "REG", {"projects": [{"name": "proj", "path": str(tmp_path / "proj")}]})
+    monkeypatch.setattr(crow_lib, "cdx_rows", lambda: [{"session_name": "acct", "auth_type": "setup-token"}])
+    monkeypatch.setattr(crow_lib, "provider_of", lambda acct, status=None: "claude")
+    monkeypatch.setattr(crow_lib, "isolation_preflight", lambda *a, **k: None)
+    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(crow_lib, "isolated_state_dir", lambda cwd: tmp_path / "state")
+    monkeypatch.setattr(cr.subprocess, "run", lambda *a, **k: types.SimpleNamespace(returncode=0, stdout=""))
+    printed = []
+    monkeypatch.setattr("builtins.print", lambda *a, **k: printed.append(" ".join(map(str, a))))
+    a = types.SimpleNamespace(project="proj", label="apply-1", prompt_file="/p.md", prompt=None, kind="review",
+                              model=None, power=None, continue_run="par", account=None, isolate=False, cwd=str(wt),
+                              permission=None, force=False, budget=None, dry_run=True, context=None, logics=None,
+                              resumes=None)
+    cr.dispatch(a)
+    cmd = printed[-1]
+    assert a.isolate and "--isolate-workspace" in cmd and "--continue-run par" in cmd
+    assert "--permission review" in cmd and "cdx run acct" in cmd

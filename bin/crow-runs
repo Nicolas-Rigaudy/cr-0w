@@ -719,8 +719,7 @@ def pick_account(a):
     if a.account:
         return a.account
     if a.continue_run:
-        parent = next((r for r in ledger() if r["run_id"].startswith(a.continue_run)), {})
-        return parent.get("account") or ACCOUNT
+        return parent_run(a.continue_run).get("account") or ACCOUNT
     scope = next((p.get("scope") for p in REG["projects"] if p["name"] == getattr(a, "project", None)), None)
     try:
         st = crow_lib.account_state(ACCOUNT, **({"scope": scope} if scope else {}))
@@ -746,20 +745,26 @@ def pick_account(a):
 
 def isolation_refusal(a, acct, cwd, rows):
     """Why this run cannot start isolated (with the fix), or None. Never falls back to an unisolated run."""
-    if a.continue_run:
-        return "--isolate cannot continue a conversation (cdx refuses --continue-run with --isolate-workspace); dispatch a fresh run"
+    if a.continue_run and not parent_run(a.continue_run).get("isolated"):
+        return "--isolate cannot continue an unisolated run (cdx keeps the parent's boundary); dispatch a fresh run"
     if not a.cwd:
         return "--isolate needs --cwd <worktree under <path>.wt/>: the sandbox binds a linked worktree, never the main checkout"
     if not (Path(cwd) / ".git").is_file():
         return f"--isolate needs a linked git worktree; {cwd}/.git is not a worktree marker"
     provider = crow_lib.provider_of(acct)
-    return crow_lib.isolation_preflight(provider, crow_lib.account_auth(acct, rows), kind=a.kind)
+    return crow_lib.isolation_preflight(provider, crow_lib.account_auth(acct, rows), kind=a.kind, account=acct)
+
+
+def parent_run(run_id):
+    return next((r for r in ledger() if r["run_id"].startswith(run_id)), {})
 
 
 def dispatch(a):
+    if a.continue_run and parent_run(a.continue_run).get("isolated"):
+        a.isolate = True  # cdx continues an isolated run only inside its sandbox, read-only for a review
     rows = crow_lib.cdx_rows() if a.isolate else []
     acct = pick_account(a)
-    if a.isolate and not a.account:
+    if a.isolate and not a.account and not a.continue_run:
         acct = crow_lib.isolation_account(acct, rows)
     if subprocess.run([str(HOME / "bin/crow-accounts"), "require", acct]).returncode:
         sys.exit(1)
@@ -775,6 +780,8 @@ def dispatch(a):
             sys.exit(f"crow: {why}")
         if crow_lib.isolation_mode(a.kind) == "ro":
             a.permission = "review"  # the sandbox mounts the tree read-only
+        elif a.continue_run:  # cdx refuses any permission but the parent's
+            a.permission = parent_run(a.continue_run).get("permission") or crow_lib.permission(crow_lib.provider_of(acct))
     runs = running_runs()
     # A review run cannot write, so it may share the folder with another run.
     if any(x["cwd"] == cwd for x in runs) and not a.force and a.permission != "review":
@@ -789,9 +796,15 @@ def dispatch(a):
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
-    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget, state=STATE)
+    # The sandbox mounts only the worktree: an isolated run reads its settings file from there.
+    state = crow_lib.isolated_state_dir(cwd) if a.isolate else STATE
+    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget, state=state)
     if a.isolate:  # cdx failover could land on a full-login account, which refuses isolation; requeue moves it
         flags = [f for f in flags if f != "--failover"]
+        # cdx allowlists toolchains under Path.home(); a crow session's HOME is the cdx profile home, which
+        # holds no claude binary ("Executable is outside the permitted toolchains"). CDX_HOME keeps the profiles.
+        env = {**env, "HOME": crow_lib.real_home(),
+               "CDX_HOME": os.environ.get("CDX_HOME") or os.path.join(crow_lib.real_home(), ".cdx")}
     cmd = ["cdx", "run", acct, "--cwd", cwd, *src, *(["--continue-run", a.continue_run] if a.continue_run else []), *flags,
            "--permission", a.permission or crow_lib.permission(provider, bool(a.continue_run)), "--detach", "--json",
            "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)]),

@@ -635,7 +635,27 @@ def isolation_mode(kind):
     return RUN_KINDS.get(kind, {}).get("isolate")
 
 
-def isolation_preflight(provider, auth_type, path=None, kind=None):
+def isolated_state_dir(cwd):
+    """<worktree>/.crow-run: run files an isolated run must read (the sandbox mounts only the worktree).
+    Listed in the repo's info/exclude, so neither git status nor the host commit of a run picks it up."""
+    from pathlib import Path
+    common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=cwd,
+                            capture_output=True, text=True).stdout.strip()
+    exclude = Path(common or Path(cwd) / ".git") / "info" / "exclude"
+    lines = exclude.read_text().splitlines() if exclude.exists() else []
+    if "/.crow-run/" not in lines:
+        exclude.parent.mkdir(parents=True, exist_ok=True)
+        exclude.write_text("\n".join(lines + ["/.crow-run/"]) + "\n")
+    return Path(cwd) / ".crow-run"
+
+
+def stored_setup_token(account, env=None):
+    """True when the cdx profile stores a setup token (<profile>/claude-home/credentials/default.json).
+    Since cdx 0.26.10 a full-login profile with one runs isolated: only the setup token enters the sandbox."""
+    return os.path.isfile(os.path.join(profiles_dir(env), account, "claude-home", "credentials", "default.json"))
+
+
+def isolation_preflight(provider, auth_type, path=None, kind=None, account=None):
     """Why an isolated run cannot start (with the fix), or None. Never a fallback to a shared network."""
     import shutil
     if kind is not None and not isolation_mode(kind):
@@ -645,8 +665,9 @@ def isolation_preflight(provider, auth_type, path=None, kind=None):
     if missing:
         pkgs = " ".join(dict.fromkeys(ISOLATION_TOOLS[t] for t in missing))
         return f"isolated runs need {', '.join(missing)}: install with `sudo pacman -S {pkgs}`; no shared-network fallback"
-    if provider == "claude" and auth_type != "setup-token":
-        return (f"isolated Claude runs need a cdx setup token (this profile is {auth_type or 'unknown'}): "
+    if provider == "claude" and auth_type != "setup-token" and not (account and stored_setup_token(account)):
+        return (f"isolated Claude runs need a cdx setup token (this profile is {auth_type or 'unknown'} and stores none): "
+                "save one under <profile>/claude-home/credentials/default.json (cdx 0.26.10+), or "
                 "`cdx add <account>-runs` then `cdx login <account>-runs`, and dispatch with --account <account>-runs")
     return None
 
