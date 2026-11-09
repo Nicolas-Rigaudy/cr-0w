@@ -6,12 +6,11 @@ import subprocess
 import sys
 
 import pytest
-
 from conftest import BIN, REPO
 from schema_lite import Validator
 
 sys.path.insert(0, str(BIN))
-import crow_sidecar  # noqa: E402
+import crow_sidecar
 
 SPEC = REPO / "logics" / "specs" / "core_contract"
 SCHEMAS = SPEC / "schemas"
@@ -70,7 +69,7 @@ def test_sidecar_answers_fixture(path):
 def test_message_set_matches_everywhere():
     fixtures = {p.name.split(".")[0] for p in MESSAGE_FIXTURES}
     replies = {p.name.split(".")[0] for p in (FIX / "messages").glob("*.reply.json")}
-    table = set(re.findall(r"^\| `([a-z_.]+)` \|", (SPEC / "README.md").read_text(), re.M))
+    table = set(re.findall(r"^\| `([a-z_.]+)` \|", (SPEC / "README.md").read_text(), re.MULTILINE))
     schema = set(load(SCHEMAS / "request.schema.json")["$defs"])
     assert fixtures == replies == table == schema == set(crow_sidecar.Sidecar().messages)
 
@@ -161,7 +160,7 @@ def test_sidecar_handles_garbage():
 def test_sidecar_process_runs_lifecycle():
     reqs = [load(FIX / "messages" / f"{t}.request.json") for t in ("hello", "health", "shutdown")]
     stdin = "".join(json.dumps(r) + "\n" for r in reqs) + json.dumps(reqs[1]) + "\n"
-    p = subprocess.run([sys.executable, str(BIN / "crow_sidecar.py")], input=stdin, capture_output=True, text=True,
+    p = subprocess.run([sys.executable, str(BIN / "crow_sidecar.py")], input=stdin, capture_output=True, text=True, check=False,
                        timeout=30)
     assert p.returncode == 0, p.stderr
     got = [json.loads(x) for x in p.stdout.splitlines()]
