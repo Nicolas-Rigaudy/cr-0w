@@ -74,7 +74,7 @@ Mission dir `missions/<id>/`:
 A run that needs the owner writes and ends its turn. core parses the block, creates the inbox item, parks the mission.
 
 ## Resume
-The answer is appended to the brief. core calls `cdx run --continue-run <run>`. A usage limit ends the run the same way; core resumes on the next allowed account after a quota probe. After N resumes in a row core asks the owner. Review and continued runs keep their account constraints.
+The answer is appended to the brief. core calls `cdx run --continue-run <run>`. A usage limit ends the run the same way; core resumes on the next allowed account after a quota probe. After N resumes in a row without a gate (`budget.resumes`), core parks the mission (`queued → waiting`) on a `resume-cap` question; `continue` allows one more resume, `stop` cancels. A run cut by a usage limit resumes cold from the brief. Review and continued runs keep their account constraints.
 
 ## Event log
 - Append-only JSONL is the source of truth: `{ts, mission, type, actor, data}`. Types include `created`, `state`, `run_start`, `run_end`, `question`, `answer`, `validation`, `publish`, `incident`, `manual_gesture`, `push_sent`.
