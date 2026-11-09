@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "id": "c-5",
+  "type": "hello",
+  "data": {
+    "contract": 2,
+    "core": "0.2.0"
+  }
+}

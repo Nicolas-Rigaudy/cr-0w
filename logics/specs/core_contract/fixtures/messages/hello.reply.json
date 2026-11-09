@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "id": "c-1",
+  "type": "hello",
+  "ok": true,
+  "data": {
+    "name": "base",
+    "version": "0.0.0",
+    "contract": 1,
+    "messages": [
+      "hello",
+      "health",
+      "shutdown"
+    ]
+  }
+}

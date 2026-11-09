@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/mission.schema.json",
+  "title": "mission record",
+  "description": "adr_001 Mission record, as printed by crow mission list/show --json. Rebuilt from the event log.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "batch", "scope", "data_class", "project", "goal", "end_state", "autonomy", "gates",
+               "state", "runs", "version", "validation", "file_scope", "budget", "branch", "worktree", "mr",
+               "created", "updated"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[0-9]{8}-[a-z-]+-[a-z0-9_!#@.-]+$"},
+    "kind": {"type": "string", "pattern": "^[a-z][a-z-]*$"},
+    "batch": {"type": ["string", "null"], "description": "AFK batch id."},
+    "scope": {"enum": ["work", "personal", "crow"]},
+    "data_class": {"enum": ["work", "personal", "private"]},
+    "project": {"type": "string", "description": "Registry name."},
+    "goal": {"type": "string", "minLength": 1},
+    "end_state": {"type": "string"},
+    "autonomy": {"enum": ["ask", "notify", "auto"]},
+    "gates": {"$ref": "#/$defs/gates"},
+    "state": {"$ref": "#/$defs/state"},
+    "runs": {"type": "array", "items": {"$ref": "run.schema.json"}},
+    "version": {"type": "integer", "minimum": 0, "description": "Last version written, 0 before the first."},
+    "validation": {"type": ["string", "null"], "description": "ts of the last valid validation event."},
+    "file_scope": {"type": "array", "items": {"type": "string"}},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["time_min", "budget_usd", "resumes"],
+      "properties": {
+        "time_min": {"type": "integer", "minimum": 5},
+        "budget_usd": {"type": "number", "minimum": 0},
+        "resumes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "branch": {"type": ["string", "null"]},
+    "worktree": {"type": ["string", "null"]},
+    "mr": {"type": ["string", "null"]},
+    "created": {"type": "string", "format": "date-time"},
+    "updated": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "gates": {"type": "array", "items": {"enum": ["plan", "report", "mockup"]}, "uniqueItems": true},
+    "state": {"enum": ["preflight", "queued", "running", "waiting", "review", "publishing", "done", "failed", "cancelled"]}
+  }
+}

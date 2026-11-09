@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "id": "c-3",
+  "type": "shutdown",
+  "data": {
+    "grace_s": 5
+  }
+}

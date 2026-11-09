@@ -1,0 +1,9 @@
+{"ts":"2026-11-09T14:00:00+01:00","mission":"20261109-research-android-push-options","type":"created","actor":"owner","data":{"kind":"research","key":"android-push-options","surface":"cli","project":"demo","scope":"personal","data_class":"personal","goal":"Compare push providers for the Android app.","end_state":"A report with one recommendation.","autonomy":"auto","gates":[],"budget":{"time_min":60,"budget_usd":5,"resumes":2},"file_scope":[]}}
+{"ts":"2026-11-09T14:00:01+01:00","mission":"20261109-research-android-push-options","type":"state","actor":"core","data":{"from":"preflight","to":"queued"}}
+{"ts":"2026-11-09T14:05:00+01:00","mission":"20261109-research-android-push-options","type":"state","actor":"core","data":{"from":"queued","to":"running"}}
+{"ts":"2026-11-09T14:05:01+01:00","mission":"20261109-research-android-push-options","type":"run_start","actor":"core","data":{"run":"d4e5f6a7","account":"main","account_class":"personal","cold":true,"version":1}}
+{"ts":"2026-11-09T14:20:00+01:00","mission":"20261109-research-android-push-options","type":"question","actor":"run","data":{"file":"outbox/questions.json","version":1,"ids":["q1"]}}
+{"ts":"2026-11-09T14:31:00+01:00","mission":"20261109-research-android-push-options","type":"answer","actor":"owner","data":{"file":"answers.v1.md","verb":"answer","surface":"nest","item":"20261109-research-android-push-options/v1/q1"}}
+{"ts":"2026-11-09T14:52:00+01:00","mission":"20261109-research-android-push-options","type":"run_end","actor":"core","data":{"run":"d4e5f6a7","cause":"done","exit":0,"file":"report.v1.md"}}
+{"ts":"2026-11-09T14:52:01+01:00","mission":"20261109-research-android-push-options","type":"gate","actor":"core","data":{"file":"report.v1.md","verdict":"ready"}}
+{"ts":"2026-11-09T14:52:02+01:00","mission":"20261109-research-android-push-options","type":"state","actor":"core","data":{"from":"running","to":"done","reason":"straight-through"}}

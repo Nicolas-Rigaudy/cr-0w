@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/run.schema.json",
+  "title": "run entry",
+  "description": "One cdx run of a mission. ended, cause and exit are null while the run is live.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run", "mission", "account", "version", "cold", "started", "ended", "cause", "exit"],
+  "properties": {
+    "run": {"type": "string", "pattern": "^[0-9a-f]{8,40}$", "description": "cdx run id."},
+    "mission": {"type": "string"},
+    "account": {"type": "string", "description": "Account the scope pick chose."},
+    "version": {"type": "integer", "minimum": 1, "description": "Version the run was asked to write."},
+    "cold": {"type": "boolean", "description": "True when the run started from the files only."},
+    "started": {"type": "string", "format": "date-time"},
+    "ended": {"type": ["string", "null"], "format": "date-time"},
+    "cause": {"enum": ["done", "usage_limit", "budget", "timeout", "error", "stopped", null]},
+    "exit": {"type": ["integer", "null"]}
+  }
+}

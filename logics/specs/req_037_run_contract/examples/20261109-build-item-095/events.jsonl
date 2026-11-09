@@ -1,15 +1,26 @@
 {"actor":"owner","data":{"key":"item_095","kind":"build","surface":"deck"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:00:00+01:00","type":"created"}
-{"actor":"core","data":{"account_class":"crow","cold":true,"version":1},"mission":"20261109-build-item-095","ts":"2026-11-09T09:01:00+01:00","type":"run_started"}
+{"actor":"core","data":{"from":"preflight","to":"queued"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:00:00+01:00","type":"state"}
+{"actor":"core","data":{"from":"queued","to":"running"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:01:00+01:00","type":"state"}
+{"actor":"core","data":{"account_class":"crow","cold":true,"run":"a1b2c3d4","version":1},"mission":"20261109-build-item-095","ts":"2026-11-09T09:01:00+01:00","type":"run_start"}
+{"actor":"core","data":{"cause":"done","exit":0,"file":"plan.v1.md","run":"a1b2c3d4"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:10:00+01:00","type":"run_end"}
 {"actor":"core","data":{"file":"plan.v1.md","verdict":"needs-input"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:10:00+01:00","type":"gate"}
+{"actor":"core","data":{"from":"running","to":"review"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:10:00+01:00","type":"state"}
 {"actor":"owner","data":{"file":"answers.v1.md","verb":"dig"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:12:00+01:00","type":"answer"}
-{"actor":"core","data":{"account_class":"crow","cold":false,"version":2},"mission":"20261109-build-item-095","ts":"2026-11-09T09:13:00+01:00","type":"run_started"}
+{"actor":"core","data":{"from":"review","to":"running"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:13:00+01:00","type":"state"}
+{"actor":"core","data":{"account_class":"crow","cold":false,"run":"b2c3d4e5","version":2},"mission":"20261109-build-item-095","ts":"2026-11-09T09:13:00+01:00","type":"run_start"}
+{"actor":"core","data":{"cause":"done","exit":0,"file":"plan.v2.md","run":"b2c3d4e5"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:20:00+01:00","type":"run_end"}
 {"actor":"core","data":{"file":"plan.v2.md","verdict":"ready"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:20:00+01:00","type":"gate"}
+{"actor":"core","data":{"from":"running","to":"review"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:20:00+01:00","type":"state"}
 {"actor":"owner","data":{"file":"answers.v2.md","verb":"go"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:40:00+01:00","type":"answer"}
-{"actor":"core","data":{"account_class":"crow","cold":false,"version":3},"mission":"20261109-build-item-095","ts":"2026-11-09T09:41:00+01:00","type":"run_started"}
+{"actor":"core","data":{"from":"review","to":"running"},"mission":"20261109-build-item-095","ts":"2026-11-09T09:41:00+01:00","type":"state"}
+{"actor":"core","data":{"account_class":"crow","cold":false,"run":"c3d4e5f6","version":3},"mission":"20261109-build-item-095","ts":"2026-11-09T09:41:00+01:00","type":"run_start"}
+{"actor":"core","data":{"cause":"done","exit":0,"file":"report.v3.md","run":"c3d4e5f6"},"mission":"20261109-build-item-095","ts":"2026-11-09T10:30:00+01:00","type":"run_end"}
 {"actor":"core","data":{"file":"report.v3.md","verdict":"ready"},"mission":"20261109-build-item-095","ts":"2026-11-09T10:30:00+01:00","type":"gate"}
+{"actor":"core","data":{"from":"running","to":"review"},"mission":"20261109-build-item-095","ts":"2026-11-09T10:30:00+01:00","type":"state"}
 {"actor":"owner","data":{"file":"answers.v3.md","verb":"ok"},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:00+01:00","type":"answer"}
 {"actor":"owner","data":{"action":"push","file":"report.v3.md","owner_event":"2026-11-09T11:02:00+01:00","payload_sha256":"cae714a4d4cdeade898125b2d8c4d048378ac1f1176cd1ac53effbd28c0be18c","prev_sha256":"0000000000000000000000000000000000000000000000000000000000000000","surface":"nest","target":"<repo> mission/20261109-build-item-095","verb":"ok","version":3},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:01+01:00","type":"validation"}
 {"actor":"owner","data":{"action":"mr","file":"report.v3.md","owner_event":"2026-11-09T11:02:00+01:00","payload_sha256":"0bc2e2334a6d07e20bf80d1be7969fa3bdcec6357f1ea20a50c75b2b4b1f13f4","prev_sha256":"1ec33853f65871e041552af84074ac5fbd9de228d0cf130c02d791f4a80fd8ea","surface":"nest","target":"<repo> mission/20261109-build-item-095 -> main","verb":"ok","version":3},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:02+01:00","type":"validation"}
+{"actor":"core","data":{"from":"review","to":"publishing"},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:05+01:00","type":"state"}
 {"actor":"core","data":{"action":"push","result":"ok","validation_ts":"2026-11-09T11:02:01+01:00"},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:05+01:00","type":"publish"}
 {"actor":"core","data":{"action":"mr","result":"ok","validation_ts":"2026-11-09T11:02:02+01:00"},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:09+01:00","type":"publish"}
-{"actor":"core","data":{},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:10+01:00","type":"done"}
+{"actor":"core","data":{"from":"publishing","to":"done"},"mission":"20261109-build-item-095","ts":"2026-11-09T11:02:10+01:00","type":"state"}

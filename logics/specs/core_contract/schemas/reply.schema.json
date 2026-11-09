@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/reply.schema.json",
+  "title": "sidecar reply",
+  "description": "One line from a sidecar to core on its stdout. Same id and type as the request.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "type", "ok"],
+  "properties": {
+    "v": {"const": 1},
+    "id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "type": {"type": "string", "pattern": "^([a-z][a-z0-9_.]*|\\?)$"},
+    "ok": {"type": "boolean"},
+    "data": {"type": "object"},
+    "error": {"$ref": "#/$defs/error"}
+  },
+  "allOf": [
+    {"if": {"properties": {"ok": {"const": true}}, "required": ["ok"]}, "then": {"required": ["data"]}},
+    {"if": {"properties": {"ok": {"const": false}}, "required": ["ok"]}, "then": {"required": ["error"]}},
+    {"if": {"properties": {"type": {"const": "hello"}, "ok": {"const": true}}, "required": ["type", "ok"]},
+     "then": {"properties": {"data": {"$ref": "#/$defs/hello"}}}},
+    {"if": {"properties": {"type": {"const": "health"}, "ok": {"const": true}}, "required": ["type", "ok"]},
+     "then": {"properties": {"data": {"$ref": "#/$defs/health"}}}},
+    {"if": {"properties": {"type": {"const": "shutdown"}, "ok": {"const": true}}, "required": ["type", "ok"]},
+     "then": {"properties": {"data": {"$ref": "#/$defs/shutdown"}}}}
+  ],
+  "$defs": {
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"enum": ["bad_request", "unknown_type", "unsupported_contract", "timeout", "internal"]},
+        "message": {"type": "string", "minLength": 1}
+      }
+    },
+    "hello": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "contract", "messages"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "version": {"type": "string"},
+        "contract": {"type": "integer", "minimum": 1},
+        "messages": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["ok", "degraded"]},
+        "detail": {"type": "string"}
+      }
+    },
+    "shutdown": {"type": "object", "additionalProperties": false, "properties": {}}
+  }
+}

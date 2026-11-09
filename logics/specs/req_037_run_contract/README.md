@@ -69,6 +69,8 @@ missions/<YYYYMMDD-kind-key>/
   events.jsonl        {ts, mission, type, actor, data}
 ```
 
+The event types and the data of each are fixed by `logics/specs/core_contract` (`schemas/event.schema.json`).
+
 One version counter per mission. Plan, report and mockup share it. `answers.vN.md` always answers the file of version N. In the example, plan v1, plan v2 and report v3 follow each other.
 
 ## Versions and responses

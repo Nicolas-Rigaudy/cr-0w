@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "id": "c-5",
+  "type": "hello",
+  "ok": false,
+  "error": {
+    "code": "unsupported_contract",
+    "message": "core speaks contract 2, this sidecar speaks 1"
+  }
+}

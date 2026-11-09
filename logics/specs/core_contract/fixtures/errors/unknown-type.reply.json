@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "id": "c-4",
+  "type": "transcribe",
+  "ok": false,
+  "error": {
+    "code": "unknown_type",
+    "message": "unknown message type: transcribe"
+  }
+}

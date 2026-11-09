@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/request.schema.json",
+  "title": "sidecar request",
+  "description": "One line from core to a sidecar on its stdin.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "type", "data"],
+  "properties": {
+    "v": {"const": 1, "description": "Contract version."},
+    "id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "type": {"type": "string", "pattern": "^[a-z][a-z0-9_.]*$"},
+    "data": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"type": {"const": "hello"}}, "required": ["type"]},
+     "then": {"properties": {"data": {"$ref": "#/$defs/hello"}}}},
+    {"if": {"properties": {"type": {"const": "health"}}, "required": ["type"]},
+     "then": {"properties": {"data": {"$ref": "#/$defs/health"}}}},
+    {"if": {"properties": {"type": {"const": "shutdown"}}, "required": ["type"]},
+     "then": {"properties": {"data": {"$ref": "#/$defs/shutdown"}}}}
+  ],
+  "$defs": {
+    "hello": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "core"],
+      "properties": {
+        "contract": {"type": "integer", "minimum": 1},
+        "core": {"type": "string", "description": "core version."}
+      }
+    },
+    "health": {"type": "object", "additionalProperties": false, "properties": {}},
+    "shutdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grace_s"],
+      "properties": {
+        "grace_s": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

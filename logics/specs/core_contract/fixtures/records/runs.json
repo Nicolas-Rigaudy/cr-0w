@@ -1,0 +1,35 @@
+[
+  {
+    "run": "d4e5f6a7",
+    "mission": "20261109-research-android-push-options",
+    "account": "main",
+    "version": 1,
+    "cold": true,
+    "started": "2026-11-09T14:05:01+01:00",
+    "ended": "2026-11-09T14:52:00+01:00",
+    "cause": "done",
+    "exit": 0
+  },
+  {
+    "run": "e5f6a7b8",
+    "mission": "20261109-build-demo-login",
+    "account": "work",
+    "version": 1,
+    "cold": true,
+    "started": "2026-11-09T15:00:01+01:00",
+    "ended": "2026-11-09T15:24:00+01:00",
+    "cause": "done",
+    "exit": 0
+  },
+  {
+    "run": "f6a7b8c9",
+    "mission": "20261109-build-demo-login",
+    "account": "work",
+    "version": 2,
+    "cold": false,
+    "started": "2026-11-09T15:40:00+01:00",
+    "ended": null,
+    "cause": null,
+    "exit": null
+  }
+]

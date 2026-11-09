@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "id": "c-6",
+  "type": "shutdown",
+  "ok": false,
+  "error": {
+    "code": "bad_request",
+    "message": "data: missing required field 'grace_s'; data.grace: unknown field"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/inbox.schema.json",
+  "title": "inbox row",
+  "description": "One item the owner answers: a version file at a gate or a parked question.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "mission", "kind", "project", "type", "source", "version", "file", "ask", "verbs", "blocking",
+               "artifacts", "state", "created", "answered"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[0-9]{8}-[a-z-]+-[a-z0-9_!#@.-]+/v[0-9]+(/q[0-9]+)?$"},
+    "mission": {"type": "string"},
+    "kind": {"type": "string"},
+    "project": {"type": "string"},
+    "type": {"enum": ["choice", "approval", "review", "fyi"]},
+    "source": {"enum": ["plan", "report", "mockup", "questions"]},
+    "version": {"type": "integer", "minimum": 1},
+    "file": {"type": "string", "pattern": "^((plan|report|mockup)\\.v[0-9]+\\.md|outbox/questions\\.json)$"},
+    "ask": {"type": "string", "minLength": 1, "maxLength": 200, "description": "One line: block summary or question text."},
+    "verbs": {"type": "array", "minItems": 1, "uniqueItems": true,
+              "items": {"enum": ["go", "dig", "no", "ok", "msg", "abandon", "pick", "change", "approve", "answer"]}},
+    "blocking": {"type": "boolean", "description": "An open blocking question refuses go, ok and approve."},
+    "artifacts": {"type": "array", "items": {"type": "string", "pattern": "^outbox/"}},
+    "state": {"enum": ["open", "answered", "dropped"]},
+    "created": {"type": "string", "format": "date-time"},
+    "answered": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

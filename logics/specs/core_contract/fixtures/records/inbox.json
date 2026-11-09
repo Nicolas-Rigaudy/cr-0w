@@ -1,0 +1,63 @@
+[
+  {
+    "id": "20261109-research-android-push-options/v1/q1",
+    "mission": "20261109-research-android-push-options",
+    "kind": "research",
+    "project": "demo",
+    "type": "choice",
+    "source": "questions",
+    "version": 1,
+    "file": "outbox/questions.json",
+    "ask": "The second provider needs an account to read its full docs. Skip it, or wait until you log in?",
+    "verbs": [
+      "answer"
+    ],
+    "blocking": false,
+    "artifacts": [],
+    "state": "answered",
+    "created": "2026-11-09T14:20:00+01:00",
+    "answered": "2026-11-09T14:31:00+01:00"
+  },
+  {
+    "id": "20261109-research-android-push-options/v1",
+    "mission": "20261109-research-android-push-options",
+    "kind": "research",
+    "project": "demo",
+    "type": "fyi",
+    "source": "report",
+    "version": 1,
+    "file": "report.v1.md",
+    "ask": "Two providers fit; the first one is recommended.",
+    "verbs": [
+      "dig"
+    ],
+    "blocking": false,
+    "artifacts": [
+      "outbox/providers.csv"
+    ],
+    "state": "open",
+    "created": "2026-11-09T14:52:02+01:00",
+    "answered": null
+  },
+  {
+    "id": "20261109-build-demo-login/v1",
+    "mission": "20261109-build-demo-login",
+    "kind": "build",
+    "project": "demo",
+    "type": "approval",
+    "source": "plan",
+    "version": 1,
+    "file": "plan.v1.md",
+    "ask": "Plan: one screen, two API calls, three tests.",
+    "verbs": [
+      "go",
+      "dig",
+      "no"
+    ],
+    "blocking": false,
+    "artifacts": [],
+    "state": "answered",
+    "created": "2026-11-09T15:24:01+01:00",
+    "answered": "2026-11-09T15:39:00+01:00"
+  }
+]
