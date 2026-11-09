@@ -1,10 +1,10 @@
 ## item_154_check_crow_against_rtk_1_x_before_upgrading - Check crow against rtk 1.x before upgrading
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub upkeep
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -63,7 +63,8 @@
   - `rtk rewrite` over every allowed prefix of every run kind: only `rg` differs (1.x rewrites to `rtk rg`, 0.x to `rtk grep`). `_RTK_ALIAS` now allows both; `tests/test_crow_run_sandbox.py` asserts it.
   - `bin/crow_lib.py` never parses `rtk read` output, so the tab separator does not affect crow.
   - No runbook uses `--file-type` or other removed `rtk grep` flags (AC3). `runbooks/dispatch-background-runs.md` now names both rg targets.
-  - `rtk proxy` to `rtk bypass` (AC4): 3 lines across the listed docs, left as is until 1.x is installed (the alias keeps them working).
+  - `rtk proxy` to `rtk bypass` (AC4): done in `runbooks/readme-showcase.md` and four `local/` docs after the install.
+- Install (2026-11-10): `rtk-oss` 1.2.0 musl, checksum verified, in `~/.local/bin/rtk`. Rollback: `~/.local/bin/rtk-0.35.0` and `~/.local/share/rtk/history.db.pre-1.2.0`. The custom rewrite hook works on 1.2.0 (git, cat, rg, ls checked). `rtk gain` warns "No hook installed" because the hook is custom; harmless.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

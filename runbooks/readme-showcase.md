@@ -27,5 +27,5 @@ Portfolio level: a profile README (`<user>/<user>` repo) and pinned repos link t
 - GitHub's profile column is narrower than a plain page (sidebar). Use percentage widths, never fixed pixels summing to ~800, and render at ~740 px before pushing. A fixed-width pair wrapped under each other on the real page.
 - Don't put the owner's photo in the repo: store the ASCII rows as text, generator in the repo.
 - Animated SVG for GitHub: SMIL/CSS inside an `<img>` works. A scheduled Action that commits a widget needs the bot identity noted; pause it if the widget is unlinked.
-- Tooling: no Chrome here, render with `/usr/lib/electron43/electron --ozone-platform=headless`. The RTK hook summarises curl JSON, use `rtk proxy curl` for raw bodies.
+- Tooling: no Chrome here, render with `/usr/lib/electron43/electron --ozone-platform=headless`. The RTK hook summarises curl JSON, use `rtk bypass curl` for raw bodies.
 - Handoff wording: "no work info" was overridden by the owner (company, role, work email wanted). Ask what to show about work instead of forbidding it.
