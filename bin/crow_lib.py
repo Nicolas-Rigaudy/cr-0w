@@ -518,13 +518,14 @@ RUN_KEEP_ENV = {}
 
 
 # Commands the RTK hook rewrites under another name (`rtk rewrite "cat f"` -> `rtk read f`).
-_RTK_ALIAS = {"cat": "read", "head": "read", "rg": "grep"}
+# rg: rtk 0.x rewrites it to `rtk grep`, 1.x to `rtk rg`.
+_RTK_ALIAS = {"cat": ["read"], "head": ["read"], "rg": ["grep", "rg"]}
 
 
 def sandbox_allow(kind):
     """The kind's allow rules. Each Bash prefix also appears as `rtk <prefix>`: the RTK hook rewrites commands first."""
     k = RUN_SANDBOX[kind]
-    bash = list(dict.fromkeys(p for c in k["bash"] for p in (c, f"rtk {_RTK_ALIAS.get(c, c)}")))
+    bash = list(dict.fromkeys(p for c in k["bash"] for p in (c, *(f"rtk {a}" for a in _RTK_ALIAS.get(c, [c])))))
     return list(k["tools"]) + [f"Bash({c}:*)" for c in bash] + [f"mcp__{s}" for s in k["mcp"]]
 
 

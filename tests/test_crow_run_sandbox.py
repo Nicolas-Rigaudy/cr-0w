@@ -20,7 +20,8 @@ def test_every_dispatch_kind_has_an_allowlist():
 def test_bash_rules_get_an_rtk_twin():
     allow = crow_lib.sandbox_allow("review")
     assert "Bash(git status:*)" in allow and "Bash(rtk git status:*)" in allow
-    assert "Bash(rtk read:*)" in allow and "Bash(rtk cat:*)" not in allow and "Bash(rtk rg:*)" not in allow
+    assert "Bash(rtk read:*)" in allow and "Bash(rtk cat:*)" not in allow
+    assert "Bash(rtk grep:*)" in allow and "Bash(rtk rg:*)" in allow  # rg: rtk 0.x -> grep, 1.x -> rg
     assert len(allow) == len(set(allow))
     assert "Read" in allow and "Write" not in allow
     assert not any(a.startswith("mcp__") for a in allow)

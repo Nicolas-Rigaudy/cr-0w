@@ -1,10 +1,10 @@
 ## item_154_check_crow_against_rtk_1_x_before_upgrading - Check crow against rtk 1.x before upgrading
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Medium
 > Theme: Hub upkeep
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,6 +57,13 @@
 
 # Notes
 - Groomed from the toolwatch triage of 2026-11-09. The upgrade in steps was not taken up.
+- Licence (AC1, 2026-11-10): the default 1.x archive ships `LICENSE` (Apache-2.0) plus `LICENSE-ENGINE`, Business Source License 1.1 on rtk-engine. Its Additional Use Grant allows free production use, including as the `rtk` CLI. It forbids offering rtk-engine to third parties as a paid or hosted product. Each version turns Apache-2.0 four years after release (Change Date 2030-09-09 for 1.2.0). The `rtk-oss` archive is Apache-2.0 only. It lacks `pipeline`, `methods`, `plugins` and `tasks`, and crow uses none of them. Verdict: both fit local personal and work use. crow calls rtk and never ships it. `rtk-oss` keeps the toolchain fully Apache for a public repo.
+- Checks (2026-11-10, against copies of the real history db in a scratch HOME):
+  - `rtk gain --daily --format json`: same keys on 1.2.0 plus `summary.oversized_excluded`. `gain --failures` unchanged. Test: `tests/test_crow_usage_rtk.py` (0.35 and 1.2 fixtures).
+  - `rtk rewrite` over every allowed prefix of every run kind: only `rg` differs (1.x rewrites to `rtk rg`, 0.x to `rtk grep`). `_RTK_ALIAS` now allows both; `tests/test_crow_run_sandbox.py` asserts it.
+  - `bin/crow_lib.py` never parses `rtk read` output, so the tab separator does not affect crow.
+  - No runbook uses `--file-type` or other removed `rtk grep` flags (AC3). `runbooks/dispatch-background-runs.md` now names both rg targets.
+  - `rtk proxy` to `rtk bypass` (AC4): 3 lines across the listed docs, left as is until 1.x is installed (the alias keeps them working).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

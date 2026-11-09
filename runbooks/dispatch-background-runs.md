@@ -92,7 +92,7 @@ Config lives in `bin/crow_lib.py` next to `RUN_KINDS`: `RUN_SANDBOX` (per kind),
 | retro | Read, Grep, Glob, Edit, Write, TodoWrite, Skill | shell read, bin/crow-log, bin/crow-note, bin/crow-state, bin/crow-digest, git status/diff/add/check-ignore | none |
 | oneshot | Read, Grep, Glob, Edit, Write, TodoWrite, Skill | shell read, git read, git fetch, bin/crow-log, bin/crow-note, bin/crow-state (brief, daily, weekly skills add their own `allowed-tools`) | none |
 
-`rtk` twins use the name the RTK hook rewrites to: `cat` and `head` become `rtk read`, `rg` becomes `rtk grep` (`_RTK_ALIAS`). The hook never auto-allows a command (`rtk rewrite` exits 3, "ask", or 1, passthrough), so the allowlist decides.
+`rtk` twins use the name the RTK hook rewrites to: `cat` and `head` become `rtk read`, `rg` becomes `rtk grep` on rtk 0.x and `rtk rg` on 1.x; both are allowed (`_RTK_ALIAS`). The hook never auto-allows a command (`rtk rewrite` exits 3, "ask", or 1, passthrough), so the allowlist decides.
 
 Denied for every kind (a deny beats any allow or hook): git push, gh pr create/merge/comment, gh issue, gh api, glab mr create/merge/note, glab api, curl, wget, WebFetch.
 
