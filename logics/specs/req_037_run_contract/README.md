@@ -34,7 +34,7 @@ Scope overrides (`by_scope`):
 
 - review-fix, personal: no gate, auto.
 - build, personal: no gate, auto merge, ask on sensitive paths.
-- build, crow: `[plan]`, merge after go, ask on sensitive paths.
+- build, crow: `[plan, report]`, merge after go on the report, ask on sensitive paths.
 - repair, personal and crow: no gate, auto, ask on sensitive paths.
 
 Kind files never name an account. `account.route: scope` hands the pick to the scope-aware account pick (item_095). Models and caps in the files are draft defaults.

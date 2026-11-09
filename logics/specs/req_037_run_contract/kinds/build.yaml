@@ -23,4 +23,4 @@ preflight:
 by_scope:
   work: {gates: [plan, report], autonomy: ask, publish: {actions: [push, mr], needs_validation: true}}
   personal: {gates: [], autonomy: auto, publish: {actions: [merge], needs_validation: false}, sensitive_paths_ask: true}
-  crow: {gates: [plan], autonomy: ask, publish: {actions: [merge], needs_validation: false}, sensitive_paths_ask: true}
+  crow: {gates: [plan, report], autonomy: ask, publish: {actions: [merge], needs_validation: false}, sensitive_paths_ask: true}
