@@ -624,6 +624,10 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveSel(1)
 	case "k", "up":
 		m.moveSel(-1)
+	case "v", "V":
+		if m.page == 3 {
+			return m.viewerKey(k)
+		}
 	case "z":
 		if m.page == 3 {
 			m.prjZoom = !m.prjZoom
@@ -1118,7 +1122,7 @@ func (m model) context() []keyHint {
 		return []keyHint{{"j k", "scroll"}, {"J K", "hunk"}, {"[ ]", "file"}, {"n p", "finding"}, {"tab", "pane"}, {"a x e c", "decide"}, {"A", "apply"}, {"P", "push / post"}, {"r", "review"}, {"T", "threads / findings"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 3 {
-		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o h", "action"}, {"z", "zoom"}, {"m", "work / perso / all"}}
+		return []keyHint{{"j k", "project"}, {"tab", "pane"}, {"c r s e o h", "action"}, {"v V", "logics / fleet"}, {"z", "zoom"}, {"m", "work / perso / all"}}
 	}
 	if m.page == 4 {
 		return []keyHint{{"j k", "move"}, {"tab", "pane"}, {"p", "period: " + periodNames[m.usePeriod]}, {"enter", "fold / filter"}, {"g", "group"}, {"o", "open in history"}, {"h l", "pan"}, {"c", "cost / tokens"}, {"r", "refresh"}}

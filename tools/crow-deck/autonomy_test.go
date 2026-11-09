@@ -131,6 +131,7 @@ func TestEveryProcessGoesThroughTheGate(t *testing.T) {
 		"editorCmd":      "the owner's editor",
 		"pagerCmd":       "the owner's pager",
 		"openTranscript": "navigation: read a transcript in the pager",
+		"startViewer":    "navigation: the read-only Logics viewer in the browser",
 	}
 	starters := map[string]bool{"runBin": true, "actionCmd": true, "Command": true, "CommandContext": true, "ExecProcess": true}
 	fset := token.NewFileSet()
