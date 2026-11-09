@@ -1,7 +1,7 @@
 ## req_019_release_leverage_cdx_0_25_logics_2_24 - Use what cdx 0.25 and logics-manager 2.24 added
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
 > Complexity: Medium

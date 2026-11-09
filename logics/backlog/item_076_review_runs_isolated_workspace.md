@@ -1,10 +1,10 @@
 ## item_076_review_runs_isolated_workspace - Review runs use cdx isolated workspaces
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -50,7 +50,20 @@
 # Notes
 - Isolated workspaces must not land in /tmp if the hub guard forbids it there; check where cdx puts them.
 
+# Outcome (2026-11-09)
+- Trial on one work MR (5 threads) at the same commit, opus medium:
+
+| Path | Run | Account | Time | Cost | Findings |
+| --- | --- | --- | --- | --- | --- |
+| Current (unisolated) | d2709a60 | work account 1 | 66 s | $0.65 | 5 |
+| Isolated | 23003c20 | work account 3 | 73 s | $0.59 | 5, same threads T1-T5 and lines (T3 question vs suggestion) |
+
+- No permission denial in the isolated run. cdx keeps the worktree in place (`<repo>.wt/review-<n>`), the conversation under `<cdx>/isolated-runs/<run_id>`; nothing lands in /tmp.
+- Gap: cdx resumes an isolated run only inside its boundary, so a review continued by apply stays read-only. Self and threads reviews need apply to write fixes.
+- Decision (owner): peer reviews with a worktree run isolated; self and threads stay unisolated. Peer apply only answers chat notes and continues in the same read-only sandbox.
+- Fixes found on the way: isolated dispatch hands cdx the real HOME (toolchain allowlist), writes the kind's settings into `<worktree>/.crow-run/`, accepts full-login profiles that store a setup token (cdx 0.26.10; every profile here does), and continues isolated parents.
+- Commits: 3805dee, c3974b1. Validation: `python3 -m pytest -q tests` (464 passed).
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

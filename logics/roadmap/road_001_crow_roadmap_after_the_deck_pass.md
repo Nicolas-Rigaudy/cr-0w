@@ -37,6 +37,7 @@ Agreed with the owner on 2026-11-05. Milestone numbers are roadmap steps, not cr
 - Goal: Unattended runs start with no authorisation, load only what their kind needs, and record cost.
 - Scope: req_019: 077 sandboxed runs (fold 076 isolated review workspace into it), then 074 dispatch records runs, 075 cost per run, 073 deck Logics viewer. Groom req_021 and run the 088 trials alongside.
 - Exit signal: a headless run loads no repo `.mcp.json` server it does not need, and `crow runs` shows its cost.
+- Status: req_019 Done 2026-11-09 (076 last: peer reviews run isolated, self and threads stay unisolated for apply).
 
 ## 0.3b - Jarvis layer core (exception)
 - Goal: work runs as background missions; questions and proposals land in one inbox; status reads as short human sentences.
