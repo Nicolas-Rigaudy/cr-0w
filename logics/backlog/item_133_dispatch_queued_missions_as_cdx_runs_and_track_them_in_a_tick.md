@@ -8,6 +8,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 17:24:51
 
 # AI Context
 - Summary: `crow-core tick` admits queued missions, renders the brief, starts a detached cdx run through the existing dispatch path, and closes finished runs into mission state.
@@ -55,6 +56,7 @@
 
 # Notes
 - Groomed 2026-11-09 from req_028 slice 1. Waits on item_132 and item_107. Uses item_106 (crow block parser, Done) to read the version file.
+- From item_132: `crow mission new` accepts kinds of any phase. Admission must refuse to dispatch a kind whose phase is not live yet (build is phase 3).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

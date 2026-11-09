@@ -9,7 +9,7 @@
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-09 16:46:42
+> Indicators reviewed: 2026-11-09 17:17:20
 
 # AI Context
 - Summary: Build req_028 slices 1 (mission model) and 2 (inbox and park/resume) as a Go core in `tools/crow-core` driven from the Python CLI, one fresh session per item, in the order below.
@@ -26,7 +26,7 @@
 # Plan
 - [x] 1. item_119 Go/Python contract and shared fixtures (also creates the `tools/crow-core` module for its Go tests).
 - [x] 2. item_131 core skeleton: config, event log, SQLite store, rebuild.
-- [ ] 3. item_132 mission record, states, `crow mission new|list|show|cancel`.
+- [x] 3. item_132 mission record, states, `crow mission new|list|show|cancel`.
 - [ ] 4. item_107 brief rendering (Go).
 - [ ] 5. item_133 tick: admit, dispatch through `crow-runs`, finish runs. Slice 1 exit: a dispatched mission shows its state and runs in `crow mission list --json`.
 - [ ] 6. item_109 outbox ingest and parking on `questions.json`.
@@ -69,6 +69,7 @@
 # Report
 - 2026-11-09 step 1 (item_119) done in bba2e52. Next: step 2, item_131 Go core skeleton, in a fresh session. crow-check ruff red on pre-existing re.I aliases in bin/.
 - 2026-11-09 step 2 (item_131) done: `tools/crow-core` event log, store, rebuild, `crow core`. Next: step 3, item_132 mission record and `crow mission`. Ruff is red on about 90 pre-existing findings in bin/ and tests/ (PLW1510, F811, SIM115...), tracked as a separate chore.
+- 2026-11-09 step 3 (item_132) done: mission record, legal moves, `crow mission new|list|show|cancel` (a29413a, 3560404). Next: step 4, item_107 brief rendering.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
@@ -81,3 +82,5 @@
 
 # Notes
 - item_119: CI runs go test -count=1 because the Go test cache ignores spec files outside the module.
+- item_131: crow-core append checks the event applies before writing the log; a bad event must never poison replay.
+- item_131: an inbox row's created is the ts of the event that opens it (gate ready or question); fixture inbox.json aligned to 14:52:01.

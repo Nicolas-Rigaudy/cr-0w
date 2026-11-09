@@ -1,13 +1,14 @@
 ## item_132_mission_record_states_and_the_crow_mission_cli - Mission record, states and the crow mission CLI
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85
-> Confidence: 80
-> Progress: 0%
+> Status: Done
+> Understanding: 95
+> Confidence: 90
+> Progress: 100%
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 17:20:11
 
 # AI Context
 - Summary: The mission record of adr_001, its state machine, and `crow mission new|list|show|cancel` (Python CLI over `crow-core`).
@@ -40,6 +41,10 @@
 # AC Traceability
 - request-AC1 -> AC1, AC2. Proof: CLI test creating and listing a mission.
 - request-AC3 -> AC1. Proof: autonomy and gates filled from the kind file.
+- AC1 -> `internal/mission` TestNewFillsKindDefaults: a research mission gets its dir, `created` (owner) then `state` preflight->queued (core), gates [], autonomy auto, budget 60 min/$5/2 resumes written into `created`. TestNewAppliesScopeOverridesAndFlags covers by_scope (build, work), aliases, flags and a duplicate id. Checked end to end with `crow mission new|list|show|cancel` on a scratch CROW_HOME.
+- AC2 -> `internal/mission` TestListAndShowMatchTheFixtureShape: list output has the key set of `fixtures/records/missions.json` and decodes strictly into `contract.Mission`; show takes an id or a unique prefix.
+- AC3 -> `contract` TestStateMoves walks every from x to pair against the legal table; `internal/project` TestIllegalMoveNamesTheCurrentState and the "illegal move" case of TestApplyRefusesBrokenSequences check the fold refuses them.
+- AC4 -> `internal/mission` TestUnknownKindOrProjectListsValidNames (kind names from the kind dirs, project names from the registry, scope outside the kind's list).
 
 # Decision framing
 - Product framing: Not needed
@@ -57,6 +62,12 @@
 
 # Notes
 - Groomed 2026-11-09 from req_028 slice 1. Waits on item_131.
+- 2026-11-09 built in `internal/mission` and `crow-core mission`; `crow mission` passes through. The registry path is `projects` in config (default `local/projects.yaml`).
+- Resolution order: kind file (override dir first), then its `by_scope` entry, then the flags. Scope defaults to the project's registry scope; data class defaults to the scope (`crow` gives `personal`).
+- The key defaults to the first five goal words without filler, and must match the kind's key pattern. Kinds with a ticket key (build) need `--key`. An existing id is refused.
+- Legal moves live in `contract.Moves`. `done -> queued` (dig) and `failed -> queued` (retry) are the only ways back.
+- Creation accepts any kind whatever its phase. item_133 must gate dispatch on the kind phase.
+- `cancel` on a running mission runs `$CROW_ENGINE/bin/crow-runs stop` for each live run. A stop failure is a warning; the mission is cancelled anyway.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
