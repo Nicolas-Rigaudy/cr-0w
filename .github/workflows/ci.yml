@@ -33,6 +33,6 @@ jobs:
         run: python bin/crow-check
       - name: Go tests
         run: |
-          for d in tools/crow-deck tools/crow-watch; do
-            (cd "$d" && go vet ./... && go test ./...)
+          for d in tools/crow-core tools/crow-deck tools/crow-watch; do
+            (cd "$d" && go vet ./... && go test -count=1 ./...)
           done
