@@ -50,6 +50,7 @@
 
 - 2026-11-09 owner approved the step 2 read-back (vault `CR-0W/Research/nest-design/Nest Vision Readback.md`) with edits: blue base everywhere (red and amber only for needs you and failed; purple accent next to the cyan and neon blue, no Capri magenta or green), FiraCode plus a condensed uppercase header face. Core form: sketch shard glyph, holo bust, full light figure, and a pixel or text face (eyes and mouth only, lip-syncs in voice mode, DedSec mask style). Open: hero visible dimmed on Missions and Inbox or Home only.
 - 2026-11-09 owner, step 2 follow-up: themes share colours for now and differ by shapes, effects, decorations, animations (and sounds with voice); density medium, sketch several levels; item_138 sketches the hero both dimmed behind Missions/Inbox and Home only. Extra refs gathered first: talking pixel faces, blue + purple hologram UIs, condensed header fonts, agent hub UIs.
+- 2026-11-09 owner font picks (sheet `refs/step2/fonts/fonts-sheet.png`): three layers, display (logo, screen titles, big counters) / header (panels, labels) / FiraCode (data, body). Cyber: display Orbitron, header Chakra Petch or Oxanium. Modern: display Michroma, Quantico or Russo One, header Rajdhani or FiraCode. Sketches try the pairs.
 # Links
 - Product brief(s): `prod_005`
 - Architecture decision(s): `adr_001`
