@@ -30,3 +30,4 @@ The brief (`toolwatch` source) shows the latest note while it has unchecked prop
 - Repos that publish many prereleases (rtk) bury stable tags past the first page; paging stops at `last_read`, capped at 8 pages.
 - Large release bodies (Codex) can time out on `gh api` (HTTP 504). The error shows in `check`, the tool is skipped, the others go on.
 - Upgrades are the owner's call and live in the dotfiles repo. Proposals never install.
+- An upgrade the owner OKs from a cdx session must run with the real HOME (`HOME=<real home> <real bin>/claude update`). Under the sandboxed HOME, `claude update` installs into the sandbox and the real install stays on the old version. Confirm with `<real bin>/claude --version`.

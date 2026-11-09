@@ -1,10 +1,10 @@
 ## item_153_upgrade_claude_code_to_2_1_321_and_fix_the_dispatch_timeout_wording - Upgrade Claude Code to 2.1.321 and fix the dispatch timeout wording
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Small
 > Theme: Hub upkeep
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -55,6 +55,7 @@
 
 # Notes
 - Groomed from the toolwatch triage of 2026-11-09.
+- 2026-11-09 done. AC1: `claude --version` prints 2.1.321. `claude update` must run with the real HOME; under cdx it installs into the sandboxed home and leaves the real install untouched. AC2: oneshot smoke run b69f79e7 ended done in 8 s; its `claude --version` call was denied, as deny-by-default intends. AC3: no 30 min background-timeout figure in `bin/`, `runbooks/`, `local/runbooks/` or skills, so no edit was needed.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
