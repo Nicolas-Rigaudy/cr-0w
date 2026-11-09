@@ -200,9 +200,11 @@ def oneshot_prompt(provider, hub, skill, args=""):
             f"{args}").strip()
 
 
-def permission(provider):
-    """cdx permission for hub one-shots: Codex keeps writes in the workspace, no network."""
-    return "auto" if provider == "claude" else "default"
+def permission(provider, continued=False):
+    """cdx permission for headless runs. Claude: default mode, so only the kind's sandbox allowlist runs; a
+    --continue-run cannot carry that allowlist (cdx refuses --settings there) and keeps auto. Codex keeps writes
+    in the workspace, no network."""
+    return "auto" if provider == "claude" and continued else "default"
 
 
 def hub_session_refusal(provider):
@@ -484,6 +486,8 @@ _GIT_READ = ["git status", "git log", "git diff", "git show", "git branch", "git
              "git blame", "git merge-base", "git remote -v"]
 _SHELL_READ = ["ls", "cat", "head", "tail", "wc", "grep", "rg", "sort", "uniq", "cut", "jq", "pwd", "echo",
                "date", "diff"]
+# Hub scripts that write the activity log, daily notes and state paths.
+_CROW_LOG = ["bin/crow-log", "bin/crow-note", "bin/crow-state"]
 RUN_SANDBOX = {
     "review": {"tools": ["Read", "Grep", "Glob", "TodoWrite"],
                "bash": _GIT_READ + _SHELL_READ + ["git fetch", "gh pr view", "gh pr diff", "gh pr checks",
@@ -495,8 +499,12 @@ RUN_SANDBOX = {
                                                 "mv", "python3 -m pytest", "pytest", "go test", "go build",
                                                 "go vet", "gofmt", "make", "npm test", "npm run", "logics-manager"],
              "mcp": []},
-    "retro": {"tools": ["Read", "Grep", "Glob", "Edit", "Write", "TodoWrite"], "bash": _SHELL_READ, "mcp": []},
-    "oneshot": {"tools": ["Read", "Grep", "Glob"], "bash": _SHELL_READ + _GIT_READ, "mcp": []},
+    "retro": {"tools": ["Read", "Grep", "Glob", "Edit", "Write", "TodoWrite", "Skill"],
+              "bash": _SHELL_READ + _CROW_LOG + ["bin/crow-digest", "git status", "git diff", "git add",
+                                                 "git check-ignore"], "mcp": []},
+    # brief, daily, weekly: their skills allow bin/crow-gather and bin/crow-mrs themselves (allowed-tools).
+    "oneshot": {"tools": ["Read", "Grep", "Glob", "Edit", "Write", "TodoWrite", "Skill"],
+                "bash": _SHELL_READ + _GIT_READ + _CROW_LOG + ["git fetch"], "mcp": []},
 }
 # Denied for every kind (each also as `rtk <prefix>`); a deny rule beats an allow rule and a hook's allow.
 _DENY_BASH = ["git push", "gh pr create", "gh pr merge", "gh pr comment", "gh issue", "gh api", "glab mr create",
@@ -509,20 +517,41 @@ CREDENTIAL_ENV = re.compile(r"TOKEN|SECRET|PASSW|CREDENTIAL|API_?KEY|ACCESS_KEY|
 RUN_KEEP_ENV = {}
 
 
+# Commands the RTK hook rewrites under another name (`rtk rewrite "cat f"` -> `rtk read f`).
+_RTK_ALIAS = {"cat": "read", "head": "read", "rg": "grep"}
+
+
 def sandbox_allow(kind):
     """The kind's allow rules. Each Bash prefix also appears as `rtk <prefix>`: the RTK hook rewrites commands first."""
     k = RUN_SANDBOX[kind]
-    bash = [p for c in k["bash"] for p in (c, f"rtk {c}")]
+    bash = list(dict.fromkeys(p for c in k["bash"] for p in (c, f"rtk {_RTK_ALIAS.get(c, c)}")))
     return list(k["tools"]) + [f"Bash({c}:*)" for c in bash] + [f"mcp__{s}" for s in k["mcp"]]
 
 
-def sandbox_args(kind):
-    """Claude CLI arguments for a sandboxed run of this kind: allowlist, denials, no MCP server it does not list."""
-    args = ["--strict-mcp-config", "--allowedTools", ",".join(sandbox_allow(kind)), "--disallowedTools", ",".join(RUN_DENY)]
+def sandbox_settings(kind):
+    """Claude settings for a sandboxed run of this kind: its allow rules and the shared denials."""
+    return {"permissions": {"allow": sandbox_allow(kind), "deny": list(RUN_DENY)}}
+
+
+def sandbox_args(kind, state=None):
+    """Claude CLI arguments for a sandboxed run of this kind: --settings with the allowlist and denials, no MCP
+    server it does not list. The rules go in files under <state>/run-sandbox/: cdx caps --extra-args at
+    CDX_EXTRA_ARGS_MAX characters and the lists are longer."""
+    from pathlib import Path
+    d = Path(state or machine_dir()) / "run-sandbox"
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / f"{kind}.json"
+    f.write_text(json.dumps(sandbox_settings(kind), indent=1) + "\n")
+    args = ["--strict-mcp-config", "--settings", str(f)]
     servers = RUN_SANDBOX[kind]["mcp"]
     if servers:
-        args += ["--mcp-config", json.dumps({"mcpServers": {s: MCP_SERVERS[s] for s in servers}})]
+        m = d / f"{kind}.mcp.json"
+        m.write_text(json.dumps({"mcpServers": {s: MCP_SERVERS[s] for s in servers}}, indent=1) + "\n")
+        args += ["--mcp-config", str(m)]
     return args
+
+
+CDX_EXTRA_ARGS_MAX = 512
 
 
 # MCP server definitions a kind may list in RUN_SANDBOX[kind]["mcp"] (name -> .mcp.json server entry).
@@ -541,12 +570,14 @@ def model_id(model):
     return CLAUDE_MODEL_IDS.get((model or "").strip().lower(), model)
 
 
-def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None, budget=None):
+def run_flags(kind, provider="claude", model=None, power=None, continue_run=None, env=None, budget=None, state=None):
     """cdx run arguments and environment every headless launch carries.
     With continue_run, cdx pins the parent's model, effort and account, so none of them nor --failover is passed.
     --failover moves a run stopped by a usage limit to another allowed account. cdx run has no --fallback-model
     flag: the fallback model is a per-account setting (`cdx set <account> --fallback-model M`).
-    budget (USD) overrides the kind's budget for this run; Claude only."""
+    budget (USD) overrides the kind's budget for this run; Claude only.
+    A fresh Claude run carries the kind's sandbox (sandbox_args) through --extra-args. A continued run cannot:
+    cdx refuses --settings with --continue-run, so it only gets --strict-mcp-config."""
     env = os.environ if env is None else env
     k = RUN_KINDS[kind]
     budget = float(budget if budget is not None else env.get(f"CROW_{kind.upper()}_BUDGET") or k["budget"])
@@ -560,6 +591,10 @@ def run_flags(kind, provider="claude", model=None, power=None, continue_run=None
         args += ["--kind", CDX_KINDS[kind]]
     if provider == "claude":  # cdx measures spend from Claude usage; Codex budgets fail as unverifiable without model evidence
         args += ["--budget", f"{budget:g}"]
+        extra = shlex.join(["--strict-mcp-config"] if continue_run else sandbox_args(kind, state))
+        if len(extra) > CDX_EXTRA_ARGS_MAX:
+            raise ValueError(f"sandbox args for {kind} exceed cdx's {CDX_EXTRA_ARGS_MAX}-character --extra-args cap")
+        args += ["--extra-args", extra]
     return args, (dict(HEADLESS_ENV) if provider == "claude" else {})
 
 
@@ -573,18 +608,8 @@ RUN_PROFILE_SUFFIX = "-runs"
 
 
 def run_profile(account):
-    """cdx profile that carries the sandbox flags for background runs of this account (`<account>-runs`)."""
+    """cdx profile for isolated runs of this account (`<account>-runs`, a setup-token login)."""
     return f"{account}{RUN_PROFILE_SUFFIX}"
-
-
-def run_profile_args():
-    """The `cdx set --extra-args` value of a background profile: every kind's allowlist in one (cdx run has no
-    per-run provider args yet), the shared denials and strict MCP config."""
-    allow = []
-    for kind in RUN_SANDBOX:
-        allow += [a for a in sandbox_allow(kind) if a not in allow]
-    return " ".join(["--strict-mcp-config", "--allowedTools", shlex.quote(",".join(allow)),
-                     "--disallowedTools", shlex.quote(",".join(RUN_DENY))])
 
 
 def run_denials(run):

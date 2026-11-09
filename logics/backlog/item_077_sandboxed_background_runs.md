@@ -1,10 +1,10 @@
 ## item_077_sandboxed_background_runs - Background runs start with no authorisation and whitelist tools
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 60%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,7 +57,6 @@
 - Rationale: background runs act unattended with full credentials today.
 
 # Notes
-- Blocked (owner decision 2026-11-07): the allowlists wait for cdx issue 120 (per-run `--extra-args`). AC1, AC3 and AC4 stay open until it ships.
 - Depends on the cdx-manager design check (item_015, 2026-11-03 follow-up). Prior proof: scrub-env on plus `--allowedTools` passed the probe on 2026-10-29 once socat was installed; MCP tools untested.
 - Claude Code ignores the sandbox domain allowlist in bypass mode. A sandboxed run must use acceptEdits or dontAsk, never bypass (harness-maxxing review 2026-11-07, local/state/research/harness-maxxing-and-hermes-2026-11-07.md).
 - Secret paths go in `permissions.deny` as well as the sandbox: Read/Edit/Write are not shell commands, and deny rules hold in every mode. Fixed per-kind rules fit a PreToolUse hook run with `python -I`.
@@ -71,6 +70,13 @@
 - AC4 open: the allowlist probes run once the transport exists.
 - Workspace isolation (item_076): kept as worktrees here; the OS boundary is item_100 (cdx `--isolate-workspace`, needs pasta).
 - Next once cdx ships per-run args: dispatch passes `--permission default --extra-args` with `sandbox_args(kind)`, then review, task and retro probes.
+
+# Progress 2026-11-09
+- cdx 0.26.10 ships `cdx run --extra-args` (issue 120) with a 512-character cap. The allowlist travels as a settings file: `--extra-args "--strict-mcp-config --settings <state>/run-sandbox/<kind>.json"`, `--permission default` for every fresh Claude run.
+- AC1 holds: probes denied every tool outside the kind's list and cdx reported each as `permission_denials`. The RTK hook never auto-allows (`rtk rewrite` exits 3 or 1); twins follow its rewrite names (`cat`/`head` -> `rtk read`, `rg` -> `rtk grep`).
+- AC3 holds: the scratch repo's `.mcp.json` server did not load; the run had no `mcp__` tool.
+- AC4 holds: review (git status, read), task (edit, add, commit) and retro (write, crow-log/state/digest, git add) ran without needless denials. Retro and oneshot lists gained the hub scripts and Skill.
+- Limit: `--continue-run` (review apply) cannot carry `--settings`; it keeps auto mode, strict MCP and the credential-free env. A usage-limit requeue of a Claude run restarts fresh with the RESUME NOTE instead of continuing. Upstream ask drafted for the owner (allow `--settings` on continue when it pins no model).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

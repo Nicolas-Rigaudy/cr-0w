@@ -40,8 +40,9 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
 ## Recover
 - **⏸ usage limit** (the stdout says "You've hit your session limit · resets HH:MM"): partial work stays
   in the tree. The run's notifier requeues it without the owner: a fresh run with a "RESUME NOTE" (`--resumes <id>`)
-  on an account crow may use without asking, else `--continue-run` on the same account once its 5h window resets
-  (cdx cannot move a conversation to another account). At most 3 requeues per task; a weekly limit is not requeued.
+  on an account crow may use without asking, else on the same account once its 5h window resets: a Claude or isolated
+  run restarts fresh from its prompt file with the RESUME NOTE (a `--continue-run` cannot carry the sandbox settings),
+  a Codex run takes `--continue-run` (cdx cannot move a conversation to another account). At most 3 requeues per task; a weekly limit is not requeued.
   The inbox shows `limit` and "resumed as X on Y". By hand: redispatch with a RESUME NOTE saying what is already
   committed or uncommitted and which steps not to redo.
 - **Account choice:** `crow dispatch` uses the default account, or the auto fallback when the default is blocked or
@@ -71,7 +72,7 @@ When relaunching an interrupted run, add `--resumes <run_id>` so the old run is 
   Override per kind with `CROW_<KIND>_BUDGET` and `CROW_<KIND>_TIMEOUT_MIN`, or for one run with `crow-runs dispatch ... --budget USD` (no default cap beyond the kind's budget). `crow-runs dispatch ... --dry-run` prints the full command and env.
 - Env: `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` (no phantom background results) and `ENABLE_CLAUDEAI_MCP_SERVERS=false` (no claude.ai connectors).
 - Watchdog: the run's notifier kills a Claude run whose transcript (and subagent transcripts) has not moved for `CROW_STUCK_MIN` minutes (20) and marks it stuck (`<state>/runs-stuck.json`).
-- Gap: a repo's own `.mcp.json` servers still load (a work repo loaded its code graph and cloud servers). Only `--strict-mcp-config` stops them and `cdx run` has no per-run extra args; `cdx set --extra-args` would also hit interactive sessions.
+- Claude runs also carry `--extra-args "--strict-mcp-config --settings <state>/run-sandbox/<kind>.json"` (see Run sandbox): a repo's own `.mcp.json` servers do not load.
 - Prompts pass data through files (`--prompt-file`, JSON on disk), never inline in Bash.
 
 ## Cap and labels (cdx 0.22)
@@ -88,15 +89,17 @@ Config lives in `bin/crow_lib.py` next to `RUN_KINDS`: `RUN_SANDBOX` (per kind),
 |---|---|---|---|
 | review | Read, Grep, Glob, TodoWrite | git read (status, log, diff, show, branch, rev-parse, ls-files, blame, merge-base, remote -v), shell read (ls, cat, head, tail, wc, grep, rg, sort, uniq, cut, jq, pwd, echo, date, diff), git fetch, gh pr view/diff/checks, glab mr view/diff, logics-manager | none |
 | task | review's file tools + Edit, Write, NotebookEdit | git read, shell read, git add/commit/switch/checkout/restore/stash/rebase/mv/rm, mkdir, touch, cp, mv, pytest, go test/build/vet, gofmt, make, npm test/run, logics-manager | none |
-| retro | Read, Grep, Glob, Edit, Write, TodoWrite | shell read | none |
-| oneshot | Read, Grep, Glob | shell read, git read | none |
+| retro | Read, Grep, Glob, Edit, Write, TodoWrite, Skill | shell read, bin/crow-log, bin/crow-note, bin/crow-state, bin/crow-digest, git status/diff/add/check-ignore | none |
+| oneshot | Read, Grep, Glob, Edit, Write, TodoWrite, Skill | shell read, git read, git fetch, bin/crow-log, bin/crow-note, bin/crow-state (brief, daily, weekly skills add their own `allowed-tools`) | none |
+
+`rtk` twins use the name the RTK hook rewrites to: `cat` and `head` become `rtk read`, `rg` becomes `rtk grep` (`_RTK_ALIAS`). The hook never auto-allows a command (`rtk rewrite` exits 3, "ask", or 1, passthrough), so the allowlist decides.
 
 Denied for every kind (a deny beats any allow or hook): git push, gh pr create/merge/comment, gh issue, gh api, glab mr create/merge/note, glab api, curl, wget, WebFetch.
 
 - **Env (live):** `crow dispatch`, `crow-retro` and `crow oneshot` start cdx without any variable matching `CREDENTIAL_ENV` (tokens, secrets, passwords, API keys, `AWS_*`, `SSH_AUTH_SOCK`). cdx hands its own env to the run, so the run never sees them. gh and glab keep working through their config dirs (`GH_CONFIG_DIR`, `GLAB_CONFIG_DIR`), which are not env tokens. Probe 2026-11-07: injected `GH_TOKEN`, `AWS_SECRET_ACCESS_KEY` and a fake token were absent from the run's `env`.
 - **Denials (live):** cdx returns `permission_denials` as a run warning; `crow runs` prints `denied <tool>: <input>` under the finished run and the deck adds `N denied` to its row.
-- **Allowlists and strict MCP (waiting on cdx):** `crow_lib.sandbox_args(kind)` builds `--strict-mcp-config --allowedTools ... --disallowedTools ...`. `cdx run` takes provider args only from the account (`cdx set --extra-args`), which also changes interactive launches, so crow cannot pass them per run yet (upstream request: cdx-manager issue 120, `cdx run --extra-args`). Once it lands, dispatch passes `--permission default --extra-args "$(sandbox_args)"`. Probe 2026-11-07: `--permission default` alone denies every Bash call; a scratch folder's `.mcp.json` server loads in a headless run unless `--strict-mcp-config` is passed.
-- Fallback transport: one `<account>-runs` cdx profile per dispatch account, `cdx set <account>-runs --scrub-env on --extra-args "$(crow_lib.run_profile_args())"` (union of every kind's allowlist). It needs its own login; `cdx cp` would duplicate the account's OAuth login.
+- **Allowlists and strict MCP (live, cdx 0.26):** Claude runs start with `--permission default` and `--extra-args "--strict-mcp-config --settings <state>/run-sandbox/<kind>.json"`. `sandbox_args(kind)` rewrites that file (`permissions.allow` = the kind's list, `permissions.deny` = `RUN_DENY`) on every dispatch. The settings file exists because cdx caps `--extra-args` at 512 characters (`CDX_EXTRA_ARGS_MAX`); inline `--allowedTools` lists do not fit. Probes 2026-11-09 (haiku, scratch repo with its own `.mcp.json`): review read and ran git status, every write denied, no `mcp__` tool; task edited and committed, push, curl and `$VAR` expansion denied, no WebFetch; retro wrote files and ran the hub scripts, rm and commit denied.
+- **Continued runs (review apply):** cdx refuses `--settings` with `--continue-run`, so an apply run keeps `--permission auto` with `--strict-mcp-config` and the credential-free env, but no allowlist. Upstream ask pending owner OK: allow `--settings` on `--continue-run` when it pins no model.
 
 ### Widen an allowlist
 1. A run shows `denied Bash: <command>` in `crow runs`. Decide that the kind really needs it.

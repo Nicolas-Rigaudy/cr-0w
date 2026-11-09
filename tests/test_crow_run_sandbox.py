@@ -17,6 +17,8 @@ def test_every_dispatch_kind_has_an_allowlist():
 def test_bash_rules_get_an_rtk_twin():
     allow = crow_lib.sandbox_allow("review")
     assert "Bash(git status:*)" in allow and "Bash(rtk git status:*)" in allow
+    assert "Bash(rtk read:*)" in allow and "Bash(rtk cat:*)" not in allow and "Bash(rtk rg:*)" not in allow
+    assert len(allow) == len(set(allow))
     assert "Read" in allow and "Write" not in allow
     assert not any(a.startswith("mcp__") for a in allow)
 
@@ -28,21 +30,42 @@ def test_task_may_commit_but_never_push():
     assert "Bash(git push:*)" in crow_lib.RUN_DENY and "Bash(rtk git push:*)" in crow_lib.RUN_DENY
 
 
-def test_sandbox_args_strict_mcp_and_lists():
-    args = crow_lib.sandbox_args("retro")
-    assert args[0] == "--strict-mcp-config"
-    allow = args[args.index("--allowedTools") + 1].split(",")
-    assert allow == crow_lib.sandbox_allow("retro")
-    assert "WebFetch" in args[args.index("--disallowedTools") + 1].split(",")
-    assert "--mcp-config" not in args
+def test_sandbox_args_write_a_settings_file(tmp_path):
+    import json
+    args = crow_lib.sandbox_args("retro", tmp_path)
+    assert args[:2] == ["--strict-mcp-config", "--settings"] and "--mcp-config" not in args
+    perms = json.loads(open(args[2]).read())["permissions"]
+    assert perms["allow"] == crow_lib.sandbox_allow("retro")
+    assert perms["deny"] == crow_lib.RUN_DENY and "WebFetch" in perms["deny"]
 
 
-def test_listed_mcp_server_is_passed(monkeypatch):
+def test_listed_mcp_server_is_passed(monkeypatch, tmp_path):
+    import json
     monkeypatch.setitem(crow_lib.RUN_SANDBOX, "retro", {**crow_lib.RUN_SANDBOX["retro"], "mcp": ["echo"]})
     monkeypatch.setattr(crow_lib, "MCP_SERVERS", {"echo": {"command": "echo"}})
-    args = crow_lib.sandbox_args("retro")
-    assert "mcp__echo" in args[args.index("--allowedTools") + 1]
-    assert '"echo"' in args[args.index("--mcp-config") + 1]
+    args = crow_lib.sandbox_args("retro", tmp_path)
+    assert "mcp__echo" in json.loads(open(args[2]).read())["permissions"]["allow"]
+    assert json.loads(open(args[args.index("--mcp-config") + 1]).read())["mcpServers"] == {"echo": {"command": "echo"}}
+
+
+def test_run_flags_extra_args_fit_cdx_cap(tmp_path):
+    for kind in crow_lib.RUN_SANDBOX:
+        flags, _ = crow_lib.run_flags(kind, "claude", state=tmp_path)
+        extra = flags[flags.index("--extra-args") + 1]
+        assert len(extra) <= crow_lib.CDX_EXTRA_ARGS_MAX
+        assert shlex.split(extra)[:2] == ["--strict-mcp-config", "--settings"]
+
+
+def test_continue_run_carries_no_settings(tmp_path):
+    flags, _ = crow_lib.run_flags("task", "claude", continue_run="r1", state=tmp_path)
+    assert flags[flags.index("--extra-args") + 1] == "--strict-mcp-config"
+    assert "--extra-args" not in crow_lib.run_flags("task", "codex", state=tmp_path)[0]
+
+
+def test_permission_default_unless_continued():
+    assert crow_lib.permission("claude") == "default"
+    assert crow_lib.permission("claude", continued=True) == "auto"
+    assert crow_lib.permission("codex") == "default"
 
 
 def test_sandbox_env_drops_credentials_keeps_config_dirs():
@@ -69,15 +92,8 @@ def test_run_env_strips_only_with_a_kind(monkeypatch):
     assert "GH_TOKEN" not in env and env["A"] == "1"
 
 
-def test_profile_args_roundtrip_through_shlex():
+def test_run_profile_name():
     assert crow_lib.run_profile("acct") == "acct-runs"
-    parts = shlex.split(crow_lib.run_profile_args())
-    assert parts[0] == "--strict-mcp-config" and len(parts) == 5
-    allow = parts[2].split(",")
-    for kind in crow_lib.RUN_SANDBOX:
-        assert set(crow_lib.sandbox_allow(kind)) <= set(allow)
-    assert len(allow) == len(set(allow))
-    assert parts[4].split(",") == crow_lib.RUN_DENY
 
 
 def test_run_denials_from_cdx_warnings():

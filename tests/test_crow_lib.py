@@ -93,7 +93,7 @@ def test_oneshot_prompt_codex_without_skill_file_exits(tmp_path):
 
 
 def test_permission_and_hub_session_guard_per_provider():
-    assert crow_lib.permission("claude") == "auto"
+    assert crow_lib.permission("claude") == "default"
     assert crow_lib.permission("codex") == "default"
     assert crow_lib.hub_session_refusal("claude") is None
     assert "guard" in crow_lib.hub_session_refusal("codex")

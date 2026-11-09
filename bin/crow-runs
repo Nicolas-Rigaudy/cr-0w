@@ -406,12 +406,14 @@ def requeue(rec, deadline):
             return "not requeued: weekly limit, no other account free without an OK"
         if left is None or time.time() + left * 60 + RESET_GRACE_S > deadline:
             return "not requeued: no account free and no reset in time (see `crow runs relaunch status`)"
-        if rec.get("isolated") and not (rec.get("prompt_file") and Path(rec["prompt_file"]).exists()):
-            return "not requeued: isolated run without a prompt file to restart from"
+        if (rec.get("isolated") or crow_lib.provider_of(acct) == "claude") and \
+                not (rec.get("prompt_file") and Path(rec["prompt_file"]).exists()):
+            return "not requeued: no prompt file to restart from (a Claude or isolated run restarts fresh)"
         time.sleep(max(0, left * 60) + RESET_GRACE_S)
-        if rec.get("isolated"):
+        if rec.get("isolated") or crow_lib.provider_of(acct) == "claude":
+            # A Claude --continue-run cannot carry the sandbox allowlist (cdx refuses --settings there): restart fresh.
             cmd = fresh(acct)
-            where = f"restarted isolated on {acct} after the reset"
+            where = f"restarted{' isolated' if rec.get('isolated') else ''} on {acct} after the reset"
         else:
             cmd = base + ["--continue-run", rec["run_id"], "--account", acct, "--kind", rec.get("kind") or "task",
                           "--prompt", RESUME_NOTE + "Continue the task from where it stopped."]
@@ -787,11 +789,11 @@ def dispatch(a):
         f.write_text("Read these files first: " + ", ".join(crow_lib.read_first(str(HOME), cwd)) + ".\n\n" + task)
         src = ["--prompt-file", str(f)]
     # --continue-run pins the parent's model and effort: cdx refuses any other value.
-    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget)
+    flags, env = crow_lib.run_flags(a.kind, provider, a.model, a.power, a.continue_run, budget=a.budget, state=STATE)
     if a.isolate:  # cdx failover could land on a full-login account, which refuses isolation; requeue moves it
         flags = [f for f in flags if f != "--failover"]
     cmd = ["cdx", "run", acct, "--cwd", cwd, *src, *(["--continue-run", a.continue_run] if a.continue_run else []), *flags,
-           "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
+           "--permission", a.permission or crow_lib.permission(provider, bool(a.continue_run)), "--detach", "--json",
            "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)]),
            *(["--isolate-workspace"] if a.isolate else [])]
     if a.dry_run:

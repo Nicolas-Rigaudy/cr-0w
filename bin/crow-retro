@@ -265,7 +265,7 @@ def run_batch(manifest, n):
     prompt = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "prompt", ACCOUNT, "retro",
                                       f"batch={manifest}"], text=True).strip()
     permission = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "permission", ACCOUNT], text=True).strip()
-    flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL, budget=batch_budget(n))
+    flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL, budget=batch_budget(n), state=crow_lib.machine_dir(CROW_HOME))
     out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags, "--label", "retro-batch",
                           "--permission", permission, "--prompt", prompt, "--json"],
                          capture_output=True, text=True, env={**crow_lib.run_env(env, "retro"), "CROW_RETRO": "1"})
@@ -462,7 +462,7 @@ def analyze(entry):
     args = f"digest={path} transcript={entry['transcript']} cwd={entry.get('cwd') or 'unknown'} session={sid}"
     prompt = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "prompt", ACCOUNT, "retro", args], text=True).strip()
     permission = subprocess.check_output([os.path.join(BIN, "crow-accounts"), "permission", ACCOUNT], text=True).strip()
-    flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL)
+    flags, env = crow_lib.run_flags("retro", PROVIDER, MODEL, state=crow_lib.machine_dir(CROW_HOME))
     out = subprocess.run(["cdx", "run", ACCOUNT, "--cwd", CROW_HOME, *flags,
                           "--permission", permission, "--prompt", prompt, "--json"],
                          capture_output=True, text=True, env=crow_lib.run_env(env, "retro"))

@@ -20,7 +20,7 @@ def test_provider_and_permission(hub, tmp_path):
     env = fake_cdx(tmp_path)
     assert run(hub, "crow-accounts", "provider", "spare", env=env).stdout.strip() == "codex"
     assert run(hub, "crow-accounts", "permission", "spare", env=env).stdout.strip() == "default"
-    assert run(hub, "crow-accounts", "permission", "main", env=env).stdout.strip() == "auto"
+    assert run(hub, "crow-accounts", "permission", "main", env=env).stdout.strip() == "default"
 
 
 def test_hub_session_refused_on_codex_only(hub, tmp_path):
