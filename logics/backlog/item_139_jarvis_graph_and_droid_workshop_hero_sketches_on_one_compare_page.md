@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 14:01:24
 
 # AI Context
 - Summary: Draw the two Home hero directions, the Jarvis-style 3D graph and the droid workshop, as annotated 2D sketches on the same real crow data, put them on one compare page and get the owner's pick.
@@ -68,4 +69,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

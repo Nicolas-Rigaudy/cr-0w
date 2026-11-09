@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-09 14:01:24
 
 # AI Context
 - Summary: Sketch the nest state language (working, needs you, failed, sleeping, queued) and the Home, Missions, Mission detail and Inbox layouts on the Fold 6 cover and inner screens, independent of the hero.
@@ -65,4 +66,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
