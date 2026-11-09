@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 70%
+> Progress: 80%
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -32,7 +32,7 @@
 - [x] 6. item_109 outbox ingest and parking on `questions.json`.
 - [x] 7. item_108 versions, answers files, validation record.
 - [x] 8. item_134 inbox rows and `crow inbox list|show|answer`.
-- [ ] 9. item_116 cold resume of isolated missions from files.
+- [x] 9. item_116 cold resume of isolated missions from files.
 - [ ] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer.
 - [ ] Steps 6 and 7 can run in parallel sessions after step 5; everything else is sequential.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
@@ -75,6 +75,7 @@
 - 2026-11-09 step 6 (item_109) done: the tick ingests listed outbox files within the kind caps, refuses paths outside `outbox/`, and parks the mission on `outbox/questions.json` (74075f4). Next: step 7, item_108 versions and answers files.
 - 2026-11-09 step 7 (item_108) done: answers files, response coverage at run end, hash-chained validation per publish entry, drop on any later owner message, `Verify` before publish (0e7b72f). Event lines are now canonical JSON. Next: step 8, item_134 inbox CLI, which calls `env.Answer` and moves review -> running after dig/msg.
 - 2026-11-09 step 8 (item_134) done: `crow inbox list|show|answer` over the store rows, verbs per gate shape, blocking questions refuse validating verbs. Answers move the mission to queued (held by the tick) or to its end state. Next: step 9, item_116 cold resume; item_135 then releases the held queued missions.
+- 2026-11-09 step 9 (item_116) done: `env.resume` continues the last run natively and falls back to a cold run from brief.md on the cdx refusals that a fresh run still serves; cold is forced on an account move. Next: step 10, item_135 wires it into `Tick` in place of the item_135 hold, adds the resume cap and runs the end-to-end test.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
