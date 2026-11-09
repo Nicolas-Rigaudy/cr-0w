@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: In progress
-> Understanding: 85%
-> Confidence: 80%
+> Understanding: 90%
+> Confidence: 85%
 > Progress: 80%
 > Complexity: High
 > Theme: Implementation delivery
@@ -76,6 +76,7 @@
 - 2026-11-09 step 7 (item_108) done: answers files, response coverage at run end, hash-chained validation per publish entry, drop on any later owner message, `Verify` before publish (0e7b72f). Event lines are now canonical JSON. Next: step 8, item_134 inbox CLI, which calls `env.Answer` and moves review -> running after dig/msg.
 - 2026-11-09 step 8 (item_134) done: `crow inbox list|show|answer` over the store rows, verbs per gate shape, blocking questions refuse validating verbs. Answers move the mission to queued (held by the tick) or to its end state. Next: step 9, item_116 cold resume; item_135 then releases the held queued missions.
 - 2026-11-09 step 9 (item_116) done: `env.resume` continues the last run natively and falls back to a cold run from brief.md on the cdx refusals that a fresh run still serves; cold is forced on an account move. Next: step 10, item_135 wires it into `Tick` in place of the item_135 hold, adds the resume cap and runs the end-to-end test.
+- 2026-11-09 step 10 (item_135) built (c440791): tick resumes answered missions, resume cap parks on a core question. Real end-to-end blocked by req_046 (read-only mission runs cannot write their version files). Step stays open until req_046 lands and the e2e passes.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
