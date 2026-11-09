@@ -1,10 +1,10 @@
 ## item_140_realign_nest_build_items_to_the_chosen_hero - Realign nest build items to the chosen hero
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -59,7 +59,11 @@
 - Source file: `logics/request/req_043_nest_design_scope_and_jarvis_3d_hero_option.md`.
 - Generated locally by logics-manager.
 
+# Result (2026-11-10)
+- item_126 rewritten as the build plan for the Jarvis graph hero with the droid core (R3F + bloom, 2D SVG fallback, budgets), depending on item_138 and item_139.
+- item_137 depends on item_119, item_138 and item_139; AC4 and the hero slot point at the item_138 boards and the item_126 fallback; the item_138 build notes are in scope. It no longer waits for item_126.
+- item_125 withdrawn, superseded by item_139: the workshop is no longer the hero.
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

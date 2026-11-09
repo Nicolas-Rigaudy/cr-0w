@@ -1,10 +1,10 @@
 ## item_138_nest_state_language_and_four_screen_layouts_as_annotated_sketches - Nest state language and four screen layouts as annotated sketches
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 75%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -69,7 +69,7 @@
 
 # Notes
 - References: vault `CR-0W/Research/nest-design/Nest Hero References.md` (Fold 6 screens, jakubkrehel `state-machine` and `variant` skills, reduced-motion rules).
-- Fold 6: cover 2376 x 968 px (about 22:9, CSS ~402 x 956 unverified); inner 2160 x 1856 px (nearly square). Measure the CSS viewports on the phone before the layouts are final.
+- Fold 6: cover 2376 x 968 px, inner 2160 x 1856 px. CSS viewports measured 2026-11-09, see "Fold pass" below.
 - Hybrid rationale: Derived from request `req_043_nest_design_scope_and_jarvis_3d_hero_option` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_043_nest_design_scope_and_jarvis_3d_hero_option.md`.
 - Generated locally by logics-manager.
@@ -105,6 +105,32 @@
   - The old Missions dashboard and the three option boards are retired from the canvas.
   - Generators and a copy of the v23 boards: vault `CR-0W/Research/nest-design/item138/pass2-src/` (scripts point at a scratchpad path, update `P` before reuse).
 - Next: Fold cover and inner, derived from the laptop boards.
+
+# Fold pass (2026-11-09 decisions)
+- Scope: all 7 tabs on both the cover and the inner screen.
+- Themes: modern first; cyber restyles the boards after the owner approves them.
+- Canvas: new Fold rows on the same Claude Design artifact (MyPAqSwJFddMnSR4grm2g6).
+- Viewports measured on the Fold 6 in the browser (DPR 2.63): cover 368 x 812 (screen 369 x 906), inner 707 x 691 (screen 708 x 823). Boards use the browser viewport. Extra height as a PWA goes to the lists.
+
+# Fold pass result (2026-11-10, approved)
+- Canvas rows on artifact MyPAqSwJFddMnSR4grm2g6: `fold-<tab>-cover` and `fold-<tab>-inner`, plus a `-cyber` variant of each, for home, desk, missions, inbox, mrs, agenda and reports (28 boards).
+- Covers (368 x 812): glance tabs. One tab per screen with its key count, top items and one primary action; the tab bar switches tabs. The first dense pass was rejected as packed, the second as leaving unused space; v2 approved.
+- Inners (707 x 691): the laptop boards reflowed to two columns, with the Home hero slot and the Desk mission view toggle kept. Approved after a design-skill pass (better-interface: accessibility, layout, typography, colours, UI).
+- Cyber: generated from the modern boards (chamfered panels, Orbitron and Oxanium, scanlines, dimmed haze, neon roles). Approved.
+- Generators and a copy of every board: vault `CR-0W/Research/nest-design/item138/fold-src/` (fold.py, glance2.py, polish.py, cyber.py, fix_web.py, bodies/, boards/). Scripts point at a scratchpad path; update the paths before reuse.
+
+# Web pass (2026-11-10, approved)
+- Same design-skill pass on the 16 laptop boards (1440 x 900), both themes.
+- Contrast fixes. Modern secondary text `#8087a2` and `#6e738d` become `#939ab7` (5.66 on panel, 4.74 on row). Cyber haze gets a dark overlay `rgba(10,12,40,.55)`, panels go to `.85` opacity, secondary text becomes `#8aa0c8` (6.34 or more on panels).
+- Dimmed rows use a dim colour (`#a5adcb` modern, `#9fb6e0` cyber) instead of opacity. Cancel buttons get a danger outline. Kanban cards get a 4 px hit extension. Counters and times use tabular numbers. A 2 px focus ring (`#8aadf4` modern, `#2ef2ff` cyber) on every focusable element.
+- Rendering, fit and keyboard checks were not run (no browser in the session). Wording was not reviewed.
+
+# Build notes for item_137
+- Boards use `<span class="btn">`: the app uses `<button>` (and `<a href>` for navigation).
+- Icon-only controls (`.ib`) need an `aria-label`.
+- Purple `#c05cff` and red `#ff2e63` text pass on cyber panels (4.96 and 4.65) but fail on the bare haze centre (3.86 and 3.61). Keep that text on a panel.
+- Tags stay at 11 px to match the Fold boards.
+- Drag on the Missions board needs a button or menu path to move a card.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -1,14 +1,14 @@
 ## item_125_workshop_concept_art_round_2_original_cast_states_phone_and_night_views - Workshop concept art round 2: original cast, states, phone and night views
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Obsolete
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 40%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 13:52:33
+> Indicators reviewed: 2026-11-10 00:06:41
 
 # AI Context
 - Summary: Second image-prompt round on the picked droid workshop world: an original droid cast per theme, one image per droid state, a phone view and a night (AFK return) view. Prompts only, run by the owner in Gemini or ChatGPT; no render runs.
@@ -45,6 +45,7 @@
 - Architecture decision(s): (none yet)
 - Request: `req_040_nest_deck_two_themes_3d_world`
 - Primary task(s): (none yet)
+- Superseded by: `item_139_jarvis_graph_and_droid_workshop_hero_sketches_on_one_compare_page`
 
 # Priority
 - Priority: Medium
@@ -55,6 +56,7 @@
 - 2026-11-09 cyber cast picked as 8 families (req_040 "Cast pick, cyber"). State colours dropped: state through pose and props. Modern deferred to a later round, so AC1 to AC3 now cover cyber only.
 - Next: v5b prompts (merged cast sheet, states, phone, night) in `Nest Prompts v5.md`, owner runs them, compare, approve.
 - Images v4 and the compare page: `local/state/research/nest-design/refs/v4/`, `compare-concepts-v4.html`.
+- 2026-11-10 withdrawn by item_140: item_139 picked the Jarvis graph as the Home hero, so the workshop room and its cast are not needed. The droid core came from item_139 passes 5-7. Cyber cast picks stay in req_040 if a workshop view comes back.
 - 2026-11-09 paused by owner: too much effort on droid art for the need. Cast picks kept in req_040; 1c prompt ready in the vault. Step back on what nest needs to design, and a Jarvis-style 3D hero is being considered as an alternative.
 
 # Executions

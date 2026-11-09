@@ -1,7 +1,7 @@
 ## req_043_nest_design_scope_and_jarvis_3d_hero_option - Nest design scope and Jarvis 3D hero option
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
 > Complexity: Medium
