@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 import time
+from pathlib import Path
 
 BIN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bin", "crow-retro")
 
@@ -48,9 +49,9 @@ def test_requeue_waits_then_stops_after_max_attempts(tmp_path):
 
 # ---------- daily batch pre-filter (item_024) ----------
 
-import datetime as dt  # noqa: E402
-import shutil  # noqa: E402
-import types  # noqa: E402
+import datetime as dt
+import shutil
+import types
 
 FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "retro")
 
@@ -107,15 +108,15 @@ def test_batch_runs_once_a_day_and_reports_skips(tmp_path, monkeypatch):
 
     def analyse(manifest, n):
         calls.append((manifest, n))
-        open(mod.report_path("2026-11-09"), "w").write("# Retro batch: 2026-11-09\n## corrected\n")
+        Path(mod.report_path("2026-11-09")).write_text("# Retro batch: 2026-11-09\n## corrected\n")
         return {"ok": True, "run_id": "r1"}
 
     args = types.SimpleNamespace(since=None, force=False, dry_run=False)
     assert mod.cmd_run(args, now=now, analyse=analyse) == 0
     assert len(calls) == 1 and calls[0][1] == 2  # weekend sessions covered, two kept
-    manifest = open(calls[0][0]).read()
+    manifest = Path(calls[0][0]).read_text()
     assert "session=corrected" in manifest and "session=errors" in manifest and "clean" not in manifest
-    report = open(mod.report_path("2026-11-09")).read()
+    report = Path(mod.report_path("2026-11-09")).read_text()
     assert "## Skipped (pre-filter)" in report
     assert "| clean | proj | no correction signal |" in report
     assert "| headless | proj | headless run" in report

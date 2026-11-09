@@ -3,7 +3,6 @@ import importlib.machinery
 import importlib.util
 
 import pytest
-
 from conftest import BIN
 
 
@@ -88,13 +87,15 @@ def test_running_runs_fails_when_cdx_does(cr, monkeypatch):
 
 
 def test_final_command_reads_both_providers(tmp_path):
-    import subprocess, sys
+    import subprocess
+    import sys
+
     from conftest import BIN, FIXTURES
     (tmp_path / "local").mkdir()
     (tmp_path / "local" / "projects.yaml").write_text("projects: []\n")
     for name, provider, want in (("run-claude.jsonl", "claude", "Shipped: claude report"),
                                  ("run-codex.jsonl", "codex", "Shipped: codex report")):
-        out = subprocess.run([sys.executable, str(BIN / "crow-runs"), "final", str(FIXTURES / name), provider],
+        out = subprocess.run([sys.executable, str(BIN / "crow-runs"), "final", str(FIXTURES / name), provider], check=False,
                              capture_output=True, text=True,
                              env={"CROW_HOME": str(tmp_path), "CROW_ACCOUNT": "main", "PATH": "/usr/bin:/bin"})
         assert out.stdout.strip() == want, out.stderr

@@ -4,9 +4,8 @@ import os
 import re
 from pathlib import Path
 
-import yaml
-
 import crow_lib
+import yaml
 
 ROOT = Path(crow_lib.data_home())
 REGISTRY = ROOT / "local" / "projects.yaml"
@@ -74,8 +73,8 @@ def section_bounds(lines, heading):
 
 def known_template(text):
     """True when every Templater call is one render_template fills (dates, title, cursor)."""
-    calls = re.findall(r"<%(.*?)%>", text, re.S)
-    return all(re.fullmatch(r"\s*tp\.(date\.now\(.*\)|file\.cursor\(\))\s*", c, re.S) for c in calls)
+    calls = re.findall(r"<%(.*?)%>", text, re.DOTALL)
+    return all(re.fullmatch(r"\s*tp\.(date\.now\(.*\)|file\.cursor\(\))\s*", c, re.DOTALL) for c in calls)
 
 
 def crow_lines(vault, day):

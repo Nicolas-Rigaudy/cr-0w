@@ -12,7 +12,7 @@ def git(root, *args):
 
 
 def run(tool, root, *args):
-    return subprocess.run([sys.executable, str(BIN / tool), "--root", str(root), *args],
+    return subprocess.run([sys.executable, str(BIN / tool), "--root", str(root), *args], check=False,
                           capture_output=True, text=True)
 
 

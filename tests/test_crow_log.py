@@ -1,7 +1,6 @@
 import datetime as dt
 
-from conftest import run
-from test_crow_note import TPL, vault  # noqa: F401  (fixture)
+from conftest import TPL, run
 
 
 def log(hub, vault, *args):

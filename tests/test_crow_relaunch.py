@@ -2,10 +2,8 @@
 import json
 import os
 import pty
-import subprocess
 
 import pytest
-
 from conftest import BIN, run
 from test_crow_sessions import LIMIT, reply, transcript, user
 

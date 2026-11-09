@@ -13,7 +13,7 @@ os.makedirs(os.path.join(out, "fx"), exist_ok=True)
 
 
 def iso(minutes_ago):
-    t = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=minutes_ago)
+    t = dt.datetime.now(dt.UTC) - dt.timedelta(minutes=minutes_ago)
     return t.isoformat().replace("+00:00", "Z")
 
 
@@ -58,7 +58,7 @@ for k, v in fx.items():
 stops = {"sessions": [
     {"conversation_id": "5ab51b0c-0000-4000-8000-000000000001", "account": "work", "project": "notes-plugin",
      "cwd": "/srv/notes-plugin", "branch": "night/books-flow", "last_event": iso(60), "limit": "five_hour",
-     "resets_at": int(dt.datetime.now(dt.timezone.utc).timestamp()) + 3 * 3600,
+     "resets_at": int(dt.datetime.now(dt.UTC).timestamp()) + 3 * 3600,
      "first_prompt": "0.2 books flow correctness", "workspaces": ["/srv/notes-plugin"], "relaunched": None},
     {"conversation_id": "5ab51b0c-0000-4000-8000-000000000002", "account": "work", "project": "hub",
      "cwd": "/srv/hub", "last_event": iso(30), "limit": "five_hour", "resets_at": 0,

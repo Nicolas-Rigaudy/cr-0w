@@ -57,7 +57,7 @@ def gather(hub, *args, env=None):
 def test_brief_keeps_me_and_waiting_with_stale_flag(hub):
     data = gather(hub, "brief", env=setup(hub))
     threads = data["open_threads"]
-    assert threads["Me"] == [f"0d [backend] fix the seed", f"STALE 20d [toy] polish the readme"]
+    assert threads["Me"] == ["0d [backend] fix the seed", "STALE 20d [toy] polish the readme"]
     assert threads["Waiting"] == ["STALE 20d [work] vendor answer"]
     assert threads["_skipped_counts"] == {"Crow": 1}
     assert data["activity"] == {"skipped": "offline"}

@@ -8,7 +8,6 @@ import sys
 import textwrap
 
 import pytest
-
 from conftest import BIN, PYTHON, run
 
 FAKE = textwrap.dedent('''\
@@ -142,9 +141,9 @@ def test_set_refuses_a_value_on_argv_without_echoing_it(hub, keyring):
 
 def test_set_refuses_without_a_terminal(hub, keyring):
     store, env = keyring
-    home, profiles = hub
+    home, _profiles = hub
     e = {**os.environ, "CROW_HOME": str(home), **env}
-    out = subprocess.run([PYTHON, str(BIN / "crow-secret"), "set", "sonar"], input="tok\n",
+    out = subprocess.run([PYTHON, str(BIN / "crow-secret"), "set", "sonar"], check=False, input="tok\n",
                          capture_output=True, text=True, env=e, start_new_session=True)
     assert out.returncode == 1
     assert "real terminal" in out.stderr

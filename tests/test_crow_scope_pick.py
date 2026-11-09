@@ -1,14 +1,14 @@
 """Scope-aware account pick: cdx order without a scope, ranks and room floors with one."""
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from conftest import BIN, FIXTURES, run
 
 sys.path.insert(0, str(BIN))
-import crow_lib  # noqa: E402
+import crow_lib
 
-NOW = datetime(2026, 11, 6, 16, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 11, 6, 16, 0, tzinfo=UTC)
 
 
 def row(name, left5=80, leftw=80):
@@ -181,7 +181,7 @@ def _dispatch(tmp_path, monkeypatch, extra=(), state=None):
 
     monkeypatch.setattr(cr.subprocess, "run", lambda argv, **k: seen.append(argv) or R())
     monkeypatch.setattr(cr.subprocess, "Popen", lambda *a, **k: None)
-    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(cr, "running_runs", list)
     monkeypatch.setattr(cr.crow_lib, "provider_of", lambda acct: "claude")
     monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
     if state:

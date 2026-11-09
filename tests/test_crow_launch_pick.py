@@ -2,17 +2,16 @@
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 import yaml
-
 from conftest import BIN, run
 
 sys.path.insert(0, str(BIN))
-import crow_lib  # noqa: E402
+import crow_lib
 
-NOW = datetime(2026, 11, 3, 16, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 11, 3, 16, 0, tzinfo=UTC)
 ACCTS = [{"name": "main", "policy": "use"}, {"name": "spare", "policy": "use"},
          {"name": "big", "policy": "use"}, {"name": "shared", "policy": "ask-first"},
          {"name": "mate", "policy": "never"}]

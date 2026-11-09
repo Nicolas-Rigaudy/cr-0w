@@ -1,48 +1,7 @@
 import datetime as dt
 import json
-from pathlib import Path
-
-import pytest
 
 from conftest import run
-
-
-TPL = """---
-type: daily
-created: <% tp.date.now("YYYY-MM-DD", 0, tp.file.title, "YYYY-MM-DD") %>
----
-
-# <% tp.date.now("dddd D MMMM YYYY", 0, tp.file.title, "YYYY-MM-DD") %>
-
-## 🎯 Focus
-- [ ] <% tp.file.cursor() %>
-
-## 📥 Capture (dump anything, triage later)
-- 
-
-## ✅ Tasks
-```tasks
-not done
-```
-
-## 📆 Meetings & notes
-- 
-
-## 🌙 End of day
-- **Shipped:** 
-- **Blocked / carry over:** 
-"""
-
-
-@pytest.fixture
-def vault(tmp_path):
-    v = tmp_path / "vault"
-    (v / "90 Templates").mkdir(parents=True)
-    (v / "90 Templates" / "Daily Note.md").write_text(TPL)
-    (v / "40 Journal" / "Daily").mkdir(parents=True)
-    (v / "00 Inbox").mkdir()
-    (v / "10 Work").mkdir()
-    return v
 
 
 def note(hub, vault, *args):

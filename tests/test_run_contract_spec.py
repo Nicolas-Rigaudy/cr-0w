@@ -1,17 +1,15 @@
 """The run contract spec (req_037) stays valid against its own schemas."""
 import json
 import re
-from pathlib import Path
 
 import pytest
 import yaml
-
 from conftest import REPO
 from schema_lite import UnsupportedKeyword, Validator
 
 SPEC = REPO / "logics" / "specs" / "req_037_run_contract"
 SCHEMAS = SPEC / "schemas"
-FENCE = re.compile(r"^```crow\n(.*?)^```", re.S | re.M)
+FENCE = re.compile(r"^```crow\n(.*?)^```", re.DOTALL | re.MULTILINE)
 
 
 def validator(name):
@@ -147,4 +145,3 @@ def walk(node, in_props=False):
             elif k == "allOf":
                 for sub in v:
                     walk(sub)
-    return None

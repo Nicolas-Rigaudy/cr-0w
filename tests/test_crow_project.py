@@ -3,7 +3,6 @@ import subprocess
 
 import pytest
 import yaml
-
 from conftest import run
 
 
@@ -137,7 +136,7 @@ def test_guard_asks_before_a_worktree_in_tmp(hub, repos):
 
 
 def test_prompt_note_once_per_project_and_session(hub, repos):
-    home, _, _ = repos
+    _home, _, _ = repos
     ev = {"hook_event_name": "UserPromptSubmit", "session_id": "s1", "prompt": "fix the threads on BE !12, then side"}
     out = guard(hub, ev)
     assert out["hookEventName"] == "UserPromptSubmit"
@@ -154,7 +153,7 @@ def test_guard_can_be_turned_off(hub, repos):
 
 
 def test_handoff_for_a_planning_project_goes_to_its_planning_repo(hub, repos):
-    home, _, side = repos
+    home, _, _side = repos
     r = run(hub, "crow-project", "handoff", "shell", "--task", "t", "--end-state", "e")
     assert r.returncode == 0, r.stderr
     assert "Project: shell, code in " in r.stdout and "planned and built from this repo" in r.stdout

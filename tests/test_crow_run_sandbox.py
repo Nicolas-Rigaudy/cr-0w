@@ -1,3 +1,5 @@
+from pathlib import Path
+
 """Background run sandbox: per-kind allowlists, credential-free env, denials (item_077)."""
 import json
 import shlex
@@ -6,7 +8,7 @@ import sys
 from conftest import BIN
 
 sys.path.insert(0, str(BIN))
-import crow_lib  # noqa: E402
+import crow_lib
 
 
 def test_every_dispatch_kind_has_an_allowlist():
@@ -35,7 +37,7 @@ def test_sandbox_args_write_a_settings_file(tmp_path):
     import json
     args = crow_lib.sandbox_args("retro", tmp_path)
     assert args[:2] == ["--strict-mcp-config", "--settings"] and "--mcp-config" not in args
-    perms = json.loads(open(args[2]).read())["permissions"]
+    perms = json.loads(Path(args[2]).read_text())["permissions"]
     assert perms["allow"] == crow_lib.sandbox_allow("retro")
     assert perms["deny"] == crow_lib.RUN_DENY and "WebFetch" in perms["deny"]
 
@@ -45,8 +47,8 @@ def test_listed_mcp_server_is_passed(monkeypatch, tmp_path):
     monkeypatch.setitem(crow_lib.RUN_SANDBOX, "retro", {**crow_lib.RUN_SANDBOX["retro"], "mcp": ["echo"]})
     monkeypatch.setattr(crow_lib, "MCP_SERVERS", {"echo": {"command": "echo"}})
     args = crow_lib.sandbox_args("retro", tmp_path)
-    assert "mcp__echo" in json.loads(open(args[2]).read())["permissions"]["allow"]
-    assert json.loads(open(args[args.index("--mcp-config") + 1]).read())["mcpServers"] == {"echo": {"command": "echo"}}
+    assert "mcp__echo" in json.loads(Path(args[2]).read_text())["permissions"]["allow"]
+    assert json.loads(Path(args[args.index("--mcp-config") + 1]).read_text())["mcpServers"] == {"echo": {"command": "echo"}}
 
 
 def test_run_flags_extra_args_fit_cdx_cap(tmp_path):
@@ -61,7 +63,7 @@ def test_continue_run_keeps_the_permissions_only_settings(tmp_path):
     flags, _ = crow_lib.run_flags("task", "claude", continue_run="r1", state=tmp_path)
     extra = shlex.split(flags[flags.index("--extra-args") + 1])
     assert extra[:2] == ["--strict-mcp-config", "--settings"]
-    assert set(json.loads(open(extra[2]).read())) == {"permissions"}  # cdx 0.26.11 refuses any other key here
+    assert set(json.loads(Path(extra[2]).read_text())) == {"permissions"}  # cdx 0.26.11 refuses any other key here
     assert "--extra-args" not in crow_lib.run_flags("task", "codex", state=tmp_path)[0]
 
 
@@ -131,12 +133,12 @@ def test_dispatch_hands_cdx_a_credential_free_env(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cr.subprocess, "run", lambda argv, **k: seen.append((argv, k.get("env"))) or R())
     monkeypatch.setattr(cr.subprocess, "Popen", lambda *a, **k: None)
-    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(cr, "running_runs", list)
     monkeypatch.setattr(cr.crow_lib, "provider_of", lambda acct: "claude")
     monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
     monkeypatch.setattr(sys, "argv", ["crow-runs", "dispatch", "demo", "t-1", "--prompt", "p"])
     cr.main()
-    argv, env = next(x for x in seen if x[0][:2] == ["cdx", "run"])
+    _argv, env = next(x for x in seen if x[0][:2] == ["cdx", "run"])
     assert "GH_TOKEN" not in env and env["CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"] == "1"
 
 

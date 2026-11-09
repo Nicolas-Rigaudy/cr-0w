@@ -143,8 +143,8 @@ def final_text(text, provider="claude"):
 # ---------- providers ----------
 
 PROVIDERS = ("claude", "codex")
-CLAUDE_MODEL = re.compile(r"^(claude|opus|sonnet|haiku|fable)", re.I)
-CODEX_MODEL = re.compile(r"^(gpt|o\d|codex)", re.I)
+CLAUDE_MODEL = re.compile(r"^(claude|opus|sonnet|haiku|fable)", re.IGNORECASE)
+CODEX_MODEL = re.compile(r"^(gpt|o\d|codex)", re.IGNORECASE)
 # Read first by a provider that does not load CLAUDE.md or @imports itself.
 READ_FIRST = ("CLAUDE.md", "AGENTS.md", "LOGICS.md", "local/owner-prefs.md", "local/context.md",
               "local/memory/MEMORY.md")
@@ -154,7 +154,7 @@ def provider_of(account, status=None):
     """Provider of a cdx account (claude when cdx does not say)."""
     if status is None:
         try:
-            r = subprocess.run(["cdx", "status", "--cached", "--json"], capture_output=True, text=True)
+            r = subprocess.run(["cdx", "status", "--cached", "--json"], check=False, capture_output=True, text=True)
             status = json.loads(r.stdout).get("rows", [])
         except (OSError, ValueError):
             status = []
@@ -220,7 +220,7 @@ def secret_lookup(service, user=None):
     """Value stored for service (and user), "" when missing or the keyring is unreachable."""
     args = ["secret-tool", "lookup", "service", service] + (["user", user] if user else [])
     try:
-        r = subprocess.run(args, capture_output=True, text=True)
+        r = subprocess.run(args, check=False, capture_output=True, text=True)
     except OSError:
         return ""
     return r.stdout.rstrip("\n") if r.returncode == 0 else ""
@@ -230,7 +230,7 @@ def secret_store(service, user, value, label):
     """Store value on stdin (never argv); True on success."""
     args = ["secret-tool", "store", "--label", label, "service", service, "user", user]
     try:
-        return subprocess.run(args, input=value, capture_output=True, text=True).returncode == 0
+        return subprocess.run(args, check=False, input=value, capture_output=True, text=True).returncode == 0
     except OSError:
         return False
 
@@ -238,7 +238,7 @@ def secret_store(service, user, value, label):
 def secret_clear(service, user):
     args = ["secret-tool", "clear", "service", service, "user", user]
     try:
-        return subprocess.run(args, capture_output=True, text=True).returncode == 0
+        return subprocess.run(args, check=False, capture_output=True, text=True).returncode == 0
     except OSError:
         return False
 
@@ -249,7 +249,7 @@ def secret_items(service=None):
     query = ["service", service] if service else ["xdg:schema", "org.freedesktop.Secret.Generic"]
     try:
         # secret-tool prints attributes on stderr: one pipe keeps each item's lines together.
-        r = subprocess.run(["secret-tool", "search", "--all", *query], stdout=subprocess.PIPE,
+        r = subprocess.run(["secret-tool", "search", "--all", *query], check=False, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, text=True)
     except OSError:
         return []
@@ -394,11 +394,11 @@ def account_state(current=None, cached=False, scope=None):
     """pick_accounts on live data: crow-accounts json and `cdx status` (--cached for hooks)."""
     from datetime import datetime
     bin_dir = os.path.dirname(os.path.realpath(__file__))
-    accts = json.loads(subprocess.run([os.path.join(bin_dir, "crow-accounts"), "json"], capture_output=True,
+    accts = json.loads(subprocess.run([os.path.join(bin_dir, "crow-accounts"), "json"], check=False, capture_output=True,
                                       text=True, timeout=30).stdout)
     current = current or os.environ.get("CDX_SESSION_NAME") or os.environ.get("CROW_SESSION_ACCOUNT") or os.environ.get("CROW_ACCOUNT") or accts.get("default")
     try:
-        out = subprocess.run(["cdx", "status", *(["--cached"] if cached else []), "--json"],
+        out = subprocess.run(["cdx", "status", *(["--cached"] if cached else []), "--json"], check=False,
                              capture_output=True, text=True, timeout=30).stdout
         rows = {r["session_name"]: r for r in json.loads(out).get("rows") or [] if r.get("session_name")}
     except (OSError, ValueError, subprocess.TimeoutExpired):
@@ -455,7 +455,7 @@ def launch_pick(state, busy, default):
 def live_sessions():
     """Names of cdx accounts with a live interactive session (`cdx sessions --json`)."""
     try:
-        out = subprocess.run(["cdx", "sessions", "--json"], capture_output=True, text=True, timeout=30).stdout
+        out = subprocess.run(["cdx", "sessions", "--json"], check=False, capture_output=True, text=True, timeout=30).stdout
         return {s["session"] for s in json.loads(out).get("sessions") or [] if s.get("active") and s.get("session")}
     except (OSError, ValueError, subprocess.TimeoutExpired):
         return set()
@@ -638,7 +638,7 @@ def isolated_state_dir(cwd):
     """<worktree>/.crow-run: run files an isolated run must read (the sandbox mounts only the worktree).
     Listed in the repo's info/exclude, so neither git status nor the host commit of a run picks it up."""
     from pathlib import Path
-    common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=cwd,
+    common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], check=False, cwd=cwd,
                             capture_output=True, text=True).stdout.strip()
     exclude = Path(common or Path(cwd) / ".git") / "info" / "exclude"
     lines = exclude.read_text().splitlines() if exclude.exists() else []
@@ -674,7 +674,7 @@ def isolation_preflight(provider, auth_type, path=None, kind=None, account=None)
 def cdx_rows():
     """`cdx status --json` rows, or [] when cdx cannot answer."""
     try:
-        return json.loads(subprocess.run(["cdx", "status", "--json"], capture_output=True, text=True,
+        return json.loads(subprocess.run(["cdx", "status", "--json"], check=False, capture_output=True, text=True,
                                          timeout=60).stdout).get("rows") or []
     except (OSError, ValueError, subprocess.SubprocessError):
         return []
@@ -734,7 +734,7 @@ def run_commit_message(label, run_id, statuses, root="."):
 def commit_run_diff(cwd, label, run_id):
     """Commit what an isolated run left in its worktree, from the host (the sandbox cannot write git).
     Returns {"sha", "message", "files"}, else {"sha": None, "reason"} (no changes, message refused, git failed)."""
-    git = lambda *a, **k: subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True, **k)
+    git = lambda *a, **k: subprocess.run(["git", "-C", cwd, *a], check=False, capture_output=True, text=True, **k)
     if git("add", "-A").returncode:
         return {"sha": None, "reason": "git add failed"}
     rows = [r.split("\t") for r in git("diff", "--cached", "--name-status", "--no-renames").stdout.splitlines() if r]
@@ -742,7 +742,7 @@ def commit_run_diff(cwd, label, run_id):
     if not statuses:
         return {"sha": None, "reason": "no changes"}
     msg = run_commit_message(label, run_id, statuses, cwd)
-    check = subprocess.run([os.path.join(ENGINE, "bin", "crow-commit-msg-check"), "-"], input=msg, text=True,
+    check = subprocess.run([os.path.join(ENGINE, "bin", "crow-commit-msg-check"), "-"], check=False, input=msg, text=True,
                            capture_output=True)
     if check.returncode:
         git("reset", "-q")

@@ -4,7 +4,6 @@ import os
 import sys
 
 import pytest
-
 from conftest import BIN
 
 pytest.importorskip("PIL")

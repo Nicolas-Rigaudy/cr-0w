@@ -12,6 +12,44 @@ REPO = Path(__file__).resolve().parent.parent
 BIN = REPO / "bin"
 FIXTURES = REPO / "tests" / "fixtures"
 
+TPL = """---
+type: daily
+created: <% tp.date.now("YYYY-MM-DD", 0, tp.file.title, "YYYY-MM-DD") %>
+---
+
+# <% tp.date.now("dddd D MMMM YYYY", 0, tp.file.title, "YYYY-MM-DD") %>
+
+## 🎯 Focus
+- [ ] <% tp.file.cursor() %>
+
+## 📥 Capture (dump anything, triage later)
+- 
+
+## ✅ Tasks
+```tasks
+not done
+```
+
+## 📆 Meetings & notes
+- 
+
+## 🌙 End of day
+- **Shipped:** 
+- **Blocked / carry over:** 
+"""
+
+
+@pytest.fixture
+def vault(tmp_path):
+    v = tmp_path / "vault"
+    (v / "90 Templates").mkdir(parents=True)
+    (v / "90 Templates" / "Daily Note.md").write_text(TPL)
+    (v / "40 Journal" / "Daily").mkdir(parents=True)
+    (v / "00 Inbox").mkdir()
+    (v / "10 Work").mkdir()
+    return v
+
+
 ACCOUNTS = """\
 default: main
 accounts:
@@ -26,7 +64,7 @@ accounts:
 def _python_with_yaml():
     """First interpreter that has PyYAML: the running one, then the system ones."""
     for cand in (sys.executable, shutil.which("python3"), "/usr/bin/python3"):
-        if cand and subprocess.run([cand, "-c", "import yaml"], capture_output=True).returncode == 0:
+        if cand and subprocess.run([cand, "-c", "import yaml"], check=False, capture_output=True).returncode == 0:
             return cand
     return None
 
@@ -60,7 +98,7 @@ def run(hub, script, *args, input=None, env=None):
         if PYTHON is None:
             pytest.skip("no python with PyYAML found (pip install pyyaml)")
         cmd = [PYTHON, *cmd]
-    return subprocess.run(cmd, capture_output=True, text=True,
+    return subprocess.run(cmd, check=False, capture_output=True, text=True,
                           input=input, env=e)
 
 

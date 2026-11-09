@@ -1,10 +1,9 @@
 """crow-room: admit rules over cdx status rows."""
 import importlib.machinery
 import importlib.util
-import json
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from conftest import BIN
 
@@ -14,7 +13,7 @@ spec = importlib.util.spec_from_loader("crow_room", loader)
 room = importlib.util.module_from_spec(spec)
 loader.exec_module(room)
 
-NOW = datetime(2026, 11, 7, 12, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 11, 7, 12, 0, tzinfo=UTC)
 
 
 def row(r5=80, rw=60, **kw):
@@ -60,6 +59,6 @@ def test_missing_reading():
 
 
 def test_cli_without_cdx(tmp_path):
-    r = subprocess.run([sys.executable, str(BIN / "crow-room")], capture_output=True, text=True,
+    r = subprocess.run([sys.executable, str(BIN / "crow-room")], check=False, capture_output=True, text=True,
                        env={"PATH": str(tmp_path)})
     assert r.returncode != 0 and "cdx did not answer" in r.stderr

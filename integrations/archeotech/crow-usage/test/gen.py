@@ -27,7 +27,7 @@ def soon(minutes):
 
 
 def iso(minutes_ago):
-    t = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=minutes_ago)
+    t = dt.datetime.now(dt.UTC) - dt.timedelta(minutes=minutes_ago)
     return t.isoformat().replace("+00:00", "Z")
 
 

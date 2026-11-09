@@ -4,7 +4,6 @@ import importlib.machinery
 import importlib.util
 
 import pytest
-
 from conftest import BIN
 
 loader = importlib.machinery.SourceFileLoader("crow_usage_ls", str(BIN / "crow-usage"))
@@ -16,7 +15,7 @@ NOW = dt.datetime(2026, 10, 22, 12, 30).astimezone()
 
 
 def utc_hour(local_h, day=22):
-    return dt.datetime(2026, 10, day, local_h, 0).astimezone().astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H")
+    return dt.datetime(2026, 10, day, local_h, 0).astimezone().astimezone(dt.UTC).strftime("%Y-%m-%dT%H")
 
 
 def test_shares_split_used_window_by_cost():

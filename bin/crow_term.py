@@ -12,7 +12,14 @@ As a script (for shell callers such as bin/crow):
       runs CMD detached from the calling session (clean_env plus the --set vars); on the print
       backend prints the line to run instead (the --set vars included).
 """
-import glob, json, os, pwd, shlex, shutil, subprocess, sys
+import glob
+import json
+import os
+import pwd
+import shlex
+import shutil
+import subprocess
+import sys
 
 BACKENDS = ("kitty", "tmux", "print")
 
@@ -54,7 +61,7 @@ def parent(pid, proc="/proc"):
     if os.path.isdir(proc):
         return None
     try:
-        r = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True, timeout=5)
+        r = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], check=False, capture_output=True, text=True, timeout=5)
         return int(r.stdout.strip())
     except (OSError, ValueError, subprocess.TimeoutExpired):
         return None
@@ -79,7 +86,7 @@ def env_changes(env):
 
 def detach(argv, env, cwd=None):
     """Run argv in its own session, stdio closed; `setsid -f` where it exists (Linux)."""
-    quiet = dict(env=env, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    quiet = {"env": env, "cwd": cwd, "stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
     if shutil.which("setsid", path=(env or os.environ).get("PATH")):
         subprocess.run(["setsid", "-f", *argv], check=True, **quiet)
     else:
@@ -125,7 +132,7 @@ def kitty_locate(pid):
     listings = []
     for sock in kitty_sockets():
         try:
-            r = subprocess.run(["kitten", "@", "--to", sock, "ls"], capture_output=True, text=True, timeout=5)
+            r = subprocess.run(["kitten", "@", "--to", sock, "ls"], check=False, capture_output=True, text=True, timeout=5)
             listings.append((sock, json.loads(r.stdout) if r.returncode == 0 else []))
         except (OSError, ValueError, subprocess.TimeoutExpired):
             continue
@@ -150,7 +157,7 @@ def tmux_find_pane(panes, chain):
 
 def tmux_locate(pid):
     try:
-        r = subprocess.run(["tmux", "list-panes", "-a", "-F", "#{pane_id} #{pane_pid}"],
+        r = subprocess.run(["tmux", "list-panes", "-a", "-F", "#{pane_id} #{pane_pid}"], check=False,
                            capture_output=True, text=True, timeout=5)
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -201,7 +208,7 @@ def focus(pid, backend=None):
         return f"window {hit[1]}"
     if backend == "tmux" and (pane := tmux_locate(pid)):
         for cmd in (["select-window", "-t", pane], ["select-pane", "-t", pane], ["switch-client", "-t", pane]):
-            subprocess.run(["tmux", *cmd], capture_output=True, timeout=5)
+            subprocess.run(["tmux", *cmd], check=False, capture_output=True, timeout=5)
         return f"pane {pane}"
     return None
 

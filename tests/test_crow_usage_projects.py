@@ -73,7 +73,7 @@ def test_streamed_message_uses_tool_use_from_every_event(hub):
 def test_rollup_by_project_marks_shared_sessions(hub):
     setup(hub, "s3", [turn("a", 0, [("Read", {"file_path": "/w/lazytf/f"})], out=500), turn("b", 0, out=1)])
     setup(hub, "s4", [turn("c", 0, out=20)])  # same file name differs by sid below
-    home, profiles = hub
+    _home, profiles = hub
     write_jsonl(profiles / "main" / "claude-home" / ".claude" / "projects" / "-w-hub" / "s5.jsonl",
                 [turn("z", 0, out=9)])
     today = by_name(usage(hub)["today"]["by_project"])

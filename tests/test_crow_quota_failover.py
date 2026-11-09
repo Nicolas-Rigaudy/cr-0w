@@ -1,19 +1,19 @@
+from pathlib import Path
+
 """Quota failover: account picker rules, the warning hook, dispatch account choice and limit requeue."""
 import importlib.machinery
 import importlib.util
 import json
-import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from conftest import BIN
 
 sys.path.insert(0, str(BIN))
-import crow_lib  # noqa: E402
+import crow_lib
 
-NOW = datetime(2026, 11, 3, 16, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 11, 3, 16, 0, tzinfo=UTC)
 USE = {"name": "main", "policy": "use"}
 SHARED = {"name": "shared", "policy": "ask-first", "fallback": "auto", "max_5h_pct": 50, "max_week_pct": 50,
           "free_5h_min": 45}
@@ -178,12 +178,12 @@ def test_requeue_moves_to_auto_fallback_with_resume_note(cr, monkeypatch, tmp_pa
     assert cr.requeue(rec, deadline=1e12) == "resumed on shared"
     cmd = calls[0]
     assert cmd[cmd.index("--account") + 1] == "shared" and cmd[cmd.index("--resumes") + 1] == "r1"
-    assert "RESUME NOTE" in open(cmd[cmd.index("--prompt-file") + 1]).read()
+    assert "RESUME NOTE" in Path(cmd[cmd.index("--prompt-file") + 1]).read_text()
     assert sleeps == []
 
 
 def test_requeue_waits_for_reset_then_continues_claude(cr, monkeypatch, tmp_path):
-    rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=30), row("shared", 80)])
+    rec, calls, _sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=30), row("shared", 80)])
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct: "claude")
     assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"
     cmd = calls[0]
@@ -201,7 +201,7 @@ def test_requeue_waits_for_reset_then_continues_codex(cr, monkeypatch, tmp_path)
 
 def test_requeue_stops_after_max_chain(cr, monkeypatch, tmp_path):
     chain = [{"run_id": f"c{i}", "resumes": f"c{i - 1}" if i else "r1"} for i in range(3)]
-    rec, calls, _ = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100), row("shared", 20)], chain)
+    _rec, calls, _ = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100), row("shared", 20)], chain)
     assert "not requeued" in cr.requeue(chain[-1], deadline=1e12) and calls == []
 
 
@@ -216,7 +216,7 @@ def test_run_state_reads_limit_from_tail(cr, tmp_path):
 # ---------- crow rescue ----------
 
 def test_rescue_lists_every_stopped_and_open_session(rl, monkeypatch, capsys):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     ago = lambda h: (now - timedelta(hours=h)).isoformat().replace("+00:00", "Z")
     reg = {"sessions": [
         {"conversation_id": f"cut{i}", "account": "main", "cwd": "/w", "last_event": ago(i), "message": "limit",
@@ -267,7 +267,7 @@ def test_afk_run_waits_on_same_account_despite_free_target(cr, monkeypatch, tmp_
 
 
 def test_day_run_with_far_reset_moves_cold(cr, monkeypatch, tmp_path):
-    rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=180), row("shared", 20)])
+    rec, _calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=180), row("shared", 20)])
     rec["context"] = "day"
     assert cr.requeue(rec, deadline=1e12) == "resumed on shared"
     assert sleeps == []
@@ -276,7 +276,7 @@ def test_day_run_with_far_reset_moves_cold(cr, monkeypatch, tmp_path):
 
 
 def test_day_run_with_near_reset_waits(cr, monkeypatch, tmp_path):
-    rec, calls, sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=20), row("shared", 20)])
+    rec, _calls, _sleeps = requeue_env(cr, monkeypatch, tmp_path, [row("main", 100, reset_in_min=20), row("shared", 20)])
     rec["context"] = "day"
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct: "claude")
     assert cr.requeue(rec, deadline=1e12) == "continued on main after the reset"

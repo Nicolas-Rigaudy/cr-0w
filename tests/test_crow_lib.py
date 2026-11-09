@@ -1,7 +1,7 @@
 import sys
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent / "bin"))
-import crow_lib  # noqa: E402
+import crow_lib
 
 
 def test_profiles_dir_prefers_cdx_profiles():

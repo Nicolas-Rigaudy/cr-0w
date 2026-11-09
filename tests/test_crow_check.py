@@ -6,7 +6,6 @@ import subprocess
 import sys
 
 import pytest
-
 from conftest import BIN
 
 CHECK = str(BIN / "crow-check")
@@ -36,7 +35,7 @@ def check(root, *args, env=None, path=None):
     e.pop("CROW_CHECK_DENY", None) if not env else None
     if path is not None:
         e["PATH"] = path
-    r = subprocess.run([sys.executable, CHECK, "--root", str(root), "--json", *args],
+    r = subprocess.run([sys.executable, CHECK, "--root", str(root), "--json", *args], check=False,
                        capture_output=True, text=True, env=e)
     return r.returncode, {g["group"]: g for g in json.loads(r.stdout)["groups"]}
 
@@ -175,7 +174,7 @@ def test_linter_failure_is_red(tree, tmp_path, tool):
 
 
 def test_text_output_lists_every_group(tree):
-    r = subprocess.run([sys.executable, CHECK, "--root", str(tree), "--fast"], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, CHECK, "--root", str(tree), "--fast"], check=False, capture_output=True, text=True)
     for name in ("pytest", "shellcheck", "ruff", "leak", "commits", "version"):
         assert name in r.stdout
     assert r.stdout.strip().endswith("green")

@@ -1,9 +1,8 @@
 """bin/crow-cost-audit: dedup, context buckets, skill classes, hub start context."""
 import json
 
-from test_crow_usage_projects import day, setup
-
 from conftest import run
+from test_crow_usage_projects import day, setup
 
 
 def turn(mid, rid, ctx_cache, out=100, model="claude-opus-5-5", cwd="/w/hub"):

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 """crow-review-run: findings schema, parsing a run's output, sync and start with simulated runs only."""
 import importlib.machinery
 import importlib.util
@@ -7,7 +9,6 @@ import subprocess
 import sys
 
 import pytest
-
 from conftest import BIN, FIXTURES
 
 REPO = "grp/demo-service"
@@ -53,7 +54,7 @@ def fixture_result():
 # ---------- schema ----------
 
 def test_fixture_file_is_valid(home):
-    r = subprocess.run([sys.executable, str(BIN / "crow-review-run"), "check", str(FIXTURES / "review-findings.json")],
+    r = subprocess.run([sys.executable, str(BIN / "crow-review-run"), "check", str(FIXTURES / "review-findings.json")], check=False,
                        capture_output=True, text=True, env={**os.environ, "CROW_HOME": str(home)})
     assert r.returncode == 0 and r.stdout.strip() == "ok", r.stdout + r.stderr
 
@@ -139,7 +140,7 @@ esac
 """)
     (fake / "cdx").chmod(0o755)
     env = {**os.environ, "CROW_HOME": str(home), "PATH": f"{fake}:/usr/bin:/bin"}
-    r = subprocess.run([sys.executable, str(BIN / "crow-review-run"), "show", REPO, "!220"],
+    r = subprocess.run([sys.executable, str(BIN / "crow-review-run"), "show", REPO, "!220"], check=False,
                        capture_output=True, text=True, env=env)
     assert r.returncode == 0, r.stderr
     doc = json.loads(r.stdout)
@@ -155,13 +156,13 @@ def test_start_writes_bundle_prompt_and_running_file(rr, monkeypatch):
         "threads": [{"author": "sam", "path": "a.py", "line": 1, "body": "why?", "resolved": False}]})
     monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(a) or "rv000002-full")
     rr.main(["start", REPO, "221"])
-    project, label, prompt, model, power = calls[0]
+    project, label, prompt, model, _power = calls[0]
     assert (project, label, model) == ("demo-service", "review-221", "opus")
     text = prompt.read_text()
     assert "plan mode" in text and "ONE JSON object" in text
     bundle = next(l for l in text.splitlines() if "Read the bundle" in l).split("bundle ", 1)[1].split(":")[0]
     assert "/.git/crow-review/" in bundle
-    b = open(bundle).read()
+    b = Path(bundle).read_text()
     assert "Unpaginated AWS list calls" in b and "+x = 1" in b and "[open] sam" in b
     doc = rr.load(rr.findings_path(REPO, 221))
     assert doc["run"]["state"] == "running" and doc["run"]["id"] == "rv000002-full"
@@ -424,7 +425,7 @@ def test_dispatch_continue_run_pins_nothing_and_checks_the_worktree(tmp_path, mo
         stdout = '{"ok": true, "run_id": "ap000009-full"}'
     monkeypatch.setattr(cr.subprocess, "run", lambda argv, **k: seen.append(argv) or R())
     monkeypatch.setattr(cr.subprocess, "Popen", lambda *a, **k: None)
-    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(cr, "running_runs", list)
     monkeypatch.setattr(cr.crow_lib, "provider_of", lambda acct: "claude")
     monkeypatch.setattr(cr, "sh", lambda *a, **k: "")
     wt = tmp_path / "demo.wt" / "review-1"
@@ -612,7 +613,7 @@ def test_threads_actions_wait_for_the_push_then_reply_and_resolve(rr, tmp_path, 
     doc["findings"][0]["apply"] = {"status": "fixed", "detail": "ok", "for": ["accepted", ""], "run": "ap1"}
     doc["apply"] = {"id": "ap1", "state": "done", "reason": "", "commit": "c" * 40, "subject": "fix[PY]: x", "warnings": []}
     rr.save(rr.findings_path(REPO, 242), doc)
-    assert [a["id"] for a in rr.actions(doc)][0] == "push" and "resolve-f1" not in [a["id"] for a in rr.actions(doc)]
+    assert next(a["id"] for a in rr.actions(doc)) == "push" and "resolve-f1" not in [a["id"] for a in rr.actions(doc)]
     doc["apply"]["pushed"] = {"commit": "c" * 40, "at": "t"}
     rr.save(rr.findings_path(REPO, 242), doc)
     acts = {a["id"]: a for a in rr.actions(doc)}

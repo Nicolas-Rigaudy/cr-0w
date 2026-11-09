@@ -12,7 +12,7 @@ def ctx_turn(mid, cache_read, new=0, cache_write=0):
 
 
 def session(hub, sid, *turns):
-    home, profiles = hub
+    _home, profiles = hub
     write_jsonl(profiles / "main" / "claude-home" / ".claude" / "projects" / "-w-hub" / f"{sid}.jsonl",
                 [{"type": "user", "cwd": "/w/hub", "timestamp": f"{day(0)}T08:00:00.000Z",
                   "message": {"role": "user", "content": "go"}}, *turns])
@@ -29,7 +29,7 @@ def test_usage_reports_last_turn_context_and_level(hub):
 
 
 def test_usage_context_ignores_subagent_turns(hub):
-    home, profiles = hub
+    _home, profiles = hub
     session(hub, "parent", ctx_turn("a", 40_000))
     sub = profiles / "main" / "claude-home" / ".claude" / "projects" / "-w-hub" / "parent" / "subagents" / "x.jsonl"
     write_jsonl(sub, [ctx_turn("z", 200_000)])

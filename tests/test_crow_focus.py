@@ -4,11 +4,10 @@ import os
 import sys
 
 import pytest
-
 from conftest import BIN, run
 
 sys.path.insert(0, str(BIN))
-import crow_term as ct  # noqa: E402
+import crow_term as ct
 
 LS = [{"tabs": [{"windows": [
     {"id": 1, "pid": 100, "foreground_processes": [{"pid": 100}]},
@@ -119,10 +118,10 @@ def test_script_open_prints_on_the_print_backend(tmp_path):
     import subprocess
     e = {**os.environ, "CROW_TERMINAL": "print", "CDX_SESSION_NAME": "x"}
     r = subprocess.run([sys.executable, str(BIN / "crow_term.py"), "open", "--title", "t", "--cwd", str(tmp_path),
-                        "--set", "CROW_ACCOUNT=spare", "--", "crow", "open", "demo"], capture_output=True, text=True, env=e)
+                        "--set", "CROW_ACCOUNT=spare", "--", "crow", "open", "demo"], check=False, capture_output=True, text=True, env=e)
     assert r.returncode == 0, r.stderr
     assert r.stdout.strip() == f"cd {tmp_path} && CROW_ACCOUNT=spare crow open demo"
-    b = subprocess.run([sys.executable, str(BIN / "crow_term.py"), "backend"], capture_output=True, text=True, env=e)
+    b = subprocess.run([sys.executable, str(BIN / "crow_term.py"), "backend"], check=False, capture_output=True, text=True, env=e)
     assert b.stdout.strip() == "print"
 
 

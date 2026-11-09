@@ -7,11 +7,10 @@ import sys
 import types
 
 import pytest
-
 from conftest import BIN
 
 sys.path.insert(0, str(BIN))
-import crow_lib  # noqa: E402
+import crow_lib
 
 os.environ.setdefault("CROW_ACCOUNT", "test")
 loader = importlib.machinery.SourceFileLoader("crow_runs_isolation", str(BIN / "crow-runs"))
@@ -21,7 +20,7 @@ loader.exec_module(cr)
 
 
 def check_msg(msg):
-    return subprocess.run([str(BIN / "crow-commit-msg-check"), "-"], input=msg, text=True,
+    return subprocess.run([str(BIN / "crow-commit-msg-check"), "-"], check=False, input=msg, text=True,
                           capture_output=True).returncode == 0
 
 
@@ -128,7 +127,7 @@ def test_commit_run_diff_refuses_a_bad_message_and_unstages(repo, monkeypatch):
 
 
 def args(**kw):
-    base = dict(continue_run=None, cwd=None, kind="task", account=None, isolate=True)
+    base = {"continue_run": None, "cwd": None, "kind": "task", "account": None, "isolate": True}
     return types.SimpleNamespace(**{**base, **kw})
 
 
@@ -176,7 +175,7 @@ def test_continuing_an_isolated_run_stays_in_its_sandbox(tmp_path, monkeypatch):
     monkeypatch.setattr(crow_lib, "cdx_rows", lambda: [{"session_name": "acct", "auth_type": "setup-token"}])
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct, status=None: "claude")
     monkeypatch.setattr(crow_lib, "isolation_preflight", lambda *a, **k: None)
-    monkeypatch.setattr(cr, "running_runs", lambda: [])
+    monkeypatch.setattr(cr, "running_runs", list)
     monkeypatch.setattr(crow_lib, "isolated_state_dir", lambda cwd: tmp_path / "state")
     monkeypatch.setattr(cr.subprocess, "run", lambda *a, **k: types.SimpleNamespace(returncode=0, stdout=""))
     printed = []

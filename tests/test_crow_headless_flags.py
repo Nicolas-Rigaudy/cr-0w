@@ -8,7 +8,9 @@ import sys
 from conftest import BIN
 
 sys.path.insert(0, str(BIN))
-import crow_lib  # noqa: E402
+from datetime import UTC
+
+import crow_lib
 
 os.environ.setdefault("CROW_ACCOUNT", "test")
 loader = importlib.machinery.SourceFileLoader("crow_runs_flags", str(BIN / "crow-runs"))
@@ -61,10 +63,10 @@ def test_states_budget_and_stuck(monkeypatch, tmp_path):
 def test_watchdog_kills_idle_run_and_spares_young_one(monkeypatch, tmp_path):
     monkeypatch.setattr(cr, "STUCK", tmp_path / "stuck.json")
     monkeypatch.setattr(cr, "run_transcript", lambda row: None)
-    monkeypatch.setattr(cr, "agent_procs", lambda: [])
+    monkeypatch.setattr(cr, "agent_procs", list)
     p = subprocess.Popen(["sleep", "60"])
-    from datetime import datetime, timezone
-    young = {"run_id": "y", "started_at": datetime.now(timezone.utc).isoformat(), "pid": p.pid}
+    from datetime import datetime
+    young = {"run_id": "y", "started_at": datetime.now(UTC).isoformat(), "pid": p.pid}
     assert not cr.watchdog(young)
     old = {"run_id": "o", "started_at": "2026-11-03T10:00:00+00:00", "pid": p.pid}
     assert cr.watchdog(old)
@@ -88,7 +90,7 @@ def test_per_run_budget_overrides_kind_and_env():
 
 def test_stop_kills_one_running_run_and_refuses_ambiguity(monkeypatch, capsys):
     import pytest
-    monkeypatch.setattr(cr, "agent_procs", lambda: [])
+    monkeypatch.setattr(cr, "agent_procs", list)
     p = subprocess.Popen(["sleep", "60"])
     monkeypatch.setattr(cr, "running_runs", lambda: [{"run_id": "abc123", "pid": p.pid}, {"run_id": "abd456"}])
     with pytest.raises(SystemExit):
@@ -103,7 +105,7 @@ def test_stop_kills_one_running_run_and_refuses_ambiguity(monkeypatch, capsys):
 def test_stop_refuses_an_empty_id_and_records_the_stopped_run(monkeypatch, tmp_path):
     import pytest
     monkeypatch.setattr(cr, "STOPPED", tmp_path / "stopped.json")
-    monkeypatch.setattr(cr, "agent_procs", lambda: [])
+    monkeypatch.setattr(cr, "agent_procs", list)
     p = subprocess.Popen(["sleep", "60"])
     monkeypatch.setattr(cr, "running_runs", lambda: [{"run_id": "abc123", "pid": p.pid}])
     with pytest.raises(SystemExit):

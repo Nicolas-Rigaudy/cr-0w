@@ -4,7 +4,7 @@ import importlib.util
 import json
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from conftest import BIN
 
@@ -15,7 +15,7 @@ loader.exec_module(cc)
 
 
 def sess(ctx, idle_min, one_h=1):
-    end = (datetime.now(timezone.utc) - timedelta(minutes=idle_min)).isoformat()
+    end = (datetime.now(UTC) - timedelta(minutes=idle_min)).isoformat()
     return {"id": "s", "context_tokens": ctx, "end": end, "cache_1h_tokens": one_h}
 
 
