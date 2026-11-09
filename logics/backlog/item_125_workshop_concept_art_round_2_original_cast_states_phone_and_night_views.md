@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 13:52:27
+> Indicators reviewed: 2026-11-09 13:52:33
 
 # AI Context
 - Summary: Second image-prompt round on the picked droid workshop world: an original droid cast per theme, one image per droid state, a phone view and a night (AFK return) view. Prompts only, run by the owner in Gemini or ChatGPT; no render runs.
@@ -55,8 +55,8 @@
 - 2026-11-09 cyber cast picked as 8 families (req_040 "Cast pick, cyber"). State colours dropped: state through pose and props. Modern deferred to a later round, so AC1 to AC3 now cover cyber only.
 - Next: v5b prompts (merged cast sheet, states, phone, night) in `Nest Prompts v5.md`, owner runs them, compare, approve.
 - Images v4 and the compare page: `local/state/research/nest-design/refs/v4/`, `compare-concepts-v4.html`.
+- 2026-11-09 paused by owner: too much effort on droid art for the need. Cast picks kept in req_040; 1c prompt ready in the vault. Step back on what nest needs to design, and a Jarvis-style 3D hero is being considered as an alternative.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-- 2026-11-09 paused by owner: too much effort on droid art for the need. Cast picks kept in req_040; 1c prompt ready in the vault. Step back on what nest needs to design, and a Jarvis-style 3D hero is being considered as an alternative.
