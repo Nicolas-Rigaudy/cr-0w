@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 13:47:45
+> Indicators reviewed: 2026-11-09 13:49:45
 
 # AI Context
 - Summary: Nest and deck keep two themes only, modern (work default) and cyber (personal default). A theme changes look, motion, 2D/3D elements and the butler voice. Nest gets a 3D world that shows missions and agents at work. One focus switch later drives the whole desktop. Design research comes first.
@@ -130,3 +130,4 @@ After pass 3 (Blender kits) was rejected ("shows nothing the system is doing, ra
 - Both takes left most bodies grey. Prompt 1c names one body colour and one neon accent per family and removes the menu chrome.
 - Family sheets (Gemini, `v5/family-*-gemini.jpg`): Lanky B (four tool arms, paper tape from the chest). Floater is a glass sphere that projects a blueprint map on the floor. Walker is a spider with many thin arms and a magnifier, no crate. Tracked A = builder, C = courier (stowed arms, front fork). Alchemist C (magenta tank pouring into itself).
 - Gemini reused one triple-lens head on four families. Every droid gets its own head shape.
+- Floater: keep the ChatGPT family sheet design (`v5/family-floater-chatgpt.png`), add the blueprint projected on the floor.
