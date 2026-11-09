@@ -49,7 +49,8 @@ Three columns in landscape: the MR list, the code, the Your move panel. Portrait
 - The prompt is saved next to the findings file as `<group>_<name>-<number>.prompt.md`.
 
 ## Apply phase
-`crow-review-run apply` dispatches `crow-runs dispatch --continue-run <parent> --cwd <worktree>`, which is `cdx run --continue-run`: the same Claude conversation (`claude --resume <conversation_id>`), so the run sees the bundle, its reasoning and its findings. cdx pins the parent's account, provider, model and effort (crow passes no `--model`/`--power`; cdx refuses a different one) and refuses `--failover`/`--isolate-workspace`. The permission is `auto` on Claude with `--strict-mcp-config` and no allowlist (cdx refuses `--settings` on a continued run; see dispatch-background-runs.md, Run sandbox).
+`crow-review-run apply` dispatches `crow-runs dispatch --continue-run <parent> --cwd <worktree>`, which is `cdx run --continue-run`: the same Claude conversation (`claude --resume <conversation_id>`), so the run sees the bundle, its reasoning and its findings. cdx pins the parent's account, provider, model and effort (crow passes no `--model`/`--power`; cdx refuses a different one) and refuses `--failover`. An isolated parent stays isolated: cdx resumes it in the same sandbox with the same permission. The permission is `auto` on Claude with `--strict-mcp-config` and no allowlist (cdx refuses `--settings` on a continued run; see dispatch-background-runs.md, Run sandbox).
+- Isolation (item_076): a peer review with a worktree dispatches `--isolate` (`isolated: true` in the file): someone else's code, read in cdx's OS sandbox with no credentials. Its apply only answers chat notes and stays read-only in the same sandbox. Self and threads reviews run unisolated, since their apply writes the fixes.
 - The run resumes in the review's worktree. A Claude transcript lives under its cwd, so the review and the apply share that cwd; a review run in the main checkout (no `--branch`) cannot be applied.
 - What it acts on: chat notes in any mode; accepted and edited findings on a `self` review (a `peer` review posts its accepted findings instead, item_046). A finding already handled for the same decision and note is skipped, so a second `apply` after new decisions only sends those. It resumes the last finished apply run, else the review run.
 - Prompt (`<file>.apply.md`): fix accepted findings, fix edited ones as the note says, answer chat notes in the note's language with no code change, leave the rest alone, one local commit `type[SCOPE]: message`, never push or post. Final message: `{"context": "ok|lost", "commit", "subject", "results": [{"id", "status": "fixed|answered|skipped|failed", "detail"}]}`.
@@ -85,7 +86,7 @@ The only commands that leave the machine. Each one runs after the owner's enter 
    "agree": "yes|no|partly", "test": "test diff", "pattern_kind": "repeat|new", "how": "ledger How",
    "resolved": {"at": "ISO"}, "ledger": "bumped in common.md"}],
  "threads": [{"key": "T1", "id": "...", "comment_id": 0, "author": "", "body": "", "path": "", "line": 0}],
- "branch": "MR source branch", "worktree": "<repo path>.wt/review-<number>",
+ "branch": "MR source branch", "worktree": "<repo path>.wt/review-<number>", "isolated": false,
  "apply": {"id": "cdx run id", "state": "running|done|failed", "reason": "", "parent": "resumed run id",
            "asked": {"f1": ["accepted", ""]}, "commit": "sha", "subject": "type[SCOPE]: ...",
            "warnings": [], "started_at": "ISO", "ended_at": "ISO",

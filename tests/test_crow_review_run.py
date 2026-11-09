@@ -268,7 +268,7 @@ def test_start_with_branch_reviews_in_a_detached_worktree(rr, forge, monkeypatch
     monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(k) or "rv000011-full")
     rr.main(["start", REPO, "231", "--branch", "feat", "--mode", "self"])
     wt = forge.parent / "demo-service.wt" / "review-231"
-    assert calls[0]["cwd"] == wt
+    assert calls[0]["cwd"] == wt and calls[0]["isolate"] is False  # apply resumes it with write rights
     assert (wt / "a.py").read_text() == "x = 2\n" and g(wt, "branch", "--show-current") == ""
     doc = rr.load(rr.findings_path(REPO, 231))
     assert doc["worktree"] == str(wt) and doc["branch"] == "feat"
@@ -280,6 +280,27 @@ def test_start_with_branch_reviews_in_a_detached_worktree(rr, forge, monkeypatch
     g(wt, "commit", "-qam", "fix[PY]: three")
     with pytest.raises(SystemExit, match="local commits"):
         rr.main(["start", REPO, "231", "--branch", "feat", "--mode", "self"])
+
+
+def test_peer_review_with_a_worktree_runs_isolated(rr, forge, monkeypatch):
+    calls = []
+    monkeypatch.setattr(rr, "mr_detail", lambda repo, n: {"files": [], "threads": []})
+    monkeypatch.setattr(rr, "dispatch", lambda *a, **k: calls.append(k) or "rv000012-full")
+    rr.main(["start", REPO, "232", "--branch", "feat", "--mode", "peer"])
+    assert calls[0]["isolate"] is True
+    doc = rr.load(rr.findings_path(REPO, 232))
+    assert doc["isolated"] is True and rr.validate_file(doc) == []
+    rr.main(["start", REPO, "233", "--mode", "peer"])  # no worktree: the sandbox binds only a linked worktree
+    assert calls[1]["isolate"] is False
+
+
+def test_apply_of_an_isolated_review_stays_read_only(rr, forge, monkeypatch):
+    wt = forge.parent / "demo-service.wt" / "review-230"
+    doc = reviewed(rr, wt, mode="peer", decisions=[("chat", "Pourquoi ?")])
+    rr.save(rr.findings_path(REPO, 230), {**doc, "isolated": True})
+    calls = []
+    rr.apply(REPO, 230, run_dispatch=lambda project, label, prompt, *a, **k: calls.append(prompt.read_text()) or "ap1")
+    assert "read-only" in calls[0] and "write rights" not in calls[0]
 
 
 def test_apply_resumes_the_review_with_the_decisions(rr, forge, monkeypatch):

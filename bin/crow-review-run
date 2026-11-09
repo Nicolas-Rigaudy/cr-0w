@@ -21,6 +21,8 @@ the file. Nothing is posted, pushed or committed.
 With --branch, the run works in a worktree <repo path>.wt/review-<number> detached on the MR's source
 branch. apply resumes that conversation (cdx --continue-run) in the same worktree with write rights:
 it fixes accepted and edited findings (self mode), answers chat notes, commits locally and never pushes.
+A peer review with a worktree runs isolated (cdx --isolate-workspace: no credentials, no network); its
+apply only answers chat notes, inside the same read-only sandbox.
 
 actions and act are the only commands that leave the machine. Self mode: one push of the apply commit
 to the MR branch (fast-forward only). Peer mode: one comment per accepted or edited finding, on its
@@ -360,9 +362,13 @@ def start(a):
     prompt = path.with_suffix(".prompt.md")
     prompt.parent.mkdir(parents=True, exist_ok=True)
     prompt.write_text(prompt_text(a.repo, a.number, a.mode, bundle))
-    run_id = dispatch(p["name"], f"review-{a.number}", prompt, a.model, a.power, cwd=wt)
+    # A peer review reads someone else's code and has no code apply: it runs in cdx's sandbox. Self and
+    # threads reviews stay out of it, since apply resumes them with write rights (cdx keeps an isolated
+    # continuation read-only).
+    isolate = a.mode == "peer" and wt is not None
+    run_id = dispatch(p["name"], f"review-{a.number}", prompt, a.model, a.power, cwd=wt, isolate=isolate)
     doc = {"schema": SCHEMA, "repo": a.repo, "number": a.number, "project": p["name"], "mode": a.mode,
-           "branch": a.branch or "", "worktree": str(wt or ""),
+           "branch": a.branch or "", "worktree": str(wt or ""), "isolated": isolate,
            "run": {"id": run_id, "state": "running", "reason": "", "model": a.model,
                    "started_at": now(), "ended_at": ""},
            "summary": "", "findings": []}
@@ -399,13 +405,15 @@ def review_worktree(project_path, number, branch, force=False):
     return wt
 
 
-def dispatch(project, label, prompt, model, power, cwd=None, continue_run=None, permission="review"):
+def dispatch(project, label, prompt, model, power, cwd=None, continue_run=None, permission="review", isolate=False):
     """crow-runs dispatch (review permission unless told); returns the full run id.
-    With continue_run, cdx pins the parent's model and effort, so none are passed."""
+    With continue_run, cdx pins the parent's model and effort, so none are passed (and an isolated parent's
+    sandbox: crow-runs isolates the continuation itself)."""
     args = [str(BIN / "crow-runs"), "dispatch", project, label, "--prompt-file", str(prompt)]
     args += ["--kind", "review"] + (["--continue-run", continue_run] if continue_run else ["--model", model, "--power", power])
     args += ["--permission", permission] if permission else []
     args += ["--cwd", str(cwd)] if cwd else []
+    args += ["--isolate"] if isolate else []
     r = subprocess.run(args, capture_output=True, text=True)
     m = re.search(r"^dispatched (\S+)", r.stdout, re.M)
     if r.returncode or not m:
@@ -518,8 +526,10 @@ def apply_prompt(doc, items):
         note = f.get("note") if f["state"] == "chat" or not threads else ""
         lines.append(f"- {f['id']} [{f['state']}] {f['title']} ({where}): {what}." + (f"\n  Owner's note: {note}" if note else ""))
     skipped = [f["id"] for f in doc.get("findings") or [] if f not in items]
+    rights = ("You still run read-only, in the same sandbox: answer the notes, change no file." if doc.get("isolated") else
+              f"You now have write rights in this worktree ({doc.get('worktree') or 'the current folder'}) and nowhere else.")
     return f"""Apply phase of your review of {doc['repo']} !{doc['number']} ({doc['mode']} mode). This is the same conversation: your findings f1..f{len(doc.get('findings') or [])} are above.
-You now have write rights in this worktree ({doc.get('worktree') or 'the current folder'}) and nowhere else.
+{rights}
 
 First check that this conversation holds your review (the bundle and your findings). If it does not, change nothing and answer {{"context": "lost"}}.
 
