@@ -295,6 +295,11 @@ func (env Env) finish(r Runner, m contract.Mission) (line *TickLine, live bool, 
 	}
 
 	file, cb, why := versionFile(dir, m.ID, run.Version)
+	if cb != nil {
+		if err := Coverage(dir, m.ID, run.Version, cb); err != nil {
+			file, cb, why = "", nil, file+": "+err.Error()
+		}
+	}
 	if cb == nil {
 		detail := fmt.Sprintf("run %s ended %s (exit %s): %s", run.Run, cause, exitText(st.ExitCode), why)
 		if err := endRun(); err != nil {

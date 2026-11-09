@@ -90,7 +90,7 @@ func TestNewFillsKindDefaults(t *testing.T) {
 	if want := []string{"created/owner", "state/core"}; !slices.Equal(types, want) {
 		t.Errorf("events = %v, want %v", types, want)
 	}
-	if !strings.Contains(string(b), `"budget":{"time_min":60`) {
+	if !strings.Contains(string(b), `"time_min":60`) {
 		t.Errorf("created event does not carry the resolved budget: %s", b)
 	}
 }

@@ -6,7 +6,6 @@ package eventlog
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -61,7 +60,8 @@ func Append(root string, e contract.Event) (int64, error) {
 	if err := Validate(e); err != nil {
 		return 0, err
 	}
-	line, err := json.Marshal(e)
+	// Lines are canonical JSON, so a validation line hashes the same in any language.
+	line, err := contract.Canonical(e)
 	if err != nil {
 		return 0, err
 	}

@@ -162,11 +162,13 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 			it.State, it.Answered = "answered", &ts
 		}
 	case *contract.ValidationData:
+		// The record chain is checked before each publish (mission.Verify, item_108).
 		if e.Type == "validation" {
 			ts := e.TS
 			m.Validation = &ts
+		} else {
+			m.Validation = nil
 		}
-		// validation_dropped: the record chain is checked by item_108.
 	}
 	m.Updated = e.TS
 	return nil
