@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 40%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -51,6 +51,9 @@
 - Rationale: R&D, after reviews and sprint work. Unblocks item_126.
 
 # Notes
+- 2026-11-07 owner ran prompt 1 (cyber cast), 7 takes in the vault `v5/`, compare page `local/state/research/nest-design/compare-cast-v5.html`.
+- 2026-11-09 cyber cast picked as 8 families (req_040 "Cast pick, cyber"). State colours dropped: state through pose and props. Modern deferred to a later round, so AC1 to AC3 now cover cyber only.
+- Next: v5b prompts (merged cast sheet, states, phone, night) in `Nest Prompts v5.md`, owner runs them, compare, approve.
 - Images v4 and the compare page: `local/state/research/nest-design/refs/v4/`, `compare-concepts-v4.html`.
 
 # Executions

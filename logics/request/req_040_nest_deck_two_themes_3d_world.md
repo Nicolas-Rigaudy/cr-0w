@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-07 17:03:34
+> Indicators reviewed: 2026-11-09 13:37:36
 
 # AI Context
 - Summary: Nest and deck keep two themes only, modern (work default) and cyber (personal default). A theme changes look, motion, 2D/3D elements and the butler voice. Nest gets a 3D world that shows missions and agents at work. One focus switch later drives the whole desktop. Design research comes first.
@@ -114,3 +114,10 @@ After pass 3 (Blender kits) was rejected ("shows nothing the system is doing, ra
 - **Kept in mind:** the hangar (biggest wow, ships), the grid city (simplest, closest to a node view) and the war table ("your move" signal). They are candidates for later views or extra rooms, not dropped.
 - How the concepts got there: purpose first, then content, then flat annotated sketches, then image prompts that name a game genre and never "dashboard/UI". This replaces the rejected render passes 1 to 3.
 - Next: `item_125_workshop_concept_art_round_2_original_cast_states_phone_and_night_views`, then `item_126_plan_the_workshop_nest_build_from_the_approved_concept_art`.
+
+# Cast pick, cyber (owner, 2026-11-09)
+- Source: v5 cast sheets in the vault `CR-0W/Research/nest-design/v5/` (takes 3, 5, 7 liked). Droids with the same body plan are merged into one family. One family per mission kind.
+- Barrel (3#1) = CR-0W butler at the owner's desk. Scholar (3#6) = research. Lanky (3#2 body on 5#2 wheel) = write. Floater (3#3, 7#2; 5#3 hub becomes the planning table it docks at) = plan. Walker (3#4, 5#7, 7#7: legs, camera head, tray, helper drones) = review. Tracked (5#1 many arms = build, 3#5 fork = courier). Alchemist (5#6, 7#6) = design. Heavy (3#8) = repair and review-fix.
+- Dropped: 3#7, 5#4, 5#5, 5#8, 7#1, 7#3, 7#4, 7#5, 7#8.
+- **No state colours (owner):** state shows through pose and props only (working at a bench, holding a crate at the desk, slumped by a smoking part, docked in a rack, in line with a ticket). Neon is free: each family gets its own body colour and neon accent. This replaces the v4/v5 rule that reserved blue, amber, red and green.
+- **Cyber first (owner):** modern cast, states, phone and night move to a later round.
