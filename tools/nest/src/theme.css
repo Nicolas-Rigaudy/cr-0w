@@ -47,42 +47,47 @@
 }
 
 [data-theme='cyber'] {
-  --bg: #120b2c;
-  --bg-image: linear-gradient(rgba(10, 12, 40, 0.55), rgba(10, 12, 40, 0.55)),
-    radial-gradient(ellipse at 50% 46%, #1d6470 0%, #174a5c 35%, #182650 65%, #120b2c 100%);
-  --scan: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
-  --fg: #d8e6ff;
-  --dim: #9fb6e0;
-  --sub: #8aa0c8;
-  --panel: rgba(16, 24, 58, 0.85);
-  --panel-solid: rgba(12, 18, 46, 0.96);
-  --line: #4fc3ff55;
-  --row: rgba(20, 32, 76, 0.7);
-  --btn: rgba(20, 32, 76, 0.85);
-  --well: rgba(8, 12, 32, 0.7);
+  /* Netrunner register (archeotech cyberdeck tokens, item_161): near-black base, cyan the one light hue. */
+  --bg: #05070c;
+  --bg-image: none;
+  --scan: none;
+  --fg: #e2f4ff;
+  --dim: #8fb3c3;
+  --sub: #7fa3b3;
+  --panel: rgba(9, 18, 24, 0.92);
+  --panel-solid: #070d12;
+  --line: #1d3a46;
+  --row: #0b1820;
+  --btn: #0b1820;
+  --well: #05070c;
   --r-pn: 0;
   --r-card: 0;
   --r-row: 0;
   --r-btn: 0;
   --clip-pn: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   --clip-btn: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  --ph: #4fc3ff;
-  --ph-line: #4fc3ff33;
-  --row-edge: #4fc3ff33;
-  --glow: 0 0 8px currentColor;
+  --ph: #9cd6e6;
+  --ph-line: #1d3a46;
+  --row-edge: color-mix(in srgb, var(--c-w) 33%, transparent);
+  --glow: none;
+  --logo-glow: 0 0 8px color-mix(in srgb, var(--logo) 40%, transparent);
+  --chrome: #1d3a46;
+  --chrome-text: #7fdcec;
+  --dots: radial-gradient(color-mix(in srgb, var(--line) 33%, transparent) 1px, transparent 1.2px) 0 0 / 18px 18px;
+  --hero-bg: radial-gradient(ellipse at 50% 46%, #0f2e36 0%, #0a1c24 38%, #070e14 68%, #05070c 100%);
   --accent: #c05cff;
-  --accent-ink: #0b0820;
+  --accent-ink: #05070c;
   --accent-soft: rgba(192, 92, 255, 0.18);
   --logo: #2ef2ff;
   --logo-lp: #2ef2ff;
-  --hdr: rgba(10, 12, 40, 0.75);
+  --hdr: #070d12;
   --c-w: #2ef2ff;
-  --c-n: #ffb800;
-  --c-f: #ff2e63;
-  --c-d: #5dffb0;
-  --c-b: #4fc3ff;
-  --c-q: #8aa0c8;
-  --c-s: #8aa0c8;
+  --c-n: #ffb02e;
+  --c-f: #ff2a4a;
+  --c-d: #3dff9e;
+  --c-b: #3aa8ff;
+  --c-q: #7fa3b3;
+  --c-s: #7fa3b3;
   --focus: #2ef2ff;
   --font-display: 'Orbitron', sans-serif;
   --font-head: 'Oxanium', sans-serif;
@@ -419,14 +424,14 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 }
 [data-theme='cyber'] .lp { text-transform: lowercase; }
 @media (min-width: 1200px) {
-  [data-theme='cyber'] .top { border-bottom-color: #4fc3ff; }
-  [data-theme='cyber'] .top .logo { font: 700 20px var(--font-display); letter-spacing: 0.2em; text-shadow: 0 0 10px #2ef2ff88; }
+  [data-theme='cyber'] .top { border-bottom-color: var(--chrome); }
+  [data-theme='cyber'] .top .logo { font: 700 20px var(--font-display); letter-spacing: 0.2em; text-shadow: var(--logo-glow); }
   [data-theme='cyber'] .pills { font-size: 14px; letter-spacing: 0.14em; }
   [data-theme='cyber'] .pill { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-  [data-theme='cyber'] .acct .gb { border-radius: 0; background: #4fc3ff22; }
+  [data-theme='cyber'] .acct .gb { border-radius: 0; background: var(--line); }
   [data-theme='cyber'] .accts { color: var(--fg); }
-  [data-theme='cyber'] .clock .long { font: 500 14px var(--font-display); letter-spacing: 0.1em; color: #2ef2ff; }
-  [data-theme='cyber'] .main { background: radial-gradient(#4fc3ff22 1px, transparent 1.2px) 0 0 / 18px 18px; }
+  [data-theme='cyber'] .clock .long { font: 500 14px var(--font-display); letter-spacing: 0.1em; color: var(--fg); }
+  [data-theme='cyber'] .main { background: var(--dots); }
 }
 
 .lp { height: 100%; display: grid; gap: 14px; padding: 12px 20px 16px; font-size: 13px; line-height: 1.4; min-height: 0; }
@@ -484,22 +489,22 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 .lp .slot .label { position: absolute; left: 12px; top: 8px; }
 
 [data-theme='cyber'] .lp .pn { clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
-[data-theme='cyber'] .lp .ph { font-family: 'Oxanium', sans-serif; letter-spacing: 0.16em; border-bottom: 1px solid #4fc3ff33; padding-bottom: 4px; }
-[data-theme='cyber'] .lp .ph .k, [data-theme='cyber'] .lp .kc { border-radius: 0; border-color: #4fc3ff; color: #2ef2ff; font-family: var(--font-display); }
+[data-theme='cyber'] .lp .ph { font-family: 'Oxanium', sans-serif; letter-spacing: 0.16em; border-bottom: 1px solid var(--ph-line); padding-bottom: 4px; }
+[data-theme='cyber'] .lp .ph .k, [data-theme='cyber'] .lp .kc { border-radius: 0; border-color: var(--chrome); color: var(--chrome-text); font-family: var(--font-display); }
 [data-theme='cyber'] .lp .kc { font-size: 10px; }
 [data-theme='cyber'] .lp .ph .st, [data-theme='cyber'] .lp .ph .go { letter-spacing: 0.04em; text-transform: lowercase; }
-[data-theme='cyber'] .lp .row { border-radius: 0; background: rgba(16, 24, 58, 0.55); border-left: 2px solid #4fc3ff33; }
+[data-theme='cyber'] .lp .row { border-radius: 0; background: var(--row); border-left: 2px solid var(--row-edge); }
 [data-theme='cyber'] .lp .edge-n { border: 1px solid var(--c-n); border-left-width: 3px; }
 [data-theme='cyber'] .lp .edge-f { border: 1px solid var(--c-f); border-left-width: 3px; }
 [data-theme='cyber'] .lp .tag { border-radius: 0; letter-spacing: 0.12em; }
-[data-theme='cyber'] .lp .btn { border-radius: 0; border-color: #4fc3ff; background: rgba(79, 195, 255, 0.08); letter-spacing: 0.12em; text-transform: uppercase; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+[data-theme='cyber'] .lp .btn { border-radius: 0; border-color: var(--chrome); background: transparent; letter-spacing: 0.12em; text-transform: uppercase; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
 [data-theme='cyber'] .lp .btn.pri { background: var(--accent); border-color: var(--accent); }
-[data-theme='cyber'] .lp .tm { font: 700 14px var(--font-display); color: #2ef2ff; text-shadow: 0 0 8px #2ef2ff88; }
-[data-theme='cyber'] .lp .kpi > div { border-radius: 0; background: rgba(16, 24, 58, 0.55); border-left: 2px solid currentColor; }
+[data-theme='cyber'] .lp .tm { font: 700 14px var(--font-display); color: var(--c-w); }
+[data-theme='cyber'] .lp .kpi > div { border-radius: 0; background: var(--row); border-left: 2px solid currentColor; }
 .lp .kpi b .z { display: none; font-style: normal; }
 [data-theme='cyber'] .lp .kpi b .z { display: inline; }
-[data-theme='cyber'] .lp .kpi b { font-weight: 700; font-size: 28px; text-shadow: 0 0 8px currentColor; }
-[data-theme='cyber'] .lp .slot { border-radius: 0; border-color: #2ef2ff66; color: #2ef2ff66; }
+[data-theme='cyber'] .lp .kpi b { font-weight: 700; font-size: 28px; }
+[data-theme='cyber'] .lp .slot { border-radius: 0; border-color: var(--line); color: var(--line); }
 
 /* Fold inner screen reported as two segments: keep content out of the hinge. */
 @media (horizontal-viewport-segments: 2) {
@@ -519,7 +524,8 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 .hero-box { position: relative; width: 100%; height: 100%; overflow: hidden;
   background: radial-gradient(ellipse at 50% 46%, color-mix(in srgb, var(--c-w) 34%, var(--bg)) 0%,
     color-mix(in srgb, var(--c-w) 20%, var(--bg)) 35%, color-mix(in srgb, var(--accent) 8%, var(--bg)) 65%, var(--bg) 100%); }
-[data-theme='cyber'] .hero-box { background: radial-gradient(ellipse at 50% 46%, #1d6470 0%, #174a5c 35%, #182650 65%, #120b2c 100%); }
+[data-theme='cyber'] .hero-box { background: var(--hero-bg); }
+[data-theme='cyber'] .hero-say { text-shadow: none; }
 .hero-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hero-say { position: absolute; left: 0; right: 0; top: 18px; text-align: center; font: 15px var(--font-head); color: var(--fg);
   text-shadow: 0 0 10px color-mix(in srgb, var(--c-w) 60%, transparent); padding: 0 16px; }

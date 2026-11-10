@@ -1,10 +1,10 @@
 ## item_161_netrunner_palette_for_the_nest_cyber_theme - Netrunner palette for the Nest cyber theme
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Low
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -49,6 +49,11 @@
 # Priority
 - Priority: High
 - Rationale: Set by scaffold input or defaulted for grooming.
+
+# Validation
+- Build: cyber tokens set to the Netrunner values in tools/nest/src/theme.css. New tokens --chrome, --chrome-text, --logo-glow, --dots, --hero-bg. Cyber rules hold no hex. PWA theme-color #05070c.
+- AC2: modern render pixel-identical before and after.
+- AC1: cyber render differs from B-netrunner.png on 0.04% of pixels: Needs rows keep amber/red status edges (the mock's override made them cyan). Live chip keeps its glow. Hero-say glow removed. Compare page: vault Research/nest-home-design-pass/item161-compare.html. Owner approved 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

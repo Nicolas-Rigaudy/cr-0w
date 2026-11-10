@@ -19,7 +19,7 @@
 - Orchestrate the scaffolded request chain and keep sibling implementation slices linked.
 
 # Plan
-- [ ] 1. 1. Netrunner palette
+- [x] 1. 1. Netrunner palette
 - [ ] 2. 2. Holographic hero
 - [ ] 3. 3. Design skills audit
 - [ ] 4. 4. JARVIS chrome

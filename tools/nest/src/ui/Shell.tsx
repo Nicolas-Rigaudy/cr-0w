@@ -12,7 +12,7 @@ function useTheme(): [Theme, () => void] {
   const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme === 'cyber' ? 'cyber' : 'modern'))
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'cyber' ? '#120b2c' : '#24273a')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'cyber' ? '#05070c' : '#24273a')
     try { localStorage.setItem('nest.theme', theme) } catch { /* storage blocked: theme stays per visit */ }
   }, [theme])
   return [theme, () => setTheme((t) => (t === 'modern' ? 'cyber' : 'modern'))]
