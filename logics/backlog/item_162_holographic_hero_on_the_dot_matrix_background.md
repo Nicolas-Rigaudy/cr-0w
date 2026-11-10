@@ -4,10 +4,11 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 40%
+> Progress: 90%
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 15:21:18
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -62,9 +63,13 @@
 - Build: .hero-box has no background. Both themes paint the dot matrix (--dots) on .main at laptop width. ::before is a faint --c-w vignette, ::after a soft conic beam from the bottom edge, both under the canvas (isolation, z-index -1). Cyber hero-say gets a dark halo instead of a glow. No scan line: the hero stays one static frame.
 - AC1: dots visible behind and around the head on cyber and modern renders.
 - AC2: label contrast on the brightest backdrop (vignette peak + beam): cyber dim 6.5, fg 12.9, needs 8.0, failed 3.9 (the failed label sits outside the peak, about 5:1 there, with a dark halo); modern all >= 4.3.
-- AC3: first pass (no box, dots, cone) compare page vault Research/nest-home-design-pass/item162-compare.html. Owner asked for the holotable on top of it; holotable build pending.
+- AC3: approved by the owner on 2026-11-10, compare page vault Research/nest-home-design-pass/holotable-compare.html (orbit hero vs holotable, cyber and modern). First pass: item162-compare.html.
+- Holotable build (src/hero/scene.ts, Hero.tsx, theme.css): projector lens and cone, table rings and spokes, option B head drawn as a scaled layer between back and front cells, head turned toward the target with eyes tinted to its state.
+- AC4: planet size = open missions, colour = most urgent state, stalk height = wait (needs) or a short stalk (working), done = flat green rings, failed = broken ring with the cause. Rim = 24h ruler, day so far lit, white now notch, amber notches for today's agenda, next event named. Fixtures: 9 projects, agenda.json with 2 events.
+- AC5: glow on the lens, the head, the target planet (high emit and beacon) and the now notch. Other planets stay at low emit.
+- Labels: planet labels avoid other labels, tags, the event label and sphere discs. They flip side first, then move to the nearest free row.
+- Checks: tsc clean, vitest 6/6, build OK, shots at laptop cyber and modern.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

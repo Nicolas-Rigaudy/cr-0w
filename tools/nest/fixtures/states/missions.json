@@ -286,5 +286,257 @@
     "mr": null,
     "created": "2026-11-09T09:09:00+01:00",
     "updated": "2026-11-09T09:14:00+01:00"
+  },
+  {
+    "id": "20261109-build-holotable-hero",
+    "kind": "build",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "nest",
+    "goal": "Draw the holotable hero.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "running",
+    "runs": [
+      {
+        "run": "a1b2c3d4",
+        "mission": "20261109-build-holotable-hero",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T15:05:00+01:00",
+        "ended": null,
+        "cause": null,
+        "exit": null
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-build-holotable-hero",
+    "worktree": "nest.wt/mission-20261109-build-holotable-hero",
+    "mr": null,
+    "created": "2026-11-09T15:00:00+01:00",
+    "updated": "2026-11-09T16:05:00+01:00"
+  },
+  {
+    "id": "20261109-build-boot-sequence",
+    "kind": "build",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "nest",
+    "goal": "Play the boot sequence on first load.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "queued",
+    "runs": [],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-build-boot-sequence",
+    "worktree": "nest.wt/mission-20261109-build-boot-sequence",
+    "mr": null,
+    "created": "2026-11-09T15:20:00+01:00",
+    "updated": "2026-11-09T15:20:00+01:00"
+  },
+  {
+    "id": "20261109-fix-contact-form",
+    "kind": "fix",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "website",
+    "goal": "Fix the contact form validation.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "running",
+    "runs": [
+      {
+        "run": "b2c3d4e5",
+        "mission": "20261109-fix-contact-form",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T15:40:00+01:00",
+        "ended": null,
+        "cause": null,
+        "exit": null
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-fix-contact-form",
+    "worktree": "website.wt/mission-20261109-fix-contact-form",
+    "mr": null,
+    "created": "2026-11-09T15:35:00+01:00",
+    "updated": "2026-11-09T16:00:00+01:00"
+  },
+  {
+    "id": "20261109-sort-inbox-notes",
+    "kind": "sort",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "vault",
+    "goal": "Sort the inbox notes into projects.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "done",
+    "runs": [
+      {
+        "run": "c3d4e5f6",
+        "mission": "20261109-sort-inbox-notes",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T09:30:00+01:00",
+        "ended": "2026-11-09T10:05:00+01:00",
+        "cause": "done",
+        "exit": 0
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-sort-inbox-notes",
+    "worktree": "vault.wt/mission-20261109-sort-inbox-notes",
+    "mr": null,
+    "created": "2026-11-09T09:25:00+01:00",
+    "updated": "2026-11-09T10:05:00+01:00"
+  },
+  {
+    "id": "20261109-link-daily-notes",
+    "kind": "link",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "vault",
+    "goal": "Link the daily notes to their projects.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "done",
+    "runs": [
+      {
+        "run": "d4e5f6a7",
+        "mission": "20261109-link-daily-notes",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T10:10:00+01:00",
+        "ended": "2026-11-09T10:40:00+01:00",
+        "cause": "done",
+        "exit": 0
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-link-daily-notes",
+    "worktree": "vault.wt/mission-20261109-link-daily-notes",
+    "mr": null,
+    "created": "2026-11-09T10:08:00+01:00",
+    "updated": "2026-11-09T10:40:00+01:00"
+  },
+  {
+    "id": "20261109-fix-push-token-rotation",
+    "kind": "fix",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "infra",
+    "goal": "Rotate the push token.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "failed",
+    "runs": [
+      {
+        "run": "e5f6a7b8",
+        "mission": "20261109-fix-push-token-rotation",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T15:30:00+01:00",
+        "ended": "2026-11-09T15:52:00+01:00",
+        "cause": "error",
+        "exit": 1
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-fix-push-token-rotation",
+    "worktree": "infra.wt/mission-20261109-fix-push-token-rotation",
+    "mr": null,
+    "created": "2026-11-09T15:28:00+01:00",
+    "updated": "2026-11-09T15:52:00+01:00"
   }
 ]

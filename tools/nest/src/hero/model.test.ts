@@ -22,4 +22,16 @@ describe('hero model', () => {
     expect(m.mood).toBe('run')
     expect(m.line).toMatch(/Sir\./)
   })
+
+  it('maps the holotable values from the fixtures', async () => {
+    const src = fixtureSource()
+    const m = heroModel(await src.missions(), await src.inbox(), src.now())
+    const p = Object.fromEntries(m.projects.map((x) => [x.name, x]))
+    expect(m.projects[0].name).toBe('demo') // longest wait first
+    expect(p.demo.wait).toBe(290)
+    expect(p['cr-0w'].wait).toBe(83)
+    expect(p.nest).toMatchObject({ state: 'working', open: 2, runFrom: '2026-11-09T15:05:00+01:00' })
+    expect(p.vault).toMatchObject({ state: 'done', open: 0 })
+    expect(p.infra).toMatchObject({ state: 'failed', cause: 'Push token rotation' })
+  })
 })

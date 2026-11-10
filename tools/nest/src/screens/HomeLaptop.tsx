@@ -25,7 +25,7 @@ function Later() {
 }
 
 export function HomeLaptop({ snap }: { snap: Snapshot }) {
-  const { missions, inbox, now } = snap
+  const { missions, inbox, agenda, now } = snap
   const c = countByState(missions, inbox)
   const open = openInbox(inbox)
   const asks = open
@@ -118,7 +118,7 @@ export function HomeLaptop({ snap }: { snap: Snapshot }) {
       </div>
 
       <section className="slot hero-slot" aria-label="CR-0W overview">
-        <Hero missions={missions} inbox={inbox} now={now} />
+        <Hero missions={missions} inbox={inbox} agenda={agenda} now={now} />
       </section>
 
       <div className="rail">

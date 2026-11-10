@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { DataSource } from './source'
-import type { InboxItem, Mission } from './types'
+import type { AgendaEvent, InboxItem, Mission } from './types'
 
 export const DataContext = createContext<DataSource | null>(null)
 
@@ -13,6 +13,7 @@ export function useSource() {
 export interface Snapshot {
   missions: Mission[]
   inbox: InboxItem[]
+  agenda: AgendaEvent[]
   now: Date
 }
 
@@ -21,8 +22,8 @@ export function useSnapshot(): Snapshot | null {
   const [snap, setSnap] = useState<Snapshot | null>(null)
   useEffect(() => {
     let live = true
-    Promise.all([src.missions(), src.inbox()]).then(([missions, inbox]) => {
-      if (live) setSnap({ missions, inbox, now: src.now() })
+    Promise.all([src.missions(), src.inbox(), src.agenda()]).then(([missions, inbox, agenda]) => {
+      if (live) setSnap({ missions, inbox, agenda, now: src.now() })
     })
     return () => { live = false }
   }, [src])

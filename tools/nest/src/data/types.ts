@@ -42,6 +42,14 @@ export interface Mission {
   updated: string
 }
 
+// Calendar event. Not in the core contract yet: fixtures only until the agenda API lands.
+export interface AgendaEvent {
+  id: string
+  title: string
+  start: string
+  end: string
+}
+
 export type InboxVerb =
   | 'go' | 'dig' | 'no' | 'ok' | 'msg' | 'abandon' | 'pick' | 'change' | 'approve' | 'answer'
 
