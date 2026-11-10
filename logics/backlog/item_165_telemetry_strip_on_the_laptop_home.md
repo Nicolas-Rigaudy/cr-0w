@@ -8,7 +8,7 @@
 > Complexity: Low
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-10 16:17:34
+> Indicators reviewed: 2026-11-10 18:01:00
 
 # AI Context
 - Summary: a thin telemetry strip on the laptop Home (tokens, cost, model, uptime) fed by the core accounts and runs sections.
@@ -21,10 +21,10 @@
 
 # Scope
 - In:
-  - A thin strip with tokens, cost, model and uptime, read through `useSnapshot()` from the core accounts and runs sections (live after item_167; fixtures in dev and tests).
+  - A thin strip with tokens, cost, model and uptime, read through `useSnapshot()` from the core `usage`, `accounts` and `sessions` sections (item_169; fixtures in dev and tests).
   - // section labels if they fit the boards.
 - Out:
-  - New data sources in core beyond a fixture field
+  - New data sources in core (item_169 serves them)
 
 # Acceptance criteria
 - AC1: No hard-coded sample values in the component.
@@ -41,7 +41,7 @@
 - Product brief(s): `prod_007_nest_home_design_pass`
 - Architecture decision(s): (none yet)
 - Request: `req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome`
-- Depends on: `item_167_nest_reads_live_data_from_the_core_api` (live data; can be built on fixtures if it slips)
+- Depends on: `item_167_nest_reads_live_data_from_the_core_api` (live data; can be built on fixtures if it slips), `item_169_core_serves_every_deck_source_as_read_only_sections` (usage and sessions sections)
 - Primary task(s): `task_019_orchestrate_the_nest_home_design_pass`, run in `task_020_orchestrate_nest_going_live_on_the_core_api`
 
 # Priority
