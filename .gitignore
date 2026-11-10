@@ -15,3 +15,5 @@ logics/.cache/
 
 # Third-party skills cloned by bin/crow-skills-ext (manifest: skills/ext.list)
 vendor/
+tools/nest/node_modules/
+tools/nest/dist/

@@ -1,0 +1,290 @@
+[
+  {
+    "id": "20261109-fix-push-token-refresh",
+    "kind": "fix",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "cr-0w",
+    "goal": "Refresh the push token before it expires.",
+    "end_state": "A commit with the refresh and a test.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "failed",
+    "runs": [
+      {
+        "run": "a1b2c3d4",
+        "mission": "20261109-fix-push-token-refresh",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T13:10:00+01:00",
+        "ended": "2026-11-09T13:42:00+01:00",
+        "cause": "error",
+        "exit": 1
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "bin/crow-push*"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-fix-push-token-refresh",
+    "worktree": "cr-0w.wt/mission-20261109-fix-push-token-refresh",
+    "mr": null,
+    "created": "2026-11-09T13:09:00+01:00",
+    "updated": "2026-11-09T13:42:00+01:00"
+  },
+  {
+    "id": "20261109-build-report-export",
+    "kind": "build",
+    "batch": "20261109-afk",
+    "scope": "work",
+    "data_class": "work",
+    "project": "demo",
+    "goal": "Export reports as CSV.",
+    "end_state": "An MR with the export and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "queued",
+    "runs": [
+      {
+        "run": "b2c3d4e5",
+        "mission": "20261109-build-report-export",
+        "account": "work",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T12:00:00+01:00",
+        "ended": "2026-11-09T12:55:00+01:00",
+        "cause": "usage_limit",
+        "exit": null
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "src/reports/**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-build-report-export",
+    "worktree": "demo.wt/mission-20261109-build-report-export",
+    "mr": null,
+    "created": "2026-11-09T11:58:00+01:00",
+    "updated": "2026-11-09T12:55:00+01:00"
+  },
+  {
+    "id": "20261109-research-vault-search",
+    "kind": "research",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "cr-0w",
+    "goal": "Compare local search engines for the vault.",
+    "end_state": "A report with a recommendation.",
+    "autonomy": "ask",
+    "gates": [
+      "report"
+    ],
+    "state": "queued",
+    "runs": [],
+    "version": 0,
+    "validation": null,
+    "file_scope": [],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": null,
+    "worktree": null,
+    "mr": null,
+    "created": "2026-11-09T15:30:00+01:00",
+    "updated": "2026-11-09T15:30:00+01:00"
+  },
+  {
+    "id": "20261109-build-inbox-filters",
+    "kind": "build",
+    "batch": null,
+    "scope": "crow",
+    "data_class": "personal",
+    "project": "cr-0w",
+    "goal": "Add filters to the inbox list.",
+    "end_state": "A commit with filters and tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "waiting",
+    "runs": [
+      {
+        "run": "c3d4e5f6",
+        "mission": "20261109-build-inbox-filters",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T14:20:00+01:00",
+        "ended": "2026-11-09T14:48:00+01:00",
+        "cause": "done",
+        "exit": 0
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "tools/nest/src/inbox/**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-build-inbox-filters",
+    "worktree": "cr-0w.wt/mission-20261109-build-inbox-filters",
+    "mr": null,
+    "created": "2026-11-09T14:18:00+01:00",
+    "updated": "2026-11-09T14:48:00+01:00"
+  },
+  {
+    "id": "20261109-build-mr-pipeline-badge",
+    "kind": "build",
+    "batch": null,
+    "scope": "work",
+    "data_class": "work",
+    "project": "demo",
+    "goal": "Show the pipeline state on each MR row.",
+    "end_state": "An MR ready for review.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "review",
+    "runs": [
+      {
+        "run": "d5e6f7a8",
+        "mission": "20261109-build-mr-pipeline-badge",
+        "account": "work",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T10:05:00+01:00",
+        "ended": "2026-11-09T11:20:00+01:00",
+        "cause": "done",
+        "exit": 0
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "src/mrs/**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-build-mr-pipeline-badge",
+    "worktree": "demo.wt/mission-20261109-build-mr-pipeline-badge",
+    "mr": "!231",
+    "created": "2026-11-09T10:00:00+01:00",
+    "updated": "2026-11-09T11:20:00+01:00"
+  },
+  {
+    "id": "20261109-build-sse-endpoint",
+    "kind": "build",
+    "batch": null,
+    "scope": "crow",
+    "data_class": "personal",
+    "project": "cr-0w",
+    "goal": "Serve mission events over SSE.",
+    "end_state": "A commit with the endpoint and its tests.",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "publishing",
+    "runs": [
+      {
+        "run": "e6f7a8b9",
+        "mission": "20261109-build-sse-endpoint",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T15:05:00+01:00",
+        "ended": null,
+        "cause": null,
+        "exit": null
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [
+      "tools/crow-core/**"
+    ],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-build-sse-endpoint",
+    "worktree": "cr-0w.wt/mission-20261109-build-sse-endpoint",
+    "mr": null,
+    "created": "2026-11-09T15:04:00+01:00",
+    "updated": "2026-11-09T16:02:00+01:00"
+  },
+  {
+    "id": "20261109-chore-prune-worktrees",
+    "kind": "chore",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "cr-0w",
+    "goal": "Prune stale mission worktrees.",
+    "end_state": "No worktree older than a week.",
+    "autonomy": "auto",
+    "gates": [],
+    "state": "cancelled",
+    "runs": [
+      {
+        "run": "f7a8b9c0",
+        "mission": "20261109-chore-prune-worktrees",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T09:10:00+01:00",
+        "ended": "2026-11-09T09:14:00+01:00",
+        "cause": "stopped",
+        "exit": 130
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [],
+    "budget": {
+      "time_min": 90,
+      "budget_usd": 8.0,
+      "resumes": 2
+    },
+    "branch": "mission/20261109-chore-prune-worktrees",
+    "worktree": "cr-0w.wt/mission-20261109-chore-prune-worktrees",
+    "mr": null,
+    "created": "2026-11-09T09:09:00+01:00",
+    "updated": "2026-11-09T09:14:00+01:00"
+  }
+]

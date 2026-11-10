@@ -1,0 +1,66 @@
+[
+  {
+    "id": "20261109-build-inbox-filters/v1",
+    "mission": "20261109-build-inbox-filters",
+    "kind": "build",
+    "project": "cr-0w",
+    "type": "approval",
+    "source": "plan",
+    "version": 1,
+    "file": "plan.v1.md",
+    "ask": "Plan: three filters (state, project, source) in a segmented bar.",
+    "verbs": [
+      "go",
+      "dig",
+      "no"
+    ],
+    "blocking": false,
+    "artifacts": [],
+    "state": "open",
+    "created": "2026-11-09T14:48:00+01:00",
+    "answered": null
+  },
+  {
+    "id": "20261109-build-mr-pipeline-badge/v1",
+    "mission": "20261109-build-mr-pipeline-badge",
+    "kind": "build",
+    "project": "demo",
+    "type": "review",
+    "source": "report",
+    "version": 1,
+    "file": "report.v1.md",
+    "ask": "MR !231 is ready: badge on each row, 6 tests.",
+    "verbs": [
+      "approve",
+      "change",
+      "msg"
+    ],
+    "blocking": false,
+    "artifacts": [
+      "outbox/badge.png"
+    ],
+    "state": "open",
+    "created": "2026-11-09T11:20:00+01:00",
+    "answered": null
+  },
+  {
+    "id": "20261109-build-inbox-filters/v1/q1",
+    "mission": "20261109-build-inbox-filters",
+    "kind": "build",
+    "project": "cr-0w",
+    "type": "choice",
+    "source": "questions",
+    "version": 1,
+    "file": "outbox/questions.json",
+    "ask": "Keep the filter in the URL?",
+    "verbs": [
+      "pick",
+      "answer"
+    ],
+    "blocking": true,
+    "artifacts": [],
+    "state": "open",
+    "created": "2026-11-09T14:47:00+01:00",
+    "answered": null
+  }
+]
