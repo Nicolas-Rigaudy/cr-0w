@@ -41,7 +41,7 @@
 - (no validation recorded yet)
 
 # Report
-- Not started.
+- 2026-11-10: laptop Home hero (item_155, layout A, pass 7 head, work-driven face) and laptop Home rails + account gauges approved and committed (2bd9e5e, c507221, dc02d78). Next: laptop Missions vs missions-board(+cyber): kp title row, 5 columns (Ready+Scheduled, Queued, Running n/2, Needs you+failed, Done today), bottom lane timeline + 7-day runs chart. Board renders in local/state/shots/nest-rebuild/boards/.
 
 # Links
 - Request: `req_031_spike_nest_stack_and_app_shape`, `req_040_nest_deck_two_themes_3d_world`, `req_043_nest_design_scope_and_jarvis_3d_hero_option`
