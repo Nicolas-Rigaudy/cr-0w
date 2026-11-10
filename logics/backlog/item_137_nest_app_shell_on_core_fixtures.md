@@ -1,14 +1,14 @@
 ## item_137_nest_app_shell_on_core_fixtures - Nest app shell on core fixtures
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 45%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-10 00:29:12
+> Indicators reviewed: 2026-11-10 11:23:54
 
 # AI Context
 - Summary: First nest web app code: an installable React PWA shell with Home, Missions and Mission detail rendered from the item_119 fixtures, in the look approved in item_138 (laptop and Fold boards, both themes), with the Home hero slot from item_126. No live API yet.
@@ -69,3 +69,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_018_nest_app_shell_on_core_fixtures`
