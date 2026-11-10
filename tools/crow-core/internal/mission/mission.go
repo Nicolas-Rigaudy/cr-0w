@@ -155,10 +155,7 @@ func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 	}
 	dataClass := s.DataClass
 	if dataClass == "" {
-		dataClass = scope
-		if scope != "work" {
-			dataClass = "personal"
-		}
+		dataClass = project.DefaultDataClass(scope)
 	}
 	classes := []string{"work", "personal", "private"}
 	if k.DataClasses != nil {

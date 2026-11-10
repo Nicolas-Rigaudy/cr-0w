@@ -58,7 +58,7 @@ export interface InboxItem {
   mission: string
   kind: string
   project: string
-  type: 'choice' | 'approval' | 'review' | 'fyi'
+  type: 'choice' | 'approval' | 'review' | 'fyi' | 'needs-input'
   source: 'plan' | 'report' | 'mockup' | 'questions'
   version: number
   file: string

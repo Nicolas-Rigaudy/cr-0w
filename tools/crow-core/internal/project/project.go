@@ -75,6 +75,15 @@ func gateRow(source string, straight bool) (typ string, verbs []string) {
 	}
 }
 
+// DefaultDataClass is the data class of a mission that names none: work for the work
+// scope, personal otherwise.
+func DefaultDataClass(scope string) string {
+	if scope == "work" {
+		return "work"
+	}
+	return "personal"
+}
+
 func deref(p *string) string {
 	if p == nil {
 		return ""
@@ -190,6 +199,9 @@ func created(v *View, e contract.Event, d *contract.CreatedData, kinds Kinds) er
 	}
 	// A created event written by core carries the resolved values. A shorter one (an old
 	// or hand-written log) takes the kind file defaults.
+	if d.DataClass == nil {
+		m.DataClass = DefaultDataClass(m.Scope)
+	}
 	var k *contract.Kind
 	if kinds != nil && (d.Gates == nil || d.Autonomy == nil || d.Budget == nil) {
 		var err error

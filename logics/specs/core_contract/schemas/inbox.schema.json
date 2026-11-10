@@ -12,7 +12,7 @@
     "mission": {"type": "string"},
     "kind": {"type": "string"},
     "project": {"type": "string"},
-    "type": {"enum": ["choice", "approval", "review", "fyi"]},
+    "type": {"enum": ["choice", "approval", "review", "fyi", "needs-input"]},
     "source": {"enum": ["plan", "report", "mockup", "questions"]},
     "version": {"type": "integer", "minimum": 1},
     "file": {"type": "string", "pattern": "^((plan|report|mockup)\\.v[0-9]+\\.md|outbox/questions\\.json)$"},
