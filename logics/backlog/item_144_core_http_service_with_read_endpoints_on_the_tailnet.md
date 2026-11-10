@@ -1,10 +1,10 @@
 ## item_144_core_http_service_with_read_endpoints_on_the_tailnet - Core HTTP service with read endpoints on the tailnet
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.

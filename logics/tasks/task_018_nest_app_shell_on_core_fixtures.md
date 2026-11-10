@@ -9,7 +9,7 @@
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-10 17:03:11
+> Indicators reviewed: 2026-11-10 17:39:42
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -42,6 +42,7 @@
 
 # Report
 - 2026-11-10: laptop Home hero (item_155, layout A, pass 7 head, work-driven face) and laptop Home rails + account gauges approved and committed (2bd9e5e, c507221, dc02d78). Next: laptop Missions vs missions-board(+cyber): kp title row, 5 columns (Ready+Scheduled, Queued, Running n/2, Needs you+failed, Done today), bottom lane timeline + 7-day runs chart. Board renders in local/state/shots/nest-rebuild/boards/.
+- 2026-11-10: Home design pass split out to req_053 / task_019 (items 161-166). Palette B Netrunner chosen. Run it before laptop Missions so Missions starts on the new tokens.
 
 # Links
 - Request: `req_031_spike_nest_stack_and_app_shape`, `req_040_nest_deck_two_themes_3d_world`, `req_043_nest_design_scope_and_jarvis_3d_hero_option`
@@ -51,4 +52,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-- 2026-11-10: Home design pass split out to req_053 / task_019 (items 161-166). Palette B Netrunner chosen. Run it before laptop Missions so Missions starts on the new tokens.
