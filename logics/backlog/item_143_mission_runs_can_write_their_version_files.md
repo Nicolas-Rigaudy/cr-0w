@@ -1,10 +1,10 @@
 ## item_143_mission_runs_can_write_their_version_files - Mission runs can write their version files
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Blocked
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -45,7 +45,7 @@ Writes stay limited to that folder for read-only kinds; the project stays read-o
 # AC Traceability
 - request-AC1 -> This backlog slice. Proof: AC1: A read-only mission run writes report.v1.md and outbox/questions.json in its mission folder and nothing in the project.
 - request-AC2 -> This backlog slice. Proof: AC2: The brief names the absolute mission folder and the files the run must write.
-- request-AC3 -> This backlog slice. Proof: AC3: The item_135 end-to-end check passes on a real account: question parked, answer given, tick resumes the run, report.v2.md quotes the answer.
+- request-AC3 -> This backlog slice. Proof: mission `20261110-review-e2e!5`, runs d552e2b8 and 066c3af3 (notes 2026-11-10).
 
 # Decision framing
 - Product framing: Not needed
@@ -70,6 +70,8 @@ Writes stay limited to that folder for read-only kinds; the project stays read-o
 - Risk: confirm headless Claude refuses (not prompts) an Edit outside the allowed path in default mode; test it in the e2e.
 - 2026-11-09 built in 2bcaf72: crow-runs `--write-dir` (realpath, must exist, refused on codex and isolated runs) adds `Edit(//DIR/**)` and `Write(//DIR/**)` to a per-run settings file `<kind>-<hash>.json` plus `--add-dir`; a review run with it leaves plan mode for default; read-only runs skip the busy-cwd check on Claude. Core passes the mission folder on every dispatch and resume; the brief names it and prefixes every path. Go and Python tests cover the flags, the allowlist, the refusals and the brief (AC2).
 - 2026-11-09 real e2e on rk1 (scratch store): run 4972d707 (review kind, default mode, Sonnet low, $0.13) wrote `report.v1.md` and `outbox/questions.json` in the mission folder and nothing in the repo (AC1); its brief named the absolute folder and paths (AC2). Tick parked q1, `crow inbox answer` queued it, tick started continue run 22eaa53c. cdx 0.26.11 failed it at launch: `--continue-run` inlines the `--settings` JSON, which breaks its own 512-char extra_args cap (`cdx_error`, status `stale_process`). Every continue of a sandboxed Claude run hits it. Filed upstream as AlexAgo83/cdx-manager#131 (owner chose the cdx fix over a crow cold-resume workaround). AC3 waits on it; the edit-refusal probe outside the folder runs in the same rerun.
+- 2026-11-10 real e2e passed on rk1 (scratch store, review kind, Sonnet low, mission `20261110-review-e2e!5`): run d552e2b8 ($0.14) asked q1 in a needs-input report block, `crow inbox answer ... msg "q1: red"` queued it, the tick continued it as run 066c3af3 (cdx#131 fixed). `report.v2.md` is ready, quotes the answer as `a1`, and records the probe edit outside the mission folder as refused; the repo stayed clean. Three fixes on the way: the brief shows the crow block shape and the resume note names the `a1..aN` refs (7c48f4a); a needs-input or blocked gate gets an inbox row without validating verbs (af00367).
+- AC3 done; the edit-refusal probe passed (headless Claude refused the edit outside the folder, no prompt).
 - Hybrid rationale: Derived from request `req_046_mission_runs_can_write_their_version_files` and kept bounded to one coherent delivery slice.
 - Source file: `logics/request/req_046_mission_runs_can_write_their_version_files.md`.
 - Generated locally by logics-manager.

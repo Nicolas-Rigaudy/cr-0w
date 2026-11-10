@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 95%
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -33,7 +33,7 @@
 - [x] 7. item_108 versions, answers files, validation record.
 - [x] 8. item_134 inbox rows and `crow inbox list|show|answer`.
 - [x] 9. item_116 cold resume of isolated missions from files.
-- [ ] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer. Blocked on AlexAgo83/cdx-manager#131 (continue-run inlines settings over 512 chars); park and answer proven live 2026-11-09.
+- [x] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer. Passed live 2026-11-10 (mission e2e!5); isolated cold resume moved to item_160.
 - [ ] Steps 6 and 7 can run in parallel sessions after step 5; everything else is sequential.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] Keep commit creation under operator control; do not force one commit per micro-step.
@@ -77,6 +77,7 @@
 - 2026-11-09 step 8 (item_134) done: `crow inbox list|show|answer` over the store rows, verbs per gate shape, blocking questions refuse validating verbs. Answers move the mission to queued (held by the tick) or to its end state. Next: step 9, item_116 cold resume; item_135 then releases the held queued missions.
 - 2026-11-09 step 9 (item_116) done: `env.resume` continues the last run natively and falls back to a cold run from brief.md on the cdx refusals that a fresh run still serves; cold is forced on an account move. Next: step 10, item_135 wires it into `Tick` in place of the item_135 hold, adds the resume cap and runs the end-to-end test.
 - 2026-11-09 step 10 (item_135) built (c440791): tick resumes answered missions, resume cap parks on a core question. Real end-to-end blocked by req_046 (read-only mission runs cannot write their version files). Step stays open until req_046 lands and the e2e passes.
+- 2026-11-10 step 10 closed: the real e2e passed (mission `20261110-review-e2e!5`, runs d552e2b8 and 066c3af3, fixes 7c48f4a and af00367). Slices 1 and 2 are done; isolated cold resume moved to item_160. Task closeout still needs the AC traceability repairs on req_030, req_031 and req_037.
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
