@@ -1,6 +1,6 @@
 {
-  "name": "CR-0W Nest",
-  "short_name": "Nest",
+  "name": "CR-0W",
+  "short_name": "CR-0W",
   "description": "Missions, inbox and runs at a glance.",
   "start_url": "/",
   "scope": "/",
