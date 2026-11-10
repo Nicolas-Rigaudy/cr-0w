@@ -29,7 +29,8 @@ function readPalette(el: Element): Palette {
   return { ring: rgb('--c-w', [79, 195, 255]), dim: rgb('--dim', [95, 120, 168]), fg: rgb('--fg', [216, 230, 255]), accent: rgb('--accent', [192, 92, 255]), state }
 }
 
-export function Hero({ missions, inbox, agenda, now }: { missions: Mission[]; inbox: InboxItem[]; agenda: AgendaEvent[]; now: Date }) {
+// say replaces the model's line (phone Home counts sessions and checks too).
+export function Hero({ missions, inbox, agenda, now, say }: { missions: Mission[]; inbox: InboxItem[]; agenda: AgendaEvent[]; now: Date; say?: string }) {
   const m = heroModel(missions, inbox, now)
   const box = useRef<HTMLDivElement>(null)
   const cv = useRef<HTMLCanvasElement>(null)
@@ -70,9 +71,9 @@ export function Hero({ missions, inbox, agenda, now }: { missions: Mission[]; in
   }, [key, size, theme, heads, turn])
 
   return (
-    <div ref={box} className="hero-box" role="img" aria-label={`CR-0W: ${m.line}`} style={out ? ({ '--lens-y': `${out.lens.y}px` } as CSSProperties) : undefined}>
+    <div ref={box} className="hero-box" role="img" aria-label={`CR-0W: ${say ?? m.line}`} style={out ? ({ '--lens-y': `${out.lens.y}px` } as CSSProperties) : undefined}>
       <canvas ref={cv} className="hero-cv" />
-      <div className="hero-say"><b>CR-0W ›</b> {m.line}<i className="hero-cur" /></div>
+      <div className="hero-say"><b>CR-0W ›</b> {say ?? m.line}<i className="hero-cur" /></div>
       {out?.planets.map((p) => (
         <Fragment key={p.name}>
           {p.tag && <div className={`hero-tag${p.target ? ' on' : ''}`} style={{ left: p.tag.x, top: p.tag.y }}>{p.tag.text}</div>}

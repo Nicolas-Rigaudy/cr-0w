@@ -20,8 +20,24 @@
   "today": {
     "important": [{ "id": "mail-1", "subject": "Contract renewal", "from": "Legal" }],
     "flagged": [{ "id": "mail-2", "subject": "Invoice to check", "from": "Accounting" }],
-    "events": []
+    "events": [],
+    "tomorrow": [{ "subject": "Daily Meeting", "start": "2026-11-10T11:30:00+01:00", "end": "2026-11-10T11:45:00+01:00", "all_day": false }]
   },
   "projects": { "projects": [{ "name": "cr-0w" }, { "name": "demo" }, { "name": "nest" }, { "name": "website" }] },
   "accounts": { "default": "main", "accounts": [{ "name": "main", "policy": "use" }, { "name": "work", "policy": "ask-first" }, { "name": "locked", "policy": "never" }] }
+,
+  "usage": {
+    "generated_at": "2026-11-09T16:04:00+01:00",
+    "limits": [
+      { "account": "main", "remaining_5h_pct": 99, "remaining_week_pct": 43 },
+      { "account": "work", "remaining_5h_pct": 98, "remaining_week_pct": 5 },
+      { "account": "locked", "remaining_5h_pct": 100, "remaining_week_pct": 79 }
+    ]
+  },
+  "checks": {
+    "at": "2026-11-09T16:00:00+01:00",
+    "rows": [
+      { "id": "mr-wait", "check": "review", "what": "Review waits on demo !12", "why": "open 2 days", "action": "review it", "due": null }
+    ]
+  }
 }

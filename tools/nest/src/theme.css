@@ -770,3 +770,35 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .desk .pq { box-sizing: border-box; min-width: 0; }
 [data-theme='cyber'] .desk .pq, [data-theme='cyber'] .desk .pqc { border-radius: 0; }
 .desk .pq *:not(.pqc) { white-space: normal; overflow-wrap: anywhere; }
+
+/* Phone Home (item_171, pass 3b option D) */
+.home-ph.a2 { display: grid; grid-template-columns: 330px 1fr; gap: 14px; padding: 12px; align-items: start; }
+.home-ph.col { display: flex; flex-direction: column; gap: 14px; padding: 12px; }
+.home-ph .hside { display: flex; flex-direction: column; gap: 10px; height: calc(100dvh - 44px - 24px - env(safe-area-inset-top)); min-height: 480px; position: sticky; top: 12px; }
+.home-ph .hwrap { position: relative; height: 400px; flex: none; }
+.home-ph .hside .hwrap { flex: 1; min-height: 0; height: auto; }
+.home-ph .ph .r { display: flex; gap: 8px; align-items: baseline; }
+.hrow { display: flex; gap: 8px; }
+.hrow > .hq:first-child { flex: 1; }
+.hq { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 8px; align-items: center; font: 11px var(--font-body); padding: 6px 9px; border: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.hq b { font: 600 10px var(--font-head); text-transform: uppercase; letter-spacing: 0.05em; }
+.hq .bars { display: flex; flex-direction: column; gap: 2px; min-width: 60px; }
+.hq .bar { height: 4px; background: var(--line); }
+.hq .bar i { display: block; height: 100%; background: var(--c-d); }
+.hq .bar i.lo { background: var(--c-f); }
+.hq .bar i.md { background: var(--c-n); }
+.hq .v { text-align: right; }
+.hq .v .lo { color: var(--c-f); }
+.hq .stl { grid-column: 1 / -1; font-size: 10px; color: var(--c-n); }
+.hq .stl.bad { color: var(--c-f); }
+.hq.hk { grid-template-columns: auto auto; min-width: 96px; }
+.home-ph .row.al { border-left: 3px solid var(--c-f); background: color-mix(in srgb, var(--c-f) 10%, transparent); }
+.home-ph .row.wt { border-left: 3px solid var(--c-n); }
+.home-ph .k { color: var(--c-w); flex: none; }
+.home-ph .k.n { color: var(--c-n); }
+.home-ph .k.f { color: var(--c-f); }
+.home-ph .btn.sm { min-height: 32px; padding: 0 10px; font-size: 12px; flex: none; }
+.home-ph .ag { display: flex; gap: 10px; font-size: 12px; padding: 5px 2px; }
+.home-ph .ag .tm { color: var(--sub); width: 46px; flex: none; }
+.home-ph .row .t .c-w { color: var(--c-w); }
+.home-ph .row .t .c-n { color: var(--c-n); }

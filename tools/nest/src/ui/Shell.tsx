@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { countByState, openInbox } from '../data/state'
+import { homeCounts } from '../data/home'
 import type { Snapshot } from '../data/useData'
 import { ago, headerClock, time } from '../format'
 import { Link } from '../router'
@@ -28,7 +29,7 @@ function badges(snap: Snapshot | null): Partial<Record<TabKey, { n: number; fail
 export function Shell({ active, snap, children }: { active: TabKey; snap: Snapshot | null; children: ReactNode }) {
   const [theme, toggle] = useTheme()
   const b = badges(snap)
-  const c = snap ? countByState(snap.missions, snap.inbox) : null
+  const c = snap ? homeCounts(snap) : null
   // Account gauges (laptop): names from the runs, usage waits for the live API.
   const accts = [...new Set(snap?.missions.flatMap((m) => m.runs.map((r) => r.account)) ?? [])].sort().slice(0, 3)
   return (

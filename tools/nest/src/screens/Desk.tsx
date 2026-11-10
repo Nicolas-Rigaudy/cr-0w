@@ -77,8 +77,9 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
 
   const [sheet, setSheet] = useState<Confirm | null>(null)
   const [log, setLog] = useState<Msg[]>([])
-  const [sel, setSel] = useState<number | null>(null)
-  const [tell, setTell] = useState(false)
+  // Home links open a row directly: /desk?pid=N (&tell=1 opens the reply box).
+  const [sel, setSel] = useState<number | null>(() => Number(new URLSearchParams(location.search).get('pid')) || null)
+  const [tell, setTell] = useState(() => new URLSearchParams(location.search).get('tell') === '1')
   const [text, setText] = useState('')
   const [ask, setAsk] = useState('')
   const [form, setForm] = useState<Form>(null)
