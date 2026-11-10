@@ -60,7 +60,7 @@
 
 
 # Data map (AC1)
-Source: vault `item139/jarvis-1-full.png` (17 annotations). Idle = 0 fps; only a state change or a live run moves anything.
+Visual reference: vault `item126/look-ascii.png` (hero pass 7, approved). The 17 rows below were first numbered on `item139/jarvis-1-full.png`, a concept option the owner rejected as a look reference (2026-11-10); only the data mapping carries over. Idle = 0 fps; only a state change or a live run moves anything.
 
 | # | Visual element | Crow source | Motion / action |
 | --- | --- | --- | --- |
@@ -97,7 +97,7 @@ Colours: cyan `#2ef2ff` default, amber `#ffb800` for asks only, red `#ff2e63` fo
 - Placement: dimmed to 50% behind Missions and Inbox; full brightness when the panels collapse.
 
 # Notes
-- Hero sources: vault `CR-0W/Research/nest-design/item139/` (compare page, `jarvis-1-full`, `jarvis-2-in-home`, `pass7/hero-{idle,run,ask,fail}.png`, `pass7/heads-final.png`).
+- Hero sources: decision record vault `CR-0W/Research/nest-design/item139/Decision.md`. Approved look: `item126/look-ascii.png`. Rejected as references: `item139/jarvis-1-full`, `jarvis-2-in-home`.
 - Layout sources: canvas artifact MyPAqSwJFddMnSR4grm2g6 and vault `CR-0W/Research/nest-design/item138/fold-src/`.
 - Nest stack itself: req_031.
 - Spike sources: vault `CR-0W/Research/nest-design/item126/spike/` (`holo-head.html`, renders in `img/`). Headless render and bench: `runbooks/headless-webgl-render.md`.
