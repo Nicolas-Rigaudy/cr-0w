@@ -89,7 +89,8 @@ def make_profile(home, profiles, name="main", complete=True):
     (claude / "settings.json").write_text(json.dumps({
         "env": {"CROW_HOME": str(home), "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "150000"},
         "hooks": {"Stop": [{"hooks": [{"command": "crow-ctx idle-hook"}]}],
-                  "PreToolUse": [{"hooks": [{"command": "rtk-rewrite.sh"}]}]},
+                  "PreToolUse": [{"hooks": [{"command": "rtk-rewrite.sh"}]}],
+                  "PermissionRequest": [{"hooks": [{"command": "/hub/bin/crow-prompt hook"}]}]},
         "attribution": {"commit": "", "pr": ""}}))
 
 
@@ -106,7 +107,7 @@ def test_doctor_lists_what_a_bare_profile_misses(hub, tmp_path):
     make_profile(home, profiles, complete=False)
     prof = checks(run(hub, "crow-doctor", "--json"))["profiles"]
     assert prof["level"] == "warn"
-    for gap in ("memory not linked: -proj", "env CROW_HOME missing", "hook rtk-rewrite missing",
+    for gap in ("memory not linked: -proj", "env CROW_HOME missing", "hook rtk-rewrite missing", "hook crow-prompt hook missing",
                 "attribution commit/pr not empty", "skill wrap not linked"):
         assert f"main: {gap}" in prof["details"]
 

@@ -104,7 +104,7 @@ def accounts(acc):
 
 
 CROW_ENV = ("CROW_HOME", "CLAUDE_CODE_AUTO_COMPACT_WINDOW")
-CROW_HOOKS = ("crow-ctx idle-hook", "rtk-rewrite")
+CROW_HOOKS = ("crow-ctx idle-hook", "rtk-rewrite", "crow-prompt hook")
 
 
 def profile_gaps(account, home, profiles):
