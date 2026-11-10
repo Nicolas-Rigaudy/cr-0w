@@ -1,0 +1,109 @@
+{
+  "section": "inbox",
+  "version": "7e4c495e58cb64e5",
+  "updated_at": "2026-11-09T14:52:02+01:00",
+  "data": [
+    {
+      "id": "20261109-build-item-095/v1",
+      "mission": "20261109-build-item-095",
+      "kind": "build",
+      "project": "",
+      "type": "needs-input",
+      "source": "plan",
+      "version": 1,
+      "file": "plan.v1.md",
+      "ask": "Filter the account pool by repo scope before failover.",
+      "verbs": [
+        "dig",
+        "no"
+      ],
+      "blocking": false,
+      "artifacts": [],
+      "state": "answered",
+      "created": "2026-11-09T09:10:00+01:00",
+      "answered": "2026-11-09T09:12:00+01:00"
+    },
+    {
+      "id": "20261109-build-item-095/v2",
+      "mission": "20261109-build-item-095",
+      "kind": "build",
+      "project": "",
+      "type": "approval",
+      "source": "plan",
+      "version": 2,
+      "file": "plan.v2.md",
+      "ask": "Filter accounts by repo scope, refuse unscoped repos, flag them in doctor.",
+      "verbs": [
+        "go",
+        "dig",
+        "no"
+      ],
+      "blocking": false,
+      "artifacts": [],
+      "state": "answered",
+      "created": "2026-11-09T09:20:00+01:00",
+      "answered": "2026-11-09T09:40:00+01:00"
+    },
+    {
+      "id": "20261109-build-item-095/v3",
+      "mission": "20261109-build-item-095",
+      "kind": "build",
+      "project": "",
+      "type": "review",
+      "source": "report",
+      "version": 3,
+      "file": "report.v3.md",
+      "ask": "Scope-aware account pick done, checks green, ready to push.",
+      "verbs": [
+        "ok",
+        "msg",
+        "abandon"
+      ],
+      "blocking": false,
+      "artifacts": [
+        "outbox/checks.log"
+      ],
+      "state": "answered",
+      "created": "2026-11-09T10:30:00+01:00",
+      "answered": "2026-11-09T11:02:00+01:00"
+    },
+    {
+      "id": "20261109-research-android-push-options/v1/q1",
+      "mission": "20261109-research-android-push-options",
+      "kind": "research",
+      "project": "demo",
+      "type": "choice",
+      "source": "questions",
+      "version": 1,
+      "file": "outbox/questions.json",
+      "ask": "The second provider needs an account to read its full docs. Skip it, or wait until you log in?",
+      "verbs": [
+        "answer"
+      ],
+      "blocking": false,
+      "artifacts": [],
+      "state": "answered",
+      "created": "2026-11-09T14:20:00+01:00",
+      "answered": "2026-11-09T14:31:00+01:00"
+    },
+    {
+      "id": "20261109-research-android-push-options/v1",
+      "mission": "20261109-research-android-push-options",
+      "kind": "research",
+      "project": "demo",
+      "type": "fyi",
+      "source": "report",
+      "version": 1,
+      "file": "report.v1.md",
+      "ask": "report.v1.md",
+      "verbs": [
+        "dig"
+      ],
+      "blocking": false,
+      "artifacts": [],
+      "state": "open",
+      "created": "2026-11-09T14:52:01+01:00",
+      "answered": null
+    }
+  ]
+}

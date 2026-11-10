@@ -1,0 +1,110 @@
+{
+  "section": "missions",
+  "version": "3a4f411c7e7330ce",
+  "updated_at": "2026-11-09T14:52:02+01:00",
+  "data": [
+    {
+      "id": "20261109-build-item-095",
+      "kind": "build",
+      "batch": null,
+      "scope": "crow",
+      "data_class": "personal",
+      "project": "",
+      "goal": "Pick the account for a dispatch from the scope of the target repo (backlog item item_095).",
+      "end_state": "",
+      "autonomy": "ask",
+      "gates": [
+        "plan",
+        "report"
+      ],
+      "state": "done",
+      "runs": [
+        {
+          "run": "a1b2c3d4",
+          "mission": "20261109-build-item-095",
+          "account": "",
+          "version": 1,
+          "cold": true,
+          "started": "2026-11-09T09:01:00+01:00",
+          "ended": "2026-11-09T09:10:00+01:00",
+          "cause": "done",
+          "exit": 0
+        },
+        {
+          "run": "b2c3d4e5",
+          "mission": "20261109-build-item-095",
+          "account": "",
+          "version": 2,
+          "cold": false,
+          "started": "2026-11-09T09:13:00+01:00",
+          "ended": "2026-11-09T09:20:00+01:00",
+          "cause": "done",
+          "exit": 0
+        },
+        {
+          "run": "c3d4e5f6",
+          "mission": "20261109-build-item-095",
+          "account": "",
+          "version": 3,
+          "cold": false,
+          "started": "2026-11-09T09:41:00+01:00",
+          "ended": "2026-11-09T10:30:00+01:00",
+          "cause": "done",
+          "exit": 0
+        }
+      ],
+      "version": 3,
+      "validation": "2026-11-09T11:02:02+01:00",
+      "file_scope": [],
+      "budget": {
+        "time_min": 120,
+        "budget_usd": 25,
+        "resumes": 3
+      },
+      "branch": null,
+      "worktree": null,
+      "mr": null,
+      "created": "2026-11-09T09:00:00+01:00",
+      "updated": "2026-11-09T11:02:10+01:00"
+    },
+    {
+      "id": "20261109-research-android-push-options",
+      "kind": "research",
+      "batch": null,
+      "scope": "personal",
+      "data_class": "personal",
+      "project": "demo",
+      "goal": "Compare push providers for the Android app.",
+      "end_state": "A report with one recommendation.",
+      "autonomy": "auto",
+      "gates": [],
+      "state": "done",
+      "runs": [
+        {
+          "run": "d4e5f6a7",
+          "mission": "20261109-research-android-push-options",
+          "account": "main",
+          "version": 1,
+          "cold": true,
+          "started": "2026-11-09T14:05:01+01:00",
+          "ended": "2026-11-09T14:52:00+01:00",
+          "cause": "done",
+          "exit": 0
+        }
+      ],
+      "version": 1,
+      "validation": null,
+      "file_scope": [],
+      "budget": {
+        "time_min": 60,
+        "budget_usd": 5,
+        "resumes": 2
+      },
+      "branch": null,
+      "worktree": null,
+      "mr": null,
+      "created": "2026-11-09T14:00:00+01:00",
+      "updated": "2026-11-09T14:52:02+01:00"
+    }
+  ]
+}

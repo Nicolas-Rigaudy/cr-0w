@@ -1,0 +1,147 @@
+{
+  "mission": {
+    "id": "20261109-build-item-095",
+    "kind": "build",
+    "batch": null,
+    "scope": "crow",
+    "data_class": "personal",
+    "project": "",
+    "goal": "Pick the account for a dispatch from the scope of the target repo (backlog item item_095).",
+    "end_state": "",
+    "autonomy": "ask",
+    "gates": [
+      "plan",
+      "report"
+    ],
+    "state": "done",
+    "runs": [
+      {
+        "run": "a1b2c3d4",
+        "mission": "20261109-build-item-095",
+        "account": "",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T09:01:00+01:00",
+        "ended": "2026-11-09T09:10:00+01:00",
+        "cause": "done",
+        "exit": 0
+      },
+      {
+        "run": "b2c3d4e5",
+        "mission": "20261109-build-item-095",
+        "account": "",
+        "version": 2,
+        "cold": false,
+        "started": "2026-11-09T09:13:00+01:00",
+        "ended": "2026-11-09T09:20:00+01:00",
+        "cause": "done",
+        "exit": 0
+      },
+      {
+        "run": "c3d4e5f6",
+        "mission": "20261109-build-item-095",
+        "account": "",
+        "version": 3,
+        "cold": false,
+        "started": "2026-11-09T09:41:00+01:00",
+        "ended": "2026-11-09T10:30:00+01:00",
+        "cause": "done",
+        "exit": 0
+      }
+    ],
+    "version": 3,
+    "validation": "2026-11-09T11:02:02+01:00",
+    "file_scope": [],
+    "budget": {
+      "time_min": 120,
+      "budget_usd": 25,
+      "resumes": 3
+    },
+    "branch": null,
+    "worktree": null,
+    "mr": null,
+    "created": "2026-11-09T09:00:00+01:00",
+    "updated": "2026-11-09T11:02:10+01:00"
+  },
+  "versions": [
+    {
+      "version": 1,
+      "file": "plan.v1.md",
+      "summary": "Filter the account pool by repo scope before failover.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "A repo has no scope in the registry. The dispatcher cannot tell which accounts may run it. What should it do?",
+          "blocking": true,
+          "choices": [
+            {
+              "id": "refuse",
+              "label": "Refuse the dispatch",
+              "note": "Safe. The owner adds the scope then retries."
+            },
+            {
+              "id": "personal",
+              "label": "Treat it as personal",
+              "note": "Runs at once. Risk of using a personal account on work code."
+            }
+          ],
+          "default": "refuse",
+          "recommended": "refuse"
+        }
+      ],
+      "answers": [
+        "q1: refuse.",
+        "Also list the repos with no scope in `crow doctor`."
+      ]
+    },
+    {
+      "version": 2,
+      "file": "plan.v2.md",
+      "summary": "Filter accounts by repo scope, refuse unscoped repos, flag them in doctor.",
+      "questions": [],
+      "answers": []
+    },
+    {
+      "version": 3,
+      "file": "report.v3.md",
+      "summary": "Scope-aware account pick done, checks green, ready to push.",
+      "questions": [],
+      "answers": []
+    }
+  ],
+  "runs": [
+    {
+      "run": "a1b2c3d4",
+      "mission": "20261109-build-item-095",
+      "account": "",
+      "version": 1,
+      "cold": true,
+      "started": "2026-11-09T09:01:00+01:00",
+      "ended": "2026-11-09T09:10:00+01:00",
+      "cause": "done",
+      "exit": 0
+    },
+    {
+      "run": "b2c3d4e5",
+      "mission": "20261109-build-item-095",
+      "account": "",
+      "version": 2,
+      "cold": false,
+      "started": "2026-11-09T09:13:00+01:00",
+      "ended": "2026-11-09T09:20:00+01:00",
+      "cause": "done",
+      "exit": 0
+    },
+    {
+      "run": "c3d4e5f6",
+      "mission": "20261109-build-item-095",
+      "account": "",
+      "version": 3,
+      "cold": false,
+      "started": "2026-11-09T09:41:00+01:00",
+      "ended": "2026-11-09T10:30:00+01:00",
+      "cause": "done",
+      "exit": 0
+    }
+  ]
+}

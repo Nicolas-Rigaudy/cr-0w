@@ -1,0 +1,83 @@
+{
+  "mission": {
+    "id": "20261109-research-android-push-options",
+    "kind": "research",
+    "batch": null,
+    "scope": "personal",
+    "data_class": "personal",
+    "project": "demo",
+    "goal": "Compare push providers for the Android app.",
+    "end_state": "A report with one recommendation.",
+    "autonomy": "auto",
+    "gates": [],
+    "state": "done",
+    "runs": [
+      {
+        "run": "d4e5f6a7",
+        "mission": "20261109-research-android-push-options",
+        "account": "main",
+        "version": 1,
+        "cold": true,
+        "started": "2026-11-09T14:05:01+01:00",
+        "ended": "2026-11-09T14:52:00+01:00",
+        "cause": "done",
+        "exit": 0
+      }
+    ],
+    "version": 1,
+    "validation": null,
+    "file_scope": [],
+    "budget": {
+      "time_min": 60,
+      "budget_usd": 5,
+      "resumes": 2
+    },
+    "branch": null,
+    "worktree": null,
+    "mr": null,
+    "created": "2026-11-09T14:00:00+01:00",
+    "updated": "2026-11-09T14:52:02+01:00"
+  },
+  "versions": [
+    {
+      "version": 1,
+      "file": null,
+      "summary": "",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "The second provider needs an account to read its full docs. Skip it, or wait until you log in?",
+          "blocking": false,
+          "choices": [
+            {
+              "id": "skip",
+              "label": "Skip it",
+              "note": "The report covers public docs only."
+            },
+            {
+              "id": "wait",
+              "label": "Wait for a login",
+              "note": "The mission parks until you log in."
+            }
+          ],
+          "default": "skip",
+          "recommended": "skip"
+        }
+      ],
+      "answers": []
+    }
+  ],
+  "runs": [
+    {
+      "run": "d4e5f6a7",
+      "mission": "20261109-research-android-push-options",
+      "account": "main",
+      "version": 1,
+      "cold": true,
+      "started": "2026-11-09T14:05:01+01:00",
+      "ended": "2026-11-09T14:52:00+01:00",
+      "cause": "done",
+      "exit": 0
+    }
+  ]
+}

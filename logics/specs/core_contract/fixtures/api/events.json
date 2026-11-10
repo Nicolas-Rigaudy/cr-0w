@@ -1,0 +1,42 @@
+{
+  "events": [
+    {
+      "id": "2026-11-09T08:00:00.000000Z~20261109-build-item-095~277",
+      "ts": "2026-11-09T09:00:00+01:00",
+      "mission": "20261109-build-item-095",
+      "type": "created",
+      "actor": "owner",
+      "data": {
+        "goal": "Pick the account for a dispatch from the scope of the target repo (backlog item item_095).",
+        "key": "item_095",
+        "kind": "build",
+        "scope": "crow",
+        "surface": "deck"
+      }
+    },
+    {
+      "id": "2026-11-09T08:00:00.000000Z~20261109-build-item-095~420",
+      "ts": "2026-11-09T09:00:00+01:00",
+      "mission": "20261109-build-item-095",
+      "type": "state",
+      "actor": "core",
+      "data": {
+        "from": "preflight",
+        "to": "queued"
+      }
+    },
+    {
+      "id": "2026-11-09T08:01:00.000000Z~20261109-build-item-095~561",
+      "ts": "2026-11-09T09:01:00+01:00",
+      "mission": "20261109-build-item-095",
+      "type": "state",
+      "actor": "core",
+      "data": {
+        "from": "queued",
+        "to": "running"
+      }
+    }
+  ],
+  "next": "2026-11-09T08:01:00.000000Z~20261109-build-item-095~561",
+  "more": true
+}

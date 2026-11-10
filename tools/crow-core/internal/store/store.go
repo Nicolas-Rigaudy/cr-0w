@@ -324,3 +324,11 @@ func (s *Store) Applied(mission string) (int64, error) {
 	}
 	return n, err
 }
+
+// Version changes whenever the store applies an event: it is the mission count and the
+// sum of their applied log offsets. Readers key caches and ETags on it.
+func (s *Store) Version() (string, error) {
+	var n, sum int64
+	err := s.db.QueryRow(`SELECT COUNT(*), COALESCE(SUM(applied), 0) FROM missions`).Scan(&n, &sum)
+	return fmt.Sprintf("%d.%d", n, sum), err
+}

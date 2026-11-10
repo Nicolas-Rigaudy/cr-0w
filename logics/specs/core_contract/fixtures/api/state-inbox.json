@@ -1,0 +1,26 @@
+{
+  "section": "inbox",
+  "version": "e8f5a8418129ce93",
+  "updated_at": "2026-11-09T14:52:02+01:00",
+  "data": [
+    {
+      "id": "20261109-research-android-push-options/v1",
+      "mission": "20261109-research-android-push-options",
+      "kind": "research",
+      "project": "demo",
+      "type": "fyi",
+      "source": "report",
+      "version": 1,
+      "file": "report.v1.md",
+      "ask": "report.v1.md",
+      "verbs": [
+        "dig"
+      ],
+      "blocking": false,
+      "artifacts": [],
+      "state": "open",
+      "created": "2026-11-09T14:52:01+01:00",
+      "answered": null
+    }
+  ]
+}

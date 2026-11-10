@@ -1,0 +1,13 @@
+{
+  "section": "jobs",
+  "version": "4fc51c56a6f4331e",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": [
+    {
+      "unit": "crow-retro.timer",
+      "activates": "crow-retro.service",
+      "next": "2026-11-10T17:03:47Z",
+      "last": null
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 // Command crow-core is the mission core of crow (adr_001): the event logs, the store
 // rebuilt from them and, in later items, the tick. It is a one-shot binary that the
-// Python CLI runs through `crow core`; slice 3 wraps it in a service.
+// Python CLI runs through `crow core`; `crow core serve` runs it as the HTTP service.
 package main
 
 import (
@@ -37,6 +37,11 @@ const usage = `usage: crow-core <command>
                     answer with a gate verb, or with plain words for a question
   tick [--json]     finish the mission runs that ended, then start queued missions through
                     crow-runs (oldest first, CROW_MAX_RUNS at once, default 2)
+  serve             run the HTTP service: /api read routes and the Nest app, on the loopback
+                    port tailscale serve proxies to (owner login required) and a unix socket
+  install           write and start the crow-core systemd user unit, point tailscale serve at it
+  status            unit state, listen addresses and tailscale serve config
+  restart           restart the unit (crow core rebuilds the binary first)
   config            print the resolved paths as JSON
   version           print the core and contract versions
 `
@@ -82,6 +87,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		Projects: cfg.Projects, Prefs: cfg.Prefs, Now: time.Now, StopRun: stopRun(cfg.Engine),
 	}
 	switch cmd {
+	case "serve", "install", "status", "restart":
+		return coreCmd(cmd, env, cfg, stdout)
 	case "mission":
 		return missionCmd(env, rest, stdout)
 	case "inbox":

@@ -165,3 +165,70 @@ def test_sidecar_process_runs_lifecycle():
     assert p.returncode == 0, p.stderr
     got = [json.loads(x) for x in p.stdout.splitlines()]
     assert got == [load(FIX / "messages" / f"{t}.reply.json") for t in ("hello", "health", "shutdown")]
+
+
+# HTTP read API (item_144): the Go tests write these response fixtures; here they must
+# keep the envelope and every row must match the record schemas.
+API = FIX / "api"
+API_FIXTURES = sorted(API.glob("*.json"))
+SECTION_SCHEMA = {"inbox": "inbox.schema.json", "missions": "mission.schema.json", "runs": "run.schema.json"}
+
+
+def test_api_fixture_set():
+    names = {p.stem for p in API_FIXTURES}
+    for want in ("state", "state-inbox", "state-missions", "state-runs", "state-accounts", "state-jobs",
+                 "mission", "events", "error-no-identity"):
+        assert want in names, want
+
+
+def check_section(sec):
+    assert set(sec) == {"section", "version", "updated_at", "data"}, sec.keys()
+    schema = SECTION_SCHEMA.get(sec["section"])
+    if not schema:
+        return
+    assert isinstance(sec["data"], list)
+    for row in sec["data"]:
+        errs = errors(schema, row)
+        assert not errs, f"{sec['section']}: " + "; ".join(errs)
+
+
+@pytest.mark.parametrize("path", [p for p in API_FIXTURES if p.stem.startswith("state-")], ids=lambda p: p.name)
+def test_api_section_fixture(path):
+    sec = load(path)
+    assert path.stem.split("-")[1] == sec["section"]
+    check_section(sec)
+
+
+def test_api_state_fixture():
+    st = load(API / "state.json")
+    assert set(st) == {"version", "sections"}
+    assert set(st["sections"]) == {"inbox", "missions", "runs", "accounts", "jobs"}
+    for name, sec in st["sections"].items():
+        assert sec["section"] == name
+        check_section(sec)
+
+
+@pytest.mark.parametrize("path", [API / "mission.json", API / "mission-questions.json"], ids=lambda p: p.name)
+def test_api_mission_fixture(path):
+    d = load(path)
+    assert set(d) == {"mission", "versions", "runs"}
+    assert not errors("mission.schema.json", d["mission"])
+    assert [v["version"] for v in d["versions"]] == list(range(1, d["mission"]["version"] + 1))
+    for r in d["runs"]:
+        assert not errors("run.schema.json", r)
+
+
+def test_api_events_fixture():
+    ev = load(API / "events.json")
+    assert set(ev) == {"events", "next", "more"}
+    ids = [e["id"] for e in ev["events"]]
+    assert ids == sorted(ids) and ev["next"] == ids[-1]
+    for e in ev["events"]:
+        body = {k: v for k, v in e.items() if k != "id"}
+        assert not errors("event.schema.json", body), e["id"]
+
+
+@pytest.mark.parametrize("path", [p for p in API_FIXTURES if p.stem.startswith("error-")], ids=lambda p: p.name)
+def test_api_error_fixture(path):
+    body = load(path)
+    assert list(body) == ["error"] and body["error"]

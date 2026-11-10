@@ -1,0 +1,16 @@
+{
+  "section": "accounts",
+  "version": "403f4931459409e4",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "accounts": [
+      {
+        "name": "main",
+        "policy": "use",
+        "priority": 80,
+        "tier": "mine"
+      }
+    ],
+    "default": "main"
+  }
+}
