@@ -57,6 +57,7 @@
 - AC2: allow ran the command (stamp.txt written); the prompt cleared.
 - Deny: Escape, `touch denied.txt` never ran, prompt cleared, session back at input.
 - AC4: covered by tests (`tests/test_crow_prompt.py`, `src/data/live.test.ts`, core fixtures).
+- 2026-11-11 phone test (Fold, Nest over the tailnet, hidden tmux session): AC1 Needs row and command shown, AC2 allow ran `date +%s > stamp.txt`, deny stopped `touch denied.txt`, send box text submitted. Fixes found on the way: Enter sent apart from the text (bb047a1), sessions in tmux reached from a kitty desktop (3b3ebb3).
 
 # Decision framing
 - Product framing: Not needed (prod_005 human in the loop)

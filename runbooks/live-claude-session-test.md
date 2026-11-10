@@ -8,7 +8,7 @@ Use when a feature reacts to a live Claude Code session (hooks, permission promp
 4. Type the prompt with `tmux send-keys -t <name> -l '<text>'` then `tmux send-keys -t <name> Enter`. Ask for one exact harmless command (`date +%s > stamp.txt`).
 5. Wait on a condition, not a fixed sleep: `timeout 40 bash -c 'until <check>; do sleep 1; done'`.
 6. Check the result through the feature's own CLI, then on disk (the stamp file).
-7. Scripts that pick a terminal backend default to kitty: set `CROW_TERMINAL=tmux`.
+7. Scripts that pick a terminal backend default to kitty and fall back to tmux when kitty does not hold the session, so core and Nest reach a hidden tmux session too. Use this to test from the phone.
 8. Clean up: `tmux kill-session -t <name>` and remove state files the test wrote.
 
 Notes
