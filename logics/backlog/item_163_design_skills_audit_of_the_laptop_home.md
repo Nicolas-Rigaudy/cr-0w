@@ -8,12 +8,13 @@
 > Complexity: Low
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 16:17:34
 
 # AI Context
-- Summary: (unfilled: replace before this doc is used)
-- Keywords: design, skills, audit, laptop, home
-- Use when: (unfilled: replace before this doc is used)
-- Skip when: (unfilled: replace before this doc is used)
+- Summary: run better-interface and better-colors on the laptop Home in both themes, fix the top findings, reach WCAG AA contrast.
+- Keywords: nest, home, design audit, better-interface, better-colors, contrast, wcag
+- Use when: auditing or fixing the Home look against the design skills.
+- Skip when: new layout or new widgets.
 
 # Problem
 - Home has not been reviewed with the installed design skills.
@@ -51,4 +52,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

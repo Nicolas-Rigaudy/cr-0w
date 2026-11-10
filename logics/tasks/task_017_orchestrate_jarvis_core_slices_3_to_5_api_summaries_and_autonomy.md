@@ -8,6 +8,7 @@
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Indicators reviewed: 2026-11-10 16:17:24
 
 # AI Context
 - Summary: Build req_028 slices 3 (core API), 4 (human summaries) and 5 (autonomy dial) on the Go core in `tools/crow-core`, one fresh session per item, in the order below.
@@ -22,9 +23,10 @@
 - Each item names its own mockup step where it changes deck screens.
 
 # Plan
-- [ ] 1. item_144 core HTTP service with read endpoints on the tailnet.
+- [ ] 1. item_144 core HTTP service with read endpoints on the tailnet. Moved to task_020 step 2 (owner 2026-11-10).
 - [ ] 2. item_145 deck inbox pane reads the core API. Slice 3 read exit: deck and curl read the same inbox.
-- [ ] 3. item_147 action endpoints. Slice 3 exit: an answer posted from the phone moves the mission out of `waiting`.
+- [ ] 3. item_147 action endpoints. Slice 3 exit: an answer posted from the phone moves the mission out of `waiting`. Moved to task_020 step 6.
+- [ ] Order: the remaining steps (145, 146, 148-152) run after task_020, alternating with task_018 laptop Missions.
 - [ ] 4. item_146 SSE section stream with polling fallback.
 - [ ] 5. item_148 run conversation poller with cursors.
 - [ ] 6. item_149 one-line run summaries (benchmark Haiku vs local first).

@@ -8,12 +8,13 @@
 > Complexity: Low
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 16:17:34
 
 # AI Context
-- Summary: (unfilled: replace before this doc is used)
-- Keywords: boot, sequence, first, load, nest
-- Use when: (unfilled: replace before this doc is used)
-- Skip when: (unfilled: replace before this doc is used)
+- Summary: a boot sequence under 1.5 s on the first load of a session: frames draw, the hero resolves, the prompt types in; skipped with reduced motion.
+- Keywords: nest, boot sequence, first load, motion, reduced motion
+- Use when: building the Nest start-up animation.
+- Skip when: sound, glitch effects, the hero itself.
 
 # Problem
 - The Home appears at once with no start-up moment.
@@ -51,4 +52,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

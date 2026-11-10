@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-11-10 14:39:50
+> Indicators reviewed: 2026-11-10 16:17:25
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -26,6 +26,7 @@
 - [x] 4. 4. JARVIS chrome: withdrawn 2026-11-10, merged into item_162 (owner: avoid overcrowding)
 - [ ] 5. 5. Telemetry strip
 - [ ] 6. 6. Boot sequence
+- [ ] Items 2 (item_158 interactions), 3, 5 and 6 now run interleaved with core items in task_020 (owner 2026-11-10).
 - [ ] 7. Each item in a fresh session from its backlog doc. Owner OK on renders before the next.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] Keep commit creation under operator control; do not force one commit per micro-step.

@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 16:17:33
 
 # AI Context
 - Summary: core action endpoints: dispatch a mission, answer an inbox item (verb, text, attachments, mission version), stop, cancel and hide. Same rules as the `crow mission` and `crow inbox` CLIs, which call shared Go code.
@@ -20,7 +21,7 @@
 
 # Scope
 - In:
-  - `POST /missions` (dispatch: kind, project, goal, end state, autonomy override), `POST /missions/<id>/answer`, `/stop`, `/cancel`, `POST /inbox/<id>/hide`.
+  - Routes under `/api` (item_144 amendment): `POST /missions` (dispatch: kind, project, goal, end state, autonomy override), `POST /missions/<id>/answer`, `/stop`, `/cancel`, `POST /inbox/<id>/hide`.
   - Answer refused with 409 when the version is stale (req_031 push section). Verbs validated against the question's choices.
   - CSRF header and owner identity from item_144; every action writes its event with `actor: owner` and the surface name.
   - CLI and API call one Go function per action; the CLI keeps working without the service.
@@ -47,8 +48,8 @@
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
-- Depends on: `item_144_core_http_service_with_read_endpoints_on_the_tailnet`. AC1 end to end with a resumed run also needs `item_135_resume_a_parked_mission_from_the_owner_s_answer` (blocked on cdx-manager#131); AC1 itself only needs the mission to leave `waiting`.
-- Primary task(s): `task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy`
+- Depends on: `item_144_core_http_service_with_read_endpoints_on_the_tailnet`. Unblocks `item_168_nest_answer_sheet_for_inbox_items_and_mission_actions`. AC1 end to end with a resumed run also needs `item_135_resume_a_parked_mission_from_the_owner_s_answer` (Done); AC1 itself only needs the mission to leave `waiting`.
+- Primary task(s): `task_020_orchestrate_nest_going_live_on_the_core_api` (moved from task_017 on 2026-11-10)
 
 # Priority
 - Priority: High

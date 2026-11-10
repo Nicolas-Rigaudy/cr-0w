@@ -8,19 +8,20 @@
 > Complexity: Low
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 16:17:34
 
 # AI Context
-- Summary: (unfilled: replace before this doc is used)
-- Keywords: telemetry, strip, laptop, home
-- Use when: (unfilled: replace before this doc is used)
-- Skip when: (unfilled: replace before this doc is used)
+- Summary: a thin telemetry strip on the laptop Home (tokens, cost, model, uptime) fed by the core accounts and runs sections.
+- Keywords: nest, home, telemetry strip, tokens, cost, model, uptime
+- Use when: building the Home telemetry strip.
+- Skip when: new core data sources.
 
 # Problem
 - Home does not show session telemetry the way the darwin reference does.
 
 # Scope
 - In:
-  - A thin strip with tokens, cost, model and uptime, fed by core fixtures.
+  - A thin strip with tokens, cost, model and uptime, read through `useSnapshot()` from the core accounts and runs sections (live after item_167; fixtures in dev and tests).
   - // section labels if they fit the boards.
 - Out:
   - New data sources in core beyond a fixture field
@@ -40,7 +41,8 @@
 - Product brief(s): `prod_007_nest_home_design_pass`
 - Architecture decision(s): (none yet)
 - Request: `req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome`
-- Primary task(s): `task_019_orchestrate_the_nest_home_design_pass`
+- Depends on: `item_167_nest_reads_live_data_from_the_core_api` (live data; can be built on fixtures if it slips)
+- Primary task(s): `task_019_orchestrate_the_nest_home_design_pass`, run in `task_020_orchestrate_nest_going_live_on_the_core_api`
 
 # Priority
 - Priority: Low
@@ -49,4 +51,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 16:17:33
 
 # AI Context
 - Summary: core runs as a systemd user service and serves read-only HTTP on localhost and the tailnet: `/state` sections (inbox, missions, runs, accounts, jobs) with `updated_at` and ETag, mission detail, artifacts and the event feed.
@@ -27,6 +28,8 @@
   - `GET /missions/<id>` (record, versions, questions, answers, runs), `GET /missions/<id>/artifacts/<path>` (outbox files, size caps from item_109, path traversal refused), `GET /events?after=<id>`.
   - JSON shapes typed from the item_119 fixtures; new fixtures for each response so Go and Python tests share them.
   - The tick keeps running from its timer; serve reads the store and does not tick.
+  - One origin for Nest and the API (amended 2026-11-10, task_020): every API route lives under `/api` (`/api/state/<section>`, `/api/missions/<id>`, `/api/events`; the paths in items 145-148 read relative to it). `/` serves the built Nest from a configured dir (default `tools/nest/dist`), with an `index.html` fallback for client routes and no-cache on `index.html` and `sw.js`. Reason: req_031 sends no CORS headers ever, so Nest must be same-origin with core. The identity check covers the static routes too.
+  - Response fixtures for the sections Nest reads (missions, inbox, accounts, runs) are the input of item_167.
 - Out:
   - Actions (item_147), SSE (item_146), Web Push, MCP server (butler slice 8), conversation endpoint (item_148).
   - Moving core to the homelab (paths stay in config).
@@ -51,15 +54,15 @@
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_022_crow_deck_as_the_work_hub_terminal_cockpit_and_phone_control`
 - Depends on: `item_131_go_core_skeleton_with_the_mission_event_log_and_store`, `item_134_inbox_items_and_the_crow_inbox_cli` (both Done). Not on item_135: reads work while resume is blocked.
-- Unblocks: `item_137_nest_app_shell_on_core_fixtures` (API adapter), item_145, item_146, item_147
-- Primary task(s): `task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy`
+- Unblocks: `item_167_nest_reads_live_data_from_the_core_api` (Nest API adapter), item_145, item_146, item_147
+- Primary task(s): `task_020_orchestrate_nest_going_live_on_the_core_api` (moved from task_017 on 2026-11-10)
 
 # Priority
 - Priority: High
-- Rationale: First step of slice 3 and the only core work not blocked by cdx-manager#131.
+- Rationale: First step of slice 3 and of the Nest live path (task_020).
 
 # Notes
-- Check Tailscale identity headers need tailscale v1.92+ (req_031 sources); verify the installed version first.
+- Tailscale identity headers need v1.92+ (req_031 sources). Installed on archeotech: 1.104.5 (checked 2026-11-10).
 - Groomed 2026-11-09 from req_028 slice 3.
 
 # Executions

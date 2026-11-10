@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-10 14:53:51
+> Indicators reviewed: 2026-11-10 16:17:33
 
 # AI Context
 - Summary: Drive the holotable hero from the nest data layer and make it explorable: spin the planet layer, hover for moons, click to focus then open the project.
@@ -61,7 +61,7 @@
 - Request: `req_040_nest_deck_two_themes_3d_world`, `req_043_nest_design_scope_and_jarvis_3d_hero_option`, `req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome`
 - Plan: `item_126_plan_the_workshop_nest_build_from_the_approved_concept_art`
 - Depends on: `item_162_holographic_hero_on_the_dot_matrix_background`, `item_137_nest_app_shell_on_core_fixtures`
-- Primary task(s): (none yet)
+- Primary task(s): `task_019_orchestrate_the_nest_home_design_pass`, run in `task_020_orchestrate_nest_going_live_on_the_core_api` step 3
 
 # Priority
 - Priority: Medium
