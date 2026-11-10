@@ -1,15 +1,15 @@
 ## task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox - Orchestrate Jarvis core slices 1 and 2: missions and inbox
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 95%
+> Progress: 100%
 > Complexity: High
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-09 23:08:29
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: Build req_028 slices 1 (mission model) and 2 (inbox and park/resume) as a Go core in `tools/crow-core` driven from the Python CLI, one fresh session per item, in the order below.
@@ -34,10 +34,10 @@
 - [x] 8. item_134 inbox rows and `crow inbox list|show|answer`.
 - [x] 9. item_116 cold resume of isolated missions from files.
 - [x] 10. item_135 resume on answer. Slice 2 exit: a test mission asks a choice, exits, and resumes with the answer. Passed live 2026-11-10 (mission e2e!5); isolated cold resume moved to item_160.
-- [ ] Steps 6 and 7 can run in parallel sessions after step 5; everything else is sequential.
-- [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
-- [ ] Keep commit creation under operator control; do not force one commit per micro-step.
-- [ ] GATE: do not close until lint, audit, and scaffold validation pass.
+- [x] Steps 6 and 7 can run in parallel sessions after step 5; everything else is sequential.
+- [x] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
+- [x] Keep commit creation under operator control; do not force one commit per micro-step.
+- [x] GATE: do not close until lint, audit, and scaffold validation pass.
 
 # Backlog
 - `item_119_go_core_and_python_sidecar_contract_with_shared_fixtures`
@@ -52,19 +52,24 @@
 - `item_135_resume_a_parked_mission_from_the_owner_s_answer`
 
 # Definition of Done (DoD)
-- [ ] Every listed item is Done with its acceptance criteria proven.
-- [ ] Slice 1 and slice 2 acceptance criteria of req_028 pass end to end.
-- [ ] Validation passes.
-- [ ] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
+- [x] Every listed item is Done with its acceptance criteria proven.
+- [x] Slice 1 and slice 2 acceptance criteria of req_028 pass end to end.
+- [x] Validation passes.
+- [x] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
 
 # AC Traceability
-- request-AC1 -> `item_133_dispatch_queued_missions_as_cdx_runs_and_track_them_in_a_tick`. Proof deferred to slice closeout.
-- request-AC1 -> `item_135_resume_a_parked_mission_from_the_owner_s_answer`. Proof deferred to slice closeout.
-- request-AC3 -> `item_132_mission_record_states_and_the_crow_mission_cli`. Proof deferred to slice closeout.
-- request-AC3 -> `item_134_inbox_items_and_the_crow_inbox_cli`. Proof deferred to slice closeout.
+Lines are keyed by AC number and cover four requests (req_028, req_030, req_031, req_037). Each one states what this task proved and names the owner of the rest.
+- request-AC1 -> This task. Proof: req_028 AC1, CLI part: e2e!5 on 2026-11-10 dispatched a mission, parked it on a question, took the answer through `crow inbox answer` and resumed it into a review item (runs d552e2b8, 066c3af3; 7c48f4a, af00367). Answering from the phone is still open in task_017 and the nest items. req_030 AC1, req_031 AC1, req_037 AC1: met before this task (spike tables, item_105 kind file). This task only builds on them.
+- request-AC2 -> This task. Proof: req_037 AC2: item_119 schemas and shared fixtures, with one valid example per gate shape checked by both go test and pytest (bba2e52). req_030 AC2: met by the spike design. This task uses its run config and core split. Still open: req_028 AC2 (live status summaries, task_017 slice 4) and req_031 AC2 (web hello-world slice, nest items).
+- request-AC3 -> This task. Proof: req_037 AC3: item_107 renders the brief from the kind, the record, owner prefs and the reply contract (5113cc4). req_028 AC3, core part: kind gates and autonomy are resolved into `created` (item_132, a29413a), and blocking questions refuse validating verbs (item_134, af00367). req_030 AC3: met 2026-11-07 (item_100). Still open: req_031 AC3 (transcript timeline and xterm, nest items) and req_028 AC3 for the hard-rule approval items across surfaces (task_017 slice 5).
+- request-AC4 -> This task. Proof: req_037 AC4: e2e!5 went further than a files-only dry run, with a live two-version mission resumed from its files (v2 quotes a1, the edit probe was refused). Still open: req_028 AC4 (router, a later slice) and req_030 AC4 (auto-merge gate checklist, task_017 slice 5).
 
 # Validation
-- (no validation recorded yet)
+- `go test -count=1 ./...` (tools/crow-core) passed on 2026-11-10: 87 passed in 9 packages.
+- `pytest -q` passed on 2026-11-10: 521 passed.
+- Live mission e2e!5 passed on 2026-11-10: park, msg answer, continue resume, v2 quotes a1, edit probe refused (runbooks/mission-e2e-scratch.md).
+- Finish workflow executed on 2026-11-10.
+- Linked backlog/request close verification passed.
 
 # Report
 - 2026-11-09 step 1 (item_119) done in bba2e52. Next: step 2, item_131 Go core skeleton, in a fresh session. crow-check ruff red on pre-existing re.I aliases in bin/.
@@ -78,6 +83,9 @@
 - 2026-11-09 step 9 (item_116) done: `env.resume` continues the last run natively and falls back to a cold run from brief.md on the cdx refusals that a fresh run still serves; cold is forced on an account move. Next: step 10, item_135 wires it into `Tick` in place of the item_135 hold, adds the resume cap and runs the end-to-end test.
 - 2026-11-09 step 10 (item_135) built (c440791): tick resumes answered missions, resume cap parks on a core question. Real end-to-end blocked by req_046 (read-only mission runs cannot write their version files). Step stays open until req_046 lands and the e2e passes.
 - 2026-11-10 step 10 closed: the real e2e passed (mission `20261110-review-e2e!5`, runs d552e2b8 and 066c3af3, fixes 7c48f4a and af00367). Slices 1 and 2 are done; isolated cold resume moved to item_160. Task closeout still needs the AC traceability repairs on req_030, req_031 and req_037.
+- Finished on 2026-11-10.
+- Linked backlog item(s): `item_107_render_the_mission_brief_from_kind_record_and_answers`, `item_108_mission_versions_responses_and_validation_record`, `item_109_outbox_ingest_with_caps_and_parked_questions`, `item_116_resume_of_isolated_missions_from_files_and_cdx_issue_for_native_resume`, `item_119_go_core_and_python_sidecar_contract_with_shared_fixtures`, `item_131_go_core_skeleton_with_the_mission_event_log_and_store`, `item_132_mission_record_states_and_the_crow_mission_cli`, `item_133_dispatch_queued_missions_as_cdx_runs_and_track_them_in_a_tick`, `item_134_inbox_items_and_the_crow_inbox_cli`, `item_135_resume_a_parked_mission_from_the_owner_s_answer`
+- Related request(s): `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
 
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`

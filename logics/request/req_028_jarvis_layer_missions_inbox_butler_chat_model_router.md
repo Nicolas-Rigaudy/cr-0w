@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 23:36:16
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: Turn crow into a hands-off assistant. Work runs as background missions through cdx. Decisions, approvals and proposals land in one inbox shown in deck, nest and comlink. A butler chat talks to everything going on. A router picks the model and account per mission kind and data class. Status is told in short human sentences; detail stays one step away.
@@ -89,7 +89,7 @@
 # Definition of Ready (DoR)
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
-- [ ] Acceptance criteria are testable.
+- [x] Acceptance criteria are testable.
 - [x] Dependencies and known risks are listed.
 
 # Companion docs

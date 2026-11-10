@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 16:47:13
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: Start the Go core as `tools/crow-core`: config paths, the append-only mission event log and a SQLite store rebuilt from it. No HTTP yet; a one-shot binary the Python CLI calls.
@@ -69,7 +69,11 @@
 - A straight-through report row is `fyi` with verbs `[dig]`, as in the fixture. The req_037 table says "none (msg reopens it)"; reconcile there when item_134 lands.
 - A `created` event without gates, autonomy or budget takes the kind file defaults (override dir first). item_132 should write the resolved values into `created` so replay never depends on kind files changing.
 - `validation_dropped` is accepted but not folded; item_108 owns the record chain.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

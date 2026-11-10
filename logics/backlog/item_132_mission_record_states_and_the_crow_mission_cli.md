@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 17:20:11
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: The mission record of adr_001, its state machine, and `crow mission new|list|show|cancel` (Python CLI over `crow-core`).
@@ -68,7 +68,11 @@
 - Legal moves live in `contract.Moves`. `done -> queued` (dig) and `failed -> queued` (retry) are the only ways back.
 - Creation accepts any kind whatever its phase. item_133 must gate dispatch on the kind phase.
 - `cancel` on a running mission runs `$CROW_ENGINE/bin/crow-runs stop` for each live run. A stop failure is a warning; the mission is cancelled anyway.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

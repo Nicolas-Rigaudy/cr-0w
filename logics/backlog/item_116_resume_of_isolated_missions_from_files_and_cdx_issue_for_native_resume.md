@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 17:28:44
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: Isolated missions resume as a fresh run from the brief and version files. A cdx issue asks for native resume of isolated runs as a same-account optimisation.
@@ -44,7 +44,7 @@
 # Links
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
-- Request: `req_030_spike_mission_safety_and_sandbox`
+- Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
 - Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
@@ -60,7 +60,11 @@
 - 2026-11-09 tool pass (owner picked): cdx 0.26.10 `cdx run --continue-run RUN_ID` resumes an isolated run in its own sandbox. 0.26.11 keeps the allowlist through a permissions-only `--settings` (crow adopted it in ac1d396 for review runs). Resume missions natively with it first; fall back to the file-based resume on `continue_run_workspace_gone` or `continue_run_settings_mismatch`.
 - 2026-11-09 built as the shared resume primitive `env.resume` in tools/crow-core/internal/mission/resume.go. It rewrites brief.md, then tries `--continue-run` of the last run with a resume.md note quoting the new answers. A refusal with workspace_gone, settings_mismatch, unavailable or not_found falls back to a cold run from brief.md (`--resumes`) and logs an incident `continue_refused`. Other refusals start nothing. run_start records `cold`, `resume_of` and the version the brief asks for. Tick wiring, the resume cap and the end-to-end run stay in item_135.
 - Isolating core-dispatched missions is out of this item: the tick dispatch has no isolate option yet. Suggest a separate item when slice 3 needs it.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

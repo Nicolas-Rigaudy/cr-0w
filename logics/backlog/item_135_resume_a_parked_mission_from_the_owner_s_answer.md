@@ -9,7 +9,7 @@
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-09 23:08:29
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: The tick resumes an answered mission: rebuilt brief, then `cdx run --continue-run` for non-isolated runs or a cold run from files for isolated ones (item_116), with a resume cap.
@@ -60,7 +60,11 @@
 - 2026-11-09 item_143 (2bcaf72) unblocked the first run: the e2e mission parked its question and the answer queued it. The continue run then failed in cdx (inlined settings over the 512-char cap, AlexAgo83/cdx-manager#131). AC1 and AC2 wait on that fix.
 - 2026-11-10 real e2e passed on rk1 (scratch store, review kind, Sonnet low, mission `20261110-review-e2e!5`): run d552e2b8 ($0.14) asked q1 in a needs-input report block, `crow inbox answer ... msg "q1: red"` queued it, the tick continued it as run 066c3af3 (cdx#131 fixed). `report.v2.md` is ready, quotes the answer as `a1`, and records the probe edit outside the mission folder as refused; the repo stayed clean. Three fixes on the way: the brief shows the crow block shape and the resume note names the `a1..aN` refs (7c48f4a); a needs-input or blocked gate gets an inbox row without validating verbs (af00367).
 - Closed 2026-11-10: AC1 live, AC3 by unit test, AC2 moved to item_160 (isolated missions are not dispatched by core; cold resume is unit tested in TestTickResumesColdAfterUsageLimit).
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

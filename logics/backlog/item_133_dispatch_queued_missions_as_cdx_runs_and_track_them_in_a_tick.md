@@ -8,7 +8,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 18:13:12
+> Indicators reviewed: 2026-11-10 11:19:08
 > Owner: crow
 
 # AI Context
@@ -70,7 +70,11 @@
 - Cause map from crow-runs states: done, limit to usage_limit, budget, stuck to timeout, stopped, failed to error. usage_limit and budget park the mission in `waiting` with an incident for item_135.
 - The admission cap is `CROW_MAX_RUNS` (default 2). Moving it to cdx `launch.max_parallel` is open.
 - Missions have no Logics ref field yet, so `flow record-run` is not called for mission runs.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

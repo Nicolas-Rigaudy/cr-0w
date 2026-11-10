@@ -2,10 +2,11 @@
 > Date: 2026-11-06
 > Status: Proposed
 > Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_029_spike_hosts_model_sources_and_local_ai_benchmarks`, `req_030_spike_mission_safety_and_sandbox`, `req_031_spike_nest_stack_and_app_shape`, `req_032_spike_butler_engine_and_persona`, `req_033_spike_android_extras_for_nest`, `req_034_work_views_in_nest`, `req_035_forge_ops_in_nest`, `req_036_fun_layer_for_crow`, `req_037_mission_kinds_and_run_contract`, `req_038_nest_design_rules`, `req_026_personal_butler`, `req_039_news_board_for_tech_news_and_repos`
-> Related backlog: (none yet)
-> Related task: (none yet)
+> Related backlog: `item_107_render_the_mission_brief_from_kind_record_and_answers`
+> Related task: `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 > Related architecture: `adr_001_core_missions_and_inbox_architecture`
 > Reminder: Update status, linked refs, scope, decisions, success signals, and open questions when you edit this doc.
+> Indicators reviewed: 2026-11-10 11:18:57
 
 # Flow
 ```mermaid
@@ -364,3 +365,5 @@ Source: U Ultron, J Jarvis, O owner. Effort from the colleagues' rebuild tables 
 - `logics/request/req_025_account_routing_by_scope.md`
 - `logics/request/req_027_conversations_feed_for_core_deck_nest.md`
 - Colleague design docs (private copies): `local/reference/ultron-design.md`, `local/reference/jarvis-design-document.md`
+- Product back-reference: `item_107_render_the_mission_brief_from_kind_record_and_answers`
+- Task back-reference: `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

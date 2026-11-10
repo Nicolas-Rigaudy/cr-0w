@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 16:33:30
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: Define the contract between the Go core and the Python sidecars: local JSON messages, versions and shared fixtures that both sides test against.
@@ -47,7 +47,7 @@
 # Links
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
-- Request: `req_031_spike_nest_stack_and_app_shape`
+- Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
 - Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
@@ -59,7 +59,11 @@
 - Frees the code homes of items 107, 108 and 109 to be Go.
 - 2026-11-09 groomed into task_016 (first step). Fixtures also cover the mission record, the run entry and the inbox row read by items 132 and 134. Go side lives in `tools/crow-core` (item_131).
 - 2026-11-09 done. Go package `crow-core/contract` holds envelope, mission, run, inbox, event, crow block, questions and kind types. A schema walk test ties Go json tags to the schemas. Python base sidecar `bin/crow_sidecar.py`. CI runs `go test -count=1` because the Go test cache does not track files outside the module. Event names are `run_start`/`run_end` everywhere; the req_037 build example log now carries the full state chain.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

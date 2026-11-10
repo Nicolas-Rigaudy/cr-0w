@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: One inbox built from mission events (version files at a gate and `questions.json`), with `crow inbox list|show|answer` taking the gate verbs of the run contract.
@@ -59,7 +60,11 @@
 - 2026-11-09 done. `internal/mission/inbox.go` fills the ask, blocking flag and artifacts from the files on disk; `inbox_cmd.go` and `bin/crow` route `crow inbox`. Answers go through `env.reply` with the row id and surface on the event.
 - New legal moves: waiting -> queued and review -> queued. The tick holds a queued mission that already ran until item_135 lands the resume.
 - A question row needs the verb `answer` and words. A validating verb (go, ok, approve) is refused while a blocking question row of the same mission is open.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

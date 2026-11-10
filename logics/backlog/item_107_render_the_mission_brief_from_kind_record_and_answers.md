@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 17:45:03
+> Indicators reviewed: 2026-11-10 11:19:08
 
 # AI Context
 - Summary: core writes `brief.md` from the kind file, the mission record, the owner prefs and every answers file, following the spec template.
@@ -47,7 +47,7 @@
 # Links
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
-- Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
+- Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
 - Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
@@ -59,6 +59,7 @@
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
 - 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core` (D6 resolved by req_031). Mission record comes from item_132.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 - 2026-11-09 built in `internal/brief` (5113cc4). `crow core mission brief <id> [--write]` prints or writes `brief.md`; the write is atomic.
 - Owner prefs come from `prefs` in core config (default `local/mission-prefs.yaml`), a YAML list of `rule` plus optional `kinds`. `prefs.example.yaml` in the spec shows the shape.
@@ -69,3 +70,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

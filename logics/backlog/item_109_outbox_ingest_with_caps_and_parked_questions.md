@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 19:05:08
+> Indicators reviewed: 2026-11-10 11:19:08
 > Owner: crow
 
 # AI Context
@@ -48,7 +48,7 @@
 # Links
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
-- Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
+- Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
 - Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
@@ -65,7 +65,11 @@
 - 2026-11-09 built (74075f4): `internal/mission/outbox.go`. `Ingest(dir, paths, caps)` checks listed files in list order and returns kept paths and drops; it changes nothing on disk (dropped files stay, only logged). The tick logs one incident per drop (`artifact_over_cap`, `artifact_refused`, `artifact_missing`) after run_end and before the gate.
 - A valid `outbox/questions.json` for the run's version ends the turn: run_end, preview drops, a `question` event (actor run), state `waiting` with reason "parked: questions". A file with a lower version is stale and ignored; an invalid file gives `bad_questions` and the turn ends on its version file.
 - For item_134: reuse `Ingest` with the kind caps to fill inbox artifacts and previews.
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`

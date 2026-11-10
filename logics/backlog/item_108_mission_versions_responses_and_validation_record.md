@@ -8,7 +8,7 @@
 > Complexity: High
 > Theme: Hub strategy
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-09 20:02:38
+> Indicators reviewed: 2026-11-10 11:19:08
 > Owner: crow
 
 # AI Context
@@ -51,7 +51,7 @@
 # Links
 - Product brief(s): `prod_005_crow_jarvis_layer`
 - Architecture decision(s): `adr_001_core_missions_and_inbox_architecture`
-- Request: `logics/request/req_037_mission_kinds_and_run_contract.md`
+- Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`
 - Primary task(s): `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
 
 # Priority
@@ -69,7 +69,11 @@
 - Code home waits on the Go core and the shared fixture contract (item_119). The backend is Go (owner decision 2026-11-07); D6 keeps only the parser in Python `bin/`.
 - Spec: `logics/specs/req_037_run_contract/`.
 - 2026-11-09 groomed into task_016. Code home: Go in `tools/crow-core`; event log from item_131. Called by `crow inbox answer` (item_134).
+- Task `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox` was finished via `logics-manager flow finish task` on 2026-11-10.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox`
