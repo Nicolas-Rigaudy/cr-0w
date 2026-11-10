@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 25%
+> Progress: 20%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -28,17 +28,20 @@
 - [x] Nit (owner 2026-11-10): installed app name reads `Nest`; set manifest `name` and `short_name` to `CR-0W`. Done with step 2 (76534a4); reinstall the app on the phone to pick up the name.
 - [x] 2. item_144 core HTTP service with read endpoints, serving Nest at `/` and the API at `/api`, systemd user unit, `tailscale serve` pointed at core. Exit: the phone loads Nest from core and `curl` reads `/api/state/inbox`. Done 2026-11-10: unit active with linger, tailscale serve proxies `/` to 127.0.0.1:8787, tailnet curl reads `/api/state/inbox`, vite preview stopped (runbooks/core-service.md).
 - [x] 3. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI. Done 2026-11-10, moved before item_158 (owner: core work before design polish).
-- [ ] 4. item_169 core serves every deck source (sessions, dispatch runs, MRs, today, usage, checks, projects) with background refresh. Exit: the phone's Nest data layer reads the same sessions and runs as deck (req_054, owner 2026-11-10: Nest shows zeros, it must see everything deck does).
-- [ ] 5. item_147 core mission action endpoints, then item_170 session and run actions on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session.
-- [ ] 6. item_171 Nest Home on the deck sources (mockup first, owner OK). Exit: Home matches deck's agents panel with an empty mission store.
-- [ ] 7. item_158 hero interactions (spin, hover lift + moons, click to details). Open question for the owner: hero mood order, model.ts `moodOf` (run > fail > idle, item_162) vs item_158 spec (fail > ask > run > idle).
-- [ ] 8. item_168 Nest answer sheet (mockup first, owner OK). Exit: roadmap 0.3b signal, answered from Nest on the phone.
-- [ ] 9. item_165 telemetry strip on the live usage and accounts sections.
-- [ ] 10. item_172 Nest Work and System screens (mockup first, owner OK).
-- [ ] 11. item_163 design skills audit of the laptop Home, now on real data.
-- [ ] 12. item_166 boot sequence.
-- [ ] Order rule: core steps (2, 3, 4, 5) are the critical path. If a design step waits on owner OK, start the next core or build step instead of idling.
-- [ ] After step 12: task_017 continues (item_145 deck inbox, 146 SSE, 148-152 summaries and autonomy), alternating with task_018 laptop Missions.
+- [ ] 4. item_173 script JSON contracts (fixtures, usage summary, MR cache, JSON from action scripts). Exit: deck still works; every output pinned by a test.
+- [ ] 5. item_169 core serves every deck source (sessions, dispatch runs, MRs, today, usage, checks, projects) with background refresh. Exit: the phone's Nest data layer reads the same sessions and runs as deck (req_054, owner 2026-11-10: Nest shows zeros, it must see everything deck does).
+- [ ] 6. item_147 core mission action endpoints, then item_170 session and run actions (start, resume, send, interrupt, stop, dispatch) on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session.
+- [ ] 7. item_174 permission prompts answered from Nest (spike on the prompt source first).
+- [ ] 8. item_171 Nest Home on the deck sources (mockup first, owner OK). Exit: Home matches deck's agents panel with an empty mission store.
+- [ ] 9. item_158 hero interactions (spin, hover lift + moons, click to details). Open question for the owner: hero mood order, model.ts `moodOf` (run > fail > idle, item_162) vs item_158 spec (fail > ask > run > idle).
+- [ ] 10. item_168 Nest answer sheet (mockup first, owner OK). Exit: roadmap 0.3b signal, answered from Nest on the phone.
+- [ ] 11. item_175 work approvals in Nest on the exact text (inbox kind `approval`).
+- [ ] 12. item_165 telemetry strip on the live usage and accounts sections.
+- [ ] 13. item_172 Nest Work and System screens (mockup first, owner OK).
+- [ ] 14. item_163 design skills audit of the laptop Home, now on real data.
+- [ ] 15. item_166 boot sequence.
+- [ ] Order rule: core steps (2 to 7, 11) are the critical path. If a design step waits on owner OK, start the next core or build step instead of idling.
+- [ ] After step 15: task_017 continues (item_145 deck inbox, 146 SSE, 148-152 summaries and autonomy), alternating with task_018 laptop Missions.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] GATE: do not close until lint, audit, and scaffold validation pass.
 
@@ -55,6 +58,9 @@
 - `item_170_core_actions_on_live_sessions_and_dispatch_runs`
 - `item_171_nest_home_shows_live_sessions_runs_alerts_and_quota`
 - `item_172_nest_work_and_system_screens_on_the_deck_sources`
+- `item_173_deck_scripts_get_a_stable_json_contract_for_the_app`
+- `item_174_nest_answers_a_session_s_permission_prompt_with_buttons`
+- `item_175_work_approvals_given_from_nest_on_the_exact_text`
 
 # Definition of Done (DoD)
 - [ ] Every listed item is Done with its acceptance criteria proven.
