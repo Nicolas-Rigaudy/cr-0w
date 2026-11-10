@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -100,8 +101,9 @@ func TestBuildFixtureTakesKindDefaults(t *testing.T) {
 	if it, ok := rows[id+"/v3"]; !ok || it.Type != "review" || it.State != "answered" {
 		t.Errorf("v3: %+v", it)
 	}
-	if _, ok := rows[id+"/v1"]; ok {
-		t.Errorf("v1 needs input and must not reach the inbox")
+	// v1 needs input: a row the owner answers in words (the fixture digs), never validates.
+	if it, ok := rows[id+"/v1"]; !ok || it.Type != "needs-input" || it.State != "answered" || slices.Contains(it.Verbs, "go") {
+		t.Errorf("v1: %+v", it)
 	}
 }
 

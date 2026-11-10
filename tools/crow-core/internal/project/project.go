@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 
 	"crow-core/contract"
@@ -141,13 +142,17 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 			return fmt.Errorf("%s: gate on %q", e.Mission, d.File)
 		}
 		bump(m, n)
-		if d.Verdict == "ready" {
-			typ, verbs := gateRow(source, len(m.Gates) == 0)
-			v.upsert(contract.InboxItem{
-				ID: fmt.Sprintf("%s/v%d", m.ID, n), Type: typ, Source: source,
-				Version: n, File: d.File, Verbs: verbs,
-			}, m, e.TS)
+		typ, verbs := gateRow(source, len(m.Gates) == 0)
+		if d.Verdict != "ready" {
+			// needs-input or blocked: the owner answers in words, nothing validates yet.
+			typ, verbs = d.Verdict, slices.DeleteFunc(verbs, func(vb string) bool {
+				return slices.Contains([]string{"go", "ok", "approve", "pick"}, vb)
+			})
 		}
+		v.upsert(contract.InboxItem{
+			ID: fmt.Sprintf("%s/v%d", m.ID, n), Type: typ, Source: source,
+			Version: n, File: d.File, Verbs: verbs,
+		}, m, e.TS)
 	case *contract.AnswerData:
 		id := deref(d.Item)
 		if id == "" {

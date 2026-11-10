@@ -103,7 +103,7 @@ func TestDeletedStoreRebuilds(t *testing.T) {
 	}
 	var d Dump
 	json.Unmarshal([]byte(before), &d)
-	if len(d.Missions) != 2 || len(d.Runs) != 4 || len(d.Inbox) != 4 {
+	if len(d.Missions) != 2 || len(d.Runs) != 4 || len(d.Inbox) != 5 {
 		t.Errorf("rows: %d missions, %d runs, %d inbox", len(d.Missions), len(d.Runs), len(d.Inbox))
 	}
 }
