@@ -36,5 +36,10 @@
 - After `npm run build` the core serves the new `dist/` at once; no restart.
 - Test mission for a live check: `bin/crow mission new --kind research --project cr-0w --goal "..." --end-state "probe only"` lands `queued` (nothing ticks on its own). Then `bin/crow mission cancel <id> --reason ...`, remove `local/state/missions/<id>/` and run `tools/crow-core/crow-core rebuild` to drop it from the store.
 
+## Phone on the tailnet
+- Android Private DNS (a DoT host such as AdGuard) breaks DNS while Tailscale is on: apps lose the network and messages stop. Set Private DNS to Off or Automatic.
+- Keep "Use Tailscale DNS" on in the phone app: public resolvers answer NXDOMAIN for the `*.ts.net` Nest name, so only MagicDNS reaches core.
+- To keep a filtering resolver, set it as a global nameserver in the admin console (login.tailscale.com/admin/dns) with "Override local DNS" on.
+
 ## Fixtures
 - `go test ./internal/api -update` in `tools/crow-core` rewrites `logics/specs/core_contract/fixtures/api/*.json`; `tests/test_core_contract.py` checks them against the record schemas.
