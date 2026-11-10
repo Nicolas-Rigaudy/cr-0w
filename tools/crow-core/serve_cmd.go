@@ -34,11 +34,10 @@ const unitName = "crow-core.service"
 func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 	owner := ownerLogin(cfg.Serve.Owner)
 	srv := api.New(api.Options{
-		Env:      env,
-		Owner:    owner,
-		Nest:     cfg.Serve.Nest,
-		Accounts: accountsFetch(cfg.Engine),
-		Jobs:     jobsFetch,
+		Env:     env,
+		Owner:   owner,
+		Nest:    cfg.Serve.Nest,
+		Sources: sources(cfg),
 	})
 	tcp, err := net.Listen("tcp", cfg.Serve.Listen)
 	if err != nil {
@@ -66,6 +65,9 @@ func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 	}
 	fmt.Fprintf(stdout, "crow-core serve: http://%s (owner %s), unix %s, nest %s\n",
 		tcp.Addr(), orNone(owner()), cfg.Serve.Socket, orNone(cfg.Serve.Nest))
+	bg, stopBg := context.WithCancel(context.Background())
+	defer stopBg()
+	go srv.Run(bg)
 	errc := make(chan error, 2)
 	for i, l := range []net.Listener{tcp, sock} {
 		go func(s *http.Server, l net.Listener) { errc <- s.Serve(l) }(servers[i], l)
@@ -138,21 +140,76 @@ func tailscaleLogin() (string, error) {
 	return u.LoginName, nil
 }
 
-// accountsFetch reads the account policy through crow-accounts json.
-func accountsFetch(engine string) api.Fetch {
+// script is one section read from a bin/ script: its JSON is the section data, unchanged.
+type script struct {
+	name    string
+	timeout time.Duration // deck's timeout for the same script
+	env     []string
+	args    []string
+}
+
+// scripts are the deck sources core serves (item_169), in response order after the store.
+var scripts = []script{
+	{"sessions", 20 * time.Second, nil, []string{"crow-sessions", "list", "--json"}},
+	{"dispatch", 20 * time.Second, nil, []string{"crow-runs", "json"}},
+	{"usage", 30 * time.Second, []string{"CROW_TITLES_PER_DAY=0"}, []string{"crow-usage", "--json"}},
+	{"today", 60 * time.Second, nil, []string{"crow-today", "json"}},
+	{"mrs", 90 * time.Second, nil, []string{"crow-mrs", "json"}},
+	{"checks", 30 * time.Second, nil, []string{"crow-checks", "json"}},
+	{"projects", 30 * time.Second, nil, []string{"crow-registry", "json"}},
+	{"accounts", 10 * time.Second, nil, []string{"crow-accounts", "json"}},
+}
+
+// sources builds every external section with its configured TTL.
+func sources(cfg config.Config) []api.Source {
+	var out []api.Source
+	for _, sc := range scripts {
+		out = append(out, api.Source{Name: sc.name, TTL: cfg.Serve.TTL[sc.name], Fetch: scriptFetch(cfg.Engine, sc)})
+	}
+	return append(out, api.Source{Name: "jobs", TTL: cfg.Serve.TTL["jobs"], Fetch: jobsFetch})
+}
+
+// scriptFetch runs a bin/ script and parses its stdout. The error carries the end of
+// stderr, which the section shows while stale.
+func scriptFetch(engine string, sc script) api.Fetch {
 	return func() (any, error) {
 		if engine == "" {
 			return nil, errors.New("CROW_ENGINE is not set")
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), sc.timeout)
 		defer cancel()
-		out, err := exec.CommandContext(ctx, filepath.Join(engine, "bin", "crow-accounts"), "json").Output()
+		cmd := exec.CommandContext(ctx, filepath.Join(engine, "bin", sc.args[0]), sc.args[1:]...)
+		cmd.Env = append(os.Environ(), sc.env...)
+		out, err := cmd.Output()
 		if err != nil {
-			return nil, fmt.Errorf("crow-accounts json: %w", err)
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("%s: timed out after %s", sc.args[0], sc.timeout)
+			}
+			msg := ""
+			var ee *exec.ExitError
+			if errors.As(err, &ee) {
+				msg = stderrTail(ee.Stderr)
+			}
+			if msg != "" {
+				return nil, fmt.Errorf("%s: %w: %s", sc.args[0], err, msg)
+			}
+			return nil, fmt.Errorf("%s: %w", sc.args[0], err)
 		}
 		var v any
-		return v, json.Unmarshal(out, &v)
+		if err := json.Unmarshal(out, &v); err != nil {
+			return nil, fmt.Errorf("%s: %w", sc.args[0], err)
+		}
+		return v, nil
 	}
+}
+
+// stderrTail is the last line of stderr, cut to 300 bytes.
+func stderrTail(b []byte) string {
+	l := string(lastLine(b))
+	if len(l) > 300 {
+		l = l[:300]
+	}
+	return l
 }
 
 func jobsFetch() (any, error) {

@@ -1,0 +1,56 @@
+{
+  "section": "today",
+  "version": "266f60439b180a0c",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "at": "2026-01-01T09:00:00+00:00",
+    "drafts": "drafts",
+    "events": [
+      {
+        "all_day": "all_day",
+        "end": "end",
+        "start": "start",
+        "subject": "subject"
+      }
+    ],
+    "flagged": [
+      {
+        "crow": "crow",
+        "from": "from",
+        "id": "id",
+        "subject": "subject",
+        "until": "until",
+        "webLink": "webLink"
+      }
+    ],
+    "important": [
+      {
+        "at": "2026-01-01T09:00:00+00:00",
+        "from": "from",
+        "high": "high",
+        "id": "id",
+        "subject": "subject",
+        "unread": "unread",
+        "webLink": "webLink"
+      }
+    ],
+    "schema": 1,
+    "tomorrow": [
+      {
+        "all_day": "all_day",
+        "end": "end",
+        "start": "start",
+        "subject": "subject"
+      }
+    ],
+    "unread": "unread",
+    "week": [
+      {
+        "all_day": "all_day",
+        "end": "end",
+        "start": "start",
+        "subject": "subject"
+      }
+    ]
+  }
+}

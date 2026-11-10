@@ -21,8 +21,15 @@
 - `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/state` answers 403 (no identity).
 - Repeat with `If-None-Match: <etag>`: 304 until the store version moves.
 
+## Sections
+- Store sections: `inbox`, `missions`, `runs`.
+- Script sections, the deck's own `bin/` JSON: `sessions` (crow-sessions), `dispatch` (crow-runs), `usage` (crow-usage), `today` (crow-today), `mrs` (crow-mrs), `checks` (crow-checks), `projects` (crow-registry), `accounts` (crow-accounts), plus `jobs` (systemd timers).
+- A script section answers its last good body at once. Refresh runs in the background, one run per section, when the body is older than its TTL and someone read it in the last 2 min.
+- A failed run keeps the data, adds `stale: true` and `error`, and keeps the old `updated_at`. Before the first good run the body is `data: []` with `stale`.
+
 ## Config (`serve:` in the crow config)
 - `listen` (default `127.0.0.1:8787`), `socket`, `nest` (relative to the crow home), `owner_login`.
+- `ttl`: refresh period per script section, e.g. `ttl: {mrs: 300s}`. Defaults: sessions 5s, dispatch 10s, accounts/jobs 30s, usage/today 60s, mrs 120s, checks/projects 300s.
 
 ## Nest against the live core
 - `cd tools/nest && VITE_NEST_SOURCE=api npm run dev`: the dev server proxies `/api` to the unix socket. Plain `npm run dev` and tests use fixtures; production builds always read the API.

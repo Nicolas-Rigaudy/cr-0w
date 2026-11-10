@@ -1,0 +1,33 @@
+{
+  "section": "sessions",
+  "version": "df1ed85cc34da4c7",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "generated_at": "2026-01-01T09:00:00+00:00",
+    "read": "read",
+    "schema": 1,
+    "sessions": [
+      {
+        "account": "account",
+        "branch": "branch",
+        "conversation_id": "conversation_id",
+        "cwd": "cwd",
+        "first_prompt": "first_prompt",
+        "last_event": "last_event",
+        "last_prompt": "last_prompt",
+        "limit": "limit",
+        "message": "message",
+        "project": "project",
+        "relaunched": {
+          "at": "2026-01-01T09:00:00+00:00",
+          "target": "target"
+        },
+        "resets_at": "2026-01-01T09:00:00+00:00",
+        "size": 1,
+        "transcript": "transcript",
+        "workspaces": []
+      }
+    ],
+    "transcripts": "transcripts"
+  }
+}

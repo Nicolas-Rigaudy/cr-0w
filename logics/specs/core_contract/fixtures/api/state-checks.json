@@ -1,0 +1,20 @@
+{
+  "section": "checks",
+  "version": "00ed1c58cf7c0ac4",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "at": "2026-01-01T09:00:00+00:00",
+    "rows": [
+      {
+        "action": "action",
+        "check": "check",
+        "due": "due",
+        "id": "id",
+        "what": "what",
+        "why": "why"
+      }
+    ],
+    "schema": 1,
+    "skipped": {}
+  }
+}

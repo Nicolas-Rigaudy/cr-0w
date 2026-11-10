@@ -32,21 +32,20 @@ const IdentityHeader = "Tailscale-User-Login"
 // CSRFHeader must be "1" on every request that is not GET or HEAD.
 const CSRFHeader = "X-Crow"
 
-// Sections are the parts of GET /api/state, in response order.
-var Sections = []string{"inbox", "missions", "runs", "accounts", "jobs"}
+// StoreSections are the parts of GET /api/state built from the mission store. The
+// sources in Options follow them, in their order.
+var StoreSections = []string{"inbox", "missions", "runs"}
 
-// Fetch reads a section that lives outside the store (accounts, jobs).
+// Fetch reads a section that lives outside the store (accounts, jobs, deck scripts).
 type Fetch func() (any, error)
 
 // Options builds a Server.
 type Options struct {
-	Env      mission.Env
-	Owner    func() string // tailnet login allowed on the TCP listener; empty refuses all
-	Nest     string        // built Nest dir served at /; empty serves no app
-	Accounts Fetch
-	Jobs     Fetch
-	TTL      time.Duration // how long accounts and jobs stay cached
-	Now      func() time.Time
+	Env     mission.Env
+	Owner   func() string // tailnet login allowed on the TCP listener; empty refuses all
+	Nest    string        // built Nest dir served at /; empty serves no app
+	Sources []Source      // sections outside the store, refreshed in the background
+	Now     func() time.Time
 }
 
 // Server answers the routes. It is safe for concurrent use.
@@ -58,21 +57,17 @@ type Server struct {
 		updated *string
 		data    map[string]any
 	}
-	ext map[string]*cached
-}
-
-type cached struct {
-	at      time.Time
-	hash    string
-	updated string
-	data    any
+	ext   map[string]*ext
+	order []string // every section, in response order
 }
 
 // Section is one part of the state with its change marks.
 type Section struct {
 	Section   string  `json:"section"`
-	Version   string  `json:"version"`    // hash of data, also the ETag
-	UpdatedAt *string `json:"updated_at"` // last change seen, RFC 3339
+	Version   string  `json:"version"`         // hash of data, also the ETag
+	UpdatedAt *string `json:"updated_at"`      // last change seen, RFC 3339
+	Stale     bool    `json:"stale,omitempty"` // the last refresh failed or none ran yet
+	Error     string  `json:"error,omitempty"` // why it is stale
 	Data      any     `json:"data"`
 }
 
@@ -87,14 +82,22 @@ func New(o Options) *Server {
 	if o.Now == nil {
 		o.Now = time.Now
 	}
-	if o.TTL == 0 {
-		o.TTL = 30 * time.Second
-	}
 	if o.Owner == nil {
 		o.Owner = func() string { return "" }
 	}
-	return &Server{o: o, ext: map[string]*cached{}}
+	s := &Server{o: o, ext: map[string]*ext{}, order: slices.Clone(StoreSections)}
+	for _, src := range o.Sources {
+		if src.TTL <= 0 {
+			src.TTL = 30 * time.Second
+		}
+		s.ext[src.Name] = &ext{src: src}
+		s.order = append(s.order, src.Name)
+	}
+	return s
 }
+
+// Sections lists every section in response order.
+func (s *Server) Sections() []string { return slices.Clone(s.order) }
 
 // Handler is the route table. trusted is true on the unix socket, where the identity
 // header is not required.
@@ -150,7 +153,7 @@ func sameOrigin(r *http.Request, trusted bool) bool {
 func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 	out := State{Sections: map[string]Section{}}
 	h := sha256.New()
-	for _, name := range Sections {
+	for _, name := range s.order {
 		sec, err := s.read(name, r)
 		if err != nil {
 			fail(w, http.StatusInternalServerError, name+": "+err.Error())
@@ -165,7 +168,7 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) section(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("section")
-	if !slices.Contains(Sections, name) {
+	if !slices.Contains(s.order, name) {
 		fail(w, http.StatusNotFound, "no section "+name)
 		return
 	}
@@ -178,15 +181,10 @@ func (s *Server) section(w http.ResponseWriter, r *http.Request) {
 }
 
 // read builds one section. The store sections are rebuilt when the store version
-// moves; accounts and jobs are fetched again after TTL.
+// moves; the others answer their last refresh at once, without the store lock.
 func (s *Server) read(name string, r *http.Request) (Section, error) {
-	switch name {
-	case "accounts", "jobs":
-		f := s.o.Accounts
-		if name == "jobs" {
-			f = s.o.Jobs
-		}
-		return s.external(name, f)
+	if e := s.ext[name]; e != nil {
+		return s.readExt(e), nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -238,34 +236,6 @@ func (s *Server) syncStore() error {
 	s.store.version, s.store.updated = v, updated
 	s.store.data = map[string]any{"inbox": inbox, "missions": d.Missions, "runs": runs}
 	return nil
-}
-
-func (s *Server) external(name string, f Fetch) (Section, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	now := s.o.Now()
-	c := s.ext[name]
-	if c == nil || now.Sub(c.at) >= s.o.TTL {
-		var data any = []any{}
-		if f != nil {
-			d, err := f()
-			if err != nil {
-				if c == nil {
-					return Section{}, err
-				}
-				d = c.data // keep the last good value
-			}
-			data = d
-		}
-		h := hash(data)
-		if c == nil || c.hash != h {
-			c = &cached{hash: h, updated: now.UTC().Format(time.RFC3339), data: data}
-			s.ext[name] = c
-		}
-		c.at = now
-	}
-	u := c.updated
-	return Section{Section: name, Version: c.hash, UpdatedAt: &u, Data: c.data}, nil
 }
 
 func (s *Server) mission(w http.ResponseWriter, r *http.Request) {

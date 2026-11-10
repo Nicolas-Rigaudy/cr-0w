@@ -50,17 +50,35 @@ func newServer(t *testing.T) (*Server, string) {
 		Env:   env,
 		Owner: func() string { return owner },
 		Nest:  nestDir(t),
-		Accounts: func() (any, error) {
-			return map[string]any{"default": "main", "accounts": []any{
-				map[string]any{"name": "main", "policy": "use", "priority": 80, "tier": "mine"}}}, nil
-		},
-		Jobs: func() (any, error) {
+		Sources: append(scriptSources(t), Source{Name: "jobs", Fetch: func() (any, error) {
 			return ParseTimers([]byte(`[{"next":1794330227942489,"last":0,"unit":"crow-retro.timer","activates":"crow-retro.service"},
 				{"next":1,"last":2,"unit":"other.timer","activates":"other.service"}]`))
-		},
+		}}),
 		Now: func() time.Time { return clock },
 	})
+	for _, name := range srv.Sections() {
+		srv.Refresh(name)
+	}
 	return srv, root
+}
+
+// scriptPayloads maps each script section to its synthetic payload in the script
+// contract (item_173), standing in for the bin/ script's stdout.
+var scriptPayloads = []struct{ section, fixture string }{
+	{"sessions", "sessions"}, {"dispatch", "runs"}, {"usage", "usage"}, {"today", "today"},
+	{"mrs", "mrs"}, {"checks", "checks"}, {"projects", "registry"}, {"accounts", "accounts"},
+}
+
+func scriptSources(t *testing.T) []Source {
+	var out []Source
+	for _, p := range scriptPayloads {
+		b := testfix.Read(t, filepath.Join(testfix.ScriptSpec, "fixtures", p.fixture+".json"))
+		out = append(out, Source{Name: p.section, Fetch: func() (any, error) {
+			var v any
+			return v, json.Unmarshal(b, &v)
+		}})
+	}
+	return out
 }
 
 func nestDir(t *testing.T) string {
@@ -135,6 +153,13 @@ func TestResponseFixtures(t *testing.T) {
 		"state-runs":          {path: "/api/state/runs"},
 		"state-accounts":      {path: "/api/state/accounts"},
 		"state-jobs":          {path: "/api/state/jobs"},
+		"state-sessions":      {path: "/api/state/sessions"},
+		"state-dispatch":      {path: "/api/state/dispatch"},
+		"state-usage":         {path: "/api/state/usage"},
+		"state-today":         {path: "/api/state/today"},
+		"state-mrs":           {path: "/api/state/mrs"},
+		"state-checks":        {path: "/api/state/checks"},
+		"state-projects":      {path: "/api/state/projects"},
 		"mission":             {path: "/api/missions/20261109-build-item-095"},
 		"mission-questions":   {path: "/api/missions/20261109-research-android-push-options"},
 		"events":              {path: "/api/events?limit=3"},

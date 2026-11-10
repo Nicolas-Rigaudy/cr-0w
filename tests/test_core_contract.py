@@ -182,7 +182,9 @@ def test_api_fixture_set():
 
 
 def check_section(sec):
-    assert set(sec) == {"section", "version", "updated_at", "data"}, sec.keys()
+    assert {"section", "version", "updated_at", "data"} <= set(sec) <= {
+        "section", "version", "updated_at", "data", "stale", "error"}, sec.keys()
+    assert sec.get("stale", False) == bool(sec.get("error")), "stale and error go together"
     schema = SECTION_SCHEMA.get(sec["section"])
     if not schema:
         return
@@ -202,7 +204,9 @@ def test_api_section_fixture(path):
 def test_api_state_fixture():
     st = load(API / "state.json")
     assert set(st) == {"version", "sections"}
-    assert set(st["sections"]) == {"inbox", "missions", "runs", "accounts", "jobs"}
+    assert set(st["sections"]) == {
+        "inbox", "missions", "runs", "sessions", "dispatch", "usage", "today",
+        "mrs", "checks", "projects", "accounts", "jobs"}
     for name, sec in st["sections"].items():
         assert sec["section"] == name
         check_section(sec)

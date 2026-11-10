@@ -1,0 +1,49 @@
+{
+  "section": "projects",
+  "version": "708f5c3ea06a9201",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "daily_dir": "daily_dir",
+    "identities": {},
+    "projects": [
+      {
+        "forge": "forge",
+        "git": {
+          "ahead": "ahead",
+          "dirty": false,
+          "email": "email",
+          "stale_trees": "stale_trees"
+        },
+        "logics": "logics",
+        "name": "name",
+        "path": "path",
+        "release": {},
+        "remote": "remote",
+        "road": {
+          "current": "current",
+          "doc": "doc",
+          "done": "done",
+          "exit": "exit",
+          "miles": [
+            {
+              "date": "2026-01-01T09:00:00+00:00",
+              "done": "done",
+              "exit": "exit",
+              "title": "title"
+            }
+          ],
+          "start": "start",
+          "target": "target",
+          "total": "total"
+        },
+        "scope": "scope",
+        "short": "short",
+        "status": "status",
+        "work": {}
+      }
+    ],
+    "schema": 1,
+    "state_dir": "state_dir",
+    "threads_file": "threads_file"
+  }
+}

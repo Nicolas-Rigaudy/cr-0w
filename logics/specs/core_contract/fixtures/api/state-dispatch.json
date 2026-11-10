@@ -1,0 +1,74 @@
+{
+  "section": "dispatch",
+  "version": "4d3c4a46cd64d705",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "agents": [
+      {
+        "account": "account",
+        "commits": [],
+        "context_tokens": 1,
+        "cwd": "cwd",
+        "kind": "kind",
+        "label": "label",
+        "last_action": "last_action",
+        "last_activity_s": "last_activity_s",
+        "last_prompt": "last_prompt",
+        "multi_project": "multi_project",
+        "pid": 1,
+        "project": "project",
+        "projects": [
+          {
+            "cost_usd": "cost_usd",
+            "name": "name",
+            "share_pct": 1,
+            "tokens": 1
+          }
+        ],
+        "provider": "provider",
+        "recent": [
+          {
+            "action": "action",
+            "ts": "2026-01-01T09:00:00+00:00"
+          }
+        ],
+        "run_id": "run_id",
+        "session_id": "session_id",
+        "started_at": "2026-01-01T09:00:00+00:00",
+        "state": "state",
+        "subagents_active": "subagents_active",
+        "title": "title"
+      }
+    ],
+    "finished": [
+      {
+        "budget_usd": "budget_usd",
+        "commits": [],
+        "cost_usd": "cost_usd",
+        "denials": [],
+        "duration_s": "duration_s",
+        "ended_at": "2026-01-01T09:00:00+00:00",
+        "label": "label",
+        "project": "project",
+        "resumed_from": [],
+        "run_id": "run_id",
+        "status": "status"
+      }
+    ],
+    "generated_at": "2026-01-01T09:00:00+00:00",
+    "schema": 1,
+    "slots": {
+      "busy": 1,
+      "max": 1
+    },
+    "usage_by_project": [
+      {
+        "cost_usd": "cost_usd",
+        "name": "name",
+        "sessions": 1,
+        "shared_sessions": 1,
+        "tokens": 1
+      }
+    ]
+  }
+}

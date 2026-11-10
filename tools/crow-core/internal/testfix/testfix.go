@@ -18,8 +18,10 @@ func Repo() string {
 var (
 	CoreSpec = filepath.Join(Repo(), "logics", "specs", "core_contract")
 	RunSpec  = filepath.Join(Repo(), "logics", "specs", "req_037_run_contract")
-	KindsDir = filepath.Join(RunSpec, "kinds")
-	Records  = filepath.Join(CoreSpec, "fixtures", "records")
+	// ScriptSpec holds the deck scripts' JSON schemas and synthetic payloads (item_173).
+	ScriptSpec = filepath.Join(Repo(), "logics", "specs", "script_contract")
+	KindsDir   = filepath.Join(RunSpec, "kinds")
+	Records    = filepath.Join(CoreSpec, "fixtures", "records")
 )
 
 // Logs maps each fixture mission to its event log in the specs.

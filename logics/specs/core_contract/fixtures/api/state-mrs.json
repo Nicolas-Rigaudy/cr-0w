@@ -1,0 +1,41 @@
+{
+  "section": "mrs",
+  "version": "71fd176785f41065",
+  "updated_at": "2026-11-10T09:00:00Z",
+  "data": {
+    "branches": [
+      {
+        "ahead": "ahead",
+        "branch": "branch",
+        "project": "project",
+        "scope": "scope"
+      }
+    ],
+    "forges": {},
+    "mrs": [
+      {
+        "author": "author",
+        "branch": "branch",
+        "created": "created",
+        "draft": false,
+        "forge": "forge",
+        "name": "name",
+        "number": "number",
+        "pipeline": "pipeline",
+        "project": "project",
+        "ref": "ref",
+        "repo": "repo",
+        "role": "role",
+        "scope": "scope",
+        "target": "target",
+        "threads_open": "threads_open",
+        "threads_resolved": "threads_resolved",
+        "title": "title",
+        "updated": "updated",
+        "url": "url"
+      }
+    ],
+    "now": "now",
+    "schema": 1
+  }
+}

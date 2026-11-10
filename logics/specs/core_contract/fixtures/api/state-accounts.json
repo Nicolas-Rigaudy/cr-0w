@@ -1,16 +1,20 @@
 {
   "section": "accounts",
-  "version": "403f4931459409e4",
+  "version": "2ae21a6fcf9f4ecb",
   "updated_at": "2026-11-10T09:00:00Z",
   "data": {
     "accounts": [
       {
-        "name": "main",
-        "policy": "use",
-        "priority": 80,
-        "tier": "mine"
+        "memory": "memory",
+        "name": "name",
+        "policy": "policy",
+        "priority": "priority",
+        "scope_min_room": {},
+        "scopes": {},
+        "tier": "tier"
       }
     ],
-    "default": "main"
+    "default": "default",
+    "schema": 1
   }
 }

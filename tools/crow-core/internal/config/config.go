@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -36,6 +38,23 @@ type Serve struct {
 	Socket string `json:"socket" yaml:"socket"`
 	Nest   string `json:"nest" yaml:"nest"` // built Nest app served at /
 	Owner  string `json:"owner_login" yaml:"owner_login"`
+	// TTL is how often each external section is refreshed while a client reads it,
+	// keyed by section name ("120s"). Missing names keep DefaultTTL.
+	TTL map[string]time.Duration `json:"ttl" yaml:"ttl"`
+}
+
+// DefaultTTL is the starting refresh period of each external section, tuned against the
+// measured script time (crow-mrs json takes ~10 s, crow-usage ~3 s, the rest under 1 s).
+var DefaultTTL = map[string]time.Duration{
+	"sessions": 5 * time.Second,
+	"dispatch": 10 * time.Second,
+	"accounts": 30 * time.Second,
+	"jobs":     30 * time.Second,
+	"usage":    60 * time.Second,
+	"today":    60 * time.Second,
+	"mrs":      120 * time.Second,
+	"checks":   300 * time.Second,
+	"projects": 300 * time.Second,
 }
 
 // DefaultListen is the loopback address of the service.
@@ -57,7 +76,7 @@ func Load(getenv func(string) string) (Config, error) {
 		Overrides: filepath.Join(home, "local", "kinds"),
 		Projects:  filepath.Join(home, "local", "projects.yaml"),
 		Prefs:     filepath.Join(home, "local", "mission-prefs.yaml"),
-		Serve:     Serve{Listen: DefaultListen, Socket: filepath.Join(home, "local", "state", "core.sock")},
+		Serve:     Serve{Listen: DefaultListen, Socket: filepath.Join(home, "local", "state", "core.sock"), TTL: maps.Clone(DefaultTTL)},
 	}
 	if engine := getenv("CROW_ENGINE"); engine != "" {
 		c.Engine = engine
@@ -100,6 +119,15 @@ func Load(getenv func(string) string) (Config, error) {
 		c.Serve.Listen = f.Serve.Listen
 	}
 	c.Serve.Owner = f.Serve.Owner
+	for k, v := range f.Serve.TTL {
+		if _, ok := DefaultTTL[k]; !ok {
+			return Config{}, fmt.Errorf("%s: serve.ttl: no section %q", file, k)
+		}
+		if v <= 0 {
+			return Config{}, fmt.Errorf("%s: serve.ttl.%s must be positive", file, k)
+		}
+		c.Serve.TTL[k] = v
+	}
 	c.File = file
 	return c, nil
 }
