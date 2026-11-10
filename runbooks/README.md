@@ -48,3 +48,4 @@ want to trigger it by name.
 - [releases](releases.md): VERSION, per-release changelogs, the aggregate and the version-bump gate, `crow release propose`
 - [mission-e2e-scratch](mission-e2e-scratch.md): real cheap mission run (dispatch, park, answer, resume) in a scratch core store, and how to read a failed run
 - [headless-webgl-render](headless-webgl-render.md): render WebGL pages to PNG and bench frame time headless (SwiftShader and real GPU)
+- [nest-screenshots](nest-screenshots.md): headless screenshots of the Nest PWA at the board sizes, both themes
