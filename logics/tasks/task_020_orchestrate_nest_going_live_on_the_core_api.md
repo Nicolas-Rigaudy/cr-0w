@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 50%
+> Progress: 57%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -33,7 +33,7 @@
 - [x] 5. item_169 core serves every deck source (sessions, dispatch runs, MRs, today, usage, checks, projects) with background refresh. Exit: the phone's Nest data layer reads the same sessions and runs as deck (req_054, owner 2026-11-10: Nest shows zeros, it must see everything deck does). Done 2026-11-10.
 - [x] 6. item_147 core mission action endpoints, then item_170 session and run actions (start, resume, send, interrupt, stop, dispatch) on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session. item_147 done 2026-11-10 (4fbef04); item_170 done 2026-11-10 (99c977d core, 340aa19 Nest Desk).
 - [x] 7. item_174 permission prompts answered from Nest (spike on the prompt source first). Done 2026-11-10: PermissionRequest hook source (bfa3141, d248562), core answer route (19800ca), Nest layout B (89fb516), doctor check (416f8c6); live tmux test passed allow, deny and stale.
-- [ ] 8. item_171 Nest Home on the deck sources (mockup first, owner OK). Exit: Home matches deck's agents panel with an empty mission store.
+- [x] 8. item_171 Nest Home on the deck sources (mockup first, owner OK). Exit: Home matches deck's agents panel with an empty mission store. Done 2026-11-11 (06545b2); bundle budget follow-up item_185.
 - [ ] 9. item_158 hero interactions (spin, hover lift + moons, click to details). Open question for the owner: hero mood order, model.ts `moodOf` (run > fail > idle, item_162) vs item_158 spec (fail > ask > run > idle).
 - [ ] 10. item_168 Nest answer sheet (mockup first, owner OK). Exit: roadmap 0.3b signal, answered from Nest on the phone.
 - [ ] 11. item_175 work approvals in Nest on the exact text (inbox kind `approval`).
@@ -79,6 +79,7 @@
 - 2026-11-10 task_018 AC1 proven: WebAPK installed on the Fold from the tailnet URL, opens standalone with Tailscale on.
 
 # Report
+- 2026-11-11 step 8 built and committed (06545b2), owner OK on Home vs D boards. Bundle 95.9 kB gzip, follow-up item_185. Next: step 9 item_158 (hero mood order question open) or item_176 butler chat on Home.
 - 2026-11-10 step 7 done (item_174). Next: step 8 item_171 Home mockup, owner OK first.
 - 2026-11-10 step 8 design approved (pass 3b option D, vault Research/nest-design/item_171). Butler chat moved to Home (item_176). Next: build item_171 in a fresh session.
 - 2026-11-10 planned from the owner ask (fastest working web app). Next: step 1 in the hub, then step 2 (item_144) in a fresh session.

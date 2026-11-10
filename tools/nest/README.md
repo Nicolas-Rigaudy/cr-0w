@@ -63,7 +63,7 @@ UI states map from contract states:
 
 ## Budget
 
-JS stays under 90 kB gzip (React is about 60 kB of it). Last build: JS 77.6 kB gzip, CSS 3.2 kB gzip.
+JS stays under 90 kB gzip (React is about 60 kB of it). Last build (2026-11-11): JS 95.9 kB gzip, over budget; item_185 brings it back.
 
 ## Screenshots
 

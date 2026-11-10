@@ -1,10 +1,10 @@
 ## item_171_nest_home_shows_live_sessions_runs_alerts_and_quota - Nest Home shows live sessions, runs, alerts and quota
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,6 +57,7 @@
 - Rationale: Home is what the owner opens on the phone.
 
 # Notes
+- 2026-11-11 built and committed (06545b2): Home option D on cover and inner, home.ts model with tests, Desk opens from `?pid=`/`&tell=1`. Owner approved side by side with the D boards. AC4 exception: JS 95.9 kB gzip (94.6 kB before); owner chose to ship and trim in item_185.
 - Owner 2026-11-10: most runs will be missions. Mission rows and actions come first; sessions and dispatch runs follow.
 - Design gate: mockup and owner OK before code. If it waits on the owner, build item_170 meanwhile (task_020 order rule).
 
