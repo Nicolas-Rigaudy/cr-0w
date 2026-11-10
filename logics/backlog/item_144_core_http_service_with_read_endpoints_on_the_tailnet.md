@@ -1,14 +1,15 @@
 ## item_144_core_http_service_with_read_endpoints_on_the_tailnet - Core HTTP service with read endpoints on the tailnet
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-10 16:17:33
+> Indicators reviewed: 2026-11-10 17:29:46
+> Owner: crow
 
 # AI Context
 - Summary: core runs as a systemd user service and serves read-only HTTP on localhost and the tailnet: `/state` sections (inbox, missions, runs, accounts, jobs) with `updated_at` and ETag, mission detail, artifacts and the event feed.
@@ -62,6 +63,15 @@
 - Rationale: First step of slice 3 and of the Nest live path (task_020).
 
 # Notes
+- Built 2026-11-10 (02a08dc, ecfe6c1, 76534a4):
+  - Listen `127.0.0.1:8787` (config `serve.listen`), unix socket `local/state/core.sock` (0600, trusted, no identity header), Nest from `tools/nest/dist`.
+  - Owner login: config `serve.owner_login`, else `tailscale status --json` (Self user), retried at most once a minute. TCP requests without a matching `Tailscale-User-Login` get 403 JSON `{"error": ...}`.
+  - Non-GET routes need `X-Crow: 1` and a same-origin `Origin`; the static route answers 405 to writes.
+  - Sections share the envelope `{section, version, updated_at, data}`; `GET /api/state` is `{version, sections}`. Store sections are cached on the store version (`<missions>.<sum of applied>`); accounts (`bin/crow-accounts json`) and jobs (`systemctl --user list-timers`, crow-* only) are cached 30 s and keep the last good value on error. `?all=1` on the inbox adds closed rows.
+  - Mission detail `{mission, versions[{version, file, summary, questions, answers}], runs}`. Artifacts: regular files under `outbox/` within the kind file cap, served with `Content-Security-Policy: sandbox` and nosniff; anything else 404 (dot segments get the mux redirect to the cleaned path first).
+  - Events `{events, next, more}`, id `<ts UTC µs>~<mission>~<byte offset>`, `after=<id>`, `limit` up to 500.
+  - Fixtures in `logics/specs/core_contract/fixtures/api/` (Go writes them with `-update`, Python checks them against the record schemas). That check found two drifts, fixed in 02a08dc: the inbox schema lacked `needs-input`, and the fold left `data_class` empty for created events that omit it.
+  - Runbook: `runbooks/core-service.md`.
 - Tailscale identity headers need v1.92+ (req_031 sources). Installed on archeotech: 1.104.5 (checked 2026-11-10).
 - Groomed 2026-11-09 from req_028 slice 3.
 

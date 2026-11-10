@@ -25,8 +25,8 @@
 
 # Plan
 - [x] 1. Nest on the phone on fixtures, here in the hub: `cd tools/nest && npm run build && npm run preview -- --port 4173`, `tailscale serve --bg 4173`, install from Chrome on the Fold. Closes task_018 AC1. Replaced by the core unit at step 2. Done 2026-11-10 (runbooks/nest-phone-install.md).
-- [ ] Nit (owner 2026-11-10): installed app name reads `Nest`; set manifest `name` and `short_name` to `CR-0W`. Do it with step 2 when core starts serving Nest.
-- [ ] 2. item_144 core HTTP service with read endpoints, serving Nest at `/` and the API at `/api`, systemd user unit, `tailscale serve` pointed at core. Exit: the phone loads Nest from core and `curl` reads `/api/state/inbox`.
+- [x] Nit (owner 2026-11-10): installed app name reads `Nest`; set manifest `name` and `short_name` to `CR-0W`. Done with step 2 (76534a4); reinstall the app on the phone to pick up the name.
+- [x] 2. item_144 core HTTP service with read endpoints, serving Nest at `/` and the API at `/api`, systemd user unit, `tailscale serve` pointed at core. Exit: the phone loads Nest from core and `curl` reads `/api/state/inbox`. Done 2026-11-10: unit active with linger, tailscale serve proxies `/` to 127.0.0.1:8787, tailnet curl reads `/api/state/inbox`, vite preview stopped (runbooks/core-service.md).
 - [ ] 3. item_158 hero interactions (spin, hover lift + moons, click to details). Design, fixtures are enough.
 - [ ] 4. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI.
 - [ ] 5. item_163 design skills audit of the laptop Home, now on real data.
