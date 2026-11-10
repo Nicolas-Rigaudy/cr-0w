@@ -1,6 +1,7 @@
 import API from 'virtual:core-api'
 import { describe, expect, it } from 'vitest'
-import { apiSource, ApiError } from './api'
+import { agendaOf, apiSource, ApiError } from './api'
+import { SCRIPT_SECTIONS } from './types'
 import { feed, type Snapshot } from './feed'
 
 // Response fixtures written by the core API tests (go test ./internal/api -update).
@@ -41,8 +42,41 @@ describe('api adapter', () => {
     expect(missions[0].runs.length).toBeGreaterThan(0)
     const inbox = await src.inbox()
     expect(inbox.some((r) => r.state === 'answered')).toBe(true)
-    expect(await src.agenda()).toEqual([])
     expect(src.poll).toBe(5000)
+  })
+
+  it('reads every script section with its stale flag', async () => {
+    const routes = Object.fromEntries(SCRIPT_SECTIONS.map((n) => [`/api/state/${n}`, () => json(body(`state-${n}.json`))]))
+    const src = apiSource('/api', core(routes).get)
+    for (const n of SCRIPT_SECTIONS) {
+      const sec = await src.section(n)
+      expect(sec.data, n).toEqual(JSON.parse(body(`state-${n}.json`)).data)
+      expect(sec.stale, n).toBe(false)
+    }
+  })
+
+  it('passes a stale section through with its error and last data', async () => {
+    const stale = { section: 'mrs', version: 'x', updated_at: '2026-11-10T09:00:00Z', stale: true, error: 'crow-mrs: timed out', data: [{ iid: 1 }] }
+    const src = apiSource('/api', core({ '/api/state/mrs': () => json(JSON.stringify(stale)) }).get)
+    expect(await src.section('mrs')).toEqual({ data: [{ iid: 1 }], stale: true, error: 'crow-mrs: timed out', updated_at: '2026-11-10T09:00:00Z' })
+  })
+
+  it('maps today events to the agenda and shares one request', async () => {
+    const today = {
+      section: 'today', version: 'v', updated_at: '2026-11-10T09:00:00Z',
+      data: { events: [
+        { start: '2026-11-10T00:00', end: '2026-11-11T00:00', subject: 'Office', all_day: true },
+        { start: '2026-11-10T11:30', end: '2026-11-10T12:00', subject: 'Daily', all_day: false },
+      ] },
+    }
+    const { get, seen } = core({ '/api/state/today': () => json(JSON.stringify(today)) })
+    const src = apiSource('/api', get)
+    const [agenda, sec] = await Promise.all([src.agenda(), src.section('today')])
+    expect(agenda).toEqual([{ id: '2026-11-10T11:30 Daily', title: 'Daily', start: '2026-11-10T11:30', end: '2026-11-10T12:00' }])
+    expect(sec.data).toEqual(today.data)
+    expect(seen.length).toBe(1)
+    expect(await src.agenda()).toBe(agenda)
+    expect(agendaOf({ data: null, stale: true, updated_at: null })).toEqual([])
   })
 
   it('sends the ETag back and keeps the body on 304', async () => {
@@ -83,6 +117,7 @@ describe('feed', () => {
     const { get } = core({
       '/api/state/missions': () => (up ? json(body('state-missions.json')) : json('{"error":"down"}', 502)),
       '/api/state/inbox?all=1': () => (up ? json(body('state-inbox-all.json')) : json('{"error":"down"}', 502)),
+      ...Object.fromEntries(SCRIPT_SECTIONS.map((n) => [`/api/state/${n}`, () => (up ? json(body(`state-${n}.json`)) : json('{"error":"down"}', 502))])),
     })
     const src = { ...apiSource('/api', get), now: () => new Date(t) }
     const out: Snapshot[] = []
@@ -97,6 +132,8 @@ describe('feed', () => {
     await r.refresh()
     expect(r.out.length).toBe(1)
     expect(r.out[0].down).toBe(false)
+    expect(r.out[0].sections.today.data).toEqual(JSON.parse(body('state-today.json')).data)
+    expect(r.out[0].agenda).toEqual(agendaOf(r.out[0].sections.today))
     r.tick(60000)
     await r.refresh()
     expect(r.out.length).toBe(2)
@@ -123,6 +160,7 @@ describe('feed', () => {
     const r = rig()
     r.down(true)
     await r.refresh()
-    expect(r.out[0]).toMatchObject({ missions: [], inbox: [], down: true, synced: null })
+    expect(r.out[0]).toMatchObject({ missions: [], inbox: [], agenda: [], down: true, synced: null })
+    expect(r.out[0].sections.usage.stale).toBe(true)
   })
 })

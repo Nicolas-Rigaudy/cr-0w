@@ -50,6 +50,28 @@ export interface AgendaEvent {
   end: string
 }
 
+// Core sections served from the deck's bin/ scripts (item_169). data is the script's
+// JSON as is; its shape belongs to the script contract (logics/specs/script_contract).
+export const SCRIPT_SECTIONS = ['sessions', 'dispatch', 'usage', 'today', 'mrs', 'checks', 'projects', 'accounts', 'jobs'] as const
+export type SectionName = (typeof SCRIPT_SECTIONS)[number]
+
+export interface SectionBody {
+  data: unknown
+  // The last run failed (or none ran yet): data is the last good body, error says why.
+  stale: boolean
+  error?: string
+  // When data last changed; null before the first good run.
+  updated_at: string | null
+}
+
+// crow-today json, the part Nest reads.
+export interface TodayEvent {
+  start: string
+  end: string
+  subject: string
+  all_day: boolean
+}
+
 export type InboxVerb =
   | 'go' | 'dig' | 'no' | 'ok' | 'msg' | 'abandon' | 'pick' | 'change' | 'approve' | 'answer'
 
