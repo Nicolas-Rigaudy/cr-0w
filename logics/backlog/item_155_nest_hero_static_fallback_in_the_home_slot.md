@@ -2,12 +2,13 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 90%
-> Confidence: 80%
-> Progress: 0%
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 80%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 13:21:36
 
 # AI Context
 - Summary: Fill the item_137 Home hero slot with the static hero: an SVG Jarvis graph around a pre-rendered ASCII head per mood, 0 fps. It ships first and stays as the fallback for the shader.
@@ -35,7 +36,7 @@
 - AC2: Each mood shows its own ASCII head text, matching the spike port.
 - AC3: Each of the 5 mission states has a distinct static node mark from the item_126 data map.
 - AC4: Zero animation frames: no rAF loop and no CSS animation in the static hero.
-- AC5: The owner approves the static hero side by side with `item139/jarvis-1-full.png` and `look-ascii.png`.
+- AC5: The owner approves the static hero side by side with `item126/look-ascii.png` only.
 
 # AC Traceability
 - item_126 AC4 -> AC1 to AC5. Proof: this item's notes and the owner's approval.
@@ -58,7 +59,12 @@
 
 # Notes
 - Build order from item_126: item_155, item_156, item_157, item_158, item_159.
-- Sources: vault `CR-0W/Research/nest-design/item126/` (`compare-item126.html`, `compare-spike.html`, `look-ascii.png`, `spike/holo-head.html`, `spike/img/`) and `item139/jarvis-1-full.png`. Data map and budgets: item_126.
+- Sources: vault `CR-0W/Research/nest-design/item126/` (`compare-item126.html`, `compare-spike.html`, `look-ascii.png`, `spike/holo-head.html`, `spike/img/`). Not `item139/jarvis-1-full.png` (owner rejected it as a reference, 2026-11-10). Data map and budgets: item_126.
+
+- Decision 2026-11-10: layout A, urgency = closeness. Urgent projects orbit near the head, quiet ones far. The head turns toward the first urgent project.
+- Decision 2026-11-10: the face follows the work (run > fail > idle). It never shows the ask "?" face; asks show as a chip and on the planets.
+- Decision 2026-11-10: heads are exported at the pass 7 scale (about 100 cells wide) with alpha in 1/16 steps. Only urgent planets carry mission labels.
+- Owner approved the hero against `look-ascii.png` on 2026-11-10 (AC5).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

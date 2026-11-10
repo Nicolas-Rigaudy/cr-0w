@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 13:21:37
 
 # AI Context
 - Summary: Drive the hero from the nest data layer: scene and core mood from missions, inbox, queue and usage, the item_138 state motions, and the tap actions.
@@ -56,7 +57,7 @@
 
 # Notes
 - Build order from item_126: item_155, item_156, item_157, item_158, item_159.
-- Sources: vault `CR-0W/Research/nest-design/item126/` (`compare-item126.html`, `compare-spike.html`, `look-ascii.png`, `spike/holo-head.html`, `spike/img/`) and `item139/jarvis-1-full.png`. Data map and budgets: item_126.
+- Sources: vault `CR-0W/Research/nest-design/item126/` (`compare-item126.html`, `compare-spike.html`, `look-ascii.png`, `spike/holo-head.html`, `spike/img/`). Not `item139/jarvis-1-full.png` (owner rejected it as a reference, 2026-11-10). Data map and budgets: item_126.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
