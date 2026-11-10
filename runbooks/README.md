@@ -10,6 +10,7 @@ Promote a runbook to a skill (`skills/` or `.claude/skills/`) once the user woul
 want to trigger it by name.
 
 ## Index
+- `logics-task-closeout.md`: close a Logics orchestration task (scoped AC proof, validation, repair side effects).
 - [install-and-update](install-and-update.md): engine vs data dir, install, `crow update`, restore on a new machine
 - [dispatch-background-runs](dispatch-background-runs.md): start, track and recover cdx background runs in project repos; isolated runs (`--isolate`) and `crow-isolation-probe`
 - [review-findings](review-findings.md): read-only review run of one MR, its findings JSON schema, resume for the apply phase
