@@ -641,8 +641,9 @@ def save_titles(titles):
 
 def live_session_ids():
     """Session ids of running Claude processes (same source as crow-runs), or None if unknown.
-    Claude keeps sessions/<pid>.json next to its projects dir; `cdx sessions` has only one launch-time
-    row per profile, so it cannot replace these files."""
+    Claude keeps sessions/<pid>.json next to its projects dir. `cdx sessions --json` lists one row per
+    process since cdx 0.26.13 but misses Claude's own background jobs (kind "bg", started by the Claude
+    daemon), so these files stay the source."""
     ids, seen_any = set(), False
     for f in (f for _, td in crow_lib.transcript_dirs(PROFILES)
               for f in glob.glob(os.path.join(os.path.dirname(td), "sessions", "*.json"))):

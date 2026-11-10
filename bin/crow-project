@@ -201,10 +201,18 @@ def handoff(p, task, end_state, context, now=None):
     lines += ["", "Hub rules that apply here:"] + [f"- {h}" for h in hub]
     lines += ["", "When done or blocked, run /wrap so the hub can pick up the outcome."]
     text = "\n".join(lines) + "\n"
-    out = STATE / "handoffs" / f"{now:%Y-%m-%d-%H%M}-{p['name']}.md"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(text)
-    return out, text
+    d = STATE / "handoffs"
+    d.mkdir(parents=True, exist_ok=True)
+    stem = f"{now:%Y-%m-%d-%H%M%S}-{p['name']}"
+    for n in range(1, 100):  # exclusive create: two handoffs in the same second never share a note
+        out = d / (f"{stem}.md" if n == 1 else f"{stem}-{n}.md")
+        try:
+            with open(out, "x", encoding="utf-8") as fh:
+                fh.write(text)
+            return out, text
+        except FileExistsError:
+            continue
+    raise SystemExit(f"crow-project: no free handoff note name for {stem}")
 
 
 def main():

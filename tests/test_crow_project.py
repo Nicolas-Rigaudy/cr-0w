@@ -81,6 +81,15 @@ def test_handoff_note_carries_task_end_state_repo_tools_and_hub_rules(hub, repos
     assert len(saved) == 1 and saved[0].read_text() == note
 
 
+def test_two_handoffs_in_a_row_keep_both_notes(hub, repos):
+    home, _ = hub
+    for task in ("first task", "second task"):
+        assert run(hub, "crow-project", "handoff", "side", "--task", task, "--end-state", "x").returncode == 0
+    notes = sorted((home / "local/state/handoffs").glob("*-side*.md"))
+    assert len(notes) == 2
+    assert {("first task" in n.read_text(), "second task" in n.read_text()) for n in notes} == {(True, False), (False, True)}
+
+
 def test_handoff_requires_an_end_state(hub, repos):
     r = run(hub, "crow-project", "handoff", "side", "--task", "x")
     assert r.returncode != 0 and "--end-state" in r.stderr
