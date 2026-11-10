@@ -134,7 +134,7 @@ func writeResumeNote(dir string, last, next int, answers []brief.Answer) (string
 	if n == 0 {
 		return "", fmt.Errorf("no answers file since version %d to resume from", last)
 	}
-	fmt.Fprintf(&b, "\nWrite version %d next, with the same rules as the brief. Quote each answer in its Responses.\n", next)
+	fmt.Fprintf(&b, "\nWrite version %d next, with the same rules as the brief. Quote each answer in its Responses. The numbered points are a1, a2 and so on, counted per answer section: give each its own `responses` entry with `ref: aN`.\n", next)
 	path := filepath.Join(dir, ResumeNote)
 	return path, os.WriteFile(path, []byte(b.String()), 0o600)
 }

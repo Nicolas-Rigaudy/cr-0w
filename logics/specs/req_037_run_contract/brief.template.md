@@ -30,6 +30,27 @@
 
 ## Reply contract
 - Write exactly one file for this turn: `{phase}.v{N}.md`, with one fenced `crow` block (schema `crow-block.schema.json`, contract 1).
+- Block shape (YAML or JSON; drop the keys you do not use; list entries are objects, never bare strings):
+```yaml
+contract: 1
+mission: <mission id>
+kind: <kind>
+phase: <plan|report|mockup>
+version: <N>
+summary: <one line>
+confidence: <0-100>
+verdict: <ready|needs-input|blocked>
+questions:
+  - {id: q1, text: <question>, blocking: true, choices: [{id: a, label: <choice>}, {id: b, label: <choice>}]}
+responses:
+  - {ref: a1, outcome: done, note: <quote of the answer>}
+artifacts:
+  - {path: outbox/<file>}
+publish:
+  - {action: <action>, target: <where>, body: <exact text>}
+proof:
+  - {what: command, cmd: <command>, exit: 0}
+```
 - Put any file you want shown under `outbox/` and list it in `artifacts`. Caps: {outbox_file_mb} MB per file, {outbox_total_mb} MB in total.
 - A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn. Outside a plan or report, write `outbox/questions.json`.
 - Never wait for an answer inside the run. End the turn. core resumes you with `answers.v{N}.md`.

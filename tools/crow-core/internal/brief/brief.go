@@ -297,6 +297,8 @@ func Render(in Input) string {
 		line("- Paths below are in the mission folder `%s`, not in the repo. List `artifacts` relative to it.", in.Dir)
 	}
 	line("- Write exactly one file for this turn: `%s`, with one fenced `crow` block (schema `crow-block.schema.json`, contract %d).", at(file), contract.Version)
+	line("- Block shape (YAML or JSON; drop the keys you do not use; list entries are objects, never bare strings):")
+	line("%s", blockShape)
 	outbox := fmt.Sprintf("- Put any file you want shown under `%s/` and list it in `artifacts`.", at("outbox"))
 	if k.Caps.OutboxFileMB != nil && k.Caps.OutboxTotalMB != nil {
 		outbox += fmt.Sprintf(" Caps: %s MB per file, %s MB in total.", num(*k.Caps.OutboxFileMB), num(*k.Caps.OutboxTotalMB))
@@ -309,6 +311,18 @@ func Render(in Input) string {
 	line("- List every outward action in `publish` with its exact text. core publishes only what the owner validated.")
 	return b.String()
 }
+
+// blockShape shows every list of the crow block with its object form: runs that only
+// see the schema name guess bare strings (e2e 2026-11-10).
+const blockShape = "```yaml\n" +
+	"contract: 1\nmission: <mission id>\nkind: <kind>\nphase: <plan|report|mockup>\nversion: <N>\n" +
+	"summary: <one line>\nconfidence: <0-100>\nverdict: <ready|needs-input|blocked>\n" +
+	"questions:\n  - {id: q1, text: <question>, blocking: true, choices: [{id: a, label: <choice>}, {id: b, label: <choice>}]}\n" +
+	"responses:\n  - {ref: a1, outcome: done, note: <quote of the answer>}\n" +
+	"artifacts:\n  - {path: outbox/<file>}\n" +
+	"publish:\n  - {action: <action>, target: <where>, body: <exact text>}\n" +
+	"proof:\n  - {what: command, cmd: <command>, exit: 0}\n" +
+	"```"
 
 func readOnlyAllowed(k *contract.Kind) string {
 	if k.Permission != nil && *k.Permission == "review" {
