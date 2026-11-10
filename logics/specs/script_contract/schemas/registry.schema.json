@@ -1,0 +1,102 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/registry.schema.json",
+ "title": "registry",
+ "description": "crow-registry json: the project registry with git state per project.",
+ "type": "object",
+ "required": [
+  "schema",
+  "identities",
+  "state_dir",
+  "threads_file",
+  "daily_dir",
+  "projects"
+ ],
+ "properties": {
+  "identities": {
+   "type": "object"
+  },
+  "projects": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "name",
+     "short",
+     "scope",
+     "forge",
+     "remote",
+     "path",
+     "release",
+     "status",
+     "logics",
+     "road",
+     "git",
+     "work"
+    ],
+    "properties": {
+     "release": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "road": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "done",
+       "total",
+       "current",
+       "exit",
+       "start",
+       "target",
+       "miles",
+       "doc"
+      ],
+      "properties": {
+       "miles": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "items": {
+         "type": "object",
+         "required": [
+          "title",
+          "exit",
+          "done",
+          "date"
+         ]
+        }
+       }
+      }
+     },
+     "git": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "email",
+       "dirty",
+       "ahead",
+       "stale_trees"
+      ]
+     },
+     "work": {
+      "type": [
+       "object",
+       "null"
+      ]
+     }
+    }
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

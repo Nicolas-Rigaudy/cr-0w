@@ -1,0 +1,269 @@
+{
+ "schema": 1,
+ "generated_at": "2026-01-01T09:00:00+00:00",
+ "limits": [
+  {
+   "account": "account",
+   "remaining_5h_pct": 1,
+   "reset_5h_at": "2026-01-01T09:00:00+00:00",
+   "remaining_week_pct": 1,
+   "reset_week_at": "2026-01-01T09:00:00+00:00",
+   "active": false,
+   "burn_5h_pct_per_h": "burn_5h_pct_per_h",
+   "empty_at": "2026-01-01T09:00:00+00:00"
+  }
+ ],
+ "today": {
+  "cost_usd": "cost_usd",
+  "tokens": 1,
+  "input_tokens": 1,
+  "output_tokens": 1,
+  "cache_write_tokens": 1,
+  "cache_read_tokens": 1,
+  "cache_saved_usd": "cache_saved_usd",
+  "routing_saved_usd": "routing_saved_usd",
+  "sessions": 1,
+  "unpriced": "unpriced",
+  "runs": "runs",
+  "routed_runs": "routed_runs",
+  "compactions": "compactions",
+  "cache_pct": 1,
+  "by_project": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1,
+    "shared_sessions": 1
+   }
+  ],
+  "by_model": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1
+   }
+  ],
+  "attribution": "attribution",
+  "tools": [
+   {
+    "name": "name",
+    "calls": "calls",
+    "tokens": 1,
+    "text_tokens": 1,
+    "images": "images"
+   }
+  ]
+ },
+ "week": {
+  "cost_usd": "cost_usd",
+  "tokens": 1,
+  "input_tokens": 1,
+  "output_tokens": 1,
+  "cache_write_tokens": 1,
+  "cache_read_tokens": 1,
+  "cache_saved_usd": "cache_saved_usd",
+  "routing_saved_usd": "routing_saved_usd",
+  "sessions": 1,
+  "unpriced": "unpriced",
+  "runs": "runs",
+  "routed_runs": "routed_runs",
+  "compactions": "compactions",
+  "cache_pct": 1,
+  "by_project": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1,
+    "shared_sessions": 1
+   }
+  ],
+  "by_model": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1,
+    "shared_sessions": 1
+   }
+  ],
+  "tools": [
+   {
+    "name": "name",
+    "calls": "calls",
+    "tokens": 1,
+    "text_tokens": 1,
+    "images": "images"
+   }
+  ]
+ },
+ "month": {
+  "cost_usd": "cost_usd",
+  "tokens": 1,
+  "input_tokens": 1,
+  "output_tokens": 1,
+  "cache_write_tokens": 1,
+  "cache_read_tokens": 1,
+  "cache_saved_usd": "cache_saved_usd",
+  "routing_saved_usd": "routing_saved_usd",
+  "sessions": 1,
+  "unpriced": "unpriced",
+  "runs": "runs",
+  "routed_runs": "routed_runs",
+  "compactions": "compactions",
+  "cache_pct": 1,
+  "by_project": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1,
+    "shared_sessions": 1
+   }
+  ],
+  "by_model": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1,
+    "shared_sessions": 1
+   }
+  ],
+  "tools": [
+   {
+    "name": "name",
+    "calls": "calls",
+    "tokens": 1,
+    "text_tokens": 1,
+    "images": "images"
+   }
+  ]
+ },
+ "days": [
+  {
+   "date": "2026-01-01T09:00:00+00:00",
+   "cost_usd": "cost_usd",
+   "tokens": 1,
+   "input_tokens": 1,
+   "output_tokens": 1,
+   "cache_write_tokens": 1,
+   "cache_read_tokens": 1,
+   "cache_saved_usd": "cache_saved_usd",
+   "routing_saved_usd": "routing_saved_usd",
+   "sessions": 1,
+   "unpriced": "unpriced",
+   "runs": "runs",
+   "routed_runs": "routed_runs",
+   "compactions": "compactions",
+   "cache_pct": 1,
+   "attribution": "attribution"
+  }
+ ],
+ "history": [
+  {
+   "date": "2026-01-01T09:00:00+00:00",
+   "cost_usd": "cost_usd",
+   "tokens": 1,
+   "input_tokens": 1,
+   "output_tokens": 1,
+   "cache_write_tokens": 1,
+   "cache_read_tokens": 1,
+   "cache_saved_usd": "cache_saved_usd",
+   "routing_saved_usd": "routing_saved_usd",
+   "sessions": 1,
+   "unpriced": "unpriced",
+   "runs": "runs",
+   "routed_runs": "routed_runs",
+   "compactions": "compactions",
+   "cache_pct": 1
+  }
+ ],
+ "sessions": [
+  {
+   "id": "id",
+   "account": "account",
+   "project": "project",
+   "cwd": "cwd",
+   "path": "path",
+   "title": "title",
+   "branch": "branch",
+   "kind": "kind",
+   "models": [],
+   "start": "start",
+   "end": "end",
+   "active": false,
+   "user_messages": "user_messages",
+   "tokens": 1,
+   "input_tokens": 1,
+   "output_tokens": 1,
+   "cache_write_tokens": 1,
+   "cache_read_tokens": 1,
+   "cache_1h_tokens": 1,
+   "cache_pct": 1,
+   "cost_usd": "cost_usd",
+   "cost_split": {
+    "reload": "reload",
+    "reread": "reread",
+    "output": "output",
+    "input": "input"
+   },
+   "cache_saved_usd": "cache_saved_usd",
+   "routing_saved_usd": "routing_saved_usd",
+   "compactions": "compactions",
+   "context_tokens": 1,
+   "context_level": "context_level",
+   "by_day": {},
+   "projects": [
+    {
+     "name": "name",
+     "cost_usd": "cost_usd",
+     "tokens": 1,
+     "share_pct": 1
+    }
+   ],
+   "multi_project": "multi_project",
+   "activity": {},
+   "activity_tokens": {},
+   "files_edited": {},
+   "limit_share": {
+    "five_hour_pct": 1,
+    "week_pct": 1
+   },
+   "today": {
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "input_tokens": 1,
+    "output_tokens": 1,
+    "cache_write_tokens": 1,
+    "cache_read_tokens": 1,
+    "cache_saved_usd": "cache_saved_usd",
+    "routing_saved_usd": "routing_saved_usd",
+    "cost_split": {
+     "reload": "reload",
+     "reread": "reread",
+     "output": "output",
+     "input": "input"
+    },
+    "by_model": {}
+   }
+  }
+ ],
+ "rtk": {
+  "saved_tokens": 1,
+  "saved_pct": 1,
+  "commands": "commands"
+ },
+ "cost_split": {
+  "days": 1,
+  "since": "since",
+  "by_kind": {}
+ },
+ "retros": {
+  "today": "today",
+  "pending_proposals": "pending_proposals",
+  "week": "week"
+ }
+}

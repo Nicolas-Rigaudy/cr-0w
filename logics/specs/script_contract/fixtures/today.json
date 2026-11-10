@@ -1,0 +1,51 @@
+{
+ "schema": 1,
+ "at": "2026-01-01T09:00:00+00:00",
+ "events": [
+  {
+   "start": "start",
+   "end": "end",
+   "subject": "subject",
+   "all_day": "all_day"
+  }
+ ],
+ "tomorrow": [
+  {
+   "start": "start",
+   "end": "end",
+   "subject": "subject",
+   "all_day": "all_day"
+  }
+ ],
+ "unread": "unread",
+ "flagged": [
+  {
+   "id": "id",
+   "subject": "subject",
+   "crow": "crow",
+   "webLink": "webLink",
+   "until": "until",
+   "from": "from"
+  }
+ ],
+ "drafts": "drafts",
+ "important": [
+  {
+   "id": "id",
+   "subject": "subject",
+   "from": "from",
+   "at": "2026-01-01T09:00:00+00:00",
+   "unread": "unread",
+   "high": "high",
+   "webLink": "webLink"
+  }
+ ],
+ "week": [
+  {
+   "start": "start",
+   "end": "end",
+   "subject": "subject",
+   "all_day": "all_day"
+  }
+ ]
+}

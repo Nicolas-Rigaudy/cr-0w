@@ -1,0 +1,35 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/checks.schema.json",
+ "title": "checks",
+ "description": "crow-checks json: rule rows (rituals, sprint, 1:1s, mail, tasks) minus dismissed and snoozed ones.",
+ "type": "object",
+ "required": [
+  "schema",
+  "at",
+  "rows",
+  "skipped"
+ ],
+ "properties": {
+  "rows": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "check",
+     "what",
+     "why",
+     "action",
+     "due"
+    ]
+   }
+  },
+  "skipped": {
+   "type": "object"
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/mrs.schema.json",
+ "title": "mrs",
+ "description": "crow-mrs json: open MRs and PRs of the registered projects, cached 60 s in <state>/mrs.json (-f refreshes).",
+ "type": "object",
+ "required": [
+  "schema",
+  "forges",
+  "mrs",
+  "branches",
+  "now"
+ ],
+ "properties": {
+  "forges": {
+   "type": "object"
+  },
+  "mrs": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "project",
+     "name",
+     "scope",
+     "forge",
+     "repo",
+     "number",
+     "ref",
+     "title",
+     "author",
+     "role",
+     "draft",
+     "pipeline",
+     "updated",
+     "created",
+     "branch",
+     "target",
+     "url",
+     "threads_open",
+     "threads_resolved"
+    ]
+   }
+  },
+  "branches": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "project",
+     "scope",
+     "branch",
+     "ahead"
+    ]
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

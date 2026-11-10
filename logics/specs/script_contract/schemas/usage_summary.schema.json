@@ -1,0 +1,76 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/usage_summary.schema.json",
+ "title": "usage_summary",
+ "description": "crow-usage --json --summary: per-account quota, reset, today's cost, tokens, sessions and top model; under 5 kB.",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated_at",
+  "accounts",
+  "today"
+ ],
+ "properties": {
+  "accounts": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "account",
+     "remaining_5h_pct",
+     "reset_5h_at",
+     "remaining_week_pct",
+     "reset_week_at",
+     "active",
+     "burn_5h_pct_per_h",
+     "empty_at",
+     "today",
+     "model"
+    ],
+    "properties": {
+     "today": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "cost_usd",
+       "tokens",
+       "sessions"
+      ]
+     }
+    }
+   }
+  },
+  "today": {
+   "type": "object",
+   "required": [
+    "cost_usd",
+    "tokens",
+    "sessions",
+    "cache_pct",
+    "by_model"
+   ],
+   "properties": {
+    "by_model": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions"
+      ]
+     }
+    }
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

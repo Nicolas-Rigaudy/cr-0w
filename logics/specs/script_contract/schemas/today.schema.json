@@ -1,0 +1,88 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/today.schema.json",
+ "title": "today",
+ "description": "crow-today json: today's calendar and mail counts from Microsoft Graph (cached 5 minutes).",
+ "type": "object",
+ "required": [
+  "schema",
+  "at",
+  "events",
+  "tomorrow",
+  "unread",
+  "flagged",
+  "drafts",
+  "important",
+  "week"
+ ],
+ "properties": {
+  "events": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "start",
+     "end",
+     "subject",
+     "all_day"
+    ]
+   }
+  },
+  "tomorrow": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "start",
+     "end",
+     "subject",
+     "all_day"
+    ]
+   }
+  },
+  "flagged": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "subject",
+     "crow",
+     "webLink",
+     "until",
+     "from"
+    ]
+   }
+  },
+  "important": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "subject",
+     "from",
+     "at",
+     "unread",
+     "high",
+     "webLink"
+    ]
+   }
+  },
+  "week": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "start",
+     "end",
+     "subject",
+     "all_day"
+    ]
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

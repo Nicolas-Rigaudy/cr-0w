@@ -1,0 +1,46 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/accounts.schema.json",
+ "title": "accounts",
+ "description": "crow-accounts json: cdx accounts with their policy, priority, scopes and tier.",
+ "type": "object",
+ "required": [
+  "schema",
+  "default",
+  "accounts"
+ ],
+ "properties": {
+  "accounts": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "name",
+     "policy",
+     "priority",
+     "scopes",
+     "scope_min_room",
+     "memory",
+     "tier"
+    ],
+    "properties": {
+     "scopes": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "scope_min_room": {
+      "type": [
+       "object",
+       "null"
+      ]
+     }
+    }
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

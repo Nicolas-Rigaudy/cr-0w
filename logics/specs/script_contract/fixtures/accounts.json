@@ -1,0 +1,15 @@
+{
+ "schema": 1,
+ "default": "default",
+ "accounts": [
+  {
+   "name": "name",
+   "policy": "policy",
+   "priority": "priority",
+   "scopes": {},
+   "scope_min_room": {},
+   "memory": "memory",
+   "tier": "tier"
+  }
+ ]
+}

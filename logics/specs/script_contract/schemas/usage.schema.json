@@ -1,0 +1,488 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/usage.schema.json",
+ "title": "usage",
+ "description": "crow-usage --json: the full usage payload for the deck (about 300 kB). Phones use usage_summary.",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated_at",
+  "limits",
+  "today",
+  "week",
+  "month",
+  "days",
+  "history",
+  "sessions",
+  "rtk",
+  "cost_split",
+  "retros"
+ ],
+ "properties": {
+  "limits": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "account",
+     "remaining_5h_pct",
+     "reset_5h_at",
+     "remaining_week_pct",
+     "reset_week_at",
+     "active",
+     "burn_5h_pct_per_h",
+     "empty_at"
+    ]
+   }
+  },
+  "today": {
+   "type": "object",
+   "required": [
+    "cost_usd",
+    "tokens",
+    "input_tokens",
+    "output_tokens",
+    "cache_write_tokens",
+    "cache_read_tokens",
+    "cache_saved_usd",
+    "routing_saved_usd",
+    "sessions",
+    "unpriced",
+    "runs",
+    "routed_runs",
+    "compactions",
+    "cache_pct",
+    "by_project",
+    "by_model",
+    "attribution",
+    "tools"
+   ],
+   "properties": {
+    "by_project": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions",
+       "shared_sessions"
+      ]
+     }
+    },
+    "by_model": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions"
+      ]
+     }
+    },
+    "tools": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "calls",
+       "tokens",
+       "text_tokens",
+       "images"
+      ]
+     }
+    }
+   }
+  },
+  "week": {
+   "type": "object",
+   "required": [
+    "cost_usd",
+    "tokens",
+    "input_tokens",
+    "output_tokens",
+    "cache_write_tokens",
+    "cache_read_tokens",
+    "cache_saved_usd",
+    "routing_saved_usd",
+    "sessions",
+    "unpriced",
+    "runs",
+    "routed_runs",
+    "compactions",
+    "cache_pct",
+    "by_project",
+    "by_model",
+    "tools"
+   ],
+   "properties": {
+    "by_project": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions",
+       "shared_sessions"
+      ]
+     }
+    },
+    "by_model": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions",
+       "shared_sessions"
+      ]
+     }
+    },
+    "tools": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "calls",
+       "tokens",
+       "text_tokens",
+       "images"
+      ]
+     }
+    }
+   }
+  },
+  "month": {
+   "type": "object",
+   "required": [
+    "cost_usd",
+    "tokens",
+    "input_tokens",
+    "output_tokens",
+    "cache_write_tokens",
+    "cache_read_tokens",
+    "cache_saved_usd",
+    "routing_saved_usd",
+    "sessions",
+    "unpriced",
+    "runs",
+    "routed_runs",
+    "compactions",
+    "cache_pct",
+    "by_project",
+    "by_model",
+    "tools"
+   ],
+   "properties": {
+    "by_project": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions",
+       "shared_sessions"
+      ]
+     }
+    },
+    "by_model": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "cost_usd",
+       "tokens",
+       "sessions",
+       "shared_sessions"
+      ]
+     }
+    },
+    "tools": {
+     "type": [
+      "array",
+      "null"
+     ],
+     "items": {
+      "type": "object",
+      "required": [
+       "name",
+       "calls",
+       "tokens",
+       "text_tokens",
+       "images"
+      ]
+     }
+    }
+   }
+  },
+  "days": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "date",
+     "cost_usd",
+     "tokens",
+     "input_tokens",
+     "output_tokens",
+     "cache_write_tokens",
+     "cache_read_tokens",
+     "cache_saved_usd",
+     "routing_saved_usd",
+     "sessions",
+     "unpriced",
+     "runs",
+     "routed_runs",
+     "compactions",
+     "cache_pct",
+     "attribution"
+    ]
+   }
+  },
+  "history": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "date",
+     "cost_usd",
+     "tokens",
+     "input_tokens",
+     "output_tokens",
+     "cache_write_tokens",
+     "cache_read_tokens",
+     "cache_saved_usd",
+     "routing_saved_usd",
+     "sessions",
+     "unpriced",
+     "runs",
+     "routed_runs",
+     "compactions",
+     "cache_pct"
+    ]
+   }
+  },
+  "sessions": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "account",
+     "project",
+     "cwd",
+     "path",
+     "title",
+     "branch",
+     "kind",
+     "models",
+     "start",
+     "end",
+     "active",
+     "user_messages",
+     "tokens",
+     "input_tokens",
+     "output_tokens",
+     "cache_write_tokens",
+     "cache_read_tokens",
+     "cache_1h_tokens",
+     "cache_pct",
+     "cost_usd",
+     "cost_split",
+     "cache_saved_usd",
+     "routing_saved_usd",
+     "compactions",
+     "context_tokens",
+     "context_level",
+     "by_day",
+     "projects",
+     "multi_project",
+     "activity",
+     "activity_tokens",
+     "files_edited",
+     "limit_share",
+     "today"
+    ],
+    "properties": {
+     "models": {
+      "type": [
+       "array",
+       "null"
+      ]
+     },
+     "cost_split": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "reload",
+       "reread",
+       "output",
+       "input"
+      ]
+     },
+     "by_day": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "projects": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": "object",
+       "required": [
+        "name",
+        "cost_usd",
+        "tokens",
+        "share_pct"
+       ]
+      }
+     },
+     "activity": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "activity_tokens": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "files_edited": {
+      "type": [
+       "object",
+       "null"
+      ]
+     },
+     "limit_share": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "five_hour_pct",
+       "week_pct"
+      ]
+     },
+     "today": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "cost_usd",
+       "tokens",
+       "input_tokens",
+       "output_tokens",
+       "cache_write_tokens",
+       "cache_read_tokens",
+       "cache_saved_usd",
+       "routing_saved_usd",
+       "cost_split",
+       "by_model"
+      ],
+      "properties": {
+       "cost_split": {
+        "type": [
+         "object",
+         "null"
+        ],
+        "required": [
+         "reload",
+         "reread",
+         "output",
+         "input"
+        ]
+       },
+       "by_model": {
+        "type": [
+         "object",
+         "null"
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  "rtk": {
+   "type": "object",
+   "required": [
+    "saved_tokens",
+    "saved_pct",
+    "commands"
+   ],
+   "description": "rtk gain over every history database. Without any database only saved_tokens, saved_pct and commands are present, all null."
+  },
+  "cost_split": {
+   "type": "object",
+   "required": [
+    "days",
+    "since",
+    "by_kind"
+   ],
+   "properties": {
+    "by_kind": {
+     "type": [
+      "object",
+      "null"
+     ]
+    }
+   }
+  },
+  "retros": {
+   "type": "object",
+   "required": [
+    "today",
+    "pending_proposals",
+    "week"
+   ]
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

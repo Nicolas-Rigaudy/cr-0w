@@ -1,0 +1,36 @@
+{
+ "schema": 1,
+ "generated_at": "2026-01-01T09:00:00+00:00",
+ "accounts": [
+  {
+   "account": "account",
+   "remaining_5h_pct": 1,
+   "reset_5h_at": "2026-01-01T09:00:00+00:00",
+   "remaining_week_pct": 1,
+   "reset_week_at": "2026-01-01T09:00:00+00:00",
+   "active": false,
+   "burn_5h_pct_per_h": "burn_5h_pct_per_h",
+   "empty_at": "2026-01-01T09:00:00+00:00",
+   "today": {
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1
+   },
+   "model": "model"
+  }
+ ],
+ "today": {
+  "cost_usd": "cost_usd",
+  "tokens": 1,
+  "sessions": 1,
+  "cache_pct": 1,
+  "by_model": [
+   {
+    "name": "name",
+    "cost_usd": "cost_usd",
+    "tokens": 1,
+    "sessions": 1
+   }
+  ]
+ }
+}

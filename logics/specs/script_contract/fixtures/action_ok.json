@@ -1,0 +1,8 @@
+{
+ "schema": 1,
+ "ok": true,
+ "action": "stop",
+ "target": "run-1",
+ "message": "stopped run-1 (pid 4242)",
+ "code": 0
+}

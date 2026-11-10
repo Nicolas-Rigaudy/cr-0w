@@ -1,0 +1,144 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/runs.schema.json",
+ "title": "runs",
+ "description": "crow-runs json: live agents, finished background runs, slots. Reads <state>/runs.jsonl (the dispatch ledger) and `cdx runs --json`; a watcher re-reads on a change of runs.jsonl.",
+ "type": "object",
+ "required": [
+  "schema",
+  "usage_by_project",
+  "generated_at",
+  "slots",
+  "agents",
+  "finished"
+ ],
+ "properties": {
+  "usage_by_project": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "name",
+     "cost_usd",
+     "tokens",
+     "sessions",
+     "shared_sessions"
+    ]
+   }
+  },
+  "slots": {
+   "type": "object",
+   "required": [
+    "busy",
+    "max"
+   ]
+  },
+  "agents": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "kind",
+     "provider",
+     "pid",
+     "account",
+     "project",
+     "cwd",
+     "session_id",
+     "state",
+     "started_at",
+     "last_activity_s",
+     "last_action",
+     "context_tokens",
+     "subagents_active",
+     "recent",
+     "last_prompt",
+     "run_id",
+     "label",
+     "title",
+     "commits",
+     "multi_project",
+     "projects"
+    ],
+    "properties": {
+     "recent": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": "object",
+       "required": [
+        "ts",
+        "action"
+       ]
+      }
+     },
+     "commits": {
+      "type": [
+       "array",
+       "null"
+      ]
+     },
+     "projects": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": "object",
+       "required": [
+        "name",
+        "cost_usd",
+        "tokens",
+        "share_pct"
+       ]
+      }
+     }
+    }
+   }
+  },
+  "finished": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "run_id",
+     "project",
+     "label",
+     "status",
+     "duration_s",
+     "ended_at",
+     "cost_usd",
+     "budget_usd",
+     "denials",
+     "resumed_from",
+     "commits"
+    ],
+    "properties": {
+     "denials": {
+      "type": [
+       "array",
+       "null"
+      ]
+     },
+     "resumed_from": {
+      "type": [
+       "array",
+       "null"
+      ]
+     },
+     "commits": {
+      "type": [
+       "array",
+       "null"
+      ]
+     }
+    }
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}

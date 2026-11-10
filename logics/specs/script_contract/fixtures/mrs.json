@@ -1,0 +1,36 @@
+{
+ "schema": 1,
+ "forges": {},
+ "mrs": [
+  {
+   "project": "project",
+   "name": "name",
+   "scope": "scope",
+   "forge": "forge",
+   "repo": "repo",
+   "number": "number",
+   "ref": "ref",
+   "title": "title",
+   "author": "author",
+   "role": "role",
+   "draft": false,
+   "pipeline": "pipeline",
+   "updated": "updated",
+   "created": "created",
+   "branch": "branch",
+   "target": "target",
+   "url": "url",
+   "threads_open": "threads_open",
+   "threads_resolved": "threads_resolved"
+  }
+ ],
+ "branches": [
+  {
+   "project": "project",
+   "scope": "scope",
+   "branch": "branch",
+   "ahead": "ahead"
+  }
+ ],
+ "now": "now"
+}

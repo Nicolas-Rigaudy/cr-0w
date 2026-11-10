@@ -1,0 +1,15 @@
+{
+ "schema": 1,
+ "at": "2026-01-01T09:00:00+00:00",
+ "rows": [
+  {
+   "id": "id",
+   "check": "check",
+   "what": "what",
+   "why": "why",
+   "action": "action",
+   "due": "due"
+  }
+ ],
+ "skipped": {}
+}

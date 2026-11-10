@@ -1,0 +1,8 @@
+{
+ "schema": 1,
+ "ok": false,
+ "action": "done",
+ "target": "m1",
+ "message": "not signed in: run crow-today login",
+ "code": 2
+}

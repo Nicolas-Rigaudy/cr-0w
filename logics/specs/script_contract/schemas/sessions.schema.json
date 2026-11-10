@@ -1,0 +1,60 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "crow/scripts/sessions.schema.json",
+ "title": "sessions",
+ "description": "crow-sessions list --json: interrupted sessions (usage limit hit) and whether they were relaunched.",
+ "type": "object",
+ "required": [
+  "schema",
+  "generated_at",
+  "transcripts",
+  "read",
+  "sessions"
+ ],
+ "properties": {
+  "sessions": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "conversation_id",
+     "account",
+     "cwd",
+     "branch",
+     "last_event",
+     "limit",
+     "resets_at",
+     "message",
+     "first_prompt",
+     "last_prompt",
+     "transcript",
+     "size",
+     "workspaces",
+     "project",
+     "relaunched"
+    ],
+    "properties": {
+     "workspaces": {
+      "type": [
+       "array",
+       "null"
+      ]
+     },
+     "relaunched": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "required": [
+       "target",
+       "at"
+      ]
+     }
+    }
+   }
+  },
+  "schema": {
+   "const": 1
+  }
+ }
+}
