@@ -5,6 +5,8 @@
   crow-focus --pid PID --send TEXT [--dry-run]
   crow-focus --pid PID --interrupt [--dry-run]
   crow-focus --pid PID --stop [--dry-run]
+  add --json to --send, --interrupt or --stop: one line {schema, ok, action, target, message, code}
+
 
 Goes through the terminal backend (crow_term: CROW_TERMINAL=kitty|tmux|print).
 Focus: finds the window (kitty) or pane (tmux) running PID, matching its own process or any
@@ -17,43 +19,58 @@ never resumes: it exits 1 when no window holds the session (always, on the print
 --interrupt presses Escape in the window holding PID (pauses the agent's turn; the session stays open).
 --stop sends SIGTERM to PID, only when PID runs the claude CLI; the session can be resumed later.
 --dry-run prints what it would do and does nothing.
+--json (send, interrupt, stop): exit 0 done, 1 refused (no window, not a claude pid), 2 error (bad
+arguments, the signal failed). Schema: logics/specs/script_contract/schemas/action.schema.json.
 """
 import os, signal, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
 import crow_term  # noqa: E402
 
 
 def interrupt(pid, backend, dry):
+    """(exit code, message): 0 done, 1 refused."""
     if dry:
-        print(f"press Escape in the {backend} window holding pid {pid}")
-        return 0
+        return 0, f"press Escape in the {backend} window holding pid {pid}"
     if crow_term.send_escape(pid, backend):
-        print("paused")
-        return 0
-    print(f"crow-focus: no {backend} window holds pid {pid}", file=sys.stderr)
-    return 1
+        return 0, "paused"
+    return 1, f"no {backend} window holds pid {pid}"
 
 
 def stop(pid, dry):
+    """(exit code, message): 0 done, 1 refused, 2 error."""
     if not crow_term.is_claude(pid):
-        print(f"crow-focus: pid {pid} is not a claude session, not stopping it", file=sys.stderr)
-        return 1
+        return 1, f"pid {pid} is not a claude session, not stopping it"
     if dry:
-        print(f"send SIGTERM to claude pid {pid}")
-        return 0
+        return 0, f"send SIGTERM to claude pid {pid}"
     try:
         os.kill(pid, signal.SIGTERM)
     except OSError as e:
-        print(f"crow-focus: could not stop pid {pid} ({e})", file=sys.stderr)
-        return 1
-    print("stopped")
-    return 0
+        return 2, f"could not stop pid {pid} ({e})"
+    return 0, "stopped"
+
+
+def send(pid, text, backend, dry):
+    """(exit code, message): 0 done, 1 refused."""
+    if dry:
+        return 0, f"type {text!r} and Enter into the {backend} window holding pid {pid}"
+    if crow_term.send(pid, text, backend):
+        return 0, "sent"
+    return 1, (f"no {backend} window holds pid {pid}" if backend != "print"
+               else "the print backend cannot type into a window (CROW_TERMINAL=kitty|tmux)")
+
+
+def report(action, pid, code, message, as_json):
+    if as_json:
+        return crow_lib.action_result(code == 0, action, pid, message, code)
+    print(message if code == 0 else f"crow-focus: {message}", file=sys.stdout if code == 0 else sys.stderr)
+    return code
 
 
 def main(argv):
-    flags = {f for f in ("--dry-run", "--interrupt", "--stop") if f in argv}
-    dry = "--dry-run" in flags
+    flags = {f for f in ("--dry-run", "--interrupt", "--stop", "--json") if f in argv}
+    dry, as_json = "--dry-run" in flags, "--json" in flags
     opts, args = {}, [a for a in argv if a not in flags]
     for i in range(0, len(args) - 1, 2):
         opts[args[i].lstrip("-")] = args[i + 1]
@@ -61,24 +78,22 @@ def main(argv):
         pid = int(opts.get("pid", 0))
         backend = crow_term.choose()
     except ValueError:
+        if as_json:
+            return crow_lib.action_result(False, "focus", opts.get("pid", ""), "bad --pid or terminal backend", 2)
         sys.exit(__doc__)
-    if "--interrupt" in flags or "--stop" in flags:
+    action = "interrupt" if "--interrupt" in flags else "stop" if "--stop" in flags else "send" if "send" in opts else ""
+    if action:
         if not pid:
+            if as_json:
+                return crow_lib.action_result(False, action, "", "--pid is required", 2)
             sys.exit(__doc__)
-        return interrupt(pid, backend, dry) if "--interrupt" in flags else stop(pid, dry)
-    if "send" in opts:
-        if not pid:
-            sys.exit(__doc__)
-        if dry:
-            print(f"type {opts['send']!r} and Enter into the {backend} window holding pid {pid}")
-            return 0
-        if crow_term.send(pid, opts["send"], backend):
-            print("sent")
-            return 0
-        why = (f"no {backend} window holds pid {pid}" if backend != "print"
-               else "the print backend cannot type into a window (CROW_TERMINAL=kitty|tmux)")
-        print(f"crow-focus: {why}", file=sys.stderr)
-        return 1
+        if action == "interrupt":
+            code, msg = interrupt(pid, backend, dry)
+        elif action == "stop":
+            code, msg = stop(pid, dry)
+        else:
+            code, msg = send(pid, opts["send"], backend, dry)
+        return report(action, pid, code, msg, as_json)
     account, cwd = opts.get("account"), opts.get("cwd")
     if not account or not cwd:
         sys.exit(__doc__)

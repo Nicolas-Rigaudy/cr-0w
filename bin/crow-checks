@@ -23,6 +23,7 @@ import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_checks as cc
+import crow_lib  # noqa: E402
 from crow_vault import vault_path
 
 HOME = os.environ.get("CROW_HOME") or os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -77,7 +78,7 @@ def rows_json(a):
     now = now_of(a)
     cfg = conf()
     snap = cc.snapshot(cfg, HOME, vault(), now)
-    return {"at": now.isoformat(timespec="seconds"), "rows": cc.evaluate(snap, cfg, load_state()),
+    return {"schema": crow_lib.SCRIPT_SCHEMA, "at": now.isoformat(timespec="seconds"), "rows": cc.evaluate(snap, cfg, load_state()),
             "skipped": cc.skipped(snap)}
 
 
@@ -116,7 +117,7 @@ def main():
     elif verb == ["replay"] and len(a) == 2:
         with open(a[1]) as f:
             snap = cc.from_json(json.load(f))
-        print(json.dumps({"at": snap["now"].isoformat(), "rows": cc.evaluate(snap, conf()), "skipped": cc.skipped(snap)}))
+        print(json.dumps({"schema": crow_lib.SCRIPT_SCHEMA, "at": snap["now"].isoformat(), "rows": cc.evaluate(snap, conf()), "skipped": cc.skipped(snap)}))
     else:
         sys.exit(__doc__)
 

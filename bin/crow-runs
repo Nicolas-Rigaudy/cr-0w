@@ -7,7 +7,9 @@
                                                      every run carries crow_lib.run_flags (model id, effort, budget, timeout, env)
   crow-runs state <run_id>                           JSON: has the run ended, its end state, the usage-limit policy (crow-core tick)
   crow-runs [list] [--since today|7d|DATE] [--all]   one-shot listing
-  crow-runs json                                     same data as JSON (for widgets)
+  crow-runs json                                     same data as JSON (schema in logics/specs/script_contract);
+                                                     it reads <state>/runs.jsonl, so a watcher can re-read on change
+  crow-runs stop <run_id> [--json]                   stop one running run; --json prints the action result
   crow-runs report <run_id>                          final report of a finished run
   crow-runs final <stdout_path> [provider]           final message of a run's stdout log (claude | codex)
   crow-runs wait <run_id>...                         block until the runs finish (run in background to get notified)
@@ -208,19 +210,35 @@ def kill_run(row):
     return hit
 
 
-def stop(run_id):
-    """Stop one running background run (`crow runs stop <id>`, a run id or its prefix)."""
+def stop_run(run_id):
+    """(exit code, target, message) for `crow runs stop`: 0 stopped, 1 refused (no single running match, no live process)."""
     if not run_id.strip():
-        sys.exit("crow: give a run id")
+        return 1, run_id, "give a run id"
     rows = [r for r in running_runs() if r.get("run_id", "").startswith(run_id)]
     if len(rows) != 1:
-        sys.exit(f"crow: {len(rows)} running runs match {run_id!r}; give one running run id")
+        return 1, run_id, f"{len(rows)} running runs match {run_id!r}; give one running run id"
     hit = kill_run(rows[0])
     if not hit:
-        sys.exit(f"crow: run {rows[0]['run_id']} has no live process")
+        return 1, rows[0]["run_id"], f"run {rows[0]['run_id']} has no live process"
     STOPPED.parent.mkdir(parents=True, exist_ok=True)
     STOPPED.write_text(json.dumps(sorted(stopped_ids() | {rows[0]["run_id"]})))
-    print(f"stopped {rows[0]['run_id']} (pid {', '.join(map(str, hit))})")
+    return 0, rows[0]["run_id"], f"stopped {rows[0]['run_id']} (pid {', '.join(map(str, hit))})"
+
+
+def stop(run_id, as_json=False):
+    """Stop one running background run (`crow runs stop <id> [--json]`, a run id or its prefix)."""
+    try:
+        code, target, msg = stop_run(run_id)
+    except (Exception, SystemExit) as e:  # the --json caller gets an error line, not a traceback
+        if not as_json:
+            raise
+        why = e.code if isinstance(e, SystemExit) else e
+        code, target, msg = 2, run_id, f"stop failed: {str(why).removeprefix('crow: ')}"
+    if as_json:
+        sys.exit(crow_lib.action_result(code == 0, "stop", target, msg, code))
+    if code:
+        sys.exit(f"crow: {msg}")
+    print(msg)
 
 
 def seen_ids():
@@ -1025,7 +1043,9 @@ def main():
     fp.add_argument("stdout_path")
     fp.add_argument("provider", nargs="?", default="claude")
     sub.add_parser("wait").add_argument("run_ids", nargs="+")
-    sub.add_parser("stop").add_argument("run_id")
+    sp = sub.add_parser("stop")
+    sp.add_argument("run_id")
+    sp.add_argument("--json", action="store_true", help="print {schema, ok, action, target, message, code}; exit 0 stopped, 1 refused, 2 error")
     sub.add_parser("notify").add_argument("run_ids", nargs="+")
     ib = sub.add_parser("inbox")
     ib.add_argument("--hook", action="store_true"); ib.add_argument("--peek", action="store_true")
@@ -1040,7 +1060,7 @@ def main():
     elif a.cmd == "wait":
         wait(a.run_ids)
     elif a.cmd == "stop":
-        stop(a.run_id)
+        stop(a.run_id, a.json)
     elif a.cmd == "state":
         print(json.dumps(run_end_state(a.run_id)))
     elif a.cmd == "notify":
@@ -1052,7 +1072,7 @@ def main():
     elif a.cmd == "report":
         print(report(a.run_id) or "")
     elif a.cmd == "json":
-        json.dump(collect(a.since, a.all), sys.stdout, indent=1); print()
+        json.dump({"schema": crow_lib.SCRIPT_SCHEMA, **collect(a.since, a.all)}, sys.stdout, indent=1); print()
     else:
         listing(a)
 

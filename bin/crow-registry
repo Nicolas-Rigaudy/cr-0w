@@ -145,4 +145,4 @@ def load():
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] != "json":
         sys.exit(__doc__)
-    json.dump(load(), sys.stdout)
+    json.dump({"schema": crow_lib.SCRIPT_SCHEMA, **load()}, sys.stdout)

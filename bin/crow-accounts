@@ -174,7 +174,7 @@ def main(argv):
     elif cmd == "scoped":  # exit 0 when any account has a scopes map
         sys.exit(0 if any(a["scopes"] for a in accounts(cfg)) else 1)
     elif cmd == "json":
-        print(json.dumps({"default": cfg.get("default"), "accounts": accounts(cfg)}))
+        print(json.dumps({"schema": crow_lib.SCRIPT_SCHEMA, "default": cfg.get("default"), "accounts": accounts(cfg)}))
     else:
         sys.exit(__doc__)
 

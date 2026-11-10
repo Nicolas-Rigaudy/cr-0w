@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """crow-mrs: open MRs and PRs of the registered projects, read only, as JSON for the deck.
 
-  crow-mrs json              {forges, mrs: [...], branches: [...]}
+  crow-mrs json [-f]         {schema, forges, mrs: [...], branches: [...]}, cached CACHE_TTL s in <state>/mrs.json; -f refreshes
   crow-mrs show REPO REF     {files: [{path, add, del, diff}], threads: [{id, author, at, path, line, body, resolved}], findings: [...]}
 
 An MR or PR is listed when the owner is its author, an assignee or a requested reviewer. Both forges (glab,
@@ -9,7 +9,7 @@ gh) are queried with GET requests only: nothing is posted, resolved or pushed. f
 forge. branches lists a main checkout on a branch ahead of the default branch with no open MR.
 REPO is the registry remote (group/name) and REF the MR number.
 """
-import json, os, pwd, subprocess, sys
+import json, os, pwd, subprocess, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
@@ -289,11 +289,34 @@ def show(projs, repo, number, gl=gitlab_show, gh=github_show):
             "findings_file": findings_file(repo, number) if found else ""}
 
 
+CACHE_TTL = 60  # the deck polls MRs every 60 s
+
+
+def cache_file():
+    return Path(crow_lib.machine_dir(HOME)) / "mrs.json"
+
+
+def cached_list(force=False, build=lambda: list_all(projects())):
+    """The `json` payload as text: the state file when younger than CACHE_TTL, else a fresh forge query saved there."""
+    f = cache_file()
+    try:
+        if not force and time.time() - f.stat().st_mtime < CACHE_TTL:
+            return f.read_text()
+    except OSError:
+        pass
+    data = json.dumps({"schema": crow_lib.SCRIPT_SCHEMA, **build()})
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_name(f"mrs.json.{os.getpid()}.tmp")
+    tmp.write_text(data)
+    os.replace(tmp, f)
+    return data
+
+
 def main(argv):
     if argv[:1] == ["json"]:
-        json.dump(list_all(projects()), sys.stdout)
+        sys.stdout.write(cached_list("-f" in argv[1:]))
     elif argv[:1] == ["show"] and len(argv) == 3:
-        json.dump(show(projects(), argv[1], argv[2].lstrip("!#")), sys.stdout)
+        json.dump({"schema": crow_lib.SCRIPT_SCHEMA, **show(projects(), argv[1], argv[2].lstrip("!#"))}, sys.stdout)
     else:
         sys.exit(__doc__)
 

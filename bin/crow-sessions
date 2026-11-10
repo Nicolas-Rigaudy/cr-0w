@@ -254,7 +254,7 @@ def main(argv):
     if cmd in ("scan", "list"):
         reg = scan()
         if "--json" in argv:
-            print(json.dumps(reg, indent=1))
+            print(json.dumps({"schema": crow_lib.SCRIPT_SCHEMA, **reg}, indent=1))
         else:
             print_list(reg)
     elif cmd == "show" and len(argv) == 2:

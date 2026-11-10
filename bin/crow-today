@@ -4,15 +4,16 @@
   crow-today login     device-code sign-in once; stores the refresh token in the keyring
   crow-today json      today's data as JSON (cached for 5 minutes in local/state/today.json)
   crow-today json -f   skip the cache
-  crow-today done ID   mark the mail's flag complete
-  crow-today snooze ID flag the mail due tomorrow 08:00; Today hides it until then
+  crow-today done ID [--json]    mark the mail's flag complete
+  crow-today snooze ID [--json]  flag the mail due tomorrow 08:00; Today hides it until then
+                       --json prints {schema, ok, action, target, message, code}; exit 0 ok, 1 refused, 2 error
   crow-today thread ID print the mail's thread, newest first (sender, date, plain body)
   crow-today draft ID [--all] < text   save a reply draft above the quote in Outlook Drafts (never sends)
 
 Config: local/graph.yaml (tenant, client_id, user, timezone, mark_important).
 With mark_important: true, crow flags the mail it picks (category "crow"), once per mail, and
 clears its own flag when you answered; Today then lists every flagged mail. Keyring: service crow-graph, user <user>.
-JSON: {"at", "events": [{"start","end","subject","all_day","next"}], "tomorrow": [...],
+JSON: {"schema", "at", "events": [{"start","end","subject","all_day","next"}], "tomorrow": [...],
        "unread", "flagged": [{"id","subject","from","crow","webLink","until"}], "drafts",
        "important": [{"id","subject","from","at","unread","high","webLink"}], "week": [events today to 7 days ahead]}. until: ISO time a snoozed flag returns.. Exit 2 when not signed in.
 """
@@ -238,12 +239,26 @@ def act(c, verb, mid):
     if verb == "done":
         patch(tok, mid, {"flag": {"flagStatus": "complete"}})
         drop_cache()
-        return print("flag complete")
+        return "flag complete"
     at = snooze_at(dt.datetime.now().astimezone())
     when = {"dateTime": at.strftime("%Y-%m-%dT%H:%M:%S"), "timeZone": "UTC"}
     patch(tok, mid, {"flag": {"flagStatus": "flagged", "startDateTime": when, "dueDateTime": when}})
     drop_cache()
-    print("snoozed to " + at.astimezone().strftime("%a %H:%M"))
+    return "snoozed to " + at.astimezone().strftime("%a %H:%M")
+
+
+def act_json(verb, mid):
+    """`done|snooze ID --json`: one action result line; exit 0 done, 2 on any failure (not signed in, Graph error)."""
+    global TZ
+    try:
+        c = conf()
+        TZ = c.get("timezone", TZ)
+        msg = act(c, verb, mid)
+    except SystemExit as e:
+        return crow_lib.action_result(False, verb, mid, str(e.code if e.code not in (None, 2) else "not signed in: run crow-today login"), 2)
+    except Exception as e:
+        return crow_lib.action_result(False, verb, mid, f"{verb} failed: {e}", 2)
+    return crow_lib.action_result(True, verb, mid, msg, 0)
 
 
 def thread(c, mid):
@@ -294,6 +309,11 @@ def fetch(c):
 def main():
     global TZ
     a = sys.argv[1:]
+    if a[:1] in (["done"], ["snooze"]) and "--json" in a:
+        rest = [x for x in a[1:] if x != "--json"]
+        if not rest:
+            sys.exit(crow_lib.action_result(False, a[0], "", "give a mail id", 1))
+        sys.exit(act_json(a[0], rest[0]))
     c = conf()
     TZ = c.get("timezone", TZ)
     if a[:1] == ["login"]:
@@ -301,7 +321,7 @@ def main():
     if a[:1] in (["done"], ["snooze"], ["thread"], ["draft"]) and len(a) < 2:
         sys.exit(__doc__)
     if a[:1] in (["done"], ["snooze"]):
-        return act(c, a[0], a[1])
+        return print(act(c, a[0], a[1]))
     if a[:1] == ["thread"]:
         return thread(c, a[1])
     if a[:1] == ["draft"]:
@@ -311,7 +331,7 @@ def main():
     if "-f" not in a and os.path.exists(CACHE) and time.time() - os.path.getmtime(CACHE) < TTL:
         print(open(CACHE).read())
         return
-    data = json.dumps(fetch(c))
+    data = json.dumps({"schema": crow_lib.SCRIPT_SCHEMA, **fetch(c)})
     os.makedirs(os.path.dirname(CACHE), exist_ok=True)
     with open(CACHE, "w") as f:
         f.write(data)

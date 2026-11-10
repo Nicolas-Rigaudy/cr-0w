@@ -841,3 +841,15 @@ def commit_run_diff(cwd, label, run_id):
     if c.returncode:
         return {"sha": None, "reason": "git commit failed: " + (c.stderr or c.stdout).strip()[-300:], "message": msg}
     return {"sha": git("rev-parse", "HEAD").stdout.strip(), "message": msg, "files": sorted(statuses)}
+
+
+SCRIPT_SCHEMA = 1  # "schema" of every deck/core script JSON output (logics/specs/script_contract)
+ACTION_SCHEMA = 1  # logics/specs/script_contract/schemas/action.schema.json
+
+
+def action_result(ok, action, target, message, code=None):
+    """Print the --json result of an action script and return its exit code: 0 ok, 1 refused, 2 error."""
+    code = 0 if ok else (code or 1)
+    print(json.dumps({"schema": ACTION_SCHEMA, "ok": ok, "action": action, "target": str(target), "message": message,
+                      "code": code}))
+    return code

@@ -3,6 +3,7 @@
 
   crow-usage            short text summary
   crow-usage --json     full payload (schema below)
+  crow-usage --json --summary   small payload for the phone (<5 kB): per-account quota, reset, today, model
   crow-usage --days N   history window (default 7)
   crow-usage --split    one line: cost split of the last 14 days (reload, reread, output, input), for the brief
   crow-usage --titles   generate missing session titles now (normally a detached worker does it)
@@ -1224,6 +1225,34 @@ def build(days):
     return out
 
 
+def summary(data):
+    """The small payload for the phone (`--json --summary`, under 5 kB): per-account quota and reset, today's
+    cost, tokens and sessions on that account, its top model by cost today, and the day's totals."""
+    per = {}
+    for s in data["sessions"]:
+        t = s.get("today") or {}
+        if not t:
+            continue
+        a = per.setdefault(s.get("account"), {"cost_usd": 0.0, "tokens": 0, "sessions": 0, "models": {}})
+        a["cost_usd"] += t.get("cost_usd") or 0
+        a["tokens"] += t.get("tokens") or 0
+        a["sessions"] += 1
+        for name, m in (t.get("by_model") or {}).items():
+            a["models"][name] = a["models"].get(name, 0) + (m.get("cost_usd") or 0)
+    accounts = []
+    for lim in data["limits"]:
+        a = per.get(lim["account"]) or {"cost_usd": 0.0, "tokens": 0, "sessions": 0, "models": {}}
+        top = max(a["models"].items(), key=lambda kv: kv[1])[0] if a["models"] else None
+        accounts.append({**lim, "today": {"cost_usd": round(a["cost_usd"], 2), "tokens": a["tokens"],
+                                          "sessions": a["sessions"]}, "model": top})
+    t = data["today"]
+    return {"generated_at": data["generated_at"], "accounts": accounts,
+            "today": {"cost_usd": t.get("cost_usd"), "tokens": t.get("tokens"), "sessions": t.get("sessions"),
+                      "cache_pct": t.get("cache_pct"),
+                      "by_model": [{k: m.get(k) for k in ("name", "cost_usd", "tokens", "sessions")}
+                                   for m in t.get("by_model") or []]}}
+
+
 def human(n):
     if n is None:
         return "?"
@@ -1250,7 +1279,7 @@ def main():
         return 0
     data = build(days)
     if "--json" in args:
-        json.dump(data, sys.stdout)
+        json.dump({"schema": crow_lib.SCRIPT_SCHEMA, **(summary(data) if "--summary" in args else data)}, sys.stdout)
         sys.stdout.write("\n")
         return 0
     for lim in data["limits"]:
