@@ -24,6 +24,7 @@
   --ph-line: transparent;
   --row-edge: transparent;
   --glow: none;
+  --dots: radial-gradient(color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1.2px) 0 0 / 18px 18px;
   --accent: #c6a0f6;
   --accent-ink: #181926;
   --accent-soft: rgba(198, 160, 246, 0.14);
@@ -74,7 +75,6 @@
   --chrome: #1d3a46;
   --chrome-text: #7fdcec;
   --dots: radial-gradient(color-mix(in srgb, var(--line) 33%, transparent) 1px, transparent 1.2px) 0 0 / 18px 18px;
-  --hero-bg: radial-gradient(ellipse at 50% 46%, #0f2e36 0%, #0a1c24 38%, #070e14 68%, #05070c 100%);
   --accent: #c05cff;
   --accent-ink: #05070c;
   --accent-soft: rgba(192, 92, 255, 0.18);
@@ -417,7 +417,7 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
   .pill .badge-t { margin-left: 0.5em; }
   .clock .short { display: none; }
   .clock .long { display: inline; font: 600 13px var(--font-body); letter-spacing: 0.04em; color: var(--fg); }
-  .main { overflow: hidden; }
+  .main { overflow: hidden; background: var(--dots); }
   .accts { display: flex; gap: 14px; font: 600 11px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
   .acct { display: flex; gap: 6px; align-items: center; }
   .acct .gb { width: 60px; height: 6px; border-radius: 3px; background: var(--line); }
@@ -431,7 +431,6 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
   [data-theme='cyber'] .acct .gb { border-radius: 0; background: var(--line); }
   [data-theme='cyber'] .accts { color: var(--fg); }
   [data-theme='cyber'] .clock .long { font: 500 14px var(--font-display); letter-spacing: 0.1em; color: var(--fg); }
-  [data-theme='cyber'] .main { background: var(--dots); }
 }
 
 .lp { height: 100%; display: grid; gap: 14px; padding: 12px 20px 16px; font-size: 13px; line-height: 1.4; min-height: 0; }
@@ -521,11 +520,16 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 
 /* Static hero (item_155): pass 7 ASCII scene on canvas, HTML overlays. */
 .lp .slot.hero-slot { border: none; overflow: hidden; padding: 0; }
-.hero-box { position: relative; width: 100%; height: 100%; overflow: hidden;
-  background: radial-gradient(ellipse at 50% 46%, color-mix(in srgb, var(--c-w) 34%, var(--bg)) 0%,
-    color-mix(in srgb, var(--c-w) 20%, var(--bg)) 35%, color-mix(in srgb, var(--accent) 8%, var(--bg)) 65%, var(--bg) 100%); }
-[data-theme='cyber'] .hero-box { background: var(--hero-bg); }
-[data-theme='cyber'] .hero-say { text-shadow: none; }
+.hero-box { position: relative; width: 100%; height: 100%; overflow: hidden; isolation: isolate; }
+/* Hologram (item_162): no box. Faint vignette and a projection cone over the page dot matrix. */
+.hero-box::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 34% 40% at 50% 44%, color-mix(in srgb, var(--c-w) 9%, transparent) 0%,
+    color-mix(in srgb, var(--c-w) 3%, transparent) 60%, transparent 100%); }
+.hero-box::after { content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none;
+  background: conic-gradient(from -22deg at 50% 100%, transparent 0deg, color-mix(in srgb, var(--c-w) 7%, transparent) 12deg,
+    color-mix(in srgb, var(--c-w) 7%, transparent) 32deg, transparent 44deg);
+  -webkit-mask: linear-gradient(to top, #000, transparent 70%);
+  mask: linear-gradient(to top, #000, transparent 70%); }
 .hero-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hero-say { position: absolute; left: 0; right: 0; top: 18px; text-align: center; font: 15px var(--font-head); color: var(--fg);
   text-shadow: 0 0 10px color-mix(in srgb, var(--c-w) 60%, transparent); padding: 0 16px; }

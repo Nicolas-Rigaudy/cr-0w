@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Indicators reviewed: 2026-11-10 14:39:50
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -20,9 +21,9 @@
 
 # Plan
 - [x] 1. 1. Netrunner palette
-- [ ] 2. 2. Holographic hero
+- [ ] 2. 2. Holographic hero + holotable (absorbs the ring and rim of item 4)
 - [ ] 3. 3. Design skills audit
-- [ ] 4. 4. JARVIS chrome
+- [x] 4. 4. JARVIS chrome: withdrawn 2026-11-10, merged into item_162 (owner: avoid overcrowding)
 - [ ] 5. 5. Telemetry strip
 - [ ] 6. 6. Boot sequence
 - [ ] 7. Each item in a fresh session from its backlog doc. Owner OK on renders before the next.
@@ -48,7 +49,7 @@
 - request-AC1 -> `item_161_netrunner_palette_for_the_nest_cyber_theme`. Proof deferred to slice closeout.
 - request-AC2 -> `item_162_holographic_hero_on_the_dot_matrix_background`. Proof deferred to slice closeout.
 - request-AC3 -> `item_163_design_skills_audit_of_the_laptop_home`. Proof deferred to slice closeout.
-- request-AC3 -> `item_164_jarvis_chrome_corner_brackets_and_a_segmented_ring_around_the_hero`. Proof deferred to slice closeout.
+- request-AC3 -> `item_164_jarvis_chrome_corner_brackets_and_a_segmented_ring_around_the_hero`. Withdrawn, superseded by item_162.
 - request-AC3 -> `item_165_telemetry_strip_on_the_laptop_home`. Proof deferred to slice closeout.
 - request-AC3 -> `item_166_boot_sequence_on_first_load_of_the_nest`. Proof deferred to slice closeout.
 
@@ -66,4 +67,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

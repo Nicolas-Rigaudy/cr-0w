@@ -1,13 +1,14 @@
 ## item_164_jarvis_chrome_corner_brackets_and_a_segmented_ring_around_the_hero - JARVIS chrome: corner brackets and a segmented ring around the hero
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Obsolete
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 14:39:50
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -45,6 +46,7 @@
 - Architecture decision(s): (none yet)
 - Request: `req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome`
 - Primary task(s): `task_019_orchestrate_the_nest_home_design_pass`
+- Superseded by: `item_162_holographic_hero_on_the_dot_matrix_background`
 
 # Priority
 - Priority: Medium
@@ -53,4 +55,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
