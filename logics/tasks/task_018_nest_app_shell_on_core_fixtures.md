@@ -9,7 +9,7 @@
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-10 11:23:54
+> Indicators reviewed: 2026-11-10 17:03:11
 
 # AI Context
 - Summary: (unfilled: replace before this doc is used)
@@ -27,7 +27,7 @@
 - `item_137_nest_app_shell_on_core_fixtures`
 
 # Acceptance criteria
-- AC1: `tools/nest` builds and serves locally, and installs as a PWA from Chrome on the phone over the tailnet.
+- AC1: `tools/nest` builds and serves locally, and installs as a PWA from Chrome on the phone over the tailnet. Proven 2026-11-10 (task_020 step 1).
 - AC2: Home, Missions, Mission detail and inbox render every item_119 fixture case (working, needs you, failed, sleeping, queued) with no hardcoded sample data in the components.
 - AC3: Swapping the fixture adapter for an API adapter touches only the data layer (one interface, typed from the fixtures).
 - AC4: The look matches the approved item_138 boards (laptop, Fold cover and inner, both themes); the owner approves it side by side with the boards on the canvas.

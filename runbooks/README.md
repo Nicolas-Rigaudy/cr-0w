@@ -49,3 +49,4 @@ want to trigger it by name.
 - [mission-e2e-scratch](mission-e2e-scratch.md): real cheap mission run (dispatch, park, answer, resume) in a scratch core store, and how to read a failed run
 - [headless-webgl-render](headless-webgl-render.md): render WebGL pages to PNG and bench frame time headless (SwiftShader and real GPU)
 - [nest-screenshots](nest-screenshots.md): headless screenshots of the Nest PWA at the board sizes, both themes
+- [nest-phone-install](nest-phone-install.md): serve Nest on the tailnet and install it as an app on Android (Play parks it while the VPN is up)

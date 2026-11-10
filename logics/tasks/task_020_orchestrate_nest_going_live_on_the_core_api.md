@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-11-10 16:17:26
+> Indicators reviewed: 2026-11-10 17:03:11
 
 # AI Context
 - Summary: Fastest path to a working Nest: core read API serving Nest on the tailnet, Nest on live data, core actions, a Nest answer sheet. Core items alternate with the Nest Home design items (owner decision 2026-11-10). Ends on the roadmap 0.3b exit signal answered from Nest.
@@ -24,7 +24,8 @@
 - One fresh session per item, from its backlog doc. Owner prefs go into every handoff.
 
 # Plan
-- [ ] 1. Nest on the phone on fixtures, here in the hub: `cd tools/nest && npm run build && npm run preview -- --port 4173`, `tailscale serve --bg 4173`, install from Chrome on the Fold. Closes task_018 AC1. Replaced by the core unit at step 2.
+- [x] 1. Nest on the phone on fixtures, here in the hub: `cd tools/nest && npm run build && npm run preview -- --port 4173`, `tailscale serve --bg 4173`, install from Chrome on the Fold. Closes task_018 AC1. Replaced by the core unit at step 2. Done 2026-11-10 (runbooks/nest-phone-install.md).
+- [ ] Nit (owner 2026-11-10): installed app name reads `Nest`; set manifest `name` and `short_name` to `CR-0W`. Do it with step 2 when core starts serving Nest.
 - [ ] 2. item_144 core HTTP service with read endpoints, serving Nest at `/` and the API at `/api`, systemd user unit, `tailscale serve` pointed at core. Exit: the phone loads Nest from core and `curl` reads `/api/state/inbox`.
 - [ ] 3. item_158 hero interactions (spin, hover lift + moons, click to details). Design, fixtures are enough.
 - [ ] 4. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI.
@@ -59,7 +60,7 @@
 - request-AC3 -> `item_147_core_action_endpoints_for_dispatch_answer_stop_cancel_and_hide`. Proof deferred to closeout: no publish action on the API or in Nest.
 
 # Validation
-- (no validation recorded yet)
+- 2026-11-10 task_018 AC1 proven: WebAPK installed on the Fold from the tailnet URL, opens standalone with Tailscale on.
 
 # Report
 - 2026-11-10 planned from the owner ask (fastest working web app). Next: step 1 in the hub, then step 2 (item_144) in a fresh session.
