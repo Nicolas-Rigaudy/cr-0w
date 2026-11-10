@@ -1,10 +1,10 @@
 ## item_170_core_actions_on_live_sessions_and_dispatch_runs - Core actions on live sessions and dispatch runs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 75%
-> Progress: 0%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -78,6 +78,9 @@
   - Dispatch calls `crow-runs dispatch` (what `crow dispatch` wraps) with `--json`.
   - Stale view = the touched section failed its refresh: 409, nothing runs.
   - Events go to `local/state/actions.jsonl` (live-action schema), since these actions have no mission.
+- Nest step 2026-11-10 in 340aa19: Desk screen (`src/screens/Desk.tsx`) built from the item_138 boards `desk`, `fold-desk-inner` and `fold-desk-cover` (modern and cyber), each approved by the owner against the board. Confirm uses the bottom sheet `src/ui/Sheet.tsx` (owner pick A); Stop asks twice. Data and actions in `src/data/live.ts`.
+- Cover deviations kept: the ring spins (live data has no step count), two rows like the board, the rest on the unfolded screen. Queue and Logics ready show "arrives with the live API" until those sections exist.
+- Proof: go test ./... (168 passed), vitest (24 passed), POST without X-Crow gets 403, phone test 2026-11-10 logged in actions.jsonl (start on cr-0w, send to a live pid, actor owner, surface nest).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

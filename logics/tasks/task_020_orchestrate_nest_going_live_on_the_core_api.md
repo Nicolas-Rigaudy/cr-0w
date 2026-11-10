@@ -4,11 +4,11 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 40%
+> Progress: 45%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-11-10 20:00:55
+> Indicators reviewed: 2026-11-10 21:33:49
 > Owner: crow
 
 # AI Context
@@ -31,7 +31,7 @@
 - [x] 3. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI. Done 2026-11-10, moved before item_158 (owner: core work before design polish).
 - [x] 4. item_173 script JSON contracts (fixtures, usage summary, MR cache, JSON from action scripts). Exit: deck still works; every output pinned by a test.
 - [x] 5. item_169 core serves every deck source (sessions, dispatch runs, MRs, today, usage, checks, projects) with background refresh. Exit: the phone's Nest data layer reads the same sessions and runs as deck (req_054, owner 2026-11-10: Nest shows zeros, it must see everything deck does). Done 2026-11-10.
-- [ ] 6. item_147 core mission action endpoints, then item_170 session and run actions (start, resume, send, interrupt, stop, dispatch) on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session. item_147 done 2026-11-10 (4fbef04); item_170 next.
+- [x] 6. item_147 core mission action endpoints, then item_170 session and run actions (start, resume, send, interrupt, stop, dispatch) on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session. item_147 done 2026-11-10 (4fbef04); item_170 done 2026-11-10 (99c977d core, 340aa19 Nest Desk).
 - [ ] 7. item_174 permission prompts answered from Nest (spike on the prompt source first).
 - [ ] 8. item_171 Nest Home on the deck sources (mockup first, owner OK). Exit: Home matches deck's agents panel with an empty mission store.
 - [ ] 9. item_158 hero interactions (spin, hover lift + moons, click to details). Open question for the owner: hero mood order, model.ts `moodOf` (run > fail > idle, item_162) vs item_158 spec (fail > ask > run > idle).
@@ -73,6 +73,7 @@
 - request-AC1 -> `item_168_nest_answer_sheet_for_inbox_items_and_mission_actions`. Proof deferred to closeout: answer from Nest resumes the mission.
 - request-AC3 -> `item_147_core_action_endpoints_for_dispatch_answer_stop_cancel_and_hide`. Proof deferred to closeout: no publish action on the API or in Nest.
 - request-AC4 -> This task. Proof: item_173: implemented in 5b4a90d and 5cbdd7d; validated with python bin/crow-check (pytest, ruff, leak), tests/test_script_contract.py, go test in tools/crow-deck and tools/crow-core, deck tabs 1-5 rendered headless. Source: `5cbdd7d`
+- request-AC2 -> This task. Proof: Implemented in 99c977d (core routes) and 340aa19 (Nest Desk); validated with go test ./... (168 passed), vitest (24 passed), a 403 on POST without X-Crow, and a phone test 2026-11-10 logged in actions.jsonl (start + send, actor owner, surface nest). Source: `340aa19`
 
 # Validation
 - 2026-11-10 task_018 AC1 proven: WebAPK installed on the Fold from the tailnet URL, opens standalone with Tailscale on.
