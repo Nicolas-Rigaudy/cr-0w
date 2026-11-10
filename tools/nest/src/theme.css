@@ -401,7 +401,7 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 }
 
 /* Laptop (boards Main, home-cyber). Scoped to .lp screens and the laptop header. */
-.pill .tn, .clock .long { display: none; }
+.pill .tn, .clock .long, .accts { display: none; }
 @media (min-width: 1200px) {
   .app { height: 100vh; }
   .top { height: 56px; gap: 22px; padding: 0 20px; background: var(--hdr); }
@@ -413,6 +413,9 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
   .clock .short { display: none; }
   .clock .long { display: inline; font: 600 13px var(--font-body); letter-spacing: 0.04em; color: var(--fg); }
   .main { overflow: hidden; }
+  .accts { display: flex; gap: 14px; font: 600 11px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+  .acct { display: flex; gap: 6px; align-items: center; }
+  .acct .gb { width: 60px; height: 6px; border-radius: 3px; background: var(--line); }
 }
 [data-theme='cyber'] .lp { text-transform: lowercase; }
 @media (min-width: 1200px) {
@@ -420,6 +423,8 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
   [data-theme='cyber'] .top .logo { font: 700 20px var(--font-display); letter-spacing: 0.2em; text-shadow: 0 0 10px #2ef2ff88; }
   [data-theme='cyber'] .pills { font-size: 14px; letter-spacing: 0.14em; }
   [data-theme='cyber'] .pill { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+  [data-theme='cyber'] .acct .gb { border-radius: 0; background: #4fc3ff22; }
+  [data-theme='cyber'] .accts { color: var(--fg); }
   [data-theme='cyber'] .clock .long { font: 500 14px var(--font-display); letter-spacing: 0.1em; color: #2ef2ff; }
   [data-theme='cyber'] .main { background: radial-gradient(#4fc3ff22 1px, transparent 1.2px) 0 0 / 18px 18px; }
 }
@@ -491,6 +496,8 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 [data-theme='cyber'] .lp .btn.pri { background: var(--accent); border-color: var(--accent); }
 [data-theme='cyber'] .lp .tm { font: 700 14px var(--font-display); color: #2ef2ff; text-shadow: 0 0 8px #2ef2ff88; }
 [data-theme='cyber'] .lp .kpi > div { border-radius: 0; background: rgba(16, 24, 58, 0.55); border-left: 2px solid currentColor; }
+.lp .kpi b .z { display: none; font-style: normal; }
+[data-theme='cyber'] .lp .kpi b .z { display: inline; }
 [data-theme='cyber'] .lp .kpi b { font-weight: 700; font-size: 28px; text-shadow: 0 0 8px currentColor; }
 [data-theme='cyber'] .lp .slot { border-radius: 0; border-color: #2ef2ff66; color: #2ef2ff66; }
 

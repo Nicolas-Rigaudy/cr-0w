@@ -15,6 +15,11 @@ function Kc({ n, href, label }: { n: number; href: string; label: string }) {
   return <Link href={href} className="kc" title={`${label} tab`} aria-label={`Open ${label}`}>{n}</Link>
 }
 
+// Cyber pads the big numbers to two digits ("04"); modern hides the zero.
+function Pad({ n }: { n: number }) {
+  return <>{n < 10 && <i className="z">0</i>}{n}</>
+}
+
 function Later() {
   return <div className="sm later">Arrives with the live API</div>
 }
@@ -29,8 +34,8 @@ export function HomeLaptop({ snap }: { snap: Snapshot }) {
   const fyi = open.filter((r) => r.type === 'fyi')
   const failed = missions.filter((m) => uiState(m, inbox) === 'failed')
   const ranked = byUrgency(missions, inbox)
-  const live = ranked.filter((m) => uiState(m, inbox) !== 'done')
-  const done = ranked.filter((m) => uiState(m, inbox) === 'done')
+  // Needs and failed already sit in Needs you: the list keeps runs, queue and sleep (board).
+  const live = ranked.filter((m) => !['done', 'needs', 'failed'].includes(uiState(m, inbox)))
   const byId = (r: InboxItem) => missions.find((m) => m.id === r.mission)
   const [first, ...rest] = asks
   const firstM = first && byId(first)
@@ -84,10 +89,10 @@ export function HomeLaptop({ snap }: { snap: Snapshot }) {
             <Link href="/missions" className="go">open →</Link>
           </h2>
           <div className="kpi">
-            <div className="c-d"><b>{c.done}</b><span className="sm">done</span></div>
-            <div className="c-w"><b>{c.working}</b><span className="sm">working</span></div>
-            <div className="c-n"><b>{c.needs}</b><span className="sm">needs</span></div>
-            <div className="c-f"><b>{c.failed}</b><span className="sm">failed</span></div>
+            <div className="c-d"><b><Pad n={c.done} /></b><span className="sm">done</span></div>
+            <div className="c-w"><b><Pad n={c.working} /></b><span className="sm">working</span></div>
+            <div className="c-n"><b><Pad n={c.needs} /></b><span className="sm">needs</span></div>
+            <div className="c-f"><b><Pad n={c.failed} /></b><span className="sm">failed</span></div>
           </div>
           <div className="list">
             {live.map((m) => {
@@ -97,20 +102,9 @@ export function HomeLaptop({ snap }: { snap: Snapshot }) {
               if (s === 'working' && run && !run.ended) end = <span className="tm">{elapsed(run.started, now)}</span>
               else if (s === 'queued') end = <span className="sm">Q{++q}</span>
               else if (s === 'sleeping') end = <span className="sm">sleep</span>
-              else if (s === 'needs') end = <span className="sm c-n">needs you</span>
-              else if (s === 'failed') end = <span className="sm c-f">failed</span>
               return (
                 <Link key={m.id} href={`/missions/${m.id}`} className="row">
                   <Glyph state={s} /><span className="t">{title(m)}</span>{end}
-                </Link>
-              )
-            })}
-            {done.map((m) => {
-              const run = lastRun(m)
-              return (
-                <Link key={m.id} href={`/missions/${m.id}`} className="row past">
-                  <Glyph state="done" /><span className="t">{title(m)}</span>
-                  {run?.ended && <span className="sm">{time(run.ended)}</span>}
                 </Link>
               )
             })}

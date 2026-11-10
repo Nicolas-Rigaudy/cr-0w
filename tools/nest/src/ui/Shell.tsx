@@ -29,6 +29,8 @@ export function Shell({ active, snap, children }: { active: TabKey; snap: Snapsh
   const [theme, toggle] = useTheme()
   const b = badges(snap)
   const c = snap ? countByState(snap.missions, snap.inbox) : null
+  // Account gauges (laptop): names from the runs, usage waits for the live API.
+  const accts = [...new Set(snap?.missions.flatMap((m) => m.runs.map((r) => r.account)) ?? [])].sort().slice(0, 3)
   return (
     <div className="app">
       <header className="top">
@@ -42,6 +44,13 @@ export function Shell({ active, snap, children }: { active: TabKey; snap: Snapsh
           ))}
         </nav>
         <span className="grow" />
+        {accts.length > 0 && (
+          <span className="accts" title="Usage arrives with the live API">
+            {accts.map((a) => (
+              <span key={a} className="acct">{a}<span className="gb" aria-hidden="true" /><span className="pc">–</span></span>
+            ))}
+          </span>
+        )}
         {c && (
           <span className="chips wrap" aria-label={`${c.needs} need you, ${c.working} working`}>
             <span className="chip c-n"><Glyph state="needs" size={12} />{c.needs}</span>
