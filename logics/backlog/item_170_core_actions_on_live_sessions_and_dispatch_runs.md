@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-10 18:06:48
+> Indicators reviewed: 2026-11-10 18:11:26
 
 # AI Context
 - Summary: POST routes in crow-core that run deck's existing session and run actions (start or resume a session, send text, interrupt, stop a session; dispatch and stop a run; mark a mail done or snoozed), with the item_147 CSRF and identity checks, plus the Nest confirm sheet that calls them.
@@ -69,6 +69,7 @@
 - Rationale: piloting from the phone is the point of Nest (owner, 2026-11-10: steer and start work from the phone).
 
 # Notes
+- Owner 2026-11-10: most runs will be missions. Mission rows and actions come first; sessions and dispatch runs follow.
 - Confirm sheet visuals: mockup first if it differs from item_168's answer sheet; reuse that sheet when possible.
 
 # Executions

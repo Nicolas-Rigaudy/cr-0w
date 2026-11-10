@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-11-10 17:03:11
+> Indicators reviewed: 2026-11-10 18:11:26
 
 # AI Context
 - Summary: Fastest path to a working Nest: core read API serving Nest on the tailnet, Nest on live data, core actions, a Nest answer sheet. Core items alternate with the Nest Home design items (owner decision 2026-11-10). Ends on the roadmap 0.3b exit signal answered from Nest.
@@ -41,7 +41,7 @@
 - [ ] 14. item_163 design skills audit of the laptop Home, now on real data.
 - [ ] 15. item_166 boot sequence.
 - [ ] Order rule: core steps (2 to 7, 11) are the critical path. If a design step waits on owner OK, start the next core or build step instead of idling.
-- [ ] After step 15: task_017 continues (item_145 deck inbox, 146 SSE, 148-152 summaries and autonomy), alternating with task_018 laptop Missions.
+- [ ] After step 15: task_017 continues (item_145 deck inbox, 146 SSE, 148-152 summaries and autonomy), alternating with task_018 laptop Missions. req_055 continues in task_021.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] GATE: do not close until lint, audit, and scaffold validation pass.
 

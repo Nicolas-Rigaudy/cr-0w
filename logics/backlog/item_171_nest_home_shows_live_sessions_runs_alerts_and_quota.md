@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-10 18:11:26
 
 # AI Context
 - Summary: Nest Home and header read the item_169 sections: live sessions and dispatch runs as one-liners beside missions, alerts from checks, quota per account and the live count in the header, today's events in Agenda.
@@ -55,6 +56,7 @@
 - Rationale: Home is what the owner opens on the phone.
 
 # Notes
+- Owner 2026-11-10: most runs will be missions. Mission rows and actions come first; sessions and dispatch runs follow.
 - Design gate: mockup and owner OK before code. If it waits on the owner, build item_170 meanwhile (task_020 order rule).
 
 # Executions
