@@ -1,14 +1,15 @@
 ## task_020_orchestrate_nest_going_live_on_the_core_api - Orchestrate Nest going live on the core API
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 35%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-11-10 19:27:47
+> Indicators reviewed: 2026-11-10 20:00:55
+> Owner: crow
 
 # AI Context
 - Summary: Fastest path to a working Nest: core read API serving Nest on the tailnet, Nest on live data, core actions, a Nest answer sheet. Core items alternate with the Nest Home design items (owner decision 2026-11-10). Ends on the roadmap 0.3b exit signal answered from Nest.

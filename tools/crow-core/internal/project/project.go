@@ -175,6 +175,13 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 			ts := e.TS
 			it.State, it.Answered = "answered", &ts
 		}
+	case *contract.ActionData:
+		// stop and cancel act through the run and state events; hide drops the row.
+		if d.Action == "hide" {
+			if it := v.find(deref(d.Item)); it != nil {
+				it.State = "dropped"
+			}
+		}
 	case *contract.ValidationData:
 		// The record chain is checked before each publish (mission.Verify, item_108).
 		if e.Type == "validation" {

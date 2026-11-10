@@ -1,0 +1,27 @@
+{
+  "id": "20261110-research-compare-offline-map-tile-formats",
+  "kind": "research",
+  "batch": null,
+  "scope": "personal",
+  "data_class": "personal",
+  "project": "demo",
+  "goal": "Compare offline map tile formats.",
+  "end_state": "A short report with one pick.",
+  "autonomy": "notify",
+  "gates": [],
+  "state": "queued",
+  "runs": [],
+  "version": 0,
+  "validation": null,
+  "file_scope": [],
+  "budget": {
+    "time_min": 60,
+    "budget_usd": 5,
+    "resumes": 2
+  },
+  "branch": null,
+  "worktree": null,
+  "mr": null,
+  "created": "2026-11-10T09:00:00Z",
+  "updated": "2026-11-10T09:00:00Z"
+}

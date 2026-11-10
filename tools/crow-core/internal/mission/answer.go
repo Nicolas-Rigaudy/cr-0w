@@ -43,6 +43,7 @@ type Reply struct {
 	Verb    string
 	Words   []string // new points, one per entry
 	Surface string   // nest, deck or cli
+	Version int      // mission version the owner answered from; 0 skips the check
 }
 
 // AnswerResult is what one answer wrote.
@@ -66,7 +67,7 @@ func (env Env) Answer(ref string, r Reply) (AnswerResult, error) {
 		return res, err
 	}
 	if m.State != "review" {
-		return res, fmt.Errorf("%s is %s; an answer needs a mission in review", m.ID, m.State)
+		return res, failf(ErrConflict, "%s is %s; an answer needs a mission in review", m.ID, m.State)
 	}
 	return env.reply(m, r, nil)
 }
@@ -75,8 +76,8 @@ func (env Env) Answer(ref string, r Reply) (AnswerResult, error) {
 // the event then carries the row and the surface.
 func (env Env) reply(m contract.Mission, r Reply, item *string) (AnswerResult, error) {
 	var res AnswerResult
-	if !slices.Contains(surfaces, r.Surface) {
-		return res, fmt.Errorf("surface %q: want one of %v", r.Surface, surfaces)
+	if err := checkSurface(r.Surface); err != nil {
+		return res, err
 	}
 	n := m.Version
 	dir := filepath.Join(env.Store.Root(), m.ID)
@@ -87,7 +88,7 @@ func (env Env) reply(m contract.Mission, r Reply, item *string) (AnswerResult, e
 	// An inbox answer was checked against its row, which knows the FYI shape.
 	phase, _, _ := strings.Cut(file, ".")
 	if item == nil && !slices.Contains(Verbs[phase], r.Verb) {
-		return res, fmt.Errorf("%s: verb %q, want one of %v", file, r.Verb, Verbs[phase])
+		return res, failf(ErrInvalid, "%s: verb %q, want one of %v", file, r.Verb, Verbs[phase])
 	}
 
 	words := make([]string, 0, len(r.Words))

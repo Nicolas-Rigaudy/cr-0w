@@ -1,6 +1,6 @@
 # Core service (state API and Nest over the tailnet)
 
-`crow-core serve` serves the read API under `/api` and the built Nest at `/` on one origin.
+`crow-core serve` serves the read and action API under `/api` and the built Nest at `/` on one origin.
 
 ## Install and check
 1. `cd tools/nest && npm run build` (core serves `tools/nest/dist`).
@@ -20,6 +20,15 @@
 - `curl -s https://<host>.<tailnet>.ts.net/api/state/inbox` from any tailnet node of the owner.
 - `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8787/api/state` answers 403 (no identity).
 - Repeat with `If-None-Match: <etag>`: 304 until the store version moves.
+
+## Actions (Nest writes)
+- `POST /api/missions` (201, body `{kind, project, goal, end_state, autonomy?, key?, gates?}`): dispatch, same as `crow mission new`.
+- `POST /api/missions/<id>/answer` (body `{item?, verb?, text?, version}`): `version` is the mission version the owner answered; a stale one is 409 and writes nothing.
+- `POST /api/missions/<id>/stop`, `/cancel` (body `{reason?}`), `POST /api/inbox/<item>/hide`.
+- Ids are exact (no prefix match). Errors: 400 bad body, 404 unknown, 409 wrong state or stale version.
+- Each action writes an `action` event `{action, surface, ...}` with `actor: owner`; Nest uses surface `nest`, the CLI `cli`. CLI and API call the same `mission` functions.
+- CLI twins: `crow mission new|cancel|stop <id>`, `crow inbox answer`, `crow inbox hide <item>`.
+- Probe: `curl -s --unix-socket local/state/core.sock -H 'X-Crow: 1' -X POST http://x/api/missions/<id>/stop`.
 
 ## Sections
 - Store sections: `inbox`, `missions`, `runs`.
@@ -43,3 +52,4 @@
 
 ## Fixtures
 - `go test ./internal/api -update` in `tools/crow-core` rewrites `logics/specs/core_contract/fixtures/api/*.json`; `tests/test_core_contract.py` checks them against the record schemas.
+- Action replies are `api/action-*.json` and `api/error-*.json`; their request bodies sit in `api/requests/`.

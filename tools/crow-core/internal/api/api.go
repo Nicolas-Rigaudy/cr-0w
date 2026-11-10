@@ -1,4 +1,4 @@
-// Package api is the read side of the core HTTP service (item_144): the state sections,
+// Package api is the core HTTP service (item_144, writes in actions.go for item_147): the state sections,
 // one mission, its outbox files and the event feed under /api, and the built Nest app
 // at /. Every route answers the owner only (req_031): requests on the TCP listener need
 // the owner's tailnet login in Tailscale-User-Login, which tailscale serve sets and
@@ -108,6 +108,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	mux.HandleFunc("GET /api/missions/{id}", s.mission)
 	mux.HandleFunc("GET /api/missions/{id}/artifacts/{path...}", s.artifact)
 	mux.HandleFunc("GET /api/events", s.events)
+	s.routeActions(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})

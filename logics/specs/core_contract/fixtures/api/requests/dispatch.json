@@ -1,0 +1,7 @@
+{
+  "kind": "research",
+  "project": "demo",
+  "goal": "Compare offline map tile formats.",
+  "end_state": "A short report with one pick.",
+  "autonomy": "notify"
+}

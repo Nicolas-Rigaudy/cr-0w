@@ -118,6 +118,7 @@ type call struct {
 	method, path string
 	header       map[string]string
 	trusted      bool
+	body         string
 }
 
 func do(t *testing.T, s *Server, c call) *httptest.ResponseRecorder {
@@ -125,7 +126,7 @@ func do(t *testing.T, s *Server, c call) *httptest.ResponseRecorder {
 	if c.method == "" {
 		c.method = http.MethodGet
 	}
-	r := httptest.NewRequest(c.method, "http://core.example"+c.path, nil)
+	r := httptest.NewRequest(c.method, "http://core.example"+c.path, strings.NewReader(c.body))
 	if !c.trusted {
 		r.Header.Set(IdentityHeader, owner)
 	}

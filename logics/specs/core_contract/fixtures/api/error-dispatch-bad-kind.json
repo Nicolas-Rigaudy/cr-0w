@@ -1,0 +1,3 @@
+{
+  "error": "unknown kind \"nope\" (valid: build, design, plan, repair, research, review, review-fix, write)"
+}

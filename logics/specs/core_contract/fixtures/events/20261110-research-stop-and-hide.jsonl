@@ -1,0 +1,9 @@
+{"ts":"2026-11-10T09:00:00+01:00","mission":"20261110-research-stop-and-hide","type":"created","actor":"owner","data":{"kind":"research","key":"stop-and-hide","surface":"nest","project":"demo","scope":"personal","data_class":"personal","goal":"Survey offline map tile formats.","end_state":"A short report.","autonomy":"auto","gates":[],"budget":{"time_min":60,"budget_usd":5,"resumes":2},"file_scope":[]}}
+{"ts":"2026-11-10T09:00:01+01:00","mission":"20261110-research-stop-and-hide","type":"state","actor":"core","data":{"from":"preflight","to":"queued"}}
+{"ts":"2026-11-10T09:05:00+01:00","mission":"20261110-research-stop-and-hide","type":"state","actor":"core","data":{"from":"queued","to":"running"}}
+{"ts":"2026-11-10T09:05:01+01:00","mission":"20261110-research-stop-and-hide","type":"run_start","actor":"core","data":{"run":"b7c8d9e0","account":"main","account_class":"personal","cold":true,"version":1}}
+{"ts":"2026-11-10T09:30:00+01:00","mission":"20261110-research-stop-and-hide","type":"action","actor":"owner","data":{"action":"stop","surface":"nest","run":"b7c8d9e0"}}
+{"ts":"2026-11-10T09:30:05+01:00","mission":"20261110-research-stop-and-hide","type":"run_end","actor":"core","data":{"run":"b7c8d9e0","cause":"stopped","file":"report.v1.md"}}
+{"ts":"2026-11-10T09:30:06+01:00","mission":"20261110-research-stop-and-hide","type":"gate","actor":"core","data":{"file":"report.v1.md","verdict":"ready"}}
+{"ts":"2026-11-10T09:30:07+01:00","mission":"20261110-research-stop-and-hide","type":"state","actor":"core","data":{"from":"running","to":"done","reason":"straight-through"}}
+{"ts":"2026-11-10T09:40:00+01:00","mission":"20261110-research-stop-and-hide","type":"action","actor":"owner","data":{"action":"hide","surface":"nest","item":"20261110-research-stop-and-hide/v1"}}

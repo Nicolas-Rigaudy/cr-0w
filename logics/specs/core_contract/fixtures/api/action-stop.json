@@ -1,0 +1,39 @@
+{
+  "id": "20261110-research-running-now",
+  "kind": "research",
+  "batch": null,
+  "scope": "personal",
+  "data_class": "personal",
+  "project": "demo",
+  "goal": "Compare push providers.",
+  "end_state": "A report with one recommendation.",
+  "autonomy": "auto",
+  "gates": [],
+  "state": "running",
+  "runs": [
+    {
+      "run": "f6a7b8c9",
+      "mission": "20261110-research-running-now",
+      "account": "main",
+      "version": 1,
+      "cold": true,
+      "started": "2026-11-10T08:05:01+01:00",
+      "ended": null,
+      "cause": null,
+      "exit": null
+    }
+  ],
+  "version": 0,
+  "validation": null,
+  "file_scope": [],
+  "budget": {
+    "time_min": 60,
+    "budget_usd": 5,
+    "resumes": 2
+  },
+  "branch": null,
+  "worktree": null,
+  "mr": null,
+  "created": "2026-11-10T08:00:00+01:00",
+  "updated": "2026-11-10T09:00:00Z"
+}

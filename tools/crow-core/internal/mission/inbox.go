@@ -9,7 +9,6 @@ package mission
 // or to its end state.
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -119,13 +118,13 @@ func (env Env) findItem(ref string, all bool) (contract.InboxItem, error) {
 	case 1:
 		return hits[0], nil
 	case 0:
-		return contract.InboxItem{}, fmt.Errorf("no inbox item %q", ref)
+		return contract.InboxItem{}, failf(ErrNotFound, "no inbox item %q", ref)
 	}
 	ids := make([]string, len(hits))
 	for i, it := range hits {
 		ids[i] = it.ID
 	}
-	return contract.InboxItem{}, fmt.Errorf("%q matches %d items: %s", ref, len(hits), strings.Join(ids, ", "))
+	return contract.InboxItem{}, failf(ErrInvalid, "%q matches %d items: %s", ref, len(hits), strings.Join(ids, ", "))
 }
 
 // ItemDetail is what `crow inbox show` prints.
@@ -199,13 +198,13 @@ func (env Env) InboxReply(ref string, r Reply) (InboxAnswer, error) {
 		return res, err
 	}
 	if it.State != "open" {
-		return res, fmt.Errorf("%s is %s", it.ID, it.State)
+		return res, failf(ErrConflict, "%s is %s", it.ID, it.State)
 	}
 	if !slices.Contains(it.Verbs, r.Verb) {
-		return res, fmt.Errorf("%s (%s): verb %q, want one of %v", it.ID, it.Type, r.Verb, it.Verbs)
+		return res, failf(ErrInvalid, "%s (%s): verb %q, want one of %v", it.ID, it.Type, r.Verb, it.Verbs)
 	}
-	if !slices.Contains(surfaces, r.Surface) {
-		return res, fmt.Errorf("surface %q: want one of %v", r.Surface, surfaces)
+	if err := checkSurface(r.Surface); err != nil {
+		return res, err
 	}
 	if slices.Contains(validating, r.Verb) {
 		open, err := env.Inbox(false)
@@ -215,13 +214,16 @@ func (env Env) InboxReply(ref string, r Reply) (InboxAnswer, error) {
 		for _, o := range open {
 			if o.Mission == it.Mission && o.Source == "questions" && o.Blocking {
 				q := o.ID[strings.LastIndex(o.ID, "/")+1:]
-				return res, fmt.Errorf("%s: blocking question %s is open; answer %s first", it.ID, q, o.ID)
+				return res, failf(ErrConflict, "%s: blocking question %s is open; answer %s first", it.ID, q, o.ID)
 			}
 		}
 	}
 	m, err := env.find(it.Mission)
 	if err != nil {
 		return res, err
+	}
+	if r.Version != 0 && r.Version != m.Version {
+		return res, failf(ErrConflict, "%s: answered from v%d, the mission is at v%d", it.ID, r.Version, m.Version)
 	}
 	if it.Source == "questions" {
 		return env.answerQuestion(m, it, r)
@@ -234,11 +236,11 @@ func (env Env) InboxReply(ref string, r Reply) (InboxAnswer, error) {
 func (env Env) answerQuestion(m contract.Mission, it contract.InboxItem, r Reply) (InboxAnswer, error) {
 	res := InboxAnswer{Item: it.ID, Verb: r.Verb, File: AnswersFile(it.Version), Validations: []string{}, Dropped: []string{}}
 	if m.State != "waiting" && m.State != "running" {
-		return res, fmt.Errorf("%s is %s; a question is answered while the mission waits or runs", m.ID, m.State)
+		return res, failf(ErrConflict, "%s is %s; a question is answered while the mission waits or runs", m.ID, m.State)
 	}
 	words := strings.Join(strings.Fields(strings.Join(r.Words, " ")), " ")
 	if words == "" {
-		return res, fmt.Errorf("%s: an answer needs words", it.ID)
+		return res, failf(ErrInvalid, "%s: an answer needs words", it.ID)
 	}
 	qid := it.ID[strings.LastIndex(it.ID, "/")+1:]
 	dir := filepath.Join(env.Store.Root(), m.ID)
@@ -279,11 +281,11 @@ func (env Env) answerGate(m contract.Mission, it contract.InboxItem, r Reply) (I
 	res := InboxAnswer{Item: it.ID, Verb: r.Verb}
 	fyi := it.Type == "fyi"
 	if fyi && m.State != "done" || !fyi && m.State != "review" {
-		return res, fmt.Errorf("%s is %s; %s waits on a mission in %s", m.ID, m.State, it.ID,
+		return res, failf(ErrConflict, "%s is %s; %s waits on a mission in %s", m.ID, m.State, it.ID,
 			map[bool]string{true: "done", false: "review"}[fyi])
 	}
 	if m.Version != it.Version {
-		return res, fmt.Errorf("%s: the mission is at v%d", it.ID, m.Version)
+		return res, failf(ErrConflict, "%s: the mission is at v%d", it.ID, m.Version)
 	}
 	item := it.ID
 	a, err := env.reply(m, r, &item)
@@ -320,7 +322,7 @@ func (env Env) laterGate(m contract.Mission, source string) bool {
 
 func (env Env) moveAfter(m contract.Mission, res InboxAnswer, to, reason string) (InboxAnswer, error) {
 	if !contract.CanMove(m.State, to) {
-		return res, fmt.Errorf("%s: no move %s -> %s", m.ID, m.State, to)
+		return res, failf(ErrConflict, "%s: no move %s -> %s", m.ID, m.State, to)
 	}
 	ts := env.Now().Format(time.RFC3339)
 	if err := env.append(m.ID, "owner", "state", ts, contract.StateData{From: m.State, To: to, Reason: &reason}); err != nil {

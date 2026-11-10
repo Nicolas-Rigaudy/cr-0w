@@ -1,14 +1,14 @@
 ## item_147_core_action_endpoints_for_dispatch_answer_stop_cancel_and_hide - Core action endpoints for dispatch answer stop cancel and hide
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 18%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-10 16:17:33
+> Indicators reviewed: 2026-11-10 20:00:55
 
 # AI Context
 - Summary: core action endpoints: dispatch a mission, answer an inbox item (verb, text, attachments, mission version), stop, cancel and hide. Same rules as the `crow mission` and `crow inbox` CLIs, which call shared Go code.

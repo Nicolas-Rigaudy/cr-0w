@@ -29,10 +29,10 @@ func stopRun(engine string) func(string) error {
 	}
 }
 
-// missionCmd runs `mission new|list|show|cancel`.
+// missionCmd runs `mission new|list|show|stop|cancel|brief`.
 func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 	if len(args) == 0 {
-		return fmt.Errorf("mission: want new, list, show, cancel or brief")
+		return fmt.Errorf("mission: want new, list, show, stop, cancel or brief")
 	}
 	sub, args := args[0], args[1:]
 	fs := flag.NewFlagSet("mission "+sub, flag.ContinueOnError)
@@ -55,7 +55,7 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 		fs.StringVar(&reason, "reason", "", "why the mission stops")
 	case "brief":
 		fs.BoolVar(&write, "write", false, "write brief.md in the mission dir instead of printing it")
-	case "list", "show":
+	case "list", "show", "stop":
 	default:
 		return fmt.Errorf("mission: unknown subcommand %q", sub)
 	}
@@ -73,7 +73,7 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 	}
 	var ref string
 	switch sub {
-	case "show", "cancel", "brief":
+	case "show", "stop", "cancel", "brief":
 		if len(pos) != 1 {
 			return fmt.Errorf("mission %s: want one mission id", sub)
 		}
@@ -123,6 +123,12 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 			return err
 		}
 		return printMission(stdout, m, *asJSON)
+	case "stop":
+		m, err := env.Stop(ref, "cli")
+		if err != nil {
+			return err
+		}
+		return printMission(stdout, m, *asJSON)
 	case "brief":
 		dir, in, err := env.Brief(ref)
 		if err != nil {
@@ -138,7 +144,7 @@ func missionCmd(env mission.Env, args []string, stdout io.Writer) error {
 		fmt.Fprintln(stdout, filepath.Join(dir, "brief.md"))
 		return nil
 	default: // cancel
-		m, err := env.Cancel(ref, reason, func(s string) { fmt.Fprintln(os.Stderr, "crow-core: warning:", s) })
+		m, err := env.Cancel(ref, reason, "cli", func(s string) { fmt.Fprintln(os.Stderr, "crow-core: warning:", s) })
 		if err != nil {
 			return err
 		}

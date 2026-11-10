@@ -216,14 +216,14 @@ func TestCancelStopsTheLiveRun(t *testing.T) {
 	var stopped []string
 	env.StopRun = func(r string) error { stopped = append(stopped, r); return errors.New("no live process") }
 	var warned []string
-	m, err = env.Cancel(m.ID, "changed my mind", func(s string) { warned = append(warned, s) })
+	m, err = env.Cancel(m.ID, "changed my mind", "cli", func(s string) { warned = append(warned, s) })
 	if err != nil {
 		t.Fatal(err)
 	}
 	if m.State != "cancelled" || !slices.Equal(stopped, []string{"a1b2c3d4"}) || len(warned) != 1 {
 		t.Errorf("state %s, stopped %v, warned %v", m.State, stopped, warned)
 	}
-	_, err = env.Cancel(m.ID, "", func(string) {})
+	_, err = env.Cancel(m.ID, "", "cli", func(string) {})
 	if err == nil || !strings.Contains(err.Error(), "is cancelled") {
 		t.Errorf("second cancel: %v", err)
 	}
@@ -235,7 +235,7 @@ func TestCancelQueuedNeedsNoStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err = env.Cancel(m.ID, "", func(string) {})
+	m, err = env.Cancel(m.ID, "", "cli", func(string) {})
 	if err != nil || m.State != "cancelled" {
 		t.Errorf("cancel queued: %s %v", m.State, err)
 	}

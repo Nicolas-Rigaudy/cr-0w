@@ -236,3 +236,28 @@ def test_api_events_fixture():
 def test_api_error_fixture(path):
     body = load(path)
     assert list(body) == ["error"] and body["error"]
+
+
+# HTTP actions (item_147): request fixtures feed the Go tests; the replies they write
+# must match the record schemas.
+ACTION_MISSIONS = ("action-dispatch", "action-stop", "action-cancel")
+
+
+def test_api_action_fixture_set():
+    names = {p.stem for p in API_FIXTURES}
+    for want in (*ACTION_MISSIONS, "action-answer", "action-hide", "error-answer-stale"):
+        assert want in names, want
+    assert {p.stem for p in (API / "requests").glob("*.json")} == {"dispatch", "answer", "answer-stale", "cancel"}
+
+
+@pytest.mark.parametrize("name", ACTION_MISSIONS)
+def test_api_action_mission_fixture(name):
+    assert not errors("mission.schema.json", load(API / f"{name}.json"))
+
+
+def test_api_action_hide_and_answer_fixtures():
+    hidden = load(API / "action-hide.json")
+    assert not errors("inbox.schema.json", hidden) and hidden["state"] == "dropped"
+    ans = load(API / "action-answer.json")
+    assert set(ans) == {"item", "verb", "file", "points", "state", "validations", "dropped"}
+    assert ans["state"] == "queued" and ans["file"] == "answers.v1.md"

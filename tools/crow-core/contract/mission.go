@@ -183,6 +183,16 @@ type PublishData struct {
 	Detail       *string `json:"detail,omitempty"`
 }
 
+// ActionData is an owner action without a file of its own (item_147): stop or cancel a
+// mission, hide an inbox row. It records where the owner acted.
+type ActionData struct {
+	Action  string  `json:"action"`
+	Surface string  `json:"surface"`
+	Item    *string `json:"item,omitempty"`
+	Run     *string `json:"run,omitempty"`
+	Reason  *string `json:"reason,omitempty"`
+}
+
 type IncidentData struct {
 	Cause  string  `json:"cause"`
 	Detail *string `json:"detail,omitempty"`
@@ -201,6 +211,7 @@ var EventTypes = map[string]func() any{
 	"validation_dropped": func() any { return &ValidationData{} },
 	"publish":            func() any { return &PublishData{} },
 	"incident":           func() any { return &IncidentData{} },
+	"action":             func() any { return &ActionData{} },
 }
 
 // DecodeEventData decodes the data of an event into the struct of its type.

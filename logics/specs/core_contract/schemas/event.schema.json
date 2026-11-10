@@ -10,7 +10,7 @@
     "ts": {"type": "string", "format": "date-time"},
     "mission": {"type": "string", "pattern": "^[0-9]{8}-[a-z-]+-[a-z0-9_!#@.-]+$"},
     "type": {"enum": ["created", "state", "run_start", "run_end", "gate", "question", "answer", "validation",
-                      "validation_dropped", "publish", "incident"]},
+                      "validation_dropped", "publish", "incident", "action"]},
     "actor": {"enum": ["owner", "core", "run"]},
     "data": {"type": "object"}
   },
@@ -36,7 +36,9 @@
     {"if": {"properties": {"type": {"const": "publish"}}, "required": ["type"]},
      "then": {"properties": {"data": {"$ref": "#/$defs/publish"}}}},
     {"if": {"properties": {"type": {"const": "incident"}}, "required": ["type"]},
-     "then": {"properties": {"data": {"$ref": "#/$defs/incident"}}}}
+     "then": {"properties": {"data": {"$ref": "#/$defs/incident"}}}},
+    {"if": {"properties": {"type": {"const": "action"}}, "required": ["type"]},
+     "then": {"properties": {"actor": {"const": "owner"}, "data": {"$ref": "#/$defs/action"}}}}
   ],
   "$defs": {
     "created": {
@@ -132,6 +134,19 @@
         "result": {"enum": ["ok", "failed"]},
         "validation_ts": {"type": "string"},
         "detail": {"type": "string"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "surface"],
+      "description": "An owner action without a file of its own (item_147).",
+      "properties": {
+        "action": {"enum": ["stop", "cancel", "hide"]},
+        "surface": {"$ref": "#/$defs/surface"},
+        "item": {"type": "string", "description": "Inbox row id, for hide."},
+        "run": {"type": "string", "description": "cdx run id, for stop."},
+        "reason": {"type": "string"}
       }
     },
     "incident": {

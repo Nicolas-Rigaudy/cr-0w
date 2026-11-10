@@ -11,17 +11,17 @@ import (
 	"crow-core/internal/mission"
 )
 
-// inboxCmd runs `inbox list|show|answer`.
+// inboxCmd runs `inbox list|show|answer|hide`.
 func inboxCmd(env mission.Env, args []string, stdout io.Writer) error {
 	if len(args) == 0 {
-		return fmt.Errorf("inbox: want list, show or answer")
+		return fmt.Errorf("inbox: want list, show, answer or hide")
 	}
 	sub, args := args[0], args[1:]
 	fs := flag.NewFlagSet("inbox "+sub, flag.ContinueOnError)
 	asJSON := fs.Bool("json", false, "print JSON")
 	all := fs.Bool("all", false, "list answered and dropped items too")
 	switch sub {
-	case "list", "show", "answer":
+	case "list", "show", "answer", "hide":
 	default:
 		return fmt.Errorf("inbox: unknown subcommand %q", sub)
 	}
@@ -80,6 +80,19 @@ func inboxCmd(env mission.Env, args []string, stdout io.Writer) error {
 			return printJSON(stdout, d)
 		}
 		printItem(stdout, d)
+		return nil
+	case "hide":
+		if len(pos) != 1 {
+			return fmt.Errorf("inbox hide: want one item id")
+		}
+		it, err := env.Hide(pos[0], "cli")
+		if err != nil {
+			return err
+		}
+		if *asJSON {
+			return printJSON(stdout, it)
+		}
+		fmt.Fprintf(stdout, "%s  %s\n", it.ID, it.State)
 		return nil
 	default: // answer
 		if len(pos) < 2 {

@@ -6,7 +6,6 @@ package mission
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -128,11 +127,11 @@ func slug(goal string) string {
 func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 	var d contract.CreatedData
 	if s.Goal == "" || s.EndState == "" {
-		return "", d, errors.New("a mission needs a goal and an end state")
+		return "", d, failf(ErrInvalid, "a mission needs a goal and an end state")
 	}
 	k, err := env.Kinds(s.Kind)
 	if err == nil && k == nil {
-		err = fmt.Errorf("unknown kind %q (valid: %s)", s.Kind, strings.Join(KindNames(env.KindDirs), ", "))
+		err = failf(ErrInvalid, "unknown kind %q (valid: %s)", s.Kind, strings.Join(KindNames(env.KindDirs), ", "))
 	}
 	if err != nil {
 		return "", d, err
@@ -143,7 +142,7 @@ func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 	}
 	p, err := findProject(ps, s.Project)
 	if err != nil {
-		return "", d, err
+		return "", d, failf(ErrInvalid, "%v", err)
 	}
 
 	scope := p.Scope
@@ -151,7 +150,7 @@ func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 		scope = s.Scope
 	}
 	if !slices.Contains(k.Scopes, scope) {
-		return "", d, fmt.Errorf("kind %s does not run in scope %q (valid: %s)", k.Name, scope, strings.Join(k.Scopes, ", "))
+		return "", d, failf(ErrInvalid, "kind %s does not run in scope %q (valid: %s)", k.Name, scope, strings.Join(k.Scopes, ", "))
 	}
 	dataClass := s.DataClass
 	if dataClass == "" {
@@ -162,7 +161,7 @@ func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 		classes = *k.DataClasses
 	}
 	if !slices.Contains(classes, dataClass) {
-		return "", d, fmt.Errorf("kind %s does not take data class %q (valid: %s)", k.Name, dataClass, strings.Join(classes, ", "))
+		return "", d, failf(ErrInvalid, "kind %s does not take data class %q (valid: %s)", k.Name, dataClass, strings.Join(classes, ", "))
 	}
 
 	gates, autonomy := slices.Clone(k.Gates), k.Autonomy
@@ -181,14 +180,14 @@ func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 	}
 	for _, g := range gates {
 		if !slices.Contains([]string{"plan", "report", "mockup"}, g) {
-			return "", d, fmt.Errorf("unknown gate %q (valid: plan, report, mockup)", g)
+			return "", d, failf(ErrInvalid, "unknown gate %q (valid: plan, report, mockup)", g)
 		}
 	}
 	if s.Autonomy != "" {
 		autonomy = s.Autonomy
 	}
 	if !slices.Contains([]string{"ask", "notify", "auto"}, autonomy) {
-		return "", d, fmt.Errorf("unknown autonomy %q (valid: ask, notify, auto)", autonomy)
+		return "", d, failf(ErrInvalid, "unknown autonomy %q (valid: ask, notify, auto)", autonomy)
 	}
 	if gates == nil {
 		gates = []string{}
@@ -199,7 +198,7 @@ func (env Env) Resolve(s Spec) (string, contract.CreatedData, error) {
 		key = slug(s.Goal)
 	}
 	if ok, _ := regexp.MatchString(k.Key.Pattern, key); !ok {
-		return "", d, fmt.Errorf("key %q does not match the %s key pattern %s; give one with --key", key, k.Name, k.Key.Pattern)
+		return "", d, failf(ErrInvalid, "key %q does not match the %s key pattern %s; give one with --key", key, k.Name, k.Key.Pattern)
 	}
 	id := env.Now().Format("20060102") + "-" + k.Name + "-" + strings.ToLower(key)
 	if err := eventlog.ValidMission(id); err != nil {
@@ -229,7 +228,7 @@ func (env Env) New(s Spec) (contract.Mission, error) {
 		return contract.Mission{}, err
 	}
 	if _, err := env.find(id); err == nil {
-		return contract.Mission{}, fmt.Errorf("mission %s exists; give another --key", id)
+		return contract.Mission{}, failf(ErrConflict, "mission %s exists; give another --key", id)
 	}
 	ts := env.Now().Format(time.RFC3339)
 	if err := env.append(id, "owner", "created", ts, d); err != nil {
@@ -282,24 +281,28 @@ func (env Env) find(ref string) (contract.Mission, error) {
 		return hits[0], nil
 	}
 	if len(hits) == 0 {
-		return contract.Mission{}, fmt.Errorf("no mission %q", ref)
+		return contract.Mission{}, failf(ErrNotFound, "no mission %q", ref)
 	}
 	var ids []string
 	for _, m := range hits {
 		ids = append(ids, m.ID)
 	}
-	return contract.Mission{}, fmt.Errorf("%q matches %d missions: %s", ref, len(hits), strings.Join(ids, ", "))
+	return contract.Mission{}, failf(ErrInvalid, "%q matches %d missions: %s", ref, len(hits), strings.Join(ids, ", "))
 }
 
 // Cancel moves a mission to cancelled. A running mission has its live run stopped first;
-// a run that is already gone is reported in warn and the cancel goes on.
-func (env Env) Cancel(ref, reason string, warn func(string)) (contract.Mission, error) {
+// a run that is already gone is reported in warn and the cancel goes on. An action event
+// records the surface the owner cancelled from.
+func (env Env) Cancel(ref, reason, surface string, warn func(string)) (contract.Mission, error) {
 	m, err := env.find(ref)
 	if err != nil {
 		return m, err
 	}
+	if err := checkSurface(surface); err != nil {
+		return m, err
+	}
 	if !contract.CanMove(m.State, "cancelled") {
-		return m, fmt.Errorf("%s is %s and cannot be cancelled", m.ID, m.State)
+		return m, failf(ErrConflict, "%s is %s and cannot be cancelled", m.ID, m.State)
 	}
 	if m.State == "running" {
 		for _, r := range m.Runs {
@@ -314,11 +317,16 @@ func (env Env) Cancel(ref, reason string, warn func(string)) (contract.Mission, 
 			}
 		}
 	}
+	ts := env.Now().Format(time.RFC3339)
 	sd := contract.StateData{From: m.State, To: "cancelled"}
+	ad := contract.ActionData{Action: "cancel", Surface: surface}
 	if reason != "" {
-		sd.Reason = &reason
+		sd.Reason, ad.Reason = &reason, &reason
 	}
-	if err := env.append(m.ID, "owner", "state", env.Now().Format(time.RFC3339), sd); err != nil {
+	if err := env.append(m.ID, "owner", "action", ts, ad); err != nil {
+		return m, err
+	}
+	if err := env.append(m.ID, "owner", "state", ts, sd); err != nil {
 		return m, err
 	}
 	return env.find(m.ID)

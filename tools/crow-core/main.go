@@ -29,12 +29,14 @@ const usage = `usage: crow-core <command>
               [--data-class D] [--gates a,b] [--autonomy A] [--json]
   mission list [--json]
   mission show <id|prefix> [--json]
+  mission stop <id|prefix> [--json]    stop the live run of a running mission
   mission cancel <id|prefix> [--reason R] [--json]
   mission brief <id|prefix> [--write]   print the brief a run reads first, or write brief.md
   inbox list [--json] [--all]           open items, oldest first (--all: answered too)
   inbox show <item|prefix> [--json]     block summary, questions, options and artifacts
   inbox answer <item|prefix> <verb> [words] [--json]
                     answer with a gate verb, or with plain words for a question
+  inbox hide <item|prefix> [--json]     drop an open item without answering it
   tick [--json]     finish the mission runs that ended, then start queued missions through
                     crow-runs (oldest first, CROW_MAX_RUNS at once, default 2)
   serve             run the HTTP service: /api read routes and the Nest app, on the loopback
