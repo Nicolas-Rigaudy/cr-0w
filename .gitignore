@@ -17,3 +17,4 @@ logics/.cache/
 vendor/
 tools/nest/node_modules/
 tools/nest/dist/
+tools/nest/*.tsbuildinfo

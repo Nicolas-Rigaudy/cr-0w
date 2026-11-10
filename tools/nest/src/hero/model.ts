@@ -22,17 +22,18 @@ export interface HeroModel {
 const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
 const word = (n: number) => WORDS[n] ?? String(n)
 
-export function moodOf(c: Record<UiState, number>, asks: number): Mood {
-  if (asks > 0 || c.needs > 0) return 'ask'
-  if (c.failed > 0) return 'fail'
+// The face follows the work, not the asks: the front planets and the chip carry the asks.
+// Running work keeps the pass 7 grab pose; a failure braces only when nothing runs.
+export function moodOf(c: Record<UiState, number>): Mood {
   if (c.working > 0) return 'run'
+  if (c.failed > 0) return 'fail'
   return 'idle'
 }
 
 export function heroModel(missions: Mission[], inbox: InboxItem[]): HeroModel {
   const c = countByState(missions, inbox)
   const asks = openInbox(inbox).filter((r) => r.type !== 'fyi').length
-  const mood = moodOf(c, asks)
+  const mood = moodOf(c)
 
   const byProject = new Map<string, HeroMission[]>()
   for (const m of missions) {
