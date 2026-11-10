@@ -1,14 +1,14 @@
-import { useSnapshot } from './data/useData'
+import { useFeed } from './data/useData'
 import { match, usePath } from './router'
 import { Home } from './screens/Home'
 import { Inbox } from './screens/Inbox'
+import { Desk } from './screens/Desk'
 import { MissionDetail } from './screens/MissionDetail'
 import { Missions } from './screens/Missions'
 import { Placeholder } from './screens/Placeholder'
 import { Shell } from './ui/Shell'
 
 const LATER: Record<string, [string, string]> = {
-  desk: ['Desk', 'Live run terminals arrive with the run stream in a later slice.'],
   mrs: ['MRs', 'Merge requests arrive with the live API.'],
   agenda: ['Agenda', 'The calendar arrives with the live API.'],
   reports: ['Reports', 'Reports arrive with the live API.'],
@@ -17,7 +17,7 @@ const LATER: Record<string, [string, string]> = {
 
 export function App() {
   const route = match(usePath())
-  const snap = useSnapshot()
+  const [snap, refresh] = useFeed()
   const active = route.tab === 'mission' ? 'missions' : route.tab === 'missing' ? 'home' : route.tab
   let body = null
   if (snap) {
@@ -25,6 +25,7 @@ export function App() {
     else if (route.tab === 'missions') body = <Missions snap={snap} />
     else if (route.tab === 'mission') body = <MissionDetail snap={snap} id={route.id} />
     else if (route.tab === 'inbox') body = <Inbox snap={snap} />
+    else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else body = <Placeholder name={LATER[route.tab][0]} note={LATER[route.tab][1]} />
   }
   return <Shell active={active} snap={snap}>{body}</Shell>

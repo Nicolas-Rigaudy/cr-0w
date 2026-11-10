@@ -1,3 +1,4 @@
+import type { Actions, LiveReply } from './live'
 import type { DataSource } from './source'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
 
@@ -27,7 +28,11 @@ type Fetch = (input: string, init?: RequestInit) => Promise<Response>
 
 async function failure(res: Response): Promise<ApiError> {
   let msg = res.statusText
-  try { msg = ((await res.json()) as { error?: string }).error ?? msg } catch { /* body not JSON */ }
+  // Guard and lookup errors carry {error}; refused live actions carry their event {message}.
+  try {
+    const b = (await res.json()) as { error?: string; message?: string }
+    msg = b.error ?? b.message ?? msg
+  } catch { /* body not JSON */ }
   return new ApiError(res.status, msg)
 }
 
@@ -65,6 +70,31 @@ export function agendaOf(today: SectionBody): AgendaEvent[] {
     .map((e) => ({ id: `${e.start} ${e.subject}`, title: e.subject, start: e.start, end: e.end }))
 }
 
+// Live actions: same-origin POSTs with the CSRF header core requires (adr_001).
+export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, init)): Actions {
+  const post = async (path: string, body?: unknown): Promise<LiveReply> => {
+    const res = await get(`${base}${path}`, {
+      method: 'POST',
+      headers: { 'X-Crow': '1', 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: 'no-store',
+    })
+    if (!res.ok) throw await failure(res)
+    return (await res.json()) as LiveReply
+  }
+  const id = encodeURIComponent
+  return {
+    send: (pid, text) => post(`/sessions/${pid}/send`, { text }),
+    interrupt: (pid) => post(`/sessions/${pid}/interrupt`),
+    stop: (pid) => post(`/sessions/${pid}/stop`),
+    resume: (conv, account) => post(`/sessions/${id(conv)}/resume`, account ? { account } : undefined),
+    start: (s) => post('/sessions', s),
+    dispatch: (r) => post('/dispatch', r),
+    stopRun: (run) => post(`/dispatch/${id(run)}/stop`),
+    mail: (mail, verb) => post(`/today/${id(mail)}/${verb}`),
+  }
+}
+
 export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init)): DataSource {
   const missions = records<Mission>(get, `${base}/state/missions`)
   // all=1 keeps answered asks, which mission detail lists as history.
@@ -93,6 +123,7 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
       if (body !== today) [today, agenda] = [body, agendaOf(body)]
       return agenda
     },
+    actions: apiActions(base, get),
     now: () => new Date(),
     poll: 5000,
   }

@@ -16,6 +16,7 @@ const SCREENS = {
   missions: '/missions',
   detail: '/missions/20261109-build-inbox-filters',
   inbox: '/inbox',
+  desk: '/desk',
 }
 
 const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' })

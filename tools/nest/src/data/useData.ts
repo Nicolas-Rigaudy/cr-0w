@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { feed, type Snapshot } from './feed'
 import type { DataSource } from './source'
 
@@ -12,14 +12,19 @@ export function useSource() {
   return src
 }
 
+export const useSnapshot = (): Snapshot | null => useFeed()[0]
+
 // Loads every section, then polls while the page is visible when the source asks
-// for it. Hidden pages stop polling and refetch everything on return.
-export function useSnapshot(): Snapshot | null {
+// for it. Hidden pages stop polling and refetch everything on return. The second
+// value refetches at once (after a live action).
+export function useFeed(): [Snapshot | null, () => Promise<void>] {
   const src = useSource()
   const [snap, setSnap] = useState<Snapshot | null>(null)
+  const now = useRef<() => Promise<void>>(async () => {})
   useEffect(() => {
     let live = true
     const refresh = feed(src, (s) => { if (live) setSnap(s) })
+    now.current = refresh
     void refresh()
     if (!src.poll) return () => { live = false }
     let timer: ReturnType<typeof setInterval> | undefined
@@ -38,5 +43,5 @@ export function useSnapshot(): Snapshot | null {
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [src])
-  return snap
+  return [snap, useCallback(() => now.current(), [])]
 }

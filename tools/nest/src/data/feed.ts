@@ -27,29 +27,30 @@ async function readSections(src: DataSource, prev: Record<SectionName, SectionBo
 }
 
 // A feed refreshes every section of a source and emits a new snapshot only when
-// a section body, the link state or the clock minute changed.
+// a section body, the link state or the clock minute changed. A call during a
+// refresh waits for it and runs once more, so a refetch after an action never
+// returns data read before the action.
 export function feed(src: DataSource, emit: (s: Snapshot) => void) {
   let snap: Snapshot | null = null
   let ok: Date | null = null
-  let busy = false
-  return async function refresh() {
-    if (busy) return
-    busy = true
+  let running: Promise<void> | null = null
+  let again: Promise<void> | null = null
+  return function refresh(): Promise<void> {
+    if (running) return (again ??= running.then(() => { again = null; return refresh() }))
+    return (running = once().finally(() => { running = null }))
+  }
+  async function once() {
+    const now = src.now()
+    const same = snap !== null && minute(snap.now) === minute(now)
     try {
-      const now = src.now()
-      const same = snap !== null && minute(snap.now) === minute(now)
-      try {
-        const [missions, inbox, agenda, sections] = await Promise.all([src.missions(), src.inbox(), src.agenda(), readSections(src, snap?.sections)])
-        ok = now
-        if (same && !snap!.down && snap!.missions === missions && snap!.inbox === inbox && snap!.agenda === agenda && snap!.sections === sections) return
-        snap = { missions, inbox, agenda, sections, now, synced: now, down: false }
-      } catch {
-        if (same && snap!.down) return
-        snap = { ...(snap ?? { missions: [], inbox: [], agenda: [], sections: NO_SECTIONS }), now, synced: ok, down: true }
-      }
-      emit(snap)
-    } finally {
-      busy = false
+      const [missions, inbox, agenda, sections] = await Promise.all([src.missions(), src.inbox(), src.agenda(), readSections(src, snap?.sections)])
+      ok = now
+      if (same && !snap!.down && snap!.missions === missions && snap!.inbox === inbox && snap!.agenda === agenda && snap!.sections === sections) return
+      snap = { missions, inbox, agenda, sections, now, synced: now, down: false }
+    } catch {
+      if (same && snap!.down) return
+      snap = { ...(snap ?? { missions: [], inbox: [], agenda: [], sections: NO_SECTIONS }), now, synced: ok, down: true }
     }
+    emit(snap)
   }
 }

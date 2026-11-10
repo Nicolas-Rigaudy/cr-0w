@@ -1,0 +1,24 @@
+{
+  "dispatch": {
+    "slots": { "busy": 1, "max": 2 },
+    "agents": [
+      { "kind": "session", "pid": 4242, "account": "main", "project": "cr-0w", "cwd": "/src/cr-0w", "session_id": "s-hub", "run_id": null, "label": null, "title": "cr-0w: live actions", "state": "working", "started_at": "2026-11-09T15:58:00+01:00", "last_action": "Bash: Run the Go tests", "last_prompt": "go on with the Nest part" },
+      { "kind": "session", "pid": 5151, "account": "work", "project": "nest", "cwd": "/src/nest", "session_id": "s-nest", "run_id": null, "label": null, "title": "nest: home screen", "state": "waiting", "started_at": "2026-11-09T15:30:00+01:00", "last_action": "AskUserQuestion", "last_prompt": "build the home screen" },
+      { "kind": "session", "pid": 6161, "account": "main", "project": "website", "cwd": "/src/website", "session_id": "s-web", "run_id": null, "label": null, "title": "website: footer links", "state": "idle", "started_at": "2026-11-09T14:02:00+01:00", "last_action": "says: Done, the links point to the new pages.", "last_prompt": "fix the footer links" },
+      { "kind": "run", "pid": 7171, "account": "work", "project": "cr-0w", "cwd": "/src/cr-0w.wt/flaky-test", "session_id": "s-run", "run_id": "a1b2c3d4", "label": "flaky-test", "title": "Fix the flaky test", "state": "working", "started_at": "2026-11-09T16:06:00+01:00", "last_action": "Edit: tests/test_runs.py", "last_prompt": null }
+    ],
+    "finished": []
+  },
+  "sessions": {
+    "sessions": [
+      { "conversation_id": "c0ffee00-0000-4000-8000-000000000001", "account": "work", "cwd": "/src/infra", "project": "infra", "branch": "main", "limit": "five_hour", "resets_at": "2026-11-09T17:00:00+01:00", "last_prompt": "plan the backup job" }
+    ]
+  },
+  "today": {
+    "important": [{ "id": "mail-1", "subject": "Contract renewal", "from": "Legal" }],
+    "flagged": [{ "id": "mail-2", "subject": "Invoice to check", "from": "Accounting" }],
+    "events": []
+  },
+  "projects": { "projects": [{ "name": "cr-0w" }, { "name": "demo" }, { "name": "nest" }, { "name": "website" }] },
+  "accounts": { "default": "main", "accounts": [{ "name": "main", "policy": "use" }, { "name": "work", "policy": "ask-first" }, { "name": "locked", "policy": "never" }] }
+}

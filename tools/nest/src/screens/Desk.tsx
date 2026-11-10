@@ -1,0 +1,523 @@
+import { useRef, useState, type ReactNode } from 'react'
+import { ApiError } from '../data/api'
+import { accountsOf, dispatchOf, mailOf, projectsOf, resumableOf, type Agent, type LiveReply, type Resumable } from '../data/live'
+import { useSource, type Snapshot } from '../data/useData'
+import { ago, elapsed, time } from '../format'
+import { Sheet, type Confirm } from '../ui/Sheet'
+import { LAPTOP, useMedia } from '../ui/useMedia'
+
+// Desk (item_138 boards desk, fold-desk-inner, fold-desk-cover) on the live actions of
+// item_170. Every action goes through the confirm sheet, then the feed refetches.
+const MODELS = ['default', 'sonnet', 'opus', 'haiku']
+const INNER = '(min-width: 600px)'
+const LATER = 'Arrives with the live API'
+const nameOf = (a: Agent) => (a.kind === 'run' ? a.label || a.run_id || String(a.pid) : a.title || a.project)
+const waits = (a: Agent) => a.state === 'waiting'
+
+// ---- icons (board paths) ----
+const Ring = ({ dashed, c = 'c-w' }: { dashed?: boolean; c?: string }) => (
+  <svg className={c} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray={dashed ? '3 2.4' : undefined} />
+    {!dashed && <circle cx="8" cy="8" r="2.5" fill="currentColor" />}
+  </svg>
+)
+const Spin = () => (
+  <svg className="c-w" width="14" height="14" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+    <circle cx="11" cy="11" r="4" fill="currentColor" /><path d="M11 2a9 9 0 0 1 9 9" stroke="currentColor" strokeWidth="2" />
+  </svg>
+)
+const Diamond = ({ s = 12 }: { s?: number }) => (
+  <svg className="c-n" width={s} height={s} viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 15 8 8 15 1 8Z" fill="currentColor" /></svg>
+)
+const Play = () => (
+  <svg className="c-b" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3 13 8 5 13Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+)
+const Mail = () => (
+  <svg className="c-n" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1.5" /><path d="m2.5 4.5 5.5 4 5.5-4" /></svg>
+)
+const Mic = ({ s = 18 }: { s?: number }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+  </svg>
+)
+const Unfold = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <rect x="3" y="4" width="8" height="16" rx="2" /><path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M14 12h4m-2-2 2 2-2 2" />
+  </svg>
+)
+
+interface Line { t?: string; tool: string; text: string; says?: boolean }
+// Timeline of an agent from what the runs section carries: start, last prompt, last action.
+function linesOf(a: Agent, now: Date): Line[] {
+  const out: Line[] = []
+  if (a.started_at) out.push({ t: time(new Date(a.started_at)), tool: 'Start', text: `${a.project} · ${a.account} · ${ago(a.started_at, now)} ago` })
+  if (a.last_prompt) out.push({ tool: 'You', text: a.last_prompt })
+  if (a.last_action) {
+    const m = /^([\w-]+):\s*(.*)$/.exec(a.last_action)
+    const tool = m ? m[1] : a.last_action
+    const says = tool.toLowerCase() === 'says'
+    out.push({ tool: says ? 'Says' : tool, text: m ? m[2] : '', says })
+  }
+  return out
+}
+
+interface Msg { me?: boolean; text: string; f?: boolean }
+type Form = 'run' | 'session' | null
+
+// State and action builders shared by the three sizes.
+function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
+  const act = useSource().actions
+  const { slots, agents } = dispatchOf(snap.sections.dispatch)
+  const runs = agents.filter((a) => a.kind === 'run')
+  const sessions = agents.filter((a) => a.kind === 'session')
+  const resumable = resumableOf(snap.sections.sessions)
+  const mail = mailOf(snap.sections.today)
+  const projects = projectsOf(snap.sections.projects)
+  const accounts = accountsOf(snap.sections.accounts)
+
+  const [sheet, setSheet] = useState<Confirm | null>(null)
+  const [log, setLog] = useState<Msg[]>([])
+  const [sel, setSel] = useState<number | null>(null)
+  const [tell, setTell] = useState(false)
+  const [text, setText] = useState('')
+  const [ask, setAsk] = useState('')
+  const [form, setForm] = useState<Form>(null)
+  const [run, setRun] = useState({ project: '', label: '', model: 'default', prompt: '' })
+  const [start, setStart] = useState({ project: '', account: '', prompt: '' })
+
+  const picked = agents.find((a) => a.pid === sel) ?? runs[0] ?? sessions.find((a) => a.state === 'working') ?? agents[0]
+  const slotOf = (a: Agent) => (a.kind === 'run' ? `S${runs.indexOf(a) + 1}` : '')
+  const since = (a: Agent) => (a.started_at ? elapsed(a.started_at, snap.now) : '')
+
+  // Success closes the sheet and answers in the chat; a refusal stays in the sheet
+  // (thrown) and refetches when the view was stale (409).
+  const wrap = (said: string, call: () => Promise<LiveReply>, done?: () => void) => async () => {
+    try {
+      const r = await call()
+      setLog((l) => [...l, { me: true, text: said }, { text: r.message || `${r.action} ${r.target}`, f: !r.ok }])
+      done?.()
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) void refresh()
+      throw e
+    }
+    void refresh()
+  }
+  const where = (a: Agent) => `${a.project} (${a.account})`
+  const tgt = (a: Agent): Array<[string, string]> => [['session', nameOf(a)], ['account', a.account], ['pid', String(a.pid)]]
+
+  const send = (a: Agent) => setSheet({
+    title: 'Send to session', lead: `Type this answer into ${where(a)} and press enter:`, quote: text, target: tgt(a),
+    note: 'Lands in the open window, like typing it yourself.', ok: 'Send',
+    run: wrap(`Tell ${nameOf(a)}: ${text}`, () => act.send(a.pid, text), () => { setText(''); setTell(false) }),
+  })
+  const pause = (a: Agent) => setSheet({
+    title: 'Pause session', lead: `Interrupt the current turn of ${where(a)} (Escape in its window).`, target: tgt(a),
+    note: 'The session stays open and waits for you.', ok: 'Pause', run: wrap(`Pause ${nameOf(a)}`, () => act.interrupt(a.pid)),
+  })
+  const stop = (a: Agent) => setSheet(a.kind === 'run' && a.run_id
+    ? {
+      title: 'Stop run', lead: `Stop the run ${nameOf(a)} of ${a.project}.`, target: [['run', a.run_id], ['project', a.project], ['account', a.account]],
+      note: 'Tap again to confirm. Its commits stay on the run branch.', ok: 'Tap again to stop', danger: true,
+      run: wrap(`Stop ${nameOf(a)}`, () => act.stopRun(a.run_id!), () => setSel(null)),
+    }
+    : {
+      title: 'Stop session', lead: `End the claude session of ${a.project} (SIGTERM).`, target: tgt(a),
+      note: 'Tap again to confirm. The window closes; the conversation can be resumed.', ok: 'Tap again to stop', danger: true,
+      run: wrap(`Stop ${nameOf(a)}`, () => act.stop(a.pid), () => setSel(null)),
+    })
+  const dispatch = () => setSheet({
+    title: 'Start a run', lead: 'Opens a new run on a free allowed account. Nothing is pushed.', quote: run.prompt,
+    target: [['project', run.project], ['label', run.label], ['model', run.model], ['slots', `${slots.busy} of ${slots.max} busy`]],
+    note: 'The prompt above is sent as written.', ok: 'Start run',
+    run: wrap(`/dispatch ${run.project} ${run.label}`, () => act.dispatch({ project: run.project, label: run.label, prompt: run.prompt, model: run.model === 'default' ? undefined : run.model }),
+      () => { setRun({ project: '', label: '', model: 'default', prompt: '' }); setForm(null) }),
+  })
+  const open = () => setSheet({
+    title: 'New session', lead: `Opens a claude session on ${start.project} in a new window.`, quote: start.prompt || undefined,
+    target: [['project', start.project], ['account', start.account || 'default']],
+    note: 'Fails when that account is busy; nothing else is started.', ok: 'Open session',
+    run: wrap(`/session ${start.project}`, () => act.start({ project: start.project, account: start.account || undefined, prompt: start.prompt || undefined }),
+      () => { setStart({ project: '', account: '', prompt: '' }); setForm(null) }),
+  })
+  const resume = (r: Resumable) => setSheet({
+    title: 'Resume session', lead: `Reopens the conversation of ${r.project} in a new window.`,
+    target: [['project', r.project], ['account', r.account], ['id', r.conversation_id.slice(0, 8)]],
+    note: 'Same conversation, same account.', ok: 'Resume', run: wrap(`Resume ${r.project}`, () => act.resume(r.conversation_id, r.account)),
+  })
+  const flag = (id: string, subject: string, verb: 'done' | 'snooze') => setSheet({
+    title: verb === 'done' ? 'Mark done' : 'Snooze', lead: verb === 'done' ? 'Marks the Outlook flag as complete.' : 'Moves the Outlook flag to tomorrow.',
+    target: [['mail', subject]], note: 'Changes the Outlook flag only; nothing is sent.', ok: verb === 'done' ? 'Done' : 'Snooze',
+    run: wrap(`${verb === 'done' ? 'Done' : 'Snooze'}: ${subject}`, () => act.mail(id, verb)),
+  })
+  const pick = (a: Agent, talk = false) => { setSel(a.pid); setTell(talk) }
+
+  // The ask box: /dispatch and /session open their form; free chat waits for the hub API.
+  const submitAsk = () => {
+    const t = ask.trim()
+    if (!t) return
+    const [cmd, ...rest] = t.split(/\s+/)
+    if (cmd === '/dispatch' || cmd === '/session') {
+      const words = rest.join(' ')
+      const p = projects.find((x) => x === rest[0])
+      if (cmd === '/dispatch') setRun((r) => ({ ...r, project: p ?? r.project, prompt: (p ? rest.slice(1).join(' ') : words) || r.prompt }))
+      else setStart((s) => ({ ...s, project: p ?? s.project, prompt: (p ? rest.slice(1).join(' ') : words) || s.prompt }))
+      setForm(cmd === '/dispatch' ? 'run' : 'session')
+    } else {
+      setLog((l) => [...l, { me: true, text: t }, { text: `Free chat with CR-0W: ${LATER.toLowerCase()}. Use /dispatch or /session.` }])
+    }
+    setAsk('')
+  }
+
+  return {
+    snap, slots, agents, runs, sessions, resumable, mail, projects, accounts,
+    sheet, setSheet, log, picked, slotOf, since, pick, tell, setTell, text, setText, ask, setAsk, submitAsk,
+    form, setForm, run, setRun, start, setStart,
+    send, pause, stop, dispatch, open, resume, flag,
+  }
+}
+type D = ReturnType<typeof useDesk>
+
+// ---- shared pieces ----
+function Ph({ children, sm, id, className }: { children: ReactNode; sm?: ReactNode; id: string; className?: string }) {
+  return <h2 className={`ph${className ? ` ${className}` : ''}`} id={id}><span>{children}</span>{sm != null && <span className="sm">{sm}</span>}</h2>
+}
+
+function Later({ children = LATER }: { children?: ReactNode }) {
+  return <div className="sm later">{children}</div>
+}
+
+function TellBox({ d, a }: { d: D; a: Agent }) {
+  const ref = useRef<HTMLInputElement>(null)
+  return (
+    <form className="in tell" onSubmit={(e) => { e.preventDefault(); if (d.text.trim()) d.send(a) }}>
+      <input ref={ref} autoFocus className="f1" value={d.text} onChange={(e) => d.setText(e.target.value)}
+        placeholder={`Tell ${nameOf(a)}…`} aria-label={`Text for ${nameOf(a)}`} />
+      <button type="submit" className="btn p" disabled={!d.text.trim()}>Send</button>
+    </form>
+  )
+}
+
+function Slots({ d, ib }: { d: D; ib?: boolean }) {
+  const free = Math.max(0, d.slots.max - d.runs.length)
+  return (
+    <div className="list">
+      {d.runs.map((a) => (
+        <button type="button" key={a.pid} className={`row edge-w${a === d.picked ? ' on' : ''}`} aria-pressed={a === d.picked} onClick={() => d.pick(a)}>
+          {ib ? <Spin /> : <Ring />}<span className="sm c-w">{d.slotOf(a)}</span>
+          <span className="f1">{nameOf(a)}</span><span className="sm">{a.account}</span><span className="c-w num">{d.since(a)}</span>
+        </button>
+      ))}
+      {Array.from({ length: free }, (_, i) => (
+        <div key={`free${i}`} className="row q">
+          <Ring dashed c="c-q" /><span className="sm">S{d.runs.length + i + 1}</span><span className="f1 sm">free slot</span>
+        </div>
+      ))}
+      <div className="row q"><span className="grip" aria-hidden="true">⋮⋮</span><Ring dashed c="c-q" /><span className="f1 sm">Queue: {LATER.toLowerCase()}</span></div>
+    </div>
+  )
+}
+
+function Needs({ d, short }: { d: D; short?: boolean }) {
+  const waiting = d.sessions.filter(waits)
+  if (!waiting.length && !d.mail.length) return <div className="sm">Nothing waits on you.</div>
+  return (
+    <div className="list">
+      {waiting.map((a) => (
+        <div key={a.pid} className="row edge-n">
+          <Diamond s={short ? 13 : 12} /><span className="f1">{nameOf(a)}<span className="sm"> · {a.account}</span></span>
+          <button type="button" className="btn p" onClick={() => d.pick(a, true)}>Answer</button>
+        </div>
+      ))}
+      {d.mail.map((m) => (
+        <div key={m.id} className="row edge-n">
+          <Mail /><span className="f1">{m.subject}{m.from && <span className="sm"> · {m.from}</span>}</span>
+          <button type="button" className="btn" onClick={() => d.flag(m.id, m.subject, 'snooze')}>Snooze</button>
+          <button type="button" className="btn p" onClick={() => d.flag(m.id, m.subject, 'done')}>Done</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Ready({ d }: { d: D }) {
+  return (
+    <div className="list">
+      <div className="grp c-b">Resumable <span className="sm">{d.resumable.length}</span></div>
+      {d.resumable.length === 0 && <div className="sm">No conversation to resume.</div>}
+      {d.resumable.map((r) => (
+        <div key={r.conversation_id} className="row">
+          <Play /><span className="f1">{r.project}{r.last_prompt && <span className="sm"> · {r.last_prompt}</span>}</span>
+          <span className="sm">{r.account}</span>
+          <button type="button" className="ib p" title="Resume" aria-label={`Resume ${r.project}`} onClick={() => d.resume(r)}>▶</button>
+          <button type="button" className="ib" title={`Queue: ${LATER.toLowerCase()}`} aria-label={`Queue ${r.project}`} disabled>+</button>
+        </div>
+      ))}
+      <div className="grp c-m">Logics ready · suggested by CR-0W</div>
+      <Later />
+    </div>
+  )
+}
+
+function Timeline({ d, a, term }: { d: D; a: Agent; term?: boolean }) {
+  const lines = linesOf(a, d.snap.now)
+  if (term) {
+    return (
+      <div className="term">
+        {lines.map((l, i) => (
+          <div key={i}><span className={i === lines.length - 1 && a.state === 'working' ? 'c-w' : 'c-d'}>{i === lines.length - 1 && a.state === 'working' ? '›' : '✓'}</span>{' '}
+            <span className={l.says ? 'c-m' : 'c-b'}>{l.tool}</span> {l.text}</div>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="tls">
+      {lines.map((l, i) => (
+        <div key={i} className="tl"><b>{l.t ?? ''}</b><span className={`tool ${l.says ? 'c-m' : 'c-b'}`}>{l.tool}</span><span className="f1">{l.text}</span></div>
+      ))}
+    </div>
+  )
+}
+
+function Forms({ d }: { d: D }) {
+  if (d.form === 'run') {
+    const r = d.run
+    return (
+      <form className="form msg cr" onSubmit={(e) => { e.preventDefault(); d.dispatch() }} aria-label="New run">
+        <div className="fh"><b>/dispatch</b><button type="button" className="bare sm" onClick={() => d.setForm(null)}>Close</button></div>
+        <label>Project<select className="field" value={r.project} onChange={(e) => d.setRun({ ...r, project: e.target.value })}>
+          <option value="">Pick a project</option>{d.projects.map((p) => <option key={p}>{p}</option>)}
+        </select></label>
+        <label>Label<input className="field" value={r.label} onChange={(e) => d.setRun({ ...r, label: e.target.value })} placeholder="short-name" /></label>
+        <label>Model<select className="field" value={r.model} onChange={(e) => d.setRun({ ...r, model: e.target.value })}>
+          {MODELS.map((m) => <option key={m}>{m}</option>)}
+        </select></label>
+        <label>Prompt<textarea className="field" value={r.prompt} onChange={(e) => d.setRun({ ...r, prompt: e.target.value })} /></label>
+        <button type="submit" className="btn p" disabled={!r.project || !r.label.trim() || !r.prompt.trim()}>Review run</button>
+      </form>
+    )
+  }
+  if (d.form === 'session') {
+    const s = d.start
+    return (
+      <form className="form msg cr" onSubmit={(e) => { e.preventDefault(); d.open() }} aria-label="New session">
+        <div className="fh"><b>/session</b><button type="button" className="bare sm" onClick={() => d.setForm(null)}>Close</button></div>
+        <label>Project<select className="field" value={s.project} onChange={(e) => d.setStart({ ...s, project: e.target.value })}>
+          <option value="">Pick a project</option>{d.projects.map((p) => <option key={p}>{p}</option>)}
+        </select></label>
+        <label>Account<select className="field" value={s.account} onChange={(e) => d.setStart({ ...s, account: e.target.value })}>
+          <option value="">default</option>{d.accounts.map((a) => <option key={a.name} value={a.name}>{a.name} · {a.policy}</option>)}
+        </select></label>
+        <label>First prompt<input className="field" value={s.prompt} onChange={(e) => d.setStart({ ...s, prompt: e.target.value })} placeholder="optional" /></label>
+        <button type="submit" className="btn p" disabled={!s.project}>Review session</button>
+      </form>
+    )
+  }
+  return null
+}
+
+function Chips({ d }: { d: D }) {
+  const later = ['/queue', '/handoff', '/review']
+  return (
+    <div className="chips">
+      <button type="button" className="chip ac" aria-pressed={d.form === 'run'} onClick={() => d.setForm(d.form === 'run' ? null : 'run')}>/dispatch</button>
+      <button type="button" className="chip ac" aria-pressed={d.form === 'session'} onClick={() => d.setForm(d.form === 'session' ? null : 'session')}>/session</button>
+      {later.map((c) => <button key={c} type="button" className="chip" disabled title={LATER}>{c}</button>)}
+    </div>
+  )
+}
+
+function AskBox({ d, ph, big }: { d: D; ph: string; big?: boolean }) {
+  return (
+    <form className={`in ask${big ? ' big' : ''}`} onSubmit={(e) => { e.preventDefault(); d.submitAsk() }}>
+      <input className="f1" value={d.ask} onChange={(e) => d.setAsk(e.target.value)} placeholder={ph} aria-label="Ask CR-0W" />
+      <button type="button" className="mic" disabled title={`Voice: ${LATER.toLowerCase()}`} aria-label="Voice"><Mic s={big ? 20 : 18} /></button>
+      <button type="submit" className="btn p">Send</button>
+    </form>
+  )
+}
+
+function Chat({ d }: { d: D }) {
+  return (
+    <div className="msgs" role="log" aria-live="polite">
+      {d.log.length === 0 && <div className="msg cr">Use /dispatch to start a run or /session to open one. Each action asks you to confirm first.</div>}
+      {d.log.map((m, i) => <div key={i} className={`msg ${m.me ? 'me' : 'cr'}${m.f ? ' f' : ''}`}>{m.text}</div>)}
+      <Forms d={d} />
+    </div>
+  )
+}
+
+// ---- live panel buttons ----
+function LiveBtns({ d, a, cls = '' }: { d: D; a: Agent; cls?: string }) {
+  const session = a.kind === 'session'
+  return (
+    <div className={`btnrow ${cls}`}>
+      <button type="button" className="btn p" aria-pressed={d.tell} disabled={!session} title={session ? undefined : 'Runs take no input'} onClick={() => d.setTell(!d.tell)}>Tell it</button>
+      <button type="button" className="btn" disabled={!session} onClick={() => d.pause(a)}>Pause</button>
+      <button type="button" className="btn x" onClick={() => d.stop(a)}>Stop</button>
+    </div>
+  )
+}
+
+// ---- laptop (board desk) ----
+function DeskLaptop({ d }: { d: D }) {
+  const working = d.agents.filter((a) => a.state === 'working')
+  const accts = [...new Set(working.map((a) => a.account))].join(', ')
+  const waiting = d.sessions.filter(waits)
+  const needs = waiting.length + d.mail.length
+  const oldest = waiting.map((a) => a.started_at).filter(Boolean).sort()[0]
+  const a = d.picked
+  return (
+    <div className="desk desk-lp">
+      <div className="kps">
+        <h1 className="dt">Desk</h1>
+        <span className="kp c-w"><span className="kn">{working.length}</span><span className="sm">working{accts && ` · ${accts}`}</span></span>
+        <span className="kp n"><span className="kn c-n">{needs}</span><span className="sm">need you{oldest && ` · oldest ${ago(oldest, d.snap.now)}`}</span></span>
+        <span className="kp c-sub"><span className="kn">{d.slots.busy}/{d.slots.max}</span><span className="sm">slots · {Math.max(0, d.slots.max - d.slots.busy)} free</span></span>
+        <span className="kp c-b"><span className="kn">{d.resumable.length}</span><span className="sm">resumable</span></span>
+      </div>
+      <div className="dg">
+        <div className="col">
+          <section className="pn none" aria-labelledby="dn"><Ph id="dn" className="c-n" sm={<span className="c-n">{needs || ''}</span>}>Needs you</Ph><Needs d={d} /></section>
+          <section className="pn grow" aria-labelledby="dr"><Ph id="dr" sm="▶ resume · + queue">Ready to run</Ph><Ready d={d} /></section>
+        </div>
+        <section className="pn ask-pn" aria-labelledby="da">
+          <Ph id="da" sm="butler · sees missions, queue, inbox, sessions">Ask CR-0W</Ph>
+          <Chat d={d} />
+          <Chips d={d} />
+          <AskBox d={d} ph="Tell CR-0W what to run, ask about a mission…" />
+        </section>
+        <div className="col">
+          <section className="pn none" aria-labelledby="ds"><Ph id="ds" sm="click a slot to open it">Slots and queue</Ph><Slots d={d} /></section>
+          <section className="pn grow" aria-labelledby="dl">
+            {a ? (
+              <>
+                <Ph id="dl" sm={`${a.account} · ${a.state ?? ''}`}>{d.slotOf(a) || 'Session'} live · {a.project}</Ph>
+                <div className="lt">{nameOf(a)}</div>
+                <Timeline d={d} a={a} />
+                {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
+                <LiveBtns d={d} a={a} cls="end" />
+              </>
+            ) : (<><Ph id="dl">Live</Ph><div className="sm">Nothing runs. Start one with /dispatch.</div></>)}
+          </section>
+          <section className="pn none" aria-labelledby="dv">
+            <Ph id="dv" sm={d.sessions.length}>Live sessions</Ph>
+            <div className="list">
+              {d.sessions.length === 0 && <div className="sm">No live session.</div>}
+              {d.sessions.map((s) => (
+                <div key={s.pid} className={`row${s === a ? ' on' : ''}`}>
+                  {waits(s) ? <Diamond /> : <Ring c={s.state === 'idle' ? 'c-q' : 'c-w'} />}
+                  <span className="f1">{nameOf(s)}</span><span className="sm">{s.account} · {waits(s) ? 'waits' : s.state}</span>
+                  <button type="button" className={`btn${waits(s) ? ' p' : ''}`} onClick={() => d.pick(s, waits(s))}>Open</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---- Fold inner (board fold-desk-inner) ----
+function DeskInner({ d }: { d: D }) {
+  const a = d.picked
+  const needs = d.sessions.filter(waits).length + d.mail.length
+  return (
+    <div className="desk desk-in">
+      <div className="col">
+        <section className="pn" aria-labelledby="is"><Ph id="is" sm={`${d.slots.busy}/${d.slots.max} busy`}>Slots and queue</Ph><Slots d={d} ib /></section>
+        <section className="pn needs" aria-labelledby="in"><Ph id="in" className="c-n" sm={needs || ''}>Needs you</Ph><Needs d={d} short /></section>
+        <section className="pn grow" aria-labelledby="ir"><Ph id="ir" sm="▶ resume · + queue">Ready to run</Ph><Ready d={d} /></section>
+      </div>
+      <div className="col">
+        <section className="pn grow" aria-labelledby="il">
+          {a ? (
+            <>
+              <Ph id="il" sm={`${a.account} · ${d.since(a)}`}><span className={waits(a) ? 'c-n' : 'c-w'}>●</span> {d.slotOf(a) || 'Session'} · {nameOf(a)}</Ph>
+              <Timeline d={d} a={a} term />
+              {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
+              <LiveBtns d={d} a={a} cls="wide" />
+            </>
+          ) : (<><Ph id="il">Live</Ph><div className="sm">Nothing runs. Start one with /dispatch.</div></>)}
+        </section>
+        <section className="pn ask-pn" aria-labelledby="ia">
+          <Ph id="ia" className="c-m" sm="hub">Ask CR-0W</Ph>
+          <Chat d={d} />
+          <Chips d={d} />
+          <AskBox d={d} ph="Run, queue, explain…" />
+        </section>
+      </div>
+    </div>
+  )
+}
+
+// ---- phone cover (board fold-desk-cover) ----
+const C = 2 * Math.PI * 54
+function DeskCover({ d }: { d: D }) {
+  const a = d.picked
+  // The board shows two rows; the rest is one unfold away.
+  const rest = d.agents.filter((x) => x !== a).slice(0, 2)
+  const queued = d.resumable.slice(0, 2 - rest.length)
+  return (
+    <div className="desk desk-cv">
+      {a ? (
+        <section className={`gcard dhero${waits(a) ? ' n' : ''}`} aria-labelledby="ch">
+          <div className="gt"><span className={waits(a) ? 'c-n' : 'c-w'}>● {d.slotOf(a) || 'Session'} · {waits(a) ? 'waits' : a.state}</span><span>{a.account} · {a.project}</span></div>
+          <div className="hr">
+            <div className="ring">
+              <svg width="122" height="122" aria-hidden="true">
+                <circle cx="61" cy="61" r="54" fill="none" className="trk" strokeWidth="10" />
+                <g transform="rotate(-90 61 61)">
+                  <circle cx="61" cy="61" r="54" fill="none" className={`arc${a.state === 'working' ? ' spin' : ''}`} strokeWidth="10" strokeLinecap="round"
+                    strokeDasharray={`${(C / 4).toFixed(1)} ${C.toFixed(1)}`} />
+                </g>
+              </svg>
+              <div className="rc"><span className={`bign ${waits(a) ? 'c-n' : 'c-w'}`}>{d.since(a) || '—'}</span><span className="gs">elapsed</span></div>
+            </div>
+            <div className="hm"><h2 className="gh" id="ch">{nameOf(a)}</h2><span className="gs">{a.project}{a.kind === 'run' && a.run_id ? ` · ${a.run_id}` : ''}</span>
+              {a.started_at && <span className="gs">since {time(new Date(a.started_at))}</span>}</div>
+          </div>
+          <Timeline d={d} a={a} term />
+          {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
+          <LiveBtns d={d} a={a} cls="gbtns" />
+        </section>
+      ) : (
+        <section className="gcard dhero none-run"><div className="gt"><span>Nothing runs</span><span>{d.slots.busy}/{d.slots.max}</span></div>
+          <div className="gs">Type /dispatch below to start a run.</div></section>
+      )}
+      <div className="gl">
+        <div className="gls"><span>Slots and queue</span><span>{d.resumable.length} ready</span></div>
+        {rest.map((x) => (
+          <button type="button" key={x.pid} className="row r2" onClick={() => d.pick(x, waits(x))}>
+            <span className={`ic${waits(x) ? ' n' : ''}`}>{waits(x) ? <Diamond s={14} /> : <Spin />}</span>
+            <span className="t"><b>{d.slotOf(x) ? `${d.slotOf(x)} · ` : ''}{nameOf(x)}</b><span>{x.account} · {waits(x) ? 'waits' : x.state}</span></span>
+            <span className="sm num">{d.since(x)}</span><span className="chev">›</span>
+          </button>
+        ))}
+        {queued.map((r) => (
+          <button type="button" key={r.conversation_id} className="row r2" onClick={() => d.resume(r)}>
+            <span className="ic"><Ring dashed c="c-q" /></span>
+            <span className="t"><b>{r.project}</b><span>{r.account} · resume{r.last_prompt ? ` · ${r.last_prompt}` : ''}</span></span>
+            <span className="chev">›</span>
+          </button>
+        ))}
+      </div>
+      {(d.form || d.log.length > 0) && <Chat d={d} />}
+      <AskBox d={d} ph="Ask CR-0W: run, queue…" big />
+      <div className="uf"><Unfold />unfold for live transcript and chat</div>
+    </div>
+  )
+}
+
+export function Desk({ snap, refresh }: { snap: Snapshot; refresh: () => Promise<void> }) {
+  const d = useDesk(snap, refresh)
+  const lp = useMedia(LAPTOP)
+  const inner = useMedia(INNER)
+  return (
+    <>
+      {lp ? <DeskLaptop d={d} /> : inner ? <DeskInner d={d} /> : <DeskCover d={d} />}
+      {d.sheet && <Sheet c={d.sheet} onClose={() => d.setSheet(null)} />}
+    </>
+  )
+}
