@@ -14,8 +14,9 @@
 | [prod_002_keep_working_when_an_account_runs_out](product/prod_002_keep_working_when_an_account_runs_out.md) | Keep working when an account runs out | Proposed |  |  | product/prod_002_keep_working_when_an_account_runs_out.md |
 | [prod_003_crow_cost_and_reliability_pass](product/prod_003_crow_cost_and_reliability_pass.md) | crow cost and reliability pass | Proposed |  |  | product/prod_003_crow_cost_and_reliability_pass.md |
 | [prod_004_terminal_design_system](product/prod_004_terminal_design_system.md) | Terminal design system | Proposed |  |  | product/prod_004_terminal_design_system.md |
-| [prod_005_crow_jarvis_layer](product/prod_005_crow_jarvis_layer.md) | Crow Jarvis layer | Settled |  |  | product/prod_005_crow_jarvis_layer.md |
+| [prod_005_crow_jarvis_layer](product/prod_005_crow_jarvis_layer.md) | Crow Jarvis layer | Proposed |  |  | product/prod_005_crow_jarvis_layer.md |
 | [prod_006_crow_data_in_the_vault](product/prod_006_crow_data_in_the_vault.md) | Crow data in the vault | Settled |  |  | product/prod_006_crow_data_in_the_vault.md |
+| [prod_007_nest_home_design_pass](product/prod_007_nest_home_design_pass.md) | Nest Home design pass | Proposed |  |  | product/prod_007_nest_home_design_pass.md |
 
 ## Roadmaps
 
@@ -74,6 +75,13 @@
 | [req_044_clear_the_pre_existing_ruff_findings_so_crow_check_goes_green](request/req_044_clear_the_pre_existing_ruff_findings_so_crow_check_goes_green.md) | Clear the pre-existing ruff findings so crow-check goes green | Done |  |  | request/req_044_clear_the_pre_existing_ruff_findings_so_crow_check_goes_green.md |
 | [req_045_periodic_tool_update_watch](request/req_045_periodic_tool_update_watch.md) | Periodic tool update watch: cdx, logics-manager, Claude Code and other tools, mapped to crow | In progress |  |  | request/req_045_periodic_tool_update_watch.md |
 | [req_046_mission_runs_can_write_their_version_files](request/req_046_mission_runs_can_write_their_version_files.md) | Mission runs can write their version files | Ready |  |  | request/req_046_mission_runs_can_write_their_version_files.md |
+| [req_047_make_the_hub_rules_configurable_in_local_policy_yaml](request/req_047_make_the_hub_rules_configurable_in_local_policy_yaml.md) | Make the hub rules configurable in local/policy.yaml | Draft |  |  | request/req_047_make_the_hub_rules_configurable_in_local_policy_yaml.md |
+| [req_048_find_why_rtk_fails_on_14_of_commands](request/req_048_find_why_rtk_fails_on_14_of_commands.md) | Find why rtk fails on 14% of commands | Draft |  |  | request/req_048_find_why_rtk_fails_on_14_of_commands.md |
+| [req_049_review_and_place_the_archeotech_agents_module](request/req_049_review_and_place_the_archeotech_agents_module.md) | Review and place the archeotech agents module | Draft |  |  | request/req_049_review_and_place_the_archeotech_agents_module.md |
+| [req_050_cover_the_remaining_codex_gaps](request/req_050_cover_the_remaining_codex_gaps.md) | Cover the remaining Codex gaps | Draft |  |  | request/req_050_cover_the_remaining_codex_gaps.md |
+| [req_051_adopt_ideas_from_life_distributable](request/req_051_adopt_ideas_from_life_distributable.md) | Adopt ideas from life-distributable | Draft |  |  | request/req_051_adopt_ideas_from_life_distributable.md |
+| [req_052_rerun_the_failed_retros_from_05_11](request/req_052_rerun_the_failed_retros_from_05_11.md) | Rerun the failed retros from 05/11 | Draft |  |  | request/req_052_rerun_the_failed_retros_from_05_11.md |
+| [req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome](request/req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome.md) | Nest Home design pass: Netrunner palette, holographic hero and JARVIS chrome | Draft |  |  | request/req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome.md |
 
 ## Backlog
 
@@ -215,7 +223,7 @@
 | [item_134_inbox_items_and_the_crow_inbox_cli](backlog/item_134_inbox_items_and_the_crow_inbox_cli.md) | Inbox items and the crow inbox CLI | Done |  | 100% | backlog/item_134_inbox_items_and_the_crow_inbox_cli.md |
 | [item_135_resume_a_parked_mission_from_the_owner_s_answer](backlog/item_135_resume_a_parked_mission_from_the_owner_s_answer.md) | Resume a parked mission from the owner's answer | Done | crow | 100% | backlog/item_135_resume_a_parked_mission_from_the_owner_s_answer.md |
 | [item_136_read_cdx_profiles_through_the_cli](backlog/item_136_read_cdx_profiles_through_the_cli.md) | Read cdx profiles through the cdx CLI: profile dirs, relaunch by conversation, live sessions | Done | crow | 100% | backlog/item_136_read_cdx_profiles_through_the_cli.md |
-| [item_137_nest_app_shell_on_core_fixtures](backlog/item_137_nest_app_shell_on_core_fixtures.md) | Nest app shell on core fixtures | Ready |  | 0% | backlog/item_137_nest_app_shell_on_core_fixtures.md |
+| [item_137_nest_app_shell_on_core_fixtures](backlog/item_137_nest_app_shell_on_core_fixtures.md) | Nest app shell on core fixtures | In progress |  | 40% | backlog/item_137_nest_app_shell_on_core_fixtures.md |
 | [item_138_nest_state_language_and_four_screen_layouts_as_annotated_sketches](backlog/item_138_nest_state_language_and_four_screen_layouts_as_annotated_sketches.md) | Nest state language and four screen layouts as annotated sketches | Done |  | 100% | backlog/item_138_nest_state_language_and_four_screen_layouts_as_annotated_sketches.md |
 | [item_139_jarvis_graph_and_droid_workshop_hero_sketches_on_one_compare_page](backlog/item_139_jarvis_graph_and_droid_workshop_hero_sketches_on_one_compare_page.md) | Jarvis graph and droid workshop hero sketches on one compare page | Done |  | 100% | backlog/item_139_jarvis_graph_and_droid_workshop_hero_sketches_on_one_compare_page.md |
 | [item_140_realign_nest_build_items_to_the_chosen_hero](backlog/item_140_realign_nest_build_items_to_the_chosen_hero.md) | Realign nest build items to the chosen hero | Done |  | 100% | backlog/item_140_realign_nest_build_items_to_the_chosen_hero.md |
@@ -233,12 +241,18 @@
 | [item_152_turn_on_full_auto_for_the_first_mission_kinds](backlog/item_152_turn_on_full_auto_for_the_first_mission_kinds.md) | Turn on full auto for the first mission kinds | Ready |  | 0% | backlog/item_152_turn_on_full_auto_for_the_first_mission_kinds.md |
 | [item_153_upgrade_claude_code_to_2_1_321_and_fix_the_dispatch_timeout_wording](backlog/item_153_upgrade_claude_code_to_2_1_321_and_fix_the_dispatch_timeout_wording.md) | Upgrade Claude Code to 2.1.321 and fix the dispatch timeout wording | Done |  | 100% | backlog/item_153_upgrade_claude_code_to_2_1_321_and_fix_the_dispatch_timeout_wording.md |
 | [item_154_check_crow_against_rtk_1_x_before_upgrading](backlog/item_154_check_crow_against_rtk_1_x_before_upgrading.md) | Check crow against rtk 1.x before upgrading | Done |  | 100% | backlog/item_154_check_crow_against_rtk_1_x_before_upgrading.md |
-| [item_155_nest_hero_static_fallback_in_the_home_slot](backlog/item_155_nest_hero_static_fallback_in_the_home_slot.md) | Nest hero static fallback in the Home slot | Ready |  | 0% | backlog/item_155_nest_hero_static_fallback_in_the_home_slot.md |
+| [item_155_nest_hero_static_fallback_in_the_home_slot](backlog/item_155_nest_hero_static_fallback_in_the_home_slot.md) | Nest hero static fallback in the Home slot | Ready |  | 80% | backlog/item_155_nest_hero_static_fallback_in_the_home_slot.md |
 | [item_156_nest_hero_core_head_as_a_webgl2_ascii_shader](backlog/item_156_nest_hero_core_head_as_a_webgl2_ascii_shader.md) | Nest hero core head as a WebGL2 ASCII shader | Ready |  | 0% | backlog/item_156_nest_hero_core_head_as_a_webgl2_ascii_shader.md |
 | [item_157_nest_hero_ascii_graph_layer_around_the_core](backlog/item_157_nest_hero_ascii_graph_layer_around_the_core.md) | Nest hero ASCII graph layer around the core | Ready |  | 0% | backlog/item_157_nest_hero_ascii_graph_layer_around_the_core.md |
 | [item_158_nest_hero_live_data_state_motions_and_actions](backlog/item_158_nest_hero_live_data_state_motions_and_actions.md) | Nest hero live data, state motions and actions | Ready |  | 0% | backlog/item_158_nest_hero_live_data_state_motions_and_actions.md |
 | [item_159_nest_hero_budgets_and_fallback_detection_measured_on_laptop_and_fold](backlog/item_159_nest_hero_budgets_and_fallback_detection_measured_on_laptop_and_fold.md) | Nest hero budgets and fallback detection measured on laptop and Fold | Ready |  | 0% | backlog/item_159_nest_hero_budgets_and_fallback_detection_measured_on_laptop_and_fold.md |
 | [item_160_core_runs_workspace_write_missions_isolated](backlog/item_160_core_runs_workspace_write_missions_isolated.md) | Core runs workspace-write missions isolated and resumes them cold | Ready |  | 0% | backlog/item_160_core_runs_workspace_write_missions_isolated.md |
+| [item_161_netrunner_palette_for_the_nest_cyber_theme](backlog/item_161_netrunner_palette_for_the_nest_cyber_theme.md) | Netrunner palette for the Nest cyber theme | Ready |  | 0% | backlog/item_161_netrunner_palette_for_the_nest_cyber_theme.md |
+| [item_162_holographic_hero_on_the_dot_matrix_background](backlog/item_162_holographic_hero_on_the_dot_matrix_background.md) | Holographic hero on the dot-matrix background | Ready |  | 0% | backlog/item_162_holographic_hero_on_the_dot_matrix_background.md |
+| [item_163_design_skills_audit_of_the_laptop_home](backlog/item_163_design_skills_audit_of_the_laptop_home.md) | Design skills audit of the laptop Home | Ready |  | 0% | backlog/item_163_design_skills_audit_of_the_laptop_home.md |
+| [item_164_jarvis_chrome_corner_brackets_and_a_segmented_ring_around_the_hero](backlog/item_164_jarvis_chrome_corner_brackets_and_a_segmented_ring_around_the_hero.md) | JARVIS chrome: corner brackets and a segmented ring around the hero | Ready |  | 0% | backlog/item_164_jarvis_chrome_corner_brackets_and_a_segmented_ring_around_the_hero.md |
+| [item_165_telemetry_strip_on_the_laptop_home](backlog/item_165_telemetry_strip_on_the_laptop_home.md) | Telemetry strip on the laptop Home | Ready |  | 0% | backlog/item_165_telemetry_strip_on_the_laptop_home.md |
+| [item_166_boot_sequence_on_first_load_of_the_nest](backlog/item_166_boot_sequence_on_first_load_of_the_nest.md) | Boot sequence on first load of the Nest | Ready |  | 0% | backlog/item_166_boot_sequence_on_first_load_of_the_nest.md |
 
 ## Tasks
 
@@ -261,6 +275,8 @@
 | [task_015_build_crow_data_in_the_vault](tasks/task_015_build_crow_data_in_the_vault.md) | Build crow data in the vault | Done | crow | 100% | tasks/task_015_build_crow_data_in_the_vault.md |
 | [task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox](tasks/task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox.md) | Orchestrate Jarvis core slices 1 and 2: missions and inbox | Done | crow | 100% | tasks/task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox.md |
 | [task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy](tasks/task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy.md) | Orchestrate Jarvis core slices 3 to 5: API, summaries and autonomy | Ready |  | 0% | tasks/task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy.md |
+| [task_018_nest_app_shell_on_core_fixtures](tasks/task_018_nest_app_shell_on_core_fixtures.md) | Nest app shell on core fixtures | In progress | crow | 40% | tasks/task_018_nest_app_shell_on_core_fixtures.md |
+| [task_019_orchestrate_the_nest_home_design_pass](tasks/task_019_orchestrate_the_nest_home_design_pass.md) | Orchestrate the Nest Home design pass | Ready |  | 0% | tasks/task_019_orchestrate_the_nest_home_design_pass.md |
 
 ## Runbooks
 

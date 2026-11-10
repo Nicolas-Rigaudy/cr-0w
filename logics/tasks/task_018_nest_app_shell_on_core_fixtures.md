@@ -51,3 +51,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+- 2026-11-10: Home design pass split out to req_053 / task_019 (items 161-166). Palette B Netrunner chosen. Run it before laptop Missions so Missions starts on the new tokens.
