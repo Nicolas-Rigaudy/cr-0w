@@ -58,7 +58,8 @@
      "title",
      "commits",
      "multi_project",
-     "projects"
+     "projects",
+     "prompt"
     ],
     "properties": {
      "recent": {
@@ -93,6 +94,41 @@
         "tokens",
         "share_pct"
        ]
+      }
+     },
+     "prompt": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "description": "The permission prompt a waiting session shows (crow-prompt hook, item_174); null otherwise. options: allow (press 1, once) and deny (Escape); a work push/MR approval offers deny only.",
+      "required": [
+       "id",
+       "tool",
+       "detail",
+       "description",
+       "work_approval",
+       "options"
+      ],
+      "properties": {
+       "options": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "required": [
+          "key",
+          "label"
+         ],
+         "properties": {
+          "key": {
+           "enum": [
+            "allow",
+            "deny"
+           ]
+          }
+         }
+        }
+       }
       }
      }
     }

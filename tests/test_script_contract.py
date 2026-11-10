@@ -275,6 +275,11 @@ def test_runs_stop_plain_call_still_works_for_core(hub, env):
     assert r.returncode == 1 and "0 running runs" in r.stderr
 
 
+def test_prompt_answer_without_a_pending_prompt_is_refused(hub, env):
+    d = action_of(run(hub, "crow-prompt", "answer", "--pid", "1", "--prompt", "x", "--option", "allow", "--json",
+                      env=env), 1)
+    assert d["action"] == "answer" and d["target"] == "1"
+
 def test_today_action_without_graph_is_an_error(hub, env):
     d = action_of(run(hub, "crow-today", "done", "m1", "--json", env=env), 2)
     assert d["action"] == "done" and d["target"] == "m1"

@@ -688,7 +688,10 @@ def collect(since="today", include_unledgered=False):
         mtime = tpath.stat().st_mtime if tpath and tpath.exists() else p["started"]
         t = read_transcript(tpath) if tpath else {}
         idle = now - mtime
-        if meta.get("status") == "busy" or idle < WORKING_S:
+        prompt = crow_lib.pending_prompt(p["pid"], meta)
+        if prompt or meta.get("status") == "waiting":
+            state = "waiting"
+        elif meta.get("status") == "busy" or idle < WORKING_S:
             state = "working"
         elif kind == "session" and t.get("ends_on_text"):
             state = "waiting"
@@ -700,6 +703,7 @@ def collect(since="today", include_unledgered=False):
             "started_at": datetime.fromtimestamp(p["started"], timezone.utc).isoformat(timespec="seconds"),
             "last_activity_s": int(idle), **{k: t.get(k) for k in ("last_action", "context_tokens", "subagents_active", "recent", "last_prompt")},
             "run_id": None, "label": None, "title": (titles.get(sid) or {}).get("title"), "commits": [],
+            "prompt": {k: prompt.get(k) for k in crow_lib.PROMPT_FIELDS} if prompt else None,
         }
         if kind == "run":
             for rec in reversed(recs):
@@ -963,7 +967,10 @@ def render(data, color=True, width=None):
         meta = f"{a['state']} {fmt_age(a['last_activity_s'])} ago · up {fmt_age(iso_age(a['started_at']))}{ctx}{subs} · {a['account']}"
         out.append(clip(f"{c[col]}{sym}{c['0']} {c['b']}{a['project']:<20}{c['0']} {title}") )
         out.append(clip(f"    {c['dim']}{meta}{c['0']}", 0))
-        if a.get("last_action"):
+        if a.get("prompt"):
+            pr = a["prompt"]
+            out.append(clip(f"    {c['m']}? {pr['tool']}: {pr['detail']}{c['0']}", 0))
+        elif a.get("last_action"):
             out.append(clip(f"    {c['c']}↳ {a['last_action']}{c['0']}", 0))
         for cm in a.get("commits", [])[:3]:
             out.append(clip(f"    {c['dim']}{cm}{c['0']}", 0))

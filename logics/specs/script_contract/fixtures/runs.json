@@ -48,7 +48,24 @@
      "tokens": 1,
      "share_pct": 1
     }
-   ]
+   ],
+   "prompt": {
+    "id": "id",
+    "tool": "tool",
+    "detail": "detail",
+    "description": "description",
+    "work_approval": null,
+    "options": [
+     {
+      "key": "allow",
+      "label": "label"
+     },
+     {
+      "key": "deny",
+      "label": "label"
+     }
+    ]
+   }
   }
  ],
  "finished": [
