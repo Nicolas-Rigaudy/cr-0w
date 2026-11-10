@@ -150,6 +150,13 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     run: wrap(`${verb === 'done' ? 'Done' : 'Snooze'}: ${subject}`, () => act.mail(id, verb)),
   })
   const pick = (a: Agent, talk = false) => { setSel(a.pid); setTell(talk) }
+  // A prompt answer is one tap: the card already shows the exact command (item_174).
+  const answer = (a: Agent, key: 'allow' | 'deny') => {
+    const p = a.prompt
+    if (!p) return
+    wrap(`${key === 'allow' ? 'Allow once' : 'Deny'} ${nameOf(a)}: ${p.tool} ${p.detail}`, () => act.answer(a.pid, p.id, key))()
+      .catch((e: Error) => setLog((l) => [...l, { text: e.message, f: true }]))
+  }
 
   // The ask box: /dispatch and /session open their form; free chat waits for the hub API.
   const submitAsk = () => {
@@ -172,7 +179,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     snap, slots, agents, runs, sessions, resumable, mail, projects, accounts,
     sheet, setSheet, log, picked, slotOf, since, pick, tell, setTell, text, setText, ask, setAsk, submitAsk,
     form, setForm, run, setRun, start, setStart,
-    send, pause, stop, dispatch, open, resume, flag,
+    send, pause, stop, dispatch, open, resume, flag, answer,
   }
 }
 type D = ReturnType<typeof useDesk>
@@ -217,6 +224,27 @@ function Slots({ d, ib }: { d: D; ib?: boolean }) {
   )
 }
 
+// The permission prompt of a waiting session: the exact command and one button per option.
+// A work push or MR shows only "Open in approvals" (item_175).
+function Ask({ d, a }: { d: D; a: Agent }) {
+  const p = a.prompt
+  if (!p) return null
+  return (
+    <div className="pq" role="group" aria-label={`Permission asked by ${nameOf(a)}`}>
+      <div className="pqh"><span className="tool c-n">{p.tool}</span>{p.description && <span className="sm f1">{p.description}</span>}</div>
+      <code className="pqc">{p.detail}</code>
+      <div className="btnrow">
+        {p.work_approval
+          ? <button type="button" className="btn p" disabled title="Approvals arrive with the approvals screen">Open in approvals</button>
+          : p.options.map((o) => (
+            <button type="button" key={o.key} className={`btn${o.key === 'allow' ? ' p' : ' x'}`} onClick={() => d.answer(a, o.key)}>{o.label}</button>
+          ))}
+      </div>
+      {p.work_approval && <div className="sm">Work repo {p.work_approval}: give it on the exact text in approvals.</div>}
+    </div>
+  )
+}
+
 function Needs({ d, short }: { d: D; short?: boolean }) {
   const waiting = d.sessions.filter(waits)
   if (!waiting.length && !d.mail.length) return <div className="sm">Nothing waits on you.</div>
@@ -225,7 +253,7 @@ function Needs({ d, short }: { d: D; short?: boolean }) {
       {waiting.map((a) => (
         <div key={a.pid} className="row edge-n">
           <Diamond s={short ? 13 : 12} /><span className="f1">{nameOf(a)}<span className="sm"> · {a.account}</span></span>
-          <button type="button" className="btn p" onClick={() => d.pick(a, true)}>Answer</button>
+          <button type="button" className="btn p" onClick={() => d.pick(a, !a.prompt)}>Answer</button>
         </div>
       ))}
       {d.mail.map((m) => (
@@ -394,6 +422,7 @@ function DeskLaptop({ d }: { d: D }) {
               <>
                 <Ph id="dl" sm={`${a.account} · ${a.state ?? ''}`}>{d.slotOf(a) || 'Session'} live · {a.project}</Ph>
                 <div className="lt">{nameOf(a)}</div>
+                <Ask d={d} a={a} />
                 <Timeline d={d} a={a} />
                 {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
                 <LiveBtns d={d} a={a} cls="end" />
@@ -408,7 +437,7 @@ function DeskLaptop({ d }: { d: D }) {
                 <div key={s.pid} className={`row${s === a ? ' on' : ''}`}>
                   {waits(s) ? <Diamond /> : <Ring c={s.state === 'idle' ? 'c-q' : 'c-w'} />}
                   <span className="f1">{nameOf(s)}</span><span className="sm">{s.account} · {waits(s) ? 'waits' : s.state}</span>
-                  <button type="button" className={`btn${waits(s) ? ' p' : ''}`} onClick={() => d.pick(s, waits(s))}>Open</button>
+                  <button type="button" className={`btn${waits(s) ? ' p' : ''}`} onClick={() => d.pick(s, waits(s) && !s.prompt)}>Open</button>
                 </div>
               ))}
             </div>
@@ -435,6 +464,7 @@ function DeskInner({ d }: { d: D }) {
           {a ? (
             <>
               <Ph id="il" sm={`${a.account} · ${d.since(a)}`}><span className={waits(a) ? 'c-n' : 'c-w'}>●</span> {d.slotOf(a) || 'Session'} · {nameOf(a)}</Ph>
+              <Ask d={d} a={a} />
               <Timeline d={d} a={a} term />
               {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
               <LiveBtns d={d} a={a} cls="wide" />
@@ -478,7 +508,7 @@ function DeskCover({ d }: { d: D }) {
             <div className="hm"><h2 className="gh" id="ch">{nameOf(a)}</h2><span className="gs">{a.project}{a.kind === 'run' && a.run_id ? ` · ${a.run_id}` : ''}</span>
               {a.started_at && <span className="gs">since {time(new Date(a.started_at))}</span>}</div>
           </div>
-          <Timeline d={d} a={a} term />
+          {a.prompt ? <Ask d={d} a={a} /> : <Timeline d={d} a={a} term />}
           {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
           <LiveBtns d={d} a={a} cls="gbtns" />
         </section>
@@ -489,7 +519,7 @@ function DeskCover({ d }: { d: D }) {
       <div className="gl">
         <div className="gls"><span>Slots and queue</span><span>{d.resumable.length} ready</span></div>
         {rest.map((x) => (
-          <button type="button" key={x.pid} className="row r2" onClick={() => d.pick(x, waits(x))}>
+          <button type="button" key={x.pid} className="row r2" onClick={() => d.pick(x, waits(x) && !x.prompt)}>
             <span className={`ic${waits(x) ? ' n' : ''}`}>{waits(x) ? <Diamond s={14} /> : <Spin />}</span>
             <span className="t"><b>{d.slotOf(x) ? `${d.slotOf(x)} · ` : ''}{nameOf(x)}</b><span>{x.account} · {waits(x) ? 'waits' : x.state}</span></span>
             <span className="sm num">{d.since(x)}</span><span className="chev">›</span>

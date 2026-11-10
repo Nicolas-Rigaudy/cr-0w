@@ -760,3 +760,13 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 [data-theme='cyber'] .desk-cv .gbtns .btn.x { border-color: var(--chrome); color: var(--chrome-text); }
 [data-theme='cyber'] .desk-cv .in.ask.big { border-radius: 0; border-color: var(--accent); clip-path: var(--clip-pn); }
 [data-theme='cyber'] .desk-cv .in.big .btn { border-radius: 0; }
+
+/* item_174: the permission prompt card of a waiting session */
+.desk .pq { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--c-n); border-radius: 8px;
+  background: color-mix(in srgb, var(--c-n) 8%, transparent); }
+.desk .pqh { display: flex; gap: 8px; align-items: baseline; }
+.desk .pqc { display: block; font: 12.5px / 1.5 var(--font-body); white-space: pre-wrap; overflow-wrap: anywhere; background: #181926;
+  color: #cad3f5; border: 1px solid #363a4f; border-radius: 6px; padding: 8px 10px; max-height: 9em; overflow: auto; }
+.desk .pq { box-sizing: border-box; min-width: 0; }
+[data-theme='cyber'] .desk .pq, [data-theme='cyber'] .desk .pqc { border-radius: 0; }
+.desk .pq *:not(.pqc) { white-space: normal; overflow-wrap: anywhere; }

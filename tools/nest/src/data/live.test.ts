@@ -45,6 +45,13 @@ describe('live actions over the core API', () => {
     expect(seen[1].init.body).toBeUndefined()
   })
 
+  it('answers a permission prompt with its id and option', async () => {
+    const { get, seen } = recorder()
+    await apiActions('/api', get).answer(5151, 'p-shots', 'allow')
+    expect(seen[0].url).toBe('/api/sessions/5151/answer')
+    expect(JSON.parse(seen[0].init.body as string)).toEqual({ prompt: 'p-shots', option: 'allow' })
+  })
+
   it('returns the logged action', async () => {
     const r = await apiActions('/api', recorder().get).send(4242, 'x')
     expect(r).toEqual(JSON.parse(body('live-send.json')))
@@ -85,6 +92,17 @@ describe('fixture actions', () => {
     const src = fixtureSource()
     await src.actions.dispatch({ project: 'demo', label: 'a', prompt: 'p' })
     await expect(src.actions.dispatch({ project: 'demo', label: 'b', prompt: 'p' })).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('answer clears the prompt, refuses a stale one and allow on a work approval', async () => {
+    const src = fixtureSource()
+    const agent = async (pid: number) => dispatchOf(await src.section('dispatch')).agents.find((a) => a.pid === pid)
+    await expect(src.actions.answer(5151, 'old', 'allow')).rejects.toMatchObject({ status: 409 })
+    await expect(src.actions.answer(5252, 'p-push', 'allow')).rejects.toMatchObject({ status: 409 })
+    expect((await agent(5252))?.prompt?.id).toBe('p-push')
+    await src.actions.answer(5151, 'p-shots', 'allow')
+    expect((await agent(5151))?.prompt ?? null).toBeNull()
+    await expect(src.actions.answer(5151, 'p-shots', 'allow')).rejects.toMatchObject({ status: 409 })
   })
 
   it('done drops the mail', async () => {

@@ -19,6 +19,18 @@ export interface Agent {
   started_at?: string | null
   last_action?: string | null
   last_prompt?: string | null
+  prompt?: Prompt | null
+}
+
+// The permission prompt a waiting session shows (item_174, crow-prompt). work_approval
+// names the work project of a push or MR: those are given in approvals, never here.
+export interface Prompt {
+  id: string
+  tool: string
+  detail: string
+  description?: string | null
+  work_approval?: string | null
+  options: Array<{ key: 'allow' | 'deny'; label: string }>
 }
 
 export interface Dispatch {
@@ -72,6 +84,7 @@ export interface NewRun { project: string; label: string; prompt: string; model?
 export interface Actions {
   send(pid: number, text: string): Promise<LiveReply>
   interrupt(pid: number): Promise<LiveReply>
+  answer(pid: number, prompt: string, option: 'allow' | 'deny'): Promise<LiveReply>
   stop(pid: number): Promise<LiveReply>
   resume(id: string, account?: string): Promise<LiveReply>
   start(s: NewSession): Promise<LiveReply>

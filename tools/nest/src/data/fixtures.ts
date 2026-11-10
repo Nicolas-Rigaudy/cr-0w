@@ -48,6 +48,15 @@ function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, n
       const a = agent(pid)
       return reply('interrupt', String(pid), { account: a.account, project: a.project })
     },
+    async answer(pid, prompt, option) {
+      const a = agent(pid)
+      const p = a.prompt
+      if (!p || p.id !== prompt) throw new ApiError(409, `pid ${pid} no longer waits on prompt ${prompt}`)
+      if (option === 'allow' && p.work_approval) throw new ApiError(409, `work approval on ${p.work_approval}: give it in approvals`)
+      const d = dispatch()
+      set('dispatch', { ...d, agents: d.agents.map((x) => (x === a ? { ...x, prompt: null, state: option === 'allow' ? 'working' : 'idle' } : x)) })
+      return reply('answer', String(pid), { text: `${option}: ${p.tool} ${p.detail}`, account: a.account, project: a.project })
+    },
     async stop(pid) {
       const a = drop(pid)
       return reply('stop', String(pid), { account: a.account, project: a.project })
