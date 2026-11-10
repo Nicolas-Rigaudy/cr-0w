@@ -51,7 +51,10 @@ def test_dry_run_resumes_one_session_id(hub):
 def test_send_dry_run_and_command(hub):
     ok = run(hub, "crow-focus", "--pid", "5", "--send", "yes", "--dry-run", env={"CROW_TERMINAL": "kitty"})
     assert ok.returncode == 0 and "'yes'" in ok.stdout and "pid 5" in ok.stdout and "kitty" in ok.stdout
-    assert ct.kitty_send_args("unix:/s", 7, "no") == ["kitten", "@", "--to", "unix:/s", "send-text", "--match", "id:7", "--", "no\r"]
+    assert ct.kitty_send_args("unix:/s", 7, "no") == [
+        ["kitten", "@", "--to", "unix:/s", "send-text", "--match", "id:7", "--", "no"],
+        ["kitten", "@", "--to", "unix:/s", "send-key", "--match", "id:7", "enter"],
+    ]
     assert run(hub, "crow-focus", "--send", "yes", "--dry-run").returncode != 0
 
 

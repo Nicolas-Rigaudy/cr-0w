@@ -20,6 +20,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import time
 
 BACKENDS = ("kitty", "tmux", "print")
 
@@ -117,8 +118,14 @@ def kitty_nearest(listings, pid, chain=None):
 
 
 def kitty_send_args(sock, wid, text):
-    """kitten command that types text and Enter into window wid."""
-    return ["kitten", "@", "--to", sock, "send-text", "--match", f"id:{wid}", "--", text + "\r"]
+    """kitten commands that type text, then press Enter, in window wid. Two writes: Claude Code
+    reads one burst as a paste and turns its Enter into a newline."""
+    to = ["kitten", "@", "--to", sock]
+    return [[*to, "send-text", "--match", f"id:{wid}", "--", text], [*to, "send-key", "--match", f"id:{wid}", "enter"]]
+
+
+# Pause between the text and its Enter, so the Enter is not part of the paste burst.
+SUBMIT_PAUSE = 0.3
 
 
 def kitty_sockets():
@@ -216,14 +223,16 @@ def focus(pid, backend=None):
 def send(pid, text, backend=None):
     """Type text and Enter into the window holding pid. True when a window took it."""
     backend = backend or choose()
-    if backend == "kitty" and (hit := kitty_locate(pid)):
-        subprocess.run(kitty_send_args(*hit, text), check=True, timeout=5)
-        return True
-    if backend == "tmux" and (pane := tmux_locate(pid)):
-        for cmd in tmux_send_args(pane, text):
-            subprocess.run(cmd, check=True, timeout=5)
-        return True
-    return False
+    hit = kitty_locate(pid) if backend == "kitty" else None
+    pane = tmux_locate(pid) if backend == "tmux" else None
+    cmds = kitty_send_args(*hit, text) if hit else tmux_send_args(pane, text) if pane else None
+    if not cmds:
+        return False
+    for i, cmd in enumerate(cmds):
+        if i:
+            time.sleep(SUBMIT_PAUSE)
+        subprocess.run(cmd, check=True, timeout=5)
+    return True
 
 
 def send_escape(pid, backend=None):
