@@ -239,6 +239,19 @@ def send_escape(pid, backend=None):
     return False
 
 
+def send_key(pid, key, backend=None):
+    """Press one key (no Enter) in the window holding pid, e.g. "1" on a Claude menu. True when a window took it."""
+    backend = backend or choose()
+    if backend == "kitty" and (hit := kitty_locate(pid)):
+        subprocess.run(["kitten", "@", "--to", hit[0], "send-text", "--match", f"id:{hit[1]}", "--", key],
+                       check=True, timeout=5)
+        return True
+    if backend == "tmux" and (pane := tmux_locate(pid)):
+        subprocess.run(["tmux", "send-keys", "-t", pane, "-l", key], check=True, timeout=5)
+        return True
+    return False
+
+
 def is_claude(pid, proc="/proc"):
     """True when pid runs the claude CLI (its command line names it)."""
     try:

@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""crow-prompt: the permission prompt a live Claude session waits on, and the answer to it.
+
+  crow-prompt hook                          PermissionRequest hook (stdin: the hook payload)
+  crow-prompt show --pid PID [--json]       the prompt PID waits on now, or nothing (exit 1)
+  crow-prompt answer --pid PID --prompt ID --option allow|deny [--dry-run] [--json]
+
+hook: records the exact tool and input of the prompt in <state>/prompts/<pid>.json, PID being
+the claude process that runs the hook. It prints nothing: stdout from a PermissionRequest hook
+would decide the prompt. Install it in every cdx profile's user settings (runbooks/new-account.md).
+
+A recorded prompt is pending while the session's own status file (<profile>/.claude/sessions/
+<pid>.json) says status "waiting", waitingFor "permission prompt", for the same session id.
+A later prompt of the same session overwrites the file, so its id changes.
+
+answer: re-checks that PID still waits on prompt ID, then presses the key in the window that
+holds PID: allow = "1" (Yes, once), deny = Escape (No; the turn stops and the session waits for
+the owner). "Always allow" is never offered: permission rules are not changed from here.
+Allow is refused on a work approval (push or MR/PR creation in a work repo): the owner gives
+those on the exact text (item_175). --json prints one action line (action.schema.json):
+exit 0 done, 1 refused (prompt changed, no window, work approval), 2 error.
+"""
+import hashlib
+import json
+import os
+import re
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+import crow_term  # noqa: E402
+
+OPTIONS = [{"key": "allow", "label": "Allow once"}, {"key": "deny", "label": "Deny"}]
+APPROVAL_OPTIONS = [{"key": "deny", "label": "Deny"}]
+DETAIL_KEYS = ("command", "file_path", "url", "pattern", "query", "path", "prompt", "skill")
+DETAIL_MAX = 2000
+PUSH_OR_MR = re.compile(r"\bgit\b[^|;&\n]*?\spush\b|\bgh\s+pr\s+create\b|\bglab\s+mr\s+create\b")
+
+
+def prompts_dir(home=None):
+    return Path(home or crow_lib.data_home()) / "local/state/prompts"
+
+
+def claude_pid(start=None, proc="/proc"):
+    """The claude process among start and its ancestors (the hook's parent chain), else None."""
+    for pid in crow_term.ancestors(start or os.getppid(), proc=proc):
+        if crow_term.is_claude(pid, proc=proc):
+            return pid
+    return None
+
+
+def detail_of(tool, inp):
+    """The exact thing the prompt asks about: the command, the file, the URL, else the raw input."""
+    for k in DETAIL_KEYS:
+        if isinstance(inp.get(k), str) and inp[k].strip():
+            return inp[k][:DETAIL_MAX]
+    return json.dumps(inp, ensure_ascii=False)[:DETAIL_MAX] if inp else tool
+
+
+def owner_project(path, projects):
+    """The registry project whose path holds path (longest match), else None."""
+    best = None
+    for p in projects:
+        root = str(p.get("path", "")).rstrip("/")
+        if root and (path == root or any(path.startswith(root + s) for s in ("/", ".wt/", ".live/"))):
+            if best is None or len(root) > len(best["path"].rstrip("/")):
+                best = p
+    return best
+
+
+def work_approval(tool, inp, cwd, projects):
+    """Name of the work project a push or MR/PR creation targets, else None."""
+    if tool != "Bash" or not PUSH_OR_MR.search(str(inp.get("command", ""))):
+        return None
+    cmd = str(inp["command"])
+    paths = [cwd or ""] + [w for w in re.split(r"[\s=:'\"]+", cmd) if w.startswith("/")]
+    for path in paths:
+        p = owner_project(path.rstrip("/"), projects)
+        if p and p.get("scope") == "work":
+            return p["name"]
+    for p in projects:
+        remote = p.get("remote")
+        if p.get("scope") == "work" and remote and remote in cmd:
+            return p["name"]
+    return None
+
+
+def record(event, pid, projects, now=None):
+    """The prompt file body for one PermissionRequest payload."""
+    tool, inp = event.get("tool_name") or "?", event.get("tool_input") or {}
+    sid = event.get("session_id") or ""
+    at = now if now is not None else time.time()
+    raw = json.dumps([pid, sid, tool, inp, at], sort_keys=True, ensure_ascii=False)
+    approval = work_approval(tool, inp, event.get("cwd"), projects)
+    return {
+        "schema": 1, "id": hashlib.sha1(raw.encode()).hexdigest()[:12], "pid": pid, "session_id": sid,
+        "tool": tool, "detail": detail_of(tool, inp),
+        "description": inp.get("description") if isinstance(inp.get("description"), str) else None,
+        "cwd": event.get("cwd"), "at": at, "work_approval": approval,
+        "options": APPROVAL_OPTIONS if approval else OPTIONS,
+    }
+
+
+def hook(stdin, home=None, pid=None, projects=None, now=None):
+    """Write the prompt file. Never raises: a broken hook must not block the session."""
+    try:
+        event = json.loads(stdin)
+        if event.get("hook_event_name") not in (None, "PermissionRequest"):
+            return 0
+        pid = pid or claude_pid()
+        if not pid:
+            return 0
+        if projects is None:
+            projects = (crow_lib.registry(home) or {}).get("projects") or []
+        d = prompts_dir(home)
+        d.mkdir(parents=True, exist_ok=True)
+        tmp = d / f".{pid}.json.tmp"
+        tmp.write_text(json.dumps(record(event, pid, projects, now), ensure_ascii=False))
+        tmp.replace(d / f"{pid}.json")
+    except Exception as e:  # noqa: BLE001 - the hook must exit 0 whatever happens
+        print(f"crow-prompt hook: {e}", file=sys.stderr)
+    return 0
+
+
+def session_meta(pid, proc="/proc"):
+    """Claude's own status file for pid: <HOME of pid>/.claude/sessions/<pid>.json (as crow-runs reads it)."""
+    try:
+        env = dict(l.split("=", 1) for l in Path(f"{proc}/{pid}/environ").read_bytes().decode(errors="replace")
+                   .split("\0") if "=" in l)
+        return json.loads((Path(env.get("HOME", "")) / ".claude/sessions" / f"{pid}.json").read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def pending(pid, home=None, meta=None):
+    """The prompt pid waits on now, else None."""
+    return crow_lib.pending_prompt(pid, meta if meta is not None else session_meta(pid), home)
+
+
+def public(p):
+    """The prompt as crow-runs json shows it on a waiting agent (runs.schema.json)."""
+    return {k: p.get(k) for k in crow_lib.PROMPT_FIELDS}
+
+
+def answer(pid, prompt_id, option, dry=False, backend=None, home=None, meta=None):
+    """(exit code, message)."""
+    if option not in ("allow", "deny"):
+        return 2, f"option must be allow or deny, not {option!r}"
+    p = pending(pid, home, meta)
+    if p is None:
+        return 1, f"pid {pid} waits on no permission prompt now"
+    if p["id"] != prompt_id:
+        return 1, f"pid {pid} now waits on another prompt ({p['id']}, {p['tool']}: {p['detail'][:80]})"
+    if option == "allow" and p.get("work_approval"):
+        return 1, f"work approval on {p['work_approval']}: give it on the exact text in approvals, not here"
+    backend = backend or crow_term.choose()
+    what = "press 1 (allow once)" if option == "allow" else "press Escape (deny)"
+    if dry:
+        return 0, f"{what} in the {backend} window holding pid {pid}"
+    ok = crow_term.send_key(pid, "1", backend) if option == "allow" else crow_term.send_escape(pid, backend)
+    if not ok:
+        return 1, (f"no {backend} window holds pid {pid}" if backend != "print"
+                   else "the print backend cannot press keys in a window (CROW_TERMINAL=kitty|tmux)")
+    return 0, ("allowed once: " if option == "allow" else "denied: ") + f"{p['tool']} {p['detail'][:80]}"
+
+
+def opts_of(args):
+    flags = {a for a in args if a in ("--json", "--dry-run")}
+    rest = [a for a in args if a not in flags]
+    return flags, {rest[i].lstrip("-"): rest[i + 1] for i in range(0, len(rest) - 1, 2)}
+
+
+def main(argv):
+    if argv[:1] == ["hook"]:
+        return hook(sys.stdin.read())
+    flags, opts = opts_of(argv[1:])
+    as_json = "--json" in flags
+    try:
+        pid = int(opts.get("pid", ""))
+    except ValueError:
+        sys.exit(__doc__)
+    if argv[:1] == ["show"]:
+        p = pending(pid)
+        if as_json:
+            print(json.dumps(public(p) if p else None, ensure_ascii=False))
+        elif p:
+            print(f"{p['tool']}: {p['detail']}" + (f"  [work approval: {p['work_approval']}]" if p["work_approval"] else ""))
+        return 0 if p else 1
+    if argv[:1] == ["answer"]:
+        if not opts.get("prompt") or not opts.get("option"):
+            sys.exit(__doc__)
+        code, msg = answer(pid, opts["prompt"], opts["option"], dry="--dry-run" in flags)
+        if as_json:
+            return crow_lib.action_result(code == 0, "answer", pid, msg, code)
+        print(msg if code == 0 else f"crow-prompt: {msg}", file=sys.stdout if code == 0 else sys.stderr)
+        return code
+    sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
