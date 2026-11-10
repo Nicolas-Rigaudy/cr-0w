@@ -248,7 +248,7 @@ def test_api_action_fixture_set():
     for want in (*ACTION_MISSIONS, "action-answer", "action-hide", "error-answer-stale"):
         assert want in names, want
     assert {p.stem for p in (API / "requests").glob("*.json")} == {
-        "dispatch", "answer", "answer-stale", "cancel", "send", "run", "session"}
+        "dispatch", "answer", "answer-stale", "cancel", "send", "run", "session", "prompt-answer"}
 
 
 @pytest.mark.parametrize("name", ACTION_MISSIONS)
@@ -272,6 +272,7 @@ def test_api_live_action_fixture(path):
 
 def test_api_live_fixture_set():
     names = {p.stem for p in API_FIXTURES}
-    for want in ("live-send", "live-dispatch", "live-start", "live-dispatch-refused", "error-send-unknown-pid"):
+    for want in ("live-send", "live-dispatch", "live-start", "live-dispatch-refused", "error-send-unknown-pid",
+                 "live-prompt-answer", "error-prompt-stale"):
         assert want in names, want
     assert load(API / "live-dispatch-refused.json")["code"] == 1

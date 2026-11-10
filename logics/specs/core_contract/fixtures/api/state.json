@@ -1,5 +1,5 @@
 {
-  "version": "d9fbf34d023ee96c",
+  "version": "b4914b9d1ab8f4a7",
   "sections": {
     "accounts": {
       "section": "accounts",
@@ -43,7 +43,7 @@
     },
     "dispatch": {
       "section": "dispatch",
-      "version": "4d3c4a46cd64d705",
+      "version": "f58890809b809191",
       "updated_at": "2026-11-10T09:00:00Z",
       "data": {
         "agents": [
@@ -68,6 +68,23 @@
                 "tokens": 1
               }
             ],
+            "prompt": {
+              "description": "description",
+              "detail": "detail",
+              "id": "id",
+              "options": [
+                {
+                  "key": "allow",
+                  "label": "label"
+                },
+                {
+                  "key": "deny",
+                  "label": "label"
+                }
+              ],
+              "tool": "tool",
+              "work_approval": null
+            },
             "provider": "provider",
             "recent": [
               {

@@ -10,7 +10,7 @@
     "ts": {"type": "string", "format": "date-time"},
     "actor": {"const": "owner"},
     "surface": {"enum": ["nest", "deck", "cli", "schedule"]},
-    "action": {"enum": ["send", "interrupt", "stop", "resume", "start", "dispatch", "run_stop", "done", "snooze"]},
+    "action": {"enum": ["send", "interrupt", "stop", "answer", "resume", "start", "dispatch", "run_stop", "done", "snooze"]},
     "target": {"type": "string", "minLength": 1},
     "text": {"type": "string"},
     "account": {"type": "string"},

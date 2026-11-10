@@ -15,7 +15,10 @@ import (
 // liveData are the section bodies the live actions check their targets against.
 var liveData = map[string]string{
 	"dispatch": `{"slots":{"busy":1,"max":2},"agents":[
-		{"kind":"session","pid":4242,"account":"main","project":"demo","cwd":"/src/demo","session_id":"s-1","run_id":null},
+		{"kind":"session","pid":4242,"account":"main","project":"demo","cwd":"/src/demo","session_id":"s-1","run_id":null,
+		 "prompt":{"id":"p1","tool":"Bash","detail":"date +%s > stamp.txt","work_approval":null}},
+		{"kind":"session","pid":6161,"account":"main","project":"demo","cwd":"/src/demo","session_id":"s-3","run_id":null,
+		 "prompt":{"id":"p2","tool":"Bash","detail":"git push origin feat","work_approval":"demo"}},
 		{"kind":"run","pid":5151,"account":"spare","project":"demo","cwd":"/src/demo.wt/r","session_id":"s-2","run_id":"a1b2c3d4"}]}`,
 	"sessions": `{"sessions":[{"conversation_id":"c0ffee00-0000-4000-8000-000000000001","account":"main","cwd":"/src/demo","project":"demo","limit":"five_hour"}]}`,
 	"accounts": `{"default":"main","accounts":[{"name":"main","policy":"use"},{"name":"spare","policy":"ask-first"},{"name":"locked","policy":"never"}]}`,
@@ -90,6 +93,8 @@ func TestLiveFixtures(t *testing.T) {
 		reply func(scriptCall) ([]byte, error)
 	}{
 		"live-send":                   {post("/api/sessions/4242/send", request(t, "send")), 200, nil},
+		"live-prompt-answer":          {post("/api/sessions/4242/answer", request(t, "prompt-answer")), 200, nil},
+		"error-prompt-stale":          {post("/api/sessions/4242/answer", `{"prompt":"old","option":"allow"}`), 409, nil},
 		"live-dispatch":               {post("/api/dispatch", request(t, "run")), 200, dispatched},
 		"live-start":                  {post("/api/sessions", request(t, "session")), 200, func(scriptCall) ([]byte, error) { return nil, nil }},
 		"error-send-unknown-pid":      {post("/api/sessions/9999/send", request(t, "send")), 404, nil},
@@ -128,6 +133,10 @@ func TestLiveActionsRunTheirScript(t *testing.T) {
 		{"/api/sessions/4242/send", `{"text":"yes, go on"}`, "crow-focus", []string{"--pid", "4242", "--send", "yes, go on", "--json"}, nil},
 		{"/api/sessions/4242/interrupt", "", "crow-focus", []string{"--pid", "4242", "--interrupt", "--json"}, nil},
 		{"/api/sessions/5151/stop", "", "crow-focus", []string{"--pid", "5151", "--stop", "--json"}, nil},
+		{"/api/sessions/4242/answer", `{"prompt":"p1","option":"allow"}`, "crow-prompt",
+			[]string{"answer", "--pid", "4242", "--prompt", "p1", "--option", "allow", "--json"}, nil},
+		{"/api/sessions/6161/answer", `{"prompt":"p2","option":"deny"}`, "crow-prompt",
+			[]string{"answer", "--pid", "6161", "--prompt", "p2", "--option", "deny", "--json"}, nil},
 		{"/api/dispatch/a1b2c3d4/stop", "", "crow-runs", []string{"stop", "a1b2c3d4", "--json"}, nil},
 		{"/api/today/mail-1/done", "", "crow-today", []string{"done", "mail-1", "--json"}, nil},
 		{"/api/today/mail-2/snooze", "", "crow-today", []string{"snooze", "mail-2", "--json"}, nil},
@@ -192,6 +201,11 @@ func TestLiveRefusalsRunNothing(t *testing.T) {
 		{post("/api/sessions/abc/send", `{"text":"x"}`), 404},
 		{post("/api/sessions/4242/send", `{"text":"  "}`), 400},
 		{post("/api/dispatch/nope/stop", ""), 404},
+		{post("/api/sessions/4242/answer", `{"prompt":"old","option":"allow"}`), 409},
+		{post("/api/sessions/5151/answer", `{"prompt":"p1","option":"deny"}`), 409},
+		{post("/api/sessions/6161/answer", `{"prompt":"p2","option":"allow"}`), 409},
+		{post("/api/sessions/4242/answer", `{"prompt":"p1","option":"always"}`), 400},
+		{post("/api/sessions/4242/answer", `{"option":"deny"}`), 400},
 		{post("/api/today/mail-9/done", ""), 404},
 		{post("/api/sessions/unknown/resume", ""), 404},
 		{post("/api/sessions", `{"project":"ghost"}`), 400},

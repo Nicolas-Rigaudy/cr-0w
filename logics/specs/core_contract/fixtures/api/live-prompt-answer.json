@@ -1,0 +1,13 @@
+{
+  "ts": "2026-11-10T09:00:00Z",
+  "actor": "owner",
+  "surface": "nest",
+  "action": "answer",
+  "target": "4242",
+  "text": "allow: Bash date +%s > stamp.txt",
+  "account": "main",
+  "project": "demo",
+  "ok": true,
+  "code": 0,
+  "message": "done"
+}

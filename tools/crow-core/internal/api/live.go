@@ -64,6 +64,13 @@ type RunRequest struct {
 	Model   string `json:"model,omitempty"`
 }
 
+// PromptAnswer is the body of POST /api/sessions/{pid}/answer (item_174): the prompt id the
+// owner saw and the option tapped, allow (once) or deny.
+type PromptAnswer struct {
+	Prompt string `json:"prompt"`
+	Option string `json:"option"`
+}
+
 // Send is the body of POST /api/sessions/{pid}/send.
 type Send struct {
 	Text string `json:"text"`
@@ -75,6 +82,7 @@ func (s *Server) routeLive(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/sessions/{pid}/send", s.send)
 	mux.HandleFunc("POST /api/sessions/{pid}/interrupt", s.agentCtl("interrupt"))
 	mux.HandleFunc("POST /api/sessions/{pid}/stop", s.agentCtl("stop"))
+	mux.HandleFunc("POST /api/sessions/{pid}/answer", s.promptAnswer)
 	mux.HandleFunc("POST /api/dispatch", s.dispatchRun)
 	mux.HandleFunc("POST /api/dispatch/{run}/stop", s.stopRun)
 	mux.HandleFunc("POST /api/today/{id}/done", s.mail("done"))
@@ -227,6 +235,43 @@ func (s *Server) agentCtl(action string) http.HandlerFunc {
 		s.runAction(w, ev, nil, "crow-focus", "--pid", pid, "--"+action, "--json")
 		s.Refresh("dispatch")
 	}
+}
+
+// promptAnswer presses allow or deny on the permission prompt a session waits on. The prompt
+// must still be the one the owner saw (409 otherwise, nothing pressed); allow on a work
+// push or MR is refused here and again by the script (owner prefs: approvals only).
+func (s *Server) promptAnswer(w http.ResponseWriter, r *http.Request) {
+	var b PromptAnswer
+	if !decode(w, r, &b, false) {
+		return
+	}
+	if b.Option != "allow" && b.Option != "deny" {
+		fail(w, http.StatusBadRequest, "option: allow or deny")
+		return
+	}
+	if strings.TrimSpace(b.Prompt) == "" {
+		fail(w, http.StatusBadRequest, "prompt: required")
+		return
+	}
+	pid := r.PathValue("pid")
+	a, err := s.agent(pid)
+	if err != nil {
+		liveFail(w, err, http.StatusNotFound)
+		return
+	}
+	p, _ := a["prompt"].(map[string]any)
+	switch {
+	case p == nil || str(p, "id") != b.Prompt:
+		fail(w, http.StatusConflict, "pid "+pid+" no longer waits on that prompt")
+		return
+	case b.Option == "allow" && str(p, "work_approval") != "":
+		fail(w, http.StatusConflict, "work approval on "+str(p, "work_approval")+": give it in approvals")
+		return
+	}
+	ev := LiveAction{Action: "answer", Target: pid, Text: b.Option + ": " + str(p, "tool") + " " + str(p, "detail"),
+		Account: str(a, "account"), Project: str(a, "project")}
+	s.runAction(w, ev, nil, "crow-prompt", "answer", "--pid", pid, "--prompt", b.Prompt, "--option", b.Option, "--json")
+	s.Refresh("dispatch")
 }
 
 func (s *Server) resume(w http.ResponseWriter, r *http.Request) {
