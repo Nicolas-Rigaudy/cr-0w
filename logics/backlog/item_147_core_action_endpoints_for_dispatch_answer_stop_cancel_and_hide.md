@@ -1,10 +1,10 @@
 ## item_147_core_action_endpoints_for_dispatch_answer_stop_cancel_and_hide - Core action endpoints for dispatch answer stop cancel and hide
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 18%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,6 +57,10 @@
 
 # Notes
 - Groomed 2026-11-09 from req_028 slice 3.
+- Built 2026-11-10 in 4fbef04. `internal/mission/actions.go` holds `Stop`, `Hide` and `MissionItem`; `Cancel` and `InboxReply` take the surface. `internal/api/actions.go` maps them to `POST /api/missions`, `/api/missions/<id>/{answer,stop,cancel}` and `/api/inbox/<item>/hide`. Errors: `ErrInvalid` 400, `ErrConflict` 409, not found 404. Ids are exact on the API.
+- Contract: new `action` event `{action, surface, reason?, run?, item?}` with `actor: owner`, written before the state event it causes. Hide drops the inbox row. CLI twins: `crow mission stop`, `crow inbox hide`. Documented in `runbooks/core-service.md`.
+- Proof: AC1 TestAnswerLeavesWaiting, AC2 and AC3 TestRefusedActionsWriteNothing (log and answers unchanged), AC4 TestInboxAnswerMatchesTheEndpoint. Reply fixtures `api/action-*.json` and `api/error-*.json`, checked by tests/test_core_contract.py.
+- Not done: attachments on answers (unknown fields are refused). Session and run actions are item_170.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
