@@ -76,6 +76,7 @@ core applies these rules to every sidecar. The values are defaults in the core c
 - **Mission record:** the fields of adr_001 "Mission record", plus `created` and `updated`. `runs` holds run entries. Nullable fields (`batch`, `validation`, `branch`, `worktree`, `mr`) are always present.
 - **Run entry:** `run` (cdx run id), `mission`, `account`, `version`, `cold`, `started`, `ended`, `cause`, `exit`. The last three are null while the run is live.
 - **Inbox row:** id `<mission>/v<N>` for a gate, `<mission>/v<N>/<question id>` for a parked question. `type` follows the source: plan is `approval`, report is `review` (`fyi` for a straight-through kind), mockup and questions are `choice`. `verbs` are the gate verbs of req_037; a parked question takes `answer`.
+- **Live action line** (`live-action.schema.json`, item_170): `{ts, actor, surface, action, target, text?, account?, project?, ok, code, message, run_id?}` in `<state>/actions.jsonl`, one line per session, run or mail action the owner ran through core. `actor` is `owner`. `code` follows the script contract: 0 done, 1 refused, 2 failed. Fixtures: `fixtures/api/live-*.json`, requests `send`, `run`, `session`.
 
 ## Shared Go module boundary with crow-deck
 

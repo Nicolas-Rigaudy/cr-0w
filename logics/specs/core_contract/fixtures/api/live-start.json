@@ -1,0 +1,13 @@
+{
+  "ts": "2026-11-10T09:00:00Z",
+  "actor": "owner",
+  "surface": "nest",
+  "action": "start",
+  "target": "demo",
+  "text": "Look at the failing build.",
+  "account": "main",
+  "project": "demo",
+  "ok": true,
+  "code": 0,
+  "message": "opened a window on demo"
+}

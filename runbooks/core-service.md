@@ -30,6 +30,15 @@
 - CLI twins: `crow mission new|cancel|stop <id>`, `crow inbox answer`, `crow inbox hide <item>`.
 - Probe: `curl -s --unix-socket local/state/core.sock -H 'X-Crow: 1' -X POST http://x/api/missions/<id>/stop`.
 
+## Live actions (sessions, runs, mail)
+- `POST /api/sessions` (body `{project, account?, prompt?}`): `crow term --on-busy fail`, account forced through `CROW_ACCOUNT`.
+- `POST /api/sessions/<id>/resume` (body `{account?}`): resumes a row of the `sessions` section in its own cwd.
+- `POST /api/sessions/<pid>/send` (body `{text}`), `/interrupt`, `/stop`: `crow-focus --pid`. The pid must be an agent of the `dispatch` section.
+- `POST /api/dispatch` (body `{project, label, prompt, model?}`): `crow-runs dispatch` with a temp prompt file. Full slots are 409 before anything runs.
+- `POST /api/dispatch/<run>/stop`, `POST /api/today/<id>/done`, `/snooze` (Outlook flag only).
+- Each route refreshes the section it checks first. A failed refresh is a stale view: 409, nothing runs. Accounts with policy `never` are 400.
+- Replies: 200 done, 409 refused (script code 1), 502 failed (code 2), 503 no script runner. Every run appends one line to `local/state/actions.jsonl` with `actor: owner`, `surface: nest`.
+
 ## Sections
 - Store sections: `inbox`, `missions`, `runs`.
 - Script sections, the deck's own `bin/` JSON: `sessions` (crow-sessions), `dispatch` (crow-runs), `usage` (crow-usage), `today` (crow-today), `mrs` (crow-mrs), `checks` (crow-checks), `projects` (crow-registry), `accounts` (crow-accounts), plus `jobs` (systemd timers).

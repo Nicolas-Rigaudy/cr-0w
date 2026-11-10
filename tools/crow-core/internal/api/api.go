@@ -41,11 +41,13 @@ type Fetch func() (any, error)
 
 // Options builds a Server.
 type Options struct {
-	Env     mission.Env
-	Owner   func() string // tailnet login allowed on the TCP listener; empty refuses all
-	Nest    string        // built Nest dir served at /; empty serves no app
-	Sources []Source      // sections outside the store, refreshed in the background
-	Now     func() time.Time
+	Env       mission.Env
+	Owner     func() string // tailnet login allowed on the TCP listener; empty refuses all
+	Nest      string        // built Nest dir served at /; empty serves no app
+	Sources   []Source      // sections outside the store, refreshed in the background
+	Now       func() time.Time
+	Script    Script // runs the bin/ scripts of the live actions (live.go); nil refuses them
+	ActionLog string // core action log the live actions append to
 }
 
 // Server answers the routes. It is safe for concurrent use.
@@ -109,6 +111,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	mux.HandleFunc("GET /api/missions/{id}/artifacts/{path...}", s.artifact)
 	mux.HandleFunc("GET /api/events", s.events)
 	s.routeActions(mux)
+	s.routeLive(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})

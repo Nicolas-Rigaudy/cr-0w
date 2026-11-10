@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/live-action.schema.json",
+  "title": "live action line",
+  "description": "One line of the core action log (actions.jsonl next to the missions root) and the reply of each live route (item_170): an owner action on a live session, a dispatch run or a Today mail. Code: 0 done, 1 refused by the script, 2 script error.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ts", "actor", "surface", "action", "target", "ok", "code", "message"],
+  "properties": {
+    "ts": {"type": "string", "format": "date-time"},
+    "actor": {"const": "owner"},
+    "surface": {"enum": ["nest", "deck", "cli", "schedule"]},
+    "action": {"enum": ["send", "interrupt", "stop", "resume", "start", "dispatch", "run_stop", "done", "snooze"]},
+    "target": {"type": "string", "minLength": 1},
+    "text": {"type": "string"},
+    "account": {"type": "string"},
+    "project": {"type": "string"},
+    "ok": {"type": "boolean"},
+    "code": {"enum": [0, 1, 2]},
+    "message": {"type": "string"},
+    "run_id": {"type": "string"}
+  },
+  "allOf": [
+    {"if": {"properties": {"ok": {"const": true}}}, "then": {"properties": {"code": {"const": 0}}}},
+    {"if": {"properties": {"ok": {"const": false}}}, "then": {"properties": {"code": {"enum": [1, 2]}}}}
+  ]
+}

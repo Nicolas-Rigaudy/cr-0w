@@ -40,7 +40,7 @@ def lines(p):
 def test_every_schema_has_fixtures():
     assert {p.name for p in SCHEMAS.glob("*.json")} == {
         "request.schema.json", "reply.schema.json", "event.schema.json",
-        "mission.schema.json", "run.schema.json", "inbox.schema.json"}
+        "mission.schema.json", "run.schema.json", "inbox.schema.json", "live-action.schema.json"}
 
 
 @pytest.mark.parametrize("path", MESSAGE_FIXTURES, ids=lambda p: p.name)
@@ -247,7 +247,8 @@ def test_api_action_fixture_set():
     names = {p.stem for p in API_FIXTURES}
     for want in (*ACTION_MISSIONS, "action-answer", "action-hide", "error-answer-stale"):
         assert want in names, want
-    assert {p.stem for p in (API / "requests").glob("*.json")} == {"dispatch", "answer", "answer-stale", "cancel"}
+    assert {p.stem for p in (API / "requests").glob("*.json")} == {
+        "dispatch", "answer", "answer-stale", "cancel", "send", "run", "session"}
 
 
 @pytest.mark.parametrize("name", ACTION_MISSIONS)
@@ -261,3 +262,16 @@ def test_api_action_hide_and_answer_fixtures():
     ans = load(API / "action-answer.json")
     assert set(ans) == {"item", "verb", "file", "points", "state", "validations", "dropped"}
     assert ans["state"] == "queued" and ans["file"] == "answers.v1.md"
+
+
+# Live actions (item_170): replies are action log lines.
+@pytest.mark.parametrize("path", sorted(API.glob("live-*.json")), ids=lambda p: p.name)
+def test_api_live_action_fixture(path):
+    assert not errors("live-action.schema.json", load(path))
+
+
+def test_api_live_fixture_set():
+    names = {p.stem for p in API_FIXTURES}
+    for want in ("live-send", "live-dispatch", "live-start", "live-dispatch-refused", "error-send-unknown-pid"):
+        assert want in names, want
+    assert load(API / "live-dispatch-refused.json")["code"] == 1

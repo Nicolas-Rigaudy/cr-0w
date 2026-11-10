@@ -1,0 +1,14 @@
+{
+  "ts": "2026-11-10T09:00:00Z",
+  "actor": "owner",
+  "surface": "nest",
+  "action": "dispatch",
+  "target": "demo",
+  "text": "Fix the flaky upload test and commit the fix.",
+  "account": "spare",
+  "project": "demo",
+  "ok": true,
+  "code": 0,
+  "message": "dispatched run e5f6a7b8",
+  "run_id": "e5f6a7b8"
+}

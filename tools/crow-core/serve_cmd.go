@@ -34,10 +34,12 @@ const unitName = "crow-core.service"
 func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 	owner := ownerLogin(cfg.Serve.Owner)
 	srv := api.New(api.Options{
-		Env:     env,
-		Owner:   owner,
-		Nest:    cfg.Serve.Nest,
-		Sources: sources(cfg),
+		Env:       env,
+		Owner:     owner,
+		Nest:      cfg.Serve.Nest,
+		Sources:   sources(cfg),
+		Script:    scriptRunner(cfg.Engine),
+		ActionLog: filepath.Join(filepath.Dir(env.Store.Root()), api.ActionLogName),
 	})
 	tcp, err := net.Listen("tcp", cfg.Serve.Listen)
 	if err != nil {
@@ -200,6 +202,33 @@ func scriptFetch(engine string, sc script) api.Fetch {
 			return nil, fmt.Errorf("%s: %w", sc.args[0], err)
 		}
 		return v, nil
+	}
+}
+
+// scriptRunner runs the live actions' bin/ scripts (item_170). Nil without an engine.
+func scriptRunner(engine string) api.Script {
+	if engine == "" {
+		return nil
+	}
+	return func(env []string, name string, args ...string) ([]byte, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, filepath.Join(engine, "bin", name), args...)
+		cmd.Env = append(os.Environ(), env...)
+		out, err := cmd.Output()
+		if err == nil {
+			return out, nil
+		}
+		if ctx.Err() != nil {
+			return out, fmt.Errorf("%s: timed out", name)
+		}
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			if msg := stderrTail(ee.Stderr); msg != "" {
+				return out, fmt.Errorf("%s: %w: %s", name, err, msg)
+			}
+		}
+		return out, fmt.Errorf("%s: %w", name, err)
 	}
 }
 

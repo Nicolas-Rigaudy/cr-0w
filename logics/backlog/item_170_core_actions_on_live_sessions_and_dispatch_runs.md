@@ -71,6 +71,13 @@
 # Notes
 - Owner 2026-11-10: most runs will be missions. Mission rows and actions come first; sessions and dispatch runs follow.
 - Confirm sheet visuals: mockup first if it differs from item_168's answer sheet; reuse that sheet when possible.
+- Built 2026-11-10 (core step), differences from the table above:
+  - `POST /sessions` reuses `crow term --on-busy fail PROJECT [prompt]` with `CROW_ACCOUNT` set; no new `crow-focus --new` mode.
+  - Resume takes only `{account?}`; the cwd comes from the `sessions` row, so the phone cannot pick a directory.
+  - Pids are checked against the agents of the `dispatch` section (it lists both sessions and runs with their pid); `sessions` lists resumable conversations.
+  - Dispatch calls `crow-runs dispatch` (what `crow dispatch` wraps) with `--json`.
+  - Stale view = the touched section failed its refresh: 409, nothing runs.
+  - Events go to `local/state/actions.jsonl` (live-action schema), since these actions have no mission.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

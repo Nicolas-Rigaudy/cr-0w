@@ -1,0 +1,6 @@
+{
+  "project": "demo",
+  "label": "flaky-test",
+  "prompt": "Fix the flaky upload test and commit the fix.",
+  "model": "sonnet"
+}

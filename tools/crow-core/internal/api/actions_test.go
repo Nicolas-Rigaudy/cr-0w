@@ -148,8 +148,8 @@ func TestActionEvents(t *testing.T) {
 		t.Errorf("stopped = %v", *stopped)
 	}
 	for id, tail := range map[string]string{
-		testfix.Running: "run_start,action",
-		testfix.Waiting: "state,action,state",
+		testfix.Running:                          "run_start,action",
+		testfix.Waiting:                          "state,action,state",
 		"20261109-research-android-push-options": "state,action",
 	} {
 		if got := strings.Join(eventTypes(t, root, id), ","); !strings.HasSuffix(got, tail) {
