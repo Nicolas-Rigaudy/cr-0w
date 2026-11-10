@@ -1,0 +1,168 @@
+import { countByState, lastRun, openInbox, uiState } from '../data/state'
+import type { InboxItem } from '../data/types'
+import type { Snapshot } from '../data/useData'
+import { ago, elapsed, time, title } from '../format'
+import { Link } from '../router'
+import { Glyph } from '../ui/Glyph'
+import { byUrgency } from './order'
+
+// Laptop home (board Main / home-cyber): needs + missions + MRs | hero slot | agenda + inbox + reports.
+
+const ANSWER: Record<string, string> = { approval: 'Approve', review: 'Accept', choice: 'Answer' }
+
+function Kc({ n, href, label }: { n: number; href: string; label: string }) {
+  return <Link href={href} className="kc" title={`${label} tab`} aria-label={`Open ${label}`}>{n}</Link>
+}
+
+function Later() {
+  return <div className="sm later">Arrives with the live API</div>
+}
+
+export function HomeLaptop({ snap }: { snap: Snapshot }) {
+  const { missions, inbox, now } = snap
+  const c = countByState(missions, inbox)
+  const open = openInbox(inbox)
+  const asks = open
+    .filter((r) => r.type !== 'fyi')
+    .sort((a, b) => Number(!!b.blocking) - Number(!!a.blocking) || a.created.localeCompare(b.created))
+  const fyi = open.filter((r) => r.type === 'fyi')
+  const failed = missions.filter((m) => uiState(m, inbox) === 'failed')
+  const ranked = byUrgency(missions, inbox)
+  const live = ranked.filter((m) => uiState(m, inbox) !== 'done')
+  const done = ranked.filter((m) => uiState(m, inbox) === 'done')
+  const byId = (r: InboxItem) => missions.find((m) => m.id === r.mission)
+  const [first, ...rest] = asks
+  const firstM = first && byId(first)
+  let q = 0
+
+  return (
+    <div className="lp home-lp">
+      <div className="rail">
+        <section className="pn" aria-labelledby="h-needs">
+          <h2 className="ph" id="h-needs"><span>Needs you</span><span className="st c-n">{asks.length + failed.length}</span></h2>
+          {first ? (
+            <div className="row card edge-n">
+              <div className="line">
+                <Glyph state="needs" />
+                <b className="t">{firstM ? title(firstM) : first.ask}</b>
+                <span className="tag c-tag">{first.project}</span>
+                <Kc n={4} href="/inbox" label="Inbox" />
+              </div>
+              <div className="sm">{first.ask} · {ago(first.created, now)}</div>
+              <div className="acts">
+                <Link href="/inbox" className="btn pri">{ANSWER[first.type] ?? 'Open'}</Link>
+                {firstM && <Link href={`/missions/${firstM.id}`} className="btn">Mission</Link>}
+              </div>
+            </div>
+          ) : !failed.length && <div className="sm later">All quiet, Sir.</div>}
+          {rest.map((r) => (
+            <div key={r.id} className="row edge-n">
+              <Glyph state="needs" />
+              <span className="t">{r.ask}</span>
+              <span className="sm">{ago(r.created, now)}</span>
+              <Kc n={4} href="/inbox" label="Inbox" />
+            </div>
+          ))}
+          {failed.map((m) => {
+            const run = lastRun(m)
+            return (
+              <div key={m.id} className="row edge-f">
+                <Glyph state="failed" />
+                <span className="t">{title(m)} failed</span>
+                {run?.ended && <span className="sm">{ago(run.ended, now)}</span>}
+                <Kc n={3} href={`/missions/${m.id}`} label="Missions" />
+              </div>
+            )
+          })}
+        </section>
+
+        <section className="pn grow" aria-labelledby="h-ms">
+          <h2 className="ph" id="h-ms">
+            <span className="k">3</span><span>Missions</span>
+            <span className="st">{c.working} run · {c.queued} queue · {c.sleeping} sleep</span>
+            <Link href="/missions" className="go">open →</Link>
+          </h2>
+          <div className="kpi">
+            <div className="c-d"><b>{c.done}</b><span className="sm">done</span></div>
+            <div className="c-w"><b>{c.working}</b><span className="sm">working</span></div>
+            <div className="c-n"><b>{c.needs}</b><span className="sm">needs</span></div>
+            <div className="c-f"><b>{c.failed}</b><span className="sm">failed</span></div>
+          </div>
+          <div className="list">
+            {live.map((m) => {
+              const s = uiState(m, inbox)
+              const run = lastRun(m)
+              let end
+              if (s === 'working' && run && !run.ended) end = <span className="tm">{elapsed(run.started, now)}</span>
+              else if (s === 'queued') end = <span className="sm">Q{++q}</span>
+              else if (s === 'sleeping') end = <span className="sm">sleep</span>
+              else if (s === 'needs') end = <span className="sm c-n">needs you</span>
+              else if (s === 'failed') end = <span className="sm c-f">failed</span>
+              return (
+                <Link key={m.id} href={`/missions/${m.id}`} className="row">
+                  <Glyph state={s} /><span className="t">{title(m)}</span>{end}
+                </Link>
+              )
+            })}
+            {done.map((m) => {
+              const run = lastRun(m)
+              return (
+                <Link key={m.id} href={`/missions/${m.id}`} className="row past">
+                  <Glyph state="done" /><span className="t">{title(m)}</span>
+                  {run?.ended && <span className="sm">{time(run.ended)}</span>}
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="pn" aria-labelledby="h-mrs">
+          <h2 className="ph" id="h-mrs"><span className="k">5</span><span>MRs</span><Link href="/mrs" className="go st">open →</Link></h2>
+          <Later />
+        </section>
+      </div>
+
+      <section className="slot" aria-label="Hero slot">
+        <svg aria-hidden="true" viewBox="0 0 200 200" width="220" height="220" fill="none" stroke="currentColor">
+          <circle cx="100" cy="100" r="92" strokeDasharray="2 6" />
+          <circle cx="100" cy="100" r="64" />
+          <circle cx="100" cy="100" r="34" strokeDasharray="4 4" />
+          <circle cx="164" cy="100" r="4" fill="currentColor" />
+        </svg>
+        <span className="sm label">hero slot · designed on its own board</span>
+      </section>
+
+      <div className="rail">
+        <section className="pn" aria-labelledby="h-ag">
+          <h2 className="ph" id="h-ag"><span className="k">6</span><span>Agenda</span><Link href="/agenda" className="go st">open →</Link></h2>
+          <Later />
+        </section>
+
+        <section className="pn grow" aria-labelledby="h-ib">
+          <h2 className="ph" id="h-ib">
+            <span className="k">4</span><span>Inbox</span>
+            <span className="st c-n">{asks.length} to answer</span>
+            <Link href="/inbox" className="go">open →</Link>
+          </h2>
+          <div className="list">
+            {asks.map((r) => (
+              <Link key={r.id} href="/inbox" className="row">
+                <span className="tag c-n">Answer</span><span className="t">{r.ask}</span><span className="sm">{time(r.created)}</span>
+              </Link>
+            ))}
+            {fyi.map((r) => (
+              <Link key={r.id} href="/inbox" className="row">
+                <span className="tag c-tag">FYI</span><span className="t">{r.ask}</span><span className="sm">{time(r.created)}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="pn" aria-labelledby="h-rp">
+          <h2 className="ph" id="h-rp"><span className="k">7</span><span>Reports</span><Link href="/reports" className="go st">open →</Link></h2>
+          <Later />
+        </section>
+      </div>
+    </div>
+  )
+}

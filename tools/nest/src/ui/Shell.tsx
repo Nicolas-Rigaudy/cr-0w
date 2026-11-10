@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { countByState, openInbox } from '../data/state'
 import type { Snapshot } from '../data/useData'
-import { time } from '../format'
+import { headerClock, time } from '../format'
 import { Link } from '../router'
 import { Glyph } from './Glyph'
 import { TABS, TabIcon, type TabKey } from './icons'
@@ -34,9 +34,9 @@ export function Shell({ active, snap, children }: { active: TabKey; snap: Snapsh
       <header className="top">
         <Link href="/" className="logo" aria-label="CR-0W home">CR-0W</Link>
         <nav className="pills" aria-label="Tabs">
-          {TABS.map((t) => (
+          {TABS.map((t, i) => (
             <Link key={t.key} href={t.path} className="pill" aria-current={t.key === active ? 'page' : undefined}>
-              {t.label}
+              <span className="tn">{i + 1}</span>{t.label}
               {b[t.key]?.n ? <span className={`badge-t num${b[t.key]!.failed ? ' f' : ''}`}>{b[t.key]!.n}</span> : null}
             </Link>
           ))}
@@ -48,7 +48,7 @@ export function Shell({ active, snap, children }: { active: TabKey; snap: Snapsh
             <span className="chip c-w"><Glyph state="working" size={12} />{c.working}</span>
           </span>
         )}
-        {snap && <span className="clock">{time(snap.now)}</span>}
+        {snap && <span className="clock"><span className="short">{time(snap.now)}</span><span className="long">{headerClock(snap.now, theme === 'cyber')}</span></span>}
         <button type="button" className="icon-btn" onClick={toggle} aria-label={`Theme: ${theme}. Switch to ${theme === 'modern' ? 'cyber' : 'modern'}`} title="Switch theme">
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />

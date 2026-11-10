@@ -5,8 +5,16 @@ import { Link } from '../router'
 import { Glyph } from '../ui/Glyph'
 import { MissionRow } from '../ui/MissionRow'
 import { byUrgency } from './order'
+import { HomeLaptop } from './HomeLaptop'
+import { LAPTOP, useMedia } from '../ui/useMedia'
 
 export function Home({ snap }: { snap: Snapshot }) {
+  const laptop = useMedia(LAPTOP)
+  if (laptop) return <HomeLaptop snap={snap} />
+  return <HomeCompact snap={snap} />
+}
+
+function HomeCompact({ snap }: { snap: Snapshot }) {
   const { missions, inbox, now } = snap
   const c = countByState(missions, inbox)
   const asks = openInbox(inbox).filter((r) => r.type !== 'fyi')

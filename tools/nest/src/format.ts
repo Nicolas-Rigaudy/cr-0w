@@ -31,3 +31,28 @@ export function greeting(now: Date) {
   const h = now.getHours()
   return h < 12 ? 'Good morning, Sir' : h < 18 ? 'Good afternoon, Sir' : 'Good evening, Sir'
 }
+
+// Age of an event: "12m", "3h", "4d".
+export function ago(iso: string, now: Date) {
+  const min = Math.max(0, Math.round((now.getTime() - new Date(iso).getTime()) / 60000))
+  if (min < 60) return `${min}m`
+  if (min < 1440) return `${Math.floor(min / 60)}h`
+  return `${Math.floor(min / 1440)}d`
+}
+
+// Elapsed run time as a clock: "01:05".
+export function elapsed(fromIso: string, to: Date) {
+  const min = Math.max(0, Math.floor((to.getTime() - new Date(fromIso).getTime()) / 60000))
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+}
+
+const wd = new Intl.DateTimeFormat('en-GB', { weekday: 'short' })
+const mo = new Intl.DateTimeFormat('en-GB', { month: 'short' })
+const dd = (d: Date) => String(d.getDate()).padStart(2, '0')
+
+// Laptop header clock: "MON 09 NOV · 14:32" (modern), "MON 09.11 · 14:32" (cyber).
+export function headerClock(d: Date, cyber: boolean) {
+  const day = wd.format(d).toUpperCase()
+  const md = cyber ? `${dd(d)}.${String(d.getMonth() + 1).padStart(2, '0')}` : `${dd(d)} ${mo.format(d).toUpperCase()}`
+  return `${day} ${md} · ${time(d)}`
+}
