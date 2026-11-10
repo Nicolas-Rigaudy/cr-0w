@@ -75,3 +75,7 @@ PLAYWRIGHT_BROWSERS_PATH=<cache> npm run shots -- <out_dir>
 
 Headless only. Captures Home, Missions, Mission detail and Inbox at 368x812, 707x691 and
 1440x900 in both themes.
+
+`npm run build` gives the live-API build, so the shots show whatever core returns. For fixture
+data, build with `NODE_ENV=development npx vite build --mode development`, take the shots, then
+run `npm run build` again so `dist` serves the phone the live build.
