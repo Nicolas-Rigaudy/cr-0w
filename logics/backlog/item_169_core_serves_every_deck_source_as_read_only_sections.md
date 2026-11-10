@@ -1,10 +1,10 @@
 ## item_169_core_serves_every_deck_source_as_read_only_sections - Core serves every deck source as read-only sections
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -75,6 +75,11 @@
 # Notes
 - Build in the hub repo (crow-core is in cr-0w), fresh session.
 - Script data reaches only the owner's devices: core checks the tailnet identity (item_144).
+- Built 2026-11-10 in 50ad41a (core) and 1011e0e (Nest). `internal/api/refresh.go` holds one refresher per external section: last good body served at once, one run at a time, ticked every second, idle after 2 min. `accounts` (crow-accounts) and `jobs` moved onto it. TTLs are `serve.ttl` in core.yaml (defaults in `config.DefaultTTL`); script timeouts in `serve_cmd.go`. Documented in `runbooks/core-service.md`.
+- Envelope: `stale` and `error` appear together, `updated_at` stays the last good change. First load is `data: []`, stale, `error: not loaded yet`. A stale body gets its own ETag, so 304 ends when a run fails.
+- Nest: `DataSource.section(name)` over a shared ETag cache (concurrent reads share one request), `Snapshot.sections`, `agenda()` from `today.events` with all-day markers left out. Fixture source returns empty sections until screens bring state fixtures (171/172).
+- Proof: AC1 test core on a scratch socket, every section equal to its script except fields that move between runs (`generated_at`, `now`, live token counts; two direct script runs drift the same way). AC2-AC5 `go test -race ./internal/api` (TestSlowScript, TestFailingScript, TestIdleSection with a fake clock); live 304 on `projects`, `/api/state` in 9 ms. AC6 vitest feed test (snapshot carries all 9 sections, agenda = `agendaOf(today)`), typecheck, build. Live core rebuilt and restarted: `today` serves 3 events.
+- Left for the owner: open Nest on the phone and check the agenda panel shows today's meetings.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
