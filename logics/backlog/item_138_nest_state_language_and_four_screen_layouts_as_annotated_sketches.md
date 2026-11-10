@@ -100,6 +100,7 @@
 - Owner: Nest must be a place to work from, not only a status view (launch, queue and steer runs without a terminal). Three launch layouts compared (butler desk, workbench, pipeline board).
 - Desk and Missions split (canvas v23), approved in both themes. Tabs grow to 7: Home, Desk, Missions, Inbox, MRs, Agenda, Reports.
   - Desk (tab 2): butler desk. Needs you and Ready to run left, CR-0W chat centre (dispatch, queue, explain), slots, queue, live run and sessions right.
+    - Superseded 2026-11-10 (owner): you talk to the butler from Home under the holotable so the hero answers. Desk centre keeps the full transcript (item_176).
   - Desk mission view: opening a mission toggles the centre between Chat, Transcript, Terminal and Graph. Terminal is take control (run pauses, pty session, Hand back resumes). Right rail: properties and run ledger.
   - Missions (tab 3): pipeline board (Ready, Queued, Running, Needs you, Done today) with the day timeline and runs per day. Big KPI numbers on top of both tabs.
   - The old Missions dashboard and the three option boards are retired from the canvas.

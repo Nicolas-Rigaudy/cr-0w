@@ -25,7 +25,7 @@
   - Core MCP server exposes the item_169 reads and the item_147/170 actions. Missions first: `mission.new` with a kind, then session and dispatch.
   - Any action that needs a tap (confirmation, approval) becomes an inbox item. The butler never confirms for the owner.
   - Persona from item_118 ("Sir", formal and calm).
-  - Nest: a Chat tab with the conversation, a text box, action chips the butler proposes (tap = the same core action).
+  - Nest (owner 2026-11-10, replaces the Chat tab): the chat lives on Home. A text box under the holotable; the reply types out in the holotable butler line and the droid reacts while it thinks and talks (item_158 states). Tapping the line opens the full transcript on Desk, with action chips the butler proposes (tap = the same core action). No separate Chat tab.
 - Out:
   - Voice. Several parallel butler conversations in the UI (one is enough at first). Butler editing files directly.
 
@@ -53,6 +53,9 @@
 # Priority
 - Priority: High
 - Rationale: the main surface the owner asked for.
+
+# Notes
+- Owner 2026-11-10: "when i talk to the butler i want the hero to respond". Placement on Home under the holotable, transcript on Desk. Layout base: item_171 approved design D.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

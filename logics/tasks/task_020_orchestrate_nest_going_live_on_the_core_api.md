@@ -80,6 +80,7 @@
 
 # Report
 - 2026-11-10 step 7 done (item_174). Next: step 8 item_171 Home mockup, owner OK first.
+- 2026-11-10 step 8 design approved (pass 3b option D, vault Research/nest-design/item_171). Butler chat moved to Home (item_176). Next: build item_171 in a fresh session.
 - 2026-11-10 planned from the owner ask (fastest working web app). Next: step 1 in the hub, then step 2 (item_144) in a fresh session.
 
 # Links

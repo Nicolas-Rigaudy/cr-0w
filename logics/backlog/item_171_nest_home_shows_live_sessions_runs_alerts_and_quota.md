@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 85%
-> Confidence: 80%
+> Understanding: 95%
+> Confidence: 90%
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
@@ -24,7 +24,8 @@
   - Mockup first (owner prefs: options side by side, then OK). Base: the approved Home boards (item_158 and prod_007 sources), not new art.
   - Running work: missions, live sessions and dispatch runs in one list of one-liners (project, title or label, state, age, account). Tap: session row opens its send box (item_170); run row shows its report path and commits.
   - Alerts: `checks` items that need the owner, above running work.
-  - Header: quota per account from `usage` and `accounts`; live count = running missions + working sessions + running dispatch runs. Stale sources show their age.
+  - Header chips keep need/working counts. Quota and live counts move to the HUD row above the holotable (approved design below).
+  - Quota per account from `usage` and `accounts`; live count = running missions + working sessions + running dispatch runs. Stale sources show their age.
   - Hero mood reads the same live count (input to item_158's open mood order question, not a change to it).
   - Both Fold 6 screens checked (req_038).
 - Out:
@@ -58,6 +59,20 @@
 # Notes
 - Owner 2026-11-10: most runs will be missions. Mission rows and actions come first; sessions and dispatch runs follow.
 - Design gate: mockup and owner OK before code. If it waits on the owner, build item_170 meanwhile (task_020 order rule).
+
+# Approved design (owner 2026-11-10, pass 3b option D)
+- Source: vault `CR-0W/Research/nest-design/item_171/` — `D-{cover,inner}-{modern,cyber}.png`, `mockup.html?v=D`, `compare.html`. Build from these only (not pass 1 or 2, not A/B/C/E).
+- Hero: the canvas holotable `Hero` (item_162, as on HomeLaptop) is the centerpiece on both screens. Drop the static `.hero.tall` from phone Home.
+- HUD row above the holotable, two panels with the same border, height and type:
+  - Quota HUD: per account a name, two thin bars (5h and week left), `5h/wk` numbers; footer `5h / week left · usage N min old` (stale age).
+  - Status HUD: need you ◆N, working N, slots N/2; footer `live` (or the source age when stale).
+- Butler line under the HUD row: `CR-0W › N need you, Sir. N working.` with cursor.
+- Cover (368): HUD row, holotable (~400px), Needs you first, Running, Agenda; tab bar.
+- Inner (707): left column 330px sticky = HUD row, holotable (fills), Agenda (non-interactive). Right column = Needs you first, Running.
+- Running: one list with a kind icon (mission / session / run), no subheads. Tap: session = send box (item_170), run = report path and commits, mission = mission view.
+- Owner on kinds: sessions = interactive windows you answer, runs = headless `crow dispatch` jobs with a report, missions = multi-step tracked jobs. Same list, icon only.
+- Butler chat lives on Home (decision 2026-11-10, built by item_176): a text box under the holotable, reply types out in the butler line, the droid reacts while it thinks/talks; tapping the line opens the transcript on Desk. item_171 leaves room under the holotable for it but does not build it.
+- Build session: fresh, on an account with week quota left.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
