@@ -1,10 +1,10 @@
 ## item_167_nest_reads_live_data_from_the_core_api - Nest reads live data from the core API
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -63,6 +63,12 @@
 
 # Notes
 - Groomed 2026-11-10. The README line "the live API adapter replaces it in src/main.tsx only" had no item until now.
+- Built 2026-11-10. `src/data/api.ts` (adapter, per-section ETag cache), `src/data/feed.ts` (refresh, change detection, link state), `useSnapshot` polls every 5 s while visible.
+- Mapping: section `data` records already match `types.ts`; no field is renamed or invented. Live records can carry `project: ""` and run `account: ""`. Inbox is read with `?all=1` so mission detail keeps answered asks. `agenda()` returns one shared empty array.
+- Snapshot gains `synced` (last good refresh) and `down`. The header shows `core down · <age>` on laptop, `down · <age>` on phone. AC4 deviation: this needs `ui/Shell.tsx` and `theme.css`; no screen component changed. Header logo and chips no longer wrap on a 360 px phone.
+- Dev: `VITE_NEST_SOURCE=api npm run dev` proxies `/api` to `local/state/core.sock` (trusted, no identity header). `changeOrigin` breaks a socket target. Tests read API fixtures through the `virtual:core-api` module (the empty root package.json blocks cross-package imports).
+- Proof: AC1 live core and CLI both empty (0 missions, 0 inbox); production build over the tailnet URL polls 200 then 304. AC2 a `crow mission new` probe appeared in 3.9 s, then cancelled and removed (`crow-core rebuild`). AC3 `systemctl --user stop crow-core`: header showed `core down`, data stayed, cleared after start. AC5 13 tests pass, main chunk 87.1 kB gzip.
+- Left for the owner: open Nest on the phone once to confirm AC1 there.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 33%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -27,14 +27,14 @@
 - [x] 1. Nest on the phone on fixtures, here in the hub: `cd tools/nest && npm run build && npm run preview -- --port 4173`, `tailscale serve --bg 4173`, install from Chrome on the Fold. Closes task_018 AC1. Replaced by the core unit at step 2. Done 2026-11-10 (runbooks/nest-phone-install.md).
 - [x] Nit (owner 2026-11-10): installed app name reads `Nest`; set manifest `name` and `short_name` to `CR-0W`. Done with step 2 (76534a4); reinstall the app on the phone to pick up the name.
 - [x] 2. item_144 core HTTP service with read endpoints, serving Nest at `/` and the API at `/api`, systemd user unit, `tailscale serve` pointed at core. Exit: the phone loads Nest from core and `curl` reads `/api/state/inbox`. Done 2026-11-10: unit active with linger, tailscale serve proxies `/` to 127.0.0.1:8787, tailnet curl reads `/api/state/inbox`, vite preview stopped (runbooks/core-service.md).
-- [ ] 3. item_158 hero interactions (spin, hover lift + moons, click to details). Design, fixtures are enough.
-- [ ] 4. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI.
+- [x] 3. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI. Done 2026-11-10, moved before item_158 (owner: core work before design polish).
+- [ ] 4. item_158 hero interactions (spin, hover lift + moons, click to details). Open question for the owner: hero mood order, model.ts `moodOf` (run > fail > idle, item_162) vs item_158 spec (fail > ask > run > idle).
 - [ ] 5. item_163 design skills audit of the laptop Home, now on real data.
 - [ ] 6. item_147 core action endpoints. Exit: a `curl` answer moves a mission out of `waiting`.
 - [ ] 7. item_165 telemetry strip on live accounts and runs.
 - [ ] 8. item_168 Nest answer sheet (mockup first, owner OK). Exit: roadmap 0.3b signal, answered from Nest on the phone.
 - [ ] 9. item_166 boot sequence.
-- [ ] Order rule: core steps (2, 4, 6, 8) are the critical path. If a design step waits on owner OK, start the next core step instead of idling.
+- [ ] Order rule: core steps (2, 3, 6, 8) are the critical path. If a design step waits on owner OK, start the next core step instead of idling.
 - [ ] After step 9: task_017 continues (item_145 deck inbox, 146 SSE, 148-152 summaries and autonomy), alternating with task_018 laptop Missions.
 - [ ] ADR 009 checkpoint: update affected Logics docs during each meaningful wave and leave the repo commit-ready.
 - [ ] GATE: do not close until lint, audit, and scaffold validation pass.

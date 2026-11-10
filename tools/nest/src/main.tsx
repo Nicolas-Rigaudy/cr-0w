@@ -1,13 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
+import { apiSource } from './data/api'
 import { fixtureSource } from './data/fixtures'
 import { DataContext } from './data/useData'
 import { Router } from './router'
 import './theme.css'
 
-// The adapter is picked here and nowhere else (AC3).
-const source = fixtureSource()
+// The adapter is picked here and nowhere else (AC3). Builds read the core API;
+// dev and tests use fixtures unless VITE_NEST_SOURCE=api.
+const live = import.meta.env.PROD || import.meta.env.VITE_NEST_SOURCE === 'api'
+const source = live ? apiSource() : fixtureSource()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

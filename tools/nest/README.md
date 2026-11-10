@@ -32,9 +32,15 @@ Open the `https://<host>.<tailnet>.ts.net` URL on the phone, then "Add to Home s
 - `src/data/source.ts`: the `DataSource` interface. Screens only see this and `useSnapshot()`.
 - `src/data/fixtures.ts`: fixture adapter. It merges the shared records in
   `logics/specs/core_contract/fixtures/records/` with `fixtures/states/`, which adds one
-  mission per UI state. The live API adapter replaces it in `src/main.tsx` only.
-- The shared records come through the `virtual:core-records` Vite plugin (read with fs),
-  so Vite never resolves files outside this package.
+  mission per UI state.
+- `src/data/api.ts`: live adapter over the core read API (`/api/state/*`, same origin).
+  `src/data/feed.ts` polls it every 5 s while the page is visible, with ETags, and keeps
+  the last data while the core is down (header shows `core down · <age>`).
+- `src/main.tsx` picks the adapter: production builds read the API; `npm run dev` and
+  tests use fixtures unless `VITE_NEST_SOURCE=api`, which proxies `/api` to the core socket.
+- The shared records and API response fixtures come through the `virtual:core-records`
+  and `virtual:core-api` Vite modules (read with fs), so Vite never resolves files outside
+  this package.
 
 UI states map from contract states:
 

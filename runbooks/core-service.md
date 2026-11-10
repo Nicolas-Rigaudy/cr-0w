@@ -24,5 +24,10 @@
 ## Config (`serve:` in the crow config)
 - `listen` (default `127.0.0.1:8787`), `socket`, `nest` (relative to the crow home), `owner_login`.
 
+## Nest against the live core
+- `cd tools/nest && VITE_NEST_SOURCE=api npm run dev`: the dev server proxies `/api` to the unix socket. Plain `npm run dev` and tests use fixtures; production builds always read the API.
+- After `npm run build` the core serves the new `dist/` at once; no restart.
+- Test mission for a live check: `bin/crow mission new --kind research --project cr-0w --goal "..." --end-state "probe only"` lands `queued` (nothing ticks on its own). Then `bin/crow mission cancel <id> --reason ...`, remove `local/state/missions/<id>/` and run `tools/crow-core/crow-core rebuild` to drop it from the store.
+
 ## Fixtures
 - `go test ./internal/api -update` in `tools/crow-core` rewrites `logics/specs/core_contract/fixtures/api/*.json`; `tests/test_core_contract.py` checks them against the record schemas.

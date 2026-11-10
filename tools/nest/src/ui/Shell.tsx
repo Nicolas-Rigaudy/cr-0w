@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { countByState, openInbox } from '../data/state'
 import type { Snapshot } from '../data/useData'
-import { headerClock, time } from '../format'
+import { ago, headerClock, time } from '../format'
 import { Link } from '../router'
 import { Glyph } from './Glyph'
 import { TABS, TabIcon, type TabKey } from './icons'
@@ -55,6 +55,11 @@ export function Shell({ active, snap, children }: { active: TabKey; snap: Snapsh
           <span className="chips wrap" aria-label={`${c.needs} need you, ${c.working} working`}>
             <span className="chip c-n"><Glyph state="needs" size={12} />{c.needs}</span>
             <span className="chip c-w"><Glyph state="working" size={12} />{c.working}</span>
+          </span>
+        )}
+        {snap?.down && (
+          <span className="link-down" role="status">
+            <span className="long">core </span>down{snap.synced ? <> · <span className="num">{ago(snap.synced.toISOString(), snap.now)}</span></> : null}
           </span>
         )}
         {snap && <span className="clock"><span className="short">{time(snap.now)}</span><span className="long">{headerClock(snap.now, theme === 'cyber')}</span></span>}

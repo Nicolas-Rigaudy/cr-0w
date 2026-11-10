@@ -170,6 +170,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
   font-variant-numeric: tabular-nums;
 }
 [data-theme='cyber'] .chip { border-radius: 0; clip-path: var(--clip-btn); }
+.link-down { font-size: 12px; color: var(--c-f); white-space: nowrap; }
 .clock { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .icon-btn {
   min-width: 44px;
@@ -406,7 +407,9 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 }
 
 /* Laptop (boards Main, home-cyber). Scoped to .lp screens and the laptop header. */
-.pill .tn, .clock .long, .accts { display: none; }
+.pill .tn, .clock .long, .link-down .long, .accts { display: none; }
+.top .logo { white-space: nowrap; }
+.top .chips { flex-wrap: nowrap; }
 @media (min-width: 1200px) {
   .app { height: 100vh; }
   .top { height: 56px; gap: 22px; padding: 0 20px; background: var(--hdr); }
@@ -416,6 +419,7 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
   .pill .tn { display: inline; margin-right: 0.5em; }
   .pill .badge-t { margin-left: 0.5em; }
   .clock .short { display: none; }
+  .link-down .long { display: inline; }
   .clock .long { display: inline; font: 600 13px var(--font-body); letter-spacing: 0.04em; color: var(--fg); }
   .main { overflow: hidden; background: var(--dots); }
   .accts { display: flex; gap: 14px; font: 600 11px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
