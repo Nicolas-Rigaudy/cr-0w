@@ -2,6 +2,7 @@ import { countByState, lastRun, openInbox, uiState } from '../data/state'
 import type { InboxItem } from '../data/types'
 import type { Snapshot } from '../data/useData'
 import { ago, elapsed, time, title } from '../format'
+import { Hero } from '../hero/Hero'
 import { Link } from '../router'
 import { Glyph } from '../ui/Glyph'
 import { byUrgency } from './order'
@@ -122,14 +123,8 @@ export function HomeLaptop({ snap }: { snap: Snapshot }) {
         </section>
       </div>
 
-      <section className="slot" aria-label="Hero slot">
-        <svg aria-hidden="true" viewBox="0 0 200 200" width="220" height="220" fill="none" stroke="currentColor">
-          <circle cx="100" cy="100" r="92" strokeDasharray="2 6" />
-          <circle cx="100" cy="100" r="64" />
-          <circle cx="100" cy="100" r="34" strokeDasharray="4 4" />
-          <circle cx="164" cy="100" r="4" fill="currentColor" />
-        </svg>
-        <span className="sm label">hero slot · designed on its own board</span>
+      <section className="slot hero-slot" aria-label="CR-0W overview">
+        <Hero missions={missions} inbox={inbox} now={now} />
       </section>
 
       <div className="rail">
