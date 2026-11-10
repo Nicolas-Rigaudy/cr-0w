@@ -153,3 +153,12 @@ def test_is_claude_reads_the_command_line(tmp_path):
         (tmp_path / str(pid) / "cmdline").write_bytes(b"\0".join(argv) + b"\0")
     assert ct.is_claude(10, proc=str(tmp_path)) and ct.is_claude(11, proc=str(tmp_path))
     assert not ct.is_claude(12, proc=str(tmp_path)) and not ct.is_claude(99, proc=str(tmp_path))
+
+
+def test_locate_falls_back_to_tmux_from_kitty(monkeypatch):
+    monkeypatch.setattr(ct, "kitty_locate", lambda pid: None)
+    monkeypatch.setattr(ct, "tmux_locate", lambda pid: "%3")
+    assert ct.locate(42, "kitty") == ("tmux", "%3")
+    assert ct.locate(42, "print") is None
+    monkeypatch.setattr(ct, "kitty_locate", lambda pid: ("unix:/s", 7))
+    assert ct.locate(42, "kitty") == ("kitty", ("unix:/s", 7))

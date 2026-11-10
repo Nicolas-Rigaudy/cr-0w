@@ -220,14 +220,18 @@ def focus(pid, backend=None):
     return None
 
 
-def send(pid, text, backend=None):
-    """Type text and Enter into the window holding pid. True when a window took it."""
+def locate(pid, backend=None):
+    """("kitty", (socket, wid)) or ("tmux", pane) holding pid, else None. A kitty desktop still
+    reaches sessions running in tmux (hidden test sessions, ssh)."""
     backend = backend or choose()
-    hit = kitty_locate(pid) if backend == "kitty" else None
-    pane = tmux_locate(pid) if backend == "tmux" else None
-    cmds = kitty_send_args(*hit, text) if hit else tmux_send_args(pane, text) if pane else None
-    if not cmds:
-        return False
+    if backend == "kitty" and (hit := kitty_locate(pid)):
+        return "kitty", hit
+    if backend in ("kitty", "tmux") and (pane := tmux_locate(pid)):
+        return "tmux", pane
+    return None
+
+
+def _run_all(cmds):
     for i, cmd in enumerate(cmds):
         if i:
             time.sleep(SUBMIT_PAUSE)
@@ -235,30 +239,33 @@ def send(pid, text, backend=None):
     return True
 
 
+def send(pid, text, backend=None):
+    """Type text and Enter into the window holding pid. True when a window took it."""
+    where = locate(pid, backend)
+    if not where:
+        return False
+    kind, t = where
+    return _run_all(kitty_send_args(*t, text) if kind == "kitty" else tmux_send_args(t, text))
+
+
 def send_escape(pid, backend=None):
     """Press Escape in the window holding pid (interrupts a Claude turn). True when a window took it."""
-    backend = backend or choose()
-    if backend == "kitty" and (hit := kitty_locate(pid)):
-        subprocess.run(["kitten", "@", "--to", hit[0], "send-key", "--match", f"id:{hit[1]}", "escape"],
-                       check=True, timeout=5)
-        return True
-    if backend == "tmux" and (pane := tmux_locate(pid)):
-        subprocess.run(["tmux", "send-keys", "-t", pane, "Escape"], check=True, timeout=5)
-        return True
-    return False
+    where = locate(pid, backend)
+    if not where:
+        return False
+    kind, t = where
+    return _run_all([["kitten", "@", "--to", t[0], "send-key", "--match", f"id:{t[1]}", "escape"]] if kind == "kitty"
+                    else [["tmux", "send-keys", "-t", t, "Escape"]])
 
 
 def send_key(pid, key, backend=None):
     """Press one key (no Enter) in the window holding pid, e.g. "1" on a Claude menu. True when a window took it."""
-    backend = backend or choose()
-    if backend == "kitty" and (hit := kitty_locate(pid)):
-        subprocess.run(["kitten", "@", "--to", hit[0], "send-text", "--match", f"id:{hit[1]}", "--", key],
-                       check=True, timeout=5)
-        return True
-    if backend == "tmux" and (pane := tmux_locate(pid)):
-        subprocess.run(["tmux", "send-keys", "-t", pane, "-l", key], check=True, timeout=5)
-        return True
-    return False
+    where = locate(pid, backend)
+    if not where:
+        return False
+    kind, t = where
+    return _run_all([["kitten", "@", "--to", t[0], "send-text", "--match", f"id:{t[1]}", "--", key]] if kind == "kitty"
+                    else [["tmux", "send-keys", "-t", t, "-l", key]])
 
 
 def is_claude(pid, proc="/proc"):
