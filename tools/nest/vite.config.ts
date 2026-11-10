@@ -24,6 +24,8 @@ function coreRecords(): Plugin {
 export default defineConfig({
   plugins: [react(), coreRecords()],
   server: { host: true },
+  // tailscale serve proxies the phone in with the tailnet hostname
+  preview: { allowedHosts: ['.ts.net'] },
   build: { target: 'es2022' },
   test: { environment: 'node' },
 })
