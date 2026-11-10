@@ -1,13 +1,15 @@
 ## item_173_deck_scripts_get_a_stable_json_contract_for_the_app - Deck scripts get a stable JSON contract for the app
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-10 19:27:27
 
 # AI Context
 - Summary: rework the `bin/` scripts deck and core both read so they suit a live app: a fixture test per JSON output, a short usage summary, a cached MR fetch, and JSON results from the action scripts.
@@ -48,8 +50,8 @@
 - AC5: deck tests pass and every tab still loads.
 
 # AC Traceability
-- request-AC3 -> AC2, AC3. Proof: light, fast sources.
-- request-AC4 -> AC1, AC5. Proof: one source for deck and core, pinned by tests.
+- request-AC3 -> AC2, AC3. Proof: light, fast sources. `crow-usage --json --summary` is 1.7 kB with the deck quota fields; cached `crow-mrs json` 0.09 s, `-f` 10.9 s (5b4a90d).
+- request-AC4 -> AC1, AC5. Proof: one source for deck and core, pinned by tests. Schemas, fixtures and `tests/test_script_contract.py` in 5cbdd7d (rename/remove mutation fails every schema; action results exit 0/1/2); `python bin/crow-check` green; deck and core `go test` pass; deck tabs 1-5 render headless.
 
 # Decision framing
 - Product framing: Not needed

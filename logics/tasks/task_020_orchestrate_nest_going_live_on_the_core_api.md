@@ -4,11 +4,11 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 20%
+> Progress: 30%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
-> Indicators reviewed: 2026-11-10 18:11:26
+> Indicators reviewed: 2026-11-10 19:27:47
 
 # AI Context
 - Summary: Fastest path to a working Nest: core read API serving Nest on the tailnet, Nest on live data, core actions, a Nest answer sheet. Core items alternate with the Nest Home design items (owner decision 2026-11-10). Ends on the roadmap 0.3b exit signal answered from Nest.
@@ -28,7 +28,7 @@
 - [x] Nit (owner 2026-11-10): installed app name reads `Nest`; set manifest `name` and `short_name` to `CR-0W`. Done with step 2 (76534a4); reinstall the app on the phone to pick up the name.
 - [x] 2. item_144 core HTTP service with read endpoints, serving Nest at `/` and the API at `/api`, systemd user unit, `tailscale serve` pointed at core. Exit: the phone loads Nest from core and `curl` reads `/api/state/inbox`. Done 2026-11-10: unit active with linger, tailscale serve proxies `/` to 127.0.0.1:8787, tailnet curl reads `/api/state/inbox`, vite preview stopped (runbooks/core-service.md).
 - [x] 3. item_167 Nest reads live data. Exit: the phone shows the same missions and inbox as the CLI. Done 2026-11-10, moved before item_158 (owner: core work before design polish).
-- [ ] 4. item_173 script JSON contracts (fixtures, usage summary, MR cache, JSON from action scripts). Exit: deck still works; every output pinned by a test.
+- [x] 4. item_173 script JSON contracts (fixtures, usage summary, MR cache, JSON from action scripts). Exit: deck still works; every output pinned by a test.
 - [ ] 5. item_169 core serves every deck source (sessions, dispatch runs, MRs, today, usage, checks, projects) with background refresh. Exit: the phone's Nest data layer reads the same sessions and runs as deck (req_054, owner 2026-11-10: Nest shows zeros, it must see everything deck does).
 - [ ] 6. item_147 core mission action endpoints, then item_170 session and run actions (start, resume, send, interrupt, stop, dispatch) on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session.
 - [ ] 7. item_174 permission prompts answered from Nest (spike on the prompt source first).
@@ -71,6 +71,7 @@
 # AC Traceability
 - request-AC1 -> `item_168_nest_answer_sheet_for_inbox_items_and_mission_actions`. Proof deferred to closeout: answer from Nest resumes the mission.
 - request-AC3 -> `item_147_core_action_endpoints_for_dispatch_answer_stop_cancel_and_hide`. Proof deferred to closeout: no publish action on the API or in Nest.
+- request-AC4 -> This task. Proof: item_173: implemented in 5b4a90d and 5cbdd7d; validated with python bin/crow-check (pytest, ruff, leak), tests/test_script_contract.py, go test in tools/crow-deck and tools/crow-core, deck tabs 1-5 rendered headless. Source: `5cbdd7d`
 
 # Validation
 - 2026-11-10 task_018 AC1 proven: WebAPK installed on the Fold from the tailnet URL, opens standalone with Tailscale on.
