@@ -4,6 +4,7 @@ import { accountsOf, dispatchOf, mailOf, projectsOf, resumableOf, type Agent, ty
 import { useSource, type Snapshot } from '../data/useData'
 import { ago, elapsed, time, title } from '../format'
 import type { Mission } from '../data/types'
+import { missionOfRun } from '../data/state'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { LAPTOP, useMedia } from '../ui/useMedia'
 
@@ -116,7 +117,30 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     title: 'Pause session', lead: `Interrupt the current turn of ${where(a)} (Escape in its window).`, target: tgt(a),
     note: 'The session stays open and waits for you.', ok: 'Pause', run: wrap(`Pause ${nameOf(a)}`, () => act.interrupt(a.pid)),
   })
-  const stop = (a: Agent) => setSheet(a.kind === 'run' && a.run_id
+  const stop = (a: Agent) => {
+    const m = a.kind === 'run' && a.run_id ? missionOfRun(snap.missions, a.run_id) : undefined
+    if (m) {
+      setSheet({
+        title: 'Stop mission run', lead: `Stop the run ${nameOf(a)} of ${title(m)}.`,
+        target: [['mission', m.id.replace(/^\d{8}-/, '')], ['run', a.run_id!], ['project', a.project]],
+        note: 'Tap again to confirm. Same as crow mission stop, logged with surface nest. The mission moves on at the next tick.', ok: 'Tap again to stop', danger: true,
+        run: async () => {
+          try {
+            await act.missionStop(m.id)
+          } catch (e) {
+            if (e instanceof ApiError && e.status === 409) void refresh()
+            throw e
+          }
+          setLog((l) => [...l, { me: true, text: `Stop ${nameOf(a)}` }, { text: `${title(m)} stopped.` }])
+          setSel(null)
+          void refresh()
+        },
+      })
+      return
+    }
+    stopPlain(a)
+  }
+  const stopPlain = (a: Agent) => setSheet(a.kind === 'run' && a.run_id
     ? {
       title: 'Stop run', lead: `Stop the run ${nameOf(a)} of ${a.project}.`, target: [['run', a.run_id], ['project', a.project], ['account', a.account]],
       note: 'Tap again to confirm. Its commits stay on the run branch.', ok: 'Tap again to stop', danger: true,

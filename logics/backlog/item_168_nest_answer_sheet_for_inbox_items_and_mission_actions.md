@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 95%
 > Confidence: 90%
-> Progress: 85%
+> Progress: 90%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -62,7 +62,7 @@
 - Groomed 2026-11-10. Roadmap exception recorded in road_001 0.3b.
 - 2026-11-11 build (commit d6de8cc): shape A answers inline in the Inbox reading pane, rebuilt from the fold-inbox boards; cover verbs docked above the tab bar. Owner decision: no Mission detail screen (no board draws one). Stop is the Desk S1 STOP; Cancel is the ⋯ on Desk queue rows; Home mission links go to Desk or Inbox. Compare pages in the vault: nest-design/item_168/{inbox,desk-queue}-compare.
 - AC status: AC1 done (owner OK on both compare pages). AC3 covered by the 409 path and tests. AC5 holds. AC2 (phone answer resumes a mission) and AC4 (event parity checked against core) still to verify live.
-- The Desk STOP on a mission run calls the dispatch stop, not `missions/{id}/stop`. Check AC4 on the live test.
+- 2026-11-11: Desk STOP on a run that belongs to a running mission now calls `missions/{id}/stop` (`missionOfRun` in data/state.ts), so core writes the owner `action` event with surface nest like `crow mission stop`. Ad-hoc runs keep the dispatch stop. AC4 code path aligned; confirm the event in the AC2 phone test.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fixtureSource } from './fixtures'
-import { countByState, uiState } from './state'
+import type { Mission } from './types'
+import { countByState, missionOfRun, uiState } from './state'
 
 describe('fixture adapter', () => {
   it('loads core and Nest-local records', async () => {
@@ -32,5 +33,18 @@ describe('uiState', () => {
     expect(await of('20261109-build-mr-pipeline-badge')).toBe('needs')
     expect(await of('20261109-research-android-push-options')).toBe('done')
     expect(await of('20261109-chore-prune-worktrees')).toBe('done')
+  })
+})
+
+describe('missionOfRun', () => {
+  const run = (id: string, ended: string | null) => ({ run: id, mission: 'm', account: 'a', version: 1, cold: false, started: '2026-11-11T10:00:00Z', ended, cause: null, exit: null })
+  const m = (id: string, state: Mission['state'], runs: ReturnType<typeof run>[]) => ({ id, state, runs }) as unknown as Mission
+
+  it('finds the running mission of a live run only', () => {
+    const ms = [m('done1', 'done', [run('r1', null)]), m('run1', 'running', [run('r0', '2026-11-11T10:05:00Z'), run('r2', null)])]
+    expect(missionOfRun(ms, 'r2')?.id).toBe('run1')
+    expect(missionOfRun(ms, 'r0')).toBeUndefined()
+    expect(missionOfRun(ms, 'r1')).toBeUndefined()
+    expect(missionOfRun(ms, 'adhoc')).toBeUndefined()
   })
 })

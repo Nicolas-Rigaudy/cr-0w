@@ -41,3 +41,9 @@ export function countByState(missions: Mission[], inbox: InboxItem[]) {
 export function openInbox(inbox: InboxItem[]) {
   return inbox.filter((r) => r.state === 'open')
 }
+
+// The running mission a live run belongs to. Stopping such a run goes through the mission
+// (crow mission stop) so core logs the owner's action event (item_168 AC4).
+export function missionOfRun(missions: Mission[], runId: string): Mission | undefined {
+  return missions.find((m) => m.state === 'running' && m.runs.some((r) => r.run === runId && !r.ended))
+}
