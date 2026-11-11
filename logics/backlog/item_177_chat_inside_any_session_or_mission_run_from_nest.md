@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 85%
-> Confidence: 75%
+> Understanding: 90%
+> Confidence: 80%
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
@@ -24,7 +24,9 @@
   - Nest: run detail shows the last turns (assistant text, tool calls folded to one line), the item_149 one-line summary on top, a text box that sends through item_170 (mission answer for a parked mission, send for a live session).
   - Missions listed first; sessions and dispatch runs after (owner 2026-11-10: most runs will be missions).
   - Phone first (owner 2026-11-11): the phone is where the owner chats with crow. Every word of crow's replies, line breaks and bullets kept, never cut with "…". No diffs or tool logs: each run of tool calls folds to one line, tap to open. Reply box at the bottom.
-  - Design first: Nest canvas boards for cover and inner (item138 fold-src boards), compared board vs app before the owner sees a build. Deck mockups in vault `Research/deck-chat/` (option A) show the picked shape.
+  - Design source (approved by owner 2026-11-11): vault `Research/nest-chat/boards/` (`chat-cover.dc.html`, `chat-cover-ask.dc.html`, `chat-inner.dc.html`), built on the item138 fold-src boards. Compare board vs app before the owner sees a build.
+  - Cover: full session chat opened from the hero Open or a session row. Back bar with session and state, your bubbles right, full replies left, one dashed fold line per tool-call run, ask card with choice buttons docked above the reply box, nav kept.
+  - Inner: left column unchanged. Run pane = header (session, account, time), Chat|Log toggle, Pause and red Stop as header buttons, chat, reply box. The hub Ask box leaves Desk (lives on Home).
 - Out:
   - Live terminal attach. Editing past turns.
 
