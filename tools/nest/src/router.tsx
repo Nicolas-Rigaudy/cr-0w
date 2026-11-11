@@ -35,14 +35,13 @@ export function Link({ href, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchor
 
 export type Route =
   | { tab: 'home' | 'desk' | 'missions' | 'inbox' | 'mrs' | 'agenda' | 'reports' }
-  | { tab: 'mission'; id: string }
   | { tab: 'missing' }
 
 export function match(path: string): Route {
   const p = path.replace(/\/+$/, '') || '/'
   if (p === '/') return { tab: 'home' }
-  const m = /^\/missions\/([^/]+)$/.exec(p)
-  if (m) return { tab: 'mission', id: decodeURIComponent(m[1]) }
+  // Old mission links (no detail screen since item_168) land on Missions.
+  if (/^\/missions\/[^/]+$/.test(p)) return { tab: 'missions' }
   const key = p.slice(1)
   if (['desk', 'missions', 'inbox', 'mrs', 'agenda', 'reports'].includes(key)) return { tab: key as 'desk' }
   return { tab: 'missing' }

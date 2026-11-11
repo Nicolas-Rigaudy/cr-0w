@@ -14,6 +14,9 @@ export const LABEL: Record<UiState, string> = {
   done: 'done',
 }
 
+// Contract states core may move to cancelled (contract Moves, adr_001).
+export const CANCELLABLE: Mission['state'][] = ['preflight', 'queued', 'running', 'waiting', 'review', 'failed']
+
 export function lastRun(m: Mission) {
   return m.runs.length ? m.runs[m.runs.length - 1] : undefined
 }

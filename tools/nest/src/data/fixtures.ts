@@ -6,7 +6,8 @@ import stateLive from '../../fixtures/states/live.json'
 import { ApiError } from './api'
 import type { Actions, Dispatch, LiveReply } from './live'
 import type { DataSource } from './source'
-import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName } from './types'
+import { CANCELLABLE } from './state'
+import type { AgendaEvent, InboxItem, InboxVerb, Mission, SectionBody, SectionName } from './types'
 
 // Shared core-contract records plus Nest-local records that cover every UI state.
 const MISSIONS = [...coreMissions, ...stateMissions] as Mission[]
@@ -19,7 +20,9 @@ type LiveData = Partial<Record<SectionName, unknown>>
 
 // In-memory live actions over the fixture sections: they check targets like core
 // (404 unknown, 409 full slots) and change the section so a refetch shows the result.
-function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, now: Date): Actions {
+type MissionActions = 'missionAnswer' | 'missionStop' | 'missionCancel' | 'inboxHide'
+
+function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, now: Date): Omit<Actions, MissionActions> {
   const set = (name: SectionName, v: unknown) => {
     data[name] = v
     bodies.delete(name)
@@ -107,13 +110,63 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     if (!b) bodies.set(name, (b = { data: data[name], stale: false, updated_at: now.toISOString() }))
     return b
   }
+  const rec = { missions, inbox }
   return {
-    missions: async () => missions,
-    mission: async (id) => missions.find((m) => m.id === id),
-    inbox: async () => inbox,
+    missions: async () => rec.missions,
+    mission: async (id) => rec.missions.find((m) => m.id === id),
+    inbox: async () => rec.inbox,
     agenda: async () => agenda,
     section,
-    actions: fixtureActions(data, bodies, now),
+    actions: { ...fixtureActions(data, bodies, now), ...missionActions(rec, now) },
     now: () => now,
+  }
+}
+
+
+// In-memory mission actions with the checks of core (internal/mission): exact ids,
+// open rows, the version the owner saw, verbs of the row. Each change swaps the array
+// so a refetch sees new references.
+function missionActions(rec: { missions: Mission[]; inbox: InboxItem[] }, now: Date): Pick<Actions, MissionActions> {
+  const ts = now.toISOString()
+  const find = (id: string) => {
+    const m = rec.missions.find((x) => x.id === id)
+    if (!m) throw new ApiError(404, `no mission "${id}"`)
+    return m
+  }
+  const put = (m: Mission) => { rec.missions = rec.missions.map((x) => (x.id === m.id ? m : x)) }
+  const row = (r: InboxItem) => { rec.inbox = rec.inbox.map((x) => (x.id === r.id ? r : x)) }
+  return {
+    async missionAnswer(mission: string, item: string, verb: InboxVerb, text: string, version: number) {
+      const m = find(mission)
+      const id = item.startsWith(`${mission}/`) ? item : `${mission}/${item}`
+      const r = rec.inbox.find((x) => x.id === id)
+      if (!r) throw new ApiError(404, `no inbox item "${id}"`)
+      if (version !== m.version) throw new ApiError(409, `${id}: answered from v${version}, the mission is at v${m.version}`)
+      if (r.state !== 'open') throw new ApiError(409, `${id} is ${r.state}`)
+      if (!r.verbs.includes(verb)) throw new ApiError(400, `verb "${verb}", want one of ${r.verbs.join(', ')}`)
+      row({ ...r, state: 'answered', answered: ts })
+      if (!rec.inbox.some((x) => x.mission === mission && x.state === 'open')) put({ ...m, state: 'queued', updated: ts })
+      return { item: id, verb, text, state: 'queued' }
+    },
+    async missionStop(mission: string) {
+      const m = find(mission)
+      if (m.state !== 'running') throw new ApiError(409, `${mission} is ${m.state}; only a running mission stops`)
+      put({ ...m, state: 'waiting', updated: ts, runs: m.runs.map((r) => (r.ended ? r : { ...r, ended: ts, cause: 'stopped' as const })) })
+      return find(mission)
+    },
+    async missionCancel(mission: string) {
+      const m = find(mission)
+      if (!CANCELLABLE.includes(m.state)) throw new ApiError(409, `${mission} is ${m.state} and cannot be cancelled`)
+      put({ ...m, state: 'cancelled', updated: ts, runs: m.runs.map((r) => (r.ended ? r : { ...r, ended: ts, cause: 'stopped' as const })) })
+      rec.inbox = rec.inbox.map((x) => (x.mission === mission && x.state === 'open' ? { ...x, state: 'dropped' as const } : x))
+      return find(mission)
+    },
+    async inboxHide(item: string) {
+      const r = rec.inbox.find((x) => x.id === item)
+      if (!r) throw new ApiError(404, `no inbox item "${item}"`)
+      if (r.state !== 'open') throw new ApiError(409, `${item} is ${r.state}`)
+      row({ ...r, state: 'dropped' })
+      return rec.inbox.find((x) => x.id === item)
+    },
   }
 }

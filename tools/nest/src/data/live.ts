@@ -1,4 +1,4 @@
-import type { SectionBody } from './types'
+import type { InboxVerb, SectionBody } from './types'
 
 // Live sessions, dispatch runs and Today mail (item_170). Shapes are the parts of
 // the script sections Nest reads (logics/specs/script_contract); actions are the
@@ -91,6 +91,12 @@ export interface Actions {
   dispatch(r: NewRun): Promise<LiveReply>
   stopRun(runId: string): Promise<LiveReply>
   mail(id: string, verb: 'done' | 'snooze'): Promise<LiveReply>
+  // Mission actions (item_168, core internal/api/actions.go). Replies differ per route;
+  // callers only refetch. version is the mission version the owner saw (409 when older).
+  missionAnswer(mission: string, item: string, verb: InboxVerb, text: string, version: number): Promise<unknown>
+  missionStop(mission: string): Promise<unknown>
+  missionCancel(mission: string, reason?: string): Promise<unknown>
+  inboxHide(item: string): Promise<unknown>
 }
 
 const obj = (b: SectionBody | undefined) => (b?.data && typeof b.data === 'object' ? (b.data as Record<string, unknown>) : {})

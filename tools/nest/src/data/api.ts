@@ -72,7 +72,7 @@ export function agendaOf(today: SectionBody): AgendaEvent[] {
 
 // Live actions: same-origin POSTs with the CSRF header core requires (adr_001).
 export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, init)): Actions {
-  const post = async (path: string, body?: unknown): Promise<LiveReply> => {
+  const post = async <T = LiveReply>(path: string, body?: unknown): Promise<T> => {
     const res = await get(`${base}${path}`, {
       method: 'POST',
       headers: { 'X-Crow': '1', 'Content-Type': 'application/json' },
@@ -80,7 +80,7 @@ export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, ini
       cache: 'no-store',
     })
     if (!res.ok) throw await failure(res)
-    return (await res.json()) as LiveReply
+    return (await res.json()) as T
   }
   const id = encodeURIComponent
   return {
@@ -93,6 +93,12 @@ export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, ini
     dispatch: (r) => post('/dispatch', r),
     stopRun: (run) => post(`/dispatch/${id(run)}/stop`),
     mail: (mail, verb) => post(`/today/${id(mail)}/${verb}`),
+    missionAnswer: (mission, item, verb, text, version) =>
+      post<unknown>(`/missions/${id(mission)}/answer`, { item, verb, ...(text.trim() ? { text } : {}), version }),
+    missionStop: (mission) => post<unknown>(`/missions/${id(mission)}/stop`),
+    missionCancel: (mission, reason) => post<unknown>(`/missions/${id(mission)}/cancel`, reason ? { reason } : undefined),
+    // Row ids hold slashes (<mission>/v<N>/<question>): each part is escaped, the slashes stay.
+    inboxHide: (item) => post<unknown>(`/inbox/${item.split('/').map(id).join('/')}/hide`),
   }
 }
 

@@ -2,7 +2,8 @@ import { useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../data/api'
 import { accountsOf, dispatchOf, mailOf, projectsOf, resumableOf, type Agent, type LiveReply, type Resumable } from '../data/live'
 import { useSource, type Snapshot } from '../data/useData'
-import { ago, elapsed, time } from '../format'
+import { ago, elapsed, time, title } from '../format'
+import type { Mission } from '../data/types'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { LAPTOP, useMedia } from '../ui/useMedia'
 
@@ -145,6 +146,23 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     target: [['project', r.project], ['account', r.account], ['id', r.conversation_id.slice(0, 8)]],
     note: 'Same conversation, same account.', ok: 'Resume', run: wrap(`Resume ${r.project}`, () => act.resume(r.conversation_id, r.account)),
   })
+  // Queued missions sit under the slots; the row's ⋯ cancels one (crow mission cancel).
+  const queue = snap.missions.filter((m) => m.state === 'queued' || m.state === 'preflight')
+  const cancel = (m: Mission) => setSheet({
+    title: 'Cancel the mission?', lead: `${title(m)} leaves the queue for good.`,
+    target: [['mission', m.id.replace(/^\d{8}-/, '')], ['project', m.project], ['state', m.state]],
+    note: 'Same as crow mission cancel. Logged with surface nest.', ok: 'Cancel mission', danger: true,
+    run: async () => {
+      try {
+        await act.missionCancel(m.id)
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 409) void refresh()
+        throw e
+      }
+      setLog((l) => [...l, { me: true, text: `Cancel ${title(m)}` }, { text: `${title(m)} cancelled.` }])
+      void refresh()
+    },
+  })
   const flag = (id: string, subject: string, verb: 'done' | 'snooze') => setSheet({
     title: verb === 'done' ? 'Mark done' : 'Snooze', lead: verb === 'done' ? 'Marks the Outlook flag as complete.' : 'Moves the Outlook flag to tomorrow.',
     target: [['mail', subject]], note: 'Changes the Outlook flag only; nothing is sent.', ok: verb === 'done' ? 'Done' : 'Snooze',
@@ -180,7 +198,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     snap, slots, agents, runs, sessions, resumable, mail, projects, accounts,
     sheet, setSheet, log, picked, slotOf, since, pick, tell, setTell, text, setText, ask, setAsk, submitAsk,
     form, setForm, run, setRun, start, setStart,
-    send, pause, stop, dispatch, open, resume, flag, answer,
+    send, pause, stop, dispatch, open, resume, flag, answer, queue, cancel,
   }
 }
 type D = ReturnType<typeof useDesk>
@@ -220,7 +238,13 @@ function Slots({ d, ib }: { d: D; ib?: boolean }) {
           <Ring dashed c="c-q" /><span className="sm">S{d.runs.length + i + 1}</span><span className="f1 sm">free slot</span>
         </div>
       ))}
-      <div className="row q"><span className="grip" aria-hidden="true">⋮⋮</span><Ring dashed c="c-q" /><span className="f1 sm">Queue: {LATER.toLowerCase()}</span></div>
+      {d.queue.map((m, i) => (
+        <div key={m.id} className="row q">
+          <span className="grip" aria-hidden="true">⋮⋮</span><Ring dashed c="c-q" /><span className="sm">Q{i + 1}</span>
+          <span className="f1">{title(m)}</span>
+          <button type="button" className="ib" title="Cancel mission" aria-label={`Cancel ${title(m)}`} onClick={() => d.cancel(m)}>⋯</button>
+        </div>
+      ))}
     </div>
   )
 }

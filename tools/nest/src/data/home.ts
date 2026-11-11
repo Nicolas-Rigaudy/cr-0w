@@ -127,7 +127,7 @@ export function homeModel(snap: Snapshot): HomeModel {
       return {
         key: `m:${m.id}`, kind: 'mission', title: `${m.project} · ${title(m)}`, state: s === 'needs' ? 'waiting' : s,
         step: m.runs.length > 1 ? `run ${m.runs.length}` : undefined, age: mins(run?.started ?? m.updated, now), account: run?.account ?? '',
-        waiting: s === 'needs', href: `/missions/${m.id}`,
+        waiting: s === 'needs', href: s === 'needs' ? '/inbox' : '/desk',
       }
     }),
     ...agents.map((a): RunRow => ({
