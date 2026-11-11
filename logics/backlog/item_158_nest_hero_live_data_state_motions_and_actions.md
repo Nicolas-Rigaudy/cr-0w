@@ -69,6 +69,7 @@
 
 # Notes
 - 2026-11-10: rescoped from orbit nodes to the holotable. Owner chose free spin on the vertical axis only, fixed bot that reacts, hover = lift + moons, click = details then project page. Built after item_162 is approved.
+- 2026-11-11: owner set the core mood order fail > ask > run > idle (was run > fail > idle from item_162, no ask). Applied in `hero/model.ts` `moodOf`.
 - Build order from item_126: item_155, item_156, item_157, item_158, item_159.
 - Sources: vault `CR-0W/Research/nest-design/item126/` (`compare-item126.html`, `compare-spike.html`, `look-ascii.png`, `spike/holo-head.html`, `spike/img/`). Not `item139/jarvis-1-full.png` (owner rejected it as a reference, 2026-11-10). Data map and budgets: item_126.
 

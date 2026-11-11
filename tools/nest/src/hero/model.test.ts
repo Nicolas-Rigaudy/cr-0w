@@ -5,10 +5,11 @@ import { heroModel, moodOf } from './model'
 const zero = { working: 0, needs: 0, failed: 0, sleeping: 0, queued: 0, done: 0 }
 
 describe('hero model', () => {
-  it('picks the face from the work, never from asks', () => {
+  it('orders the mood fail > ask > run > idle', () => {
     expect(moodOf(zero)).toBe('idle')
     expect(moodOf({ ...zero, working: 1 })).toBe('run')
-    expect(moodOf({ ...zero, working: 1, failed: 1 })).toBe('run')
+    expect(moodOf({ ...zero, working: 1 }, 1)).toBe('ask')
+    expect(moodOf({ ...zero, working: 1, failed: 1 }, 1)).toBe('fail')
     expect(moodOf({ ...zero, failed: 1 })).toBe('fail')
     expect(moodOf({ ...zero, needs: 2 })).toBe('idle')
   })
@@ -19,7 +20,7 @@ describe('hero model', () => {
     const m = heroModel(missions, await src.inbox())
     expect(m.projects.length).toBe(new Set(missions.map((x) => x.project)).size)
     expect(m.projects[0].state).toBe('needs')
-    expect(m.mood).toBe('run')
+    expect(m.mood).toBe('fail') // the fixtures hold a failed run
     expect(m.line).toMatch(/Sir\./)
   })
 

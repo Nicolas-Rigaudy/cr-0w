@@ -27,18 +27,19 @@ export interface HeroModel {
 const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine']
 const word = (n: number) => WORDS[n] ?? String(n)
 
-// The face follows the work, not the asks: the front planets and the chip carry the asks.
-// Running work keeps the pass 7 grab pose; a failure braces only when nothing runs.
-export function moodOf(c: Record<UiState, number>): Mood {
-  if (c.working > 0) return 'run'
+// Core mood, most urgent first (item_158, owner 2026-11-11): a failed run, then an open
+// question, then live work, otherwise idle.
+export function moodOf(c: Record<UiState, number>, asks = 0): Mood {
   if (c.failed > 0) return 'fail'
+  if (asks > 0) return 'ask'
+  if (c.working > 0) return 'run'
   return 'idle'
 }
 
 export function heroModel(missions: Mission[], inbox: InboxItem[], now: Date = new Date()): HeroModel {
   const c = countByState(missions, inbox)
   const asks = openInbox(inbox).filter((r) => r.type !== 'fyi').length
-  const mood = moodOf(c)
+  const mood = moodOf(c, asks)
 
   const byProject = new Map<string, HeroMission[]>()
   for (const m of missions) {

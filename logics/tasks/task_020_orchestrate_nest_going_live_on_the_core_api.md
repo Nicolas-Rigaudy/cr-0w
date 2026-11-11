@@ -34,7 +34,7 @@
 - [x] 6. item_147 core mission action endpoints, then item_170 session and run actions (start, resume, send, interrupt, stop, dispatch) on the same guard. Exit: a `curl` answer moves a mission out of `waiting`; text sent from the phone lands in a live session. item_147 done 2026-11-10 (4fbef04); item_170 done 2026-11-10 (99c977d core, 340aa19 Nest Desk).
 - [x] 7. item_174 permission prompts answered from Nest (spike on the prompt source first). Done 2026-11-10: PermissionRequest hook source (bfa3141, d248562), core answer route (19800ca), Nest layout B (89fb516), doctor check (416f8c6); live tmux test passed allow, deny and stale.
 - [x] 8. item_171 Nest Home on the deck sources (mockup first, owner OK). Exit: Home matches deck's agents panel with an empty mission store. Done 2026-11-11 (06545b2); bundle budget follow-up item_185.
-- [ ] 9. item_158 hero interactions (spin, hover lift + moons, click to details). Open question for the owner: hero mood order, model.ts `moodOf` (run > fail > idle, item_162) vs item_158 spec (fail > ask > run > idle).
+- [ ] 9. item_158 hero interactions (spin, hover lift + moons, click to details). Mood order decided 2026-11-11: fail > ask > run > idle (applied in `moodOf`).
 - [ ] 10. item_168 Nest answer sheet (mockup first, owner OK). Exit: roadmap 0.3b signal, answered from Nest on the phone.
 - [ ] 11. item_175 work approvals in Nest on the exact text (inbox kind `approval`).
 - [ ] 12. item_165 telemetry strip on the live usage and accounts sections.
