@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/mattn/go-runewidth"
 	"strings"
 	"time"
 
@@ -722,7 +723,9 @@ func (av agentsView) laneHead(l *laneRow, iw int) line {
 	return out.trunc(iw)
 }
 
-func (av agentsView) tailLine(t tailLine, last, asks bool) line {
+// tailLine is one tail entry wrapped to the box width: a message reads whole on a phone
+// instead of ending in an ellipsis at the border.
+func (av agentsView) tailLine(t tailLine, last, asks bool, iw int) []line {
 	lk := av.lk
 	text := t.Text
 	label, rest, ok := strings.Cut(text, ": ")
@@ -741,11 +744,37 @@ func (av agentsView) tailLine(t tailLine, last, asks bool) line {
 	if label != "" {
 		l = append(l, seg{label + ":", ls}, spc(1))
 	}
-	return append(l, seg{rest, rs})
+	parts := wrapFirst(rest, iw-l.width(), iw-2)
+	if len(parts) == 0 {
+		return []line{l}
+	}
+	out := []line{append(l, seg{parts[0], rs})}
+	for _, p := range parts[1:] {
+		out = append(out, line{spc(2), {p, rs}})
+	}
+	return out
+}
+
+// wrapFirst wraps s to first columns on the first row and to rest on the next ones.
+func wrapFirst(s string, first, rest int) []string {
+	first, rest = max(1, first), max(1, rest)
+	var out []string
+	cur, w := "", first
+	for _, word := range strings.Fields(s) {
+		if cur != "" && runewidth.StringWidth(cur)+1+runewidth.StringWidth(word) > w {
+			out, cur, w = append(out, cur), word, rest
+			continue
+		}
+		cur = strings.TrimSpace(cur + " " + word)
+	}
+	if cur != "" {
+		out = append(out, cur)
+	}
+	return out
 }
 
 // askCard is the agent's question in a framed card with the answer keys.
-func (av agentsView) askCard(l *laneRow, a *agentRow, iw int) []line {
+func (av agentsView) askCard(l *laneRow, a *agentRow, iw, maxAsk int) []line {
 	lk := av.lk
 	in := iw - 4
 	age := ""
@@ -761,8 +790,8 @@ func (av agentsView) askCard(l *laneRow, a *agentRow, iw int) []line {
 		return append(append(line{{"│ ", lk.warn}}, c...), spc(in-c.width()), seg{" │", lk.warn})
 	}
 	ask := wrap(cmpOr(a.Ask, "waiting for your answer"), in)
-	if len(ask) > 3 {
-		ask = append(ask[:2:2], ask[2]+" …")
+	if maxAsk = max(3, maxAsk); len(ask) > maxAsk {
+		ask = append(ask[:maxAsk-1:maxAsk-1], ask[maxAsk-1]+" …")
 	}
 	for _, s := range ask {
 		out = append(out, row(line{{s, lk.plain}}))
@@ -784,7 +813,8 @@ func (av agentsView) tailRows(l *laneRow, iw, n int) []line {
 	rows := []line{av.laneHead(l, iw), {{rep("╌", iw), lk.dim}}}
 	var card []line
 	if a != nil && l.State == lsNeeds {
-		card = append([]line{nil}, av.askCard(l, a, iw)...)
+		// The question gets every row but 3 tail rows; the card's frame and keys take 5.
+		card = append([]line{nil}, av.askCard(l, a, iw, n-len(rows)-5-3)...)
 	} else if av.typing && a != nil {
 		card = []line{nil, {{"› ", lk.key}, {av.input, lk.plain}, {"▍", lk.acc}}}
 	}
@@ -793,7 +823,13 @@ func (av agentsView) tailRows(l *laneRow, iw, n int) []line {
 	switch {
 	case a != nil && len(a.Tail) > 0:
 		for i, t := range a.Tail {
-			tail = append(tail, av.tailLine(t, i == len(a.Tail)-1, l.State == lsNeeds))
+			rows := av.tailLine(t, i == len(a.Tail)-1, l.State == lsNeeds, iw)
+			// The newest entry alone overflows: keep its start, say what is cut.
+			if i == len(a.Tail)-1 && len(rows) > slots && slots > 1 {
+				cut := len(rows) - (slots - 1)
+				rows = append(rows[:slots-1:slots-1], line{spc(2), {fmt.Sprintf("… %d more lines, enter opens the session", cut), lk.sub}})
+			}
+			tail = append(tail, rows...)
 		}
 	case a != nil:
 		tail = []line{{{cmpOr(a.Doing, "no activity yet"), lk.sub}}}

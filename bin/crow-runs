@@ -589,6 +589,15 @@ def summarize_tool(name, inp):
     return name
 
 
+SAID_MAX = 2000  # chars of one assistant message kept for the deck and nest
+
+
+def said(text):
+    """One assistant message on one line, whole up to SAID_MAX: the deck wraps it."""
+    s = " ".join(text.split())
+    return s if len(s) <= SAID_MAX else s[:SAID_MAX - 1] + "…"
+
+
 def read_transcript(path):
     """Last action, whether it ended on plain text (= waiting on the user), context size."""
     info = {"last_action": None, "ends_on_text": False, "context_tokens": None, "subagents_active": 0, "recent": [],
@@ -612,7 +621,7 @@ def read_transcript(path):
                 if c.get("type") == "tool_use":
                     info["recent"].append({"ts": e.get("timestamp"), "action": summarize_tool(c.get("name", "?"), c.get("input") or {})})
                 elif c.get("type") == "text" and c.get("text", "").strip():
-                    info["recent"].append({"ts": e.get("timestamp"), "action": "says: " + c["text"].strip().splitlines()[0]})
+                    info["recent"].append({"ts": e.get("timestamp"), "action": "says: " + said(c["text"])})
         if e.get("type") == "assistant" and isinstance(msg.get("content"), list):
             if info["context_tokens"] is None and msg.get("usage"):
                 u = msg["usage"]
@@ -623,7 +632,7 @@ def read_transcript(path):
                         info["last_action"] = summarize_tool(c.get("name", "?"), c.get("input") or {})
                         break
                     if c.get("type") == "text" and c.get("text", "").strip():
-                        info["last_action"] = "says: " + c["text"].strip().splitlines()[0]
+                        info["last_action"] = "says: " + said(c["text"])
                         info["ends_on_text"] = True
                         break
         elif e.get("type") == "user" and info["last_action"] is None and isinstance(msg.get("content"), str):
