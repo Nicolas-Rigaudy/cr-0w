@@ -1,10 +1,10 @@
 ## item_168_nest_answer_sheet_for_inbox_items_and_mission_actions - Nest answer sheet for inbox items and mission actions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 80%
-> Progress: 0%
+> Status: In progress
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 85%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -60,6 +60,9 @@
 
 # Notes
 - Groomed 2026-11-10. Roadmap exception recorded in road_001 0.3b.
+- 2026-11-11 build (commit d6de8cc): shape A answers inline in the Inbox reading pane, rebuilt from the fold-inbox boards; cover verbs docked above the tab bar. Owner decision: no Mission detail screen (no board draws one). Stop is the Desk S1 STOP; Cancel is the ⋯ on Desk queue rows; Home mission links go to Desk or Inbox. Compare pages in the vault: nest-design/item_168/{inbox,desk-queue}-compare.
+- AC status: AC1 done (owner OK on both compare pages). AC3 covered by the 409 path and tests. AC5 holds. AC2 (phone answer resumes a mission) and AC4 (event parity checked against core) still to verify live.
+- The Desk STOP on a mission run calls the dispatch stop, not `missions/{id}/stop`. Check AC4 on the live test.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
