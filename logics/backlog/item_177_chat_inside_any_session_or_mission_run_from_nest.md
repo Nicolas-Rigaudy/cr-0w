@@ -2,7 +2,7 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 80%
+> Understanding: 85%
 > Confidence: 75%
 > Progress: 0%
 > Complexity: Medium
@@ -23,6 +23,8 @@
   - Core: `GET /api/runs/<id>/conversation?cursor=` from item_148, the same for live sessions by session id; new turns pushed over SSE.
   - Nest: run detail shows the last turns (assistant text, tool calls folded to one line), the item_149 one-line summary on top, a text box that sends through item_170 (mission answer for a parked mission, send for a live session).
   - Missions listed first; sessions and dispatch runs after (owner 2026-11-10: most runs will be missions).
+  - Phone first (owner 2026-11-11): the phone is where the owner chats with crow. Every word of crow's replies, line breaks and bullets kept, never cut with "…". No diffs or tool logs: each run of tool calls folds to one line, tap to open. Reply box at the bottom.
+  - Design first: Nest canvas boards for cover and inner (item138 fold-src boards), compared board vs app before the owner sees a build. Deck mockups in vault `Research/deck-chat/` (option A) show the picked shape.
 - Out:
   - Live terminal attach. Editing past turns.
 
@@ -30,6 +32,7 @@
 - AC1: A running mission's new turns show in Nest within 5 s.
 - AC2: Text typed in Nest lands in that mission or session and its reply shows.
 - AC3: A long conversation loads the last 50 turns first and pages back.
+- AC4: On the cover screen a 1400-char reply with bullets reads whole, with its line breaks; tool calls show as one folded line per run.
 
 # AC Traceability
 - request-AC2 -> AC1, AC2. Proof: read and write inside a run from the phone.
@@ -41,7 +44,7 @@
 # Links
 - Request: `req_055_a_work_day_from_nest_without_a_terminal`, `req_027_conversations_feed_for_core_deck_nest`
 - Depends on: `item_148_run_conversation_poller_with_cursors_in_core`, `item_170_core_actions_on_live_sessions_and_dispatch_runs`
-- Related: `item_149_one_line_run_summaries_from_a_cheap_model_cached_per_cursor`
+- Related: `item_186_deck_chat_pane_in_the_terminal` (same message shape, terminal side), `item_149_one_line_run_summaries_from_a_cheap_model_cached_per_cursor`
 - Primary task(s): `task_021_orchestrate_a_work_day_from_nest`
 
 # Priority
