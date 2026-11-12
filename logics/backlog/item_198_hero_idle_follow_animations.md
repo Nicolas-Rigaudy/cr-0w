@@ -41,6 +41,7 @@
 # Decision framing
 - Product framing: Needed: owner picks the option
 - Architecture framing: Not needed
+- 2026-11-12: head ink floor INK_MIN 0.35 (desktop matched to small heads), fail/run eyes take red/cyan (e7194d5); labels trimmed, YOUR MOVE tag removed (5b63cd9). Perf AC (<20 ms/frame) fails on desktop table: 26 ms median, predates this work. Gaze during drag moved to item_201.
 
 # Links
 - Product brief(s): (none yet)

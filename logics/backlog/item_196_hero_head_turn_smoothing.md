@@ -38,6 +38,7 @@
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
+- 2026-11-12: head brightness and eye colours fixed in e7194d5 (atlas weight 600 + stroke, INK_MIN 0.35).
 
 # Links
 - Product brief(s): (none yet)

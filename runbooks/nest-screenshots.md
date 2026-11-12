@@ -51,3 +51,11 @@ Overlay rules (`src/hero/declutter.ts`, tests beside it):
 
 ### Visual variants for a design pick
 Put a temporary `globalThis.__ring`-style switch in the scene, shoot each variant with a throwaway Playwright script (`addInitScript` sets the switch), then lay them out with `bin/crow-compare`. Review zoom crops before showing: first passes are usually too faint. Hardcode the pick and delete the switch before committing.
+
+### Hero reels (video of every beat)
+- `node scripts/hero-reel.mjs <out_dir> [WxH ...]`: whole hero (head + table) through load, planet tour, hover, select, drag, run, fail, idle; one MP4 per viewport from fixtures (api mode, `/api` routed per phase).
+- `node scripts/head-reel.mjs <out.webp> [cell px]`: the GPU head alone through the same beats.
+- Playwright `recordVideo` and the CDP screencast capture at CSS px whatever `deviceScaleFactor` says: small heads smear. Use a `Page.captureScreenshot` loop with `clip.scale` (2 on phone) and ffmpeg concat durations, as `hero-reel.mjs` does.
+- `reducedMotion: 'reduce'` hides the GL head: screenshot `.hero-box` without it.
+- Live core data for a check: `curl --unix-socket local/state/core.sock http://x/api/state/<section>`.
+- After a Nest change, run `npm run build`: core serves `tools/nest/dist`, so the phone keeps the old app until then (no restart needed).
