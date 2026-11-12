@@ -21,6 +21,7 @@
 # Scope
 - In:
   - Render layout options (2, 3, 4 panes, how panes are picked, where the slot list goes) and get the owner's pick before the build.
+  - The boards include the butler rail (item_176, owner 2026-11-12) docked right, open and folded, so pane widths are set with it.
   - A laptop view that tiles chats of chosen sessions; the pane choice survives a reload.
   - Keyboard: move focus between panes, focus the input, send, Esc; shown in a key hint.
 - Out:

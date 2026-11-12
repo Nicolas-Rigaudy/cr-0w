@@ -25,7 +25,11 @@
   - Core MCP server exposes the item_169 reads and the item_147/170 actions. Missions first: `mission.new` with a kind, then session and dispatch.
   - Any action that needs a tap (confirmation, approval) becomes an inbox item. The butler never confirms for the owner.
   - Persona from item_118 ("Sir", formal and calm).
-  - Nest (owner 2026-11-10, replaces the Chat tab): the chat lives on Home. A text box under the holotable; the reply types out in the holotable butler line and the droid reacts while it thinks and talks (item_158 states). Tapping the line opens the full transcript on Desk, with action chips the butler proposes (tap = the same core action). No separate Chat tab.
+  - Nest placement (owner 2026-11-12, replaces the 2026-11-10 Home-only plan):
+    - Laptop: an always-on butler rail on the right of every screen (about 320px): small hero on top whose mood follows core state (item_158 order fail > ask > run > idle, so it reacts to sessions and runs, not only to the chat), the typed butler line, the transcript, the input. A hotkey folds it to a thin strip (hero head + mood dot). On Home the rail hides its hero; the holotable hero is the full scene.
+    - Phone and Fold: no rail. A mini hero badge in the header shows the mood and opens the chat. Home keeps the approved D layout (text box under the holotable, reply in the holotable line).
+    - Action chips the butler proposes (tap = the same core action) show in the transcript.
+    - First step: render 2-3 rail boards (rail width, folded strip, hero size, Home without duplicate hero, phone badge) and get the owner's pick before any build. The rail footprint also feeds the item_189 side-by-side board.
 - Out:
   - Voice. Several parallel butler conversations in the UI (one is enough at first). Butler editing files directly.
 
@@ -35,6 +39,7 @@
 - AC3: An action that needs approval lands in the inbox; the butler says so and nothing runs before the tap.
 - AC4: Closing Nest and coming back an hour later shows the same conversation; the next message continues it.
 - AC5: The butler process has no tool outside `mcp__core__*` (checked from its init event).
+- AC6: The owner approved rendered rail boards before the build; on the laptop the rail shows on every screen, folds by hotkey, and its hero mood changes when a run starts or a session asks.
 
 # AC Traceability
 - request-AC1 -> AC1, AC2, AC3, AC5. Proof: talk to the orchestrator from the phone under the same rules.
@@ -56,6 +61,8 @@
 
 # Notes
 - Owner 2026-11-10: "when i talk to the butler i want the hero to respond". Placement on Home under the holotable, transcript on Desk. Layout base: item_171 approved design D.
+
+- Owner 2026-11-12: on the laptop Home is rarely open, so the hero must be visible while working → butler rail on every laptop screen, badge on phone.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
