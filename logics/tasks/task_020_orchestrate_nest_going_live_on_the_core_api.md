@@ -83,8 +83,8 @@
 - 2026-11-10 step 7 done (item_174). Next: step 8 item_171 Home mockup, owner OK first.
 - 2026-11-10 step 8 design approved (pass 3b option D, vault Research/nest-design/item_171). Butler chat moved to Home (item_176). Next: build item_171 in a fresh session.
 - 2026-11-10 planned from the owner ask (fastest working web app). Next: step 1 in the hub, then step 2 (item_144) in a fresh session.
-
 - 2026-11-12 step 9 built (ec42f19): hero live data, overlay declutter, matched ASCII detail on all sizes. Sheets in vault Research/nest-design/hero-live-158/final. Next: step 11 item_175.
+
 # Links
 - Request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`, `req_053_nest_home_design_pass_netrunner_palette_holographic_hero_and_jarvis_chrome`, `req_054_nest_sees_and_pilots_everything_deck_does`
 - Related: `task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy`, `task_018_nest_app_shell_on_core_fixtures`, `task_019_orchestrate_the_nest_home_design_pass`, `road_001_crow_roadmap_after_the_deck_pass`
