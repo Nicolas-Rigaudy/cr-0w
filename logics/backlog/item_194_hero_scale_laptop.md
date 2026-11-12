@@ -10,7 +10,7 @@
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 
 # AI Context
-- Summary: Size the head and scene from the space the hero has, so the laptop hero fills its column like the phone does.
+- Summary: One scale rule for phone cover, phone inner and laptop: head and scene take the same share of the hero everywhere, tuned on today's phone look.
 - Keywords: nest, hero, scale, laptop, head, holotable
 - Use when: building or reviewing the Nest hero after item_158.
 - Skip when: work outside the Nest hero.
@@ -22,17 +22,17 @@
 
 # Scope
 - In:
-  - Cell size from the hero width and height, with a higher cap on laptop.
+  - One rule for all sizes: cell size from the hero width and height (the smaller fit), no per-device cap.
+  - Calibrate on the phone cover look the owner likes today; inner and laptop follow the same proportions.
   - Head, table and planets keep one cell size (item_158 rule).
-  - Keep the phone at today's size.
 - Out:
   - Planet layout and looks (item_197).
 
 # Acceptance criteria
-- AC1: On laptop 1440x900 the head fills about the same share of the hero as on phone 368x812.
-- AC2: Phone and inner shots unchanged or approved by the owner.
+- AC1: Head height over hero height is the same within 10% on cover 368x812, inner 707x691 and laptop 1440x900.
+- AC2: The phone cover keeps today's look (owner check); inner and laptop match it in proportion.
 - AC3: Draw time per frame stays under 20 ms on laptop (`scripts/hero-perf.mjs`).
-- AC4: Owner OK on before/after shots side by side.
+- AC4: Owner OK on one sheet with the three sizes side by side, before and after.
 
 # AC Traceability
 - request-AC1 -> This backlog slice. Proof: owner OK on shots.
