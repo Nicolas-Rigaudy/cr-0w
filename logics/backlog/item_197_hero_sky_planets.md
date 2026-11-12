@@ -55,7 +55,8 @@
 # Notes
 - Design pass rules: concept and sketch before any render (design-renders-need-wow), no renders before OK.
 - Decides whether the table spins with the planets; that answer feeds item_198.
-- Reference: ASCII technique notes in Open Threads (JIN2-ASCII, technique only).
+- Reference: github.com/JIN2-ASCII/-JIN2-ASCII animated pieces (no license: technique only, no copied art).
+> Non-semantic edit: reference moved from Open Threads.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
