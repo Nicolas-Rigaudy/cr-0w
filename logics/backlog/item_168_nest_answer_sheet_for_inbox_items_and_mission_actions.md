@@ -63,6 +63,7 @@
 - 2026-11-11 build (commit d6de8cc): shape A answers inline in the Inbox reading pane, rebuilt from the fold-inbox boards; cover verbs docked above the tab bar. Owner decision: no Mission detail screen (no board draws one). Stop is the Desk S1 STOP; Cancel is the ⋯ on Desk queue rows; Home mission links go to Desk or Inbox. Compare pages in the vault: nest-design/item_168/{inbox,desk-queue}-compare.
 - AC status: AC1 done (owner OK on both compare pages). AC3 covered by the 409 path and tests. AC5 holds. AC2 (phone answer resumes a mission) and AC4 (event parity checked against core) still to verify live.
 - 2026-11-11: Desk STOP on a run that belongs to a running mission now calls `missions/{id}/stop` (`missionOfRun` in data/state.ts), so core writes the owner `action` event with surface nest like `crow mission stop`. Ad-hoc runs keep the dispatch stop. AC4 code path aligned; confirm the event in the AC2 phone test.
+- 2026-11-11 AC2 live test: test mission 20261111-research-nest-ac2-q2 asked a choice (q1 alpha/beta). The owner answered from Nest on the phone (answer event, surface nest, waiting to queued); the tick resumed it (continue resume f74b42b8 on rk1); report.v2 quotes alpha. AC2 passes. Still open: Stop from Desk writing the owner action event (no stop in this test). Gap: the brief never shows the outbox/questions.json shape; a run copied the crow block fields and core rejected the file (unknown field kind).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
