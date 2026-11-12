@@ -296,3 +296,22 @@ def test_the_hub_keeps_the_default_without_scopes(hub, fake):
     set_state([row("main"), row("spare", 90)])
     assert run(hub, "crow", "hub", env=env).returncode == 0
     assert launches()[0]["argv"][0] == "main"
+
+
+def test_the_account_flag_forces_the_calling_sessions_own_account(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare", 60)], busy={"main"})
+    r = run(hub, "crow", "term", "--account", "main", "demo",
+            env={**env, "CROW_ACCOUNT": "main", "CDX_SESSION_NAME": "main"})
+    assert r.returncode == 0, r.stderr
+    assert launches()[0]["argv"][0] == "main"
+
+
+def test_handoff_takes_the_account_flag(hub, fake):
+    env, set_state, launches = fake
+    set_state([row("main"), row("spare", 60)], busy={"main"})
+    r = run(hub, "crow", "handoff", "--account", "main", "demo", "--task", "t", "--end-state", "e",
+            env={**env, "CDX_SESSION_NAME": "main"})
+    assert r.returncode == 0, r.stderr
+    assert "crow: using" not in r.stderr
+    assert launches()[0]["argv"][0] == "main"

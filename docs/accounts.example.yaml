@@ -6,7 +6,9 @@
 #         The order is: usable now, then rank, then cdx priority (`cdx set <name> --priority N`), then room.
 #         Without any `scopes` key the pick follows the cdx order (usability, priority, room).
 # scope_min_room: per scope, skip the account when its smaller window has less than N% left.
+# min_room: the same floor for every scope (top level = default for all accounts; per account overrides).
 # tier: mine (default) = full rows on the deck Pulse; team = one compact line (teammates' accounts).
+min_room: 10
 default: main
 accounts:
   - {name: main, policy: use,       memory: permanent, scopes: {work: 1, hub: 1, personal: 2}, scope_min_room: {personal: 40}}

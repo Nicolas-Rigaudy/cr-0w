@@ -64,6 +64,11 @@ def scope_map(raw, kind):
         if isinstance(raw, dict) else {}
 
 
+def room(v):
+    """A whole percent 0-100, else None (no floor)."""
+    return v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100 else None
+
+
 def accounts(cfg):
     out = []
     cdx = cdx_launch()
@@ -74,6 +79,7 @@ def accounts(cfg):
         row = {"name": a["name"], "policy": pol if pol in POLICIES else "never",
                "priority": prio if isinstance(prio, int) and not isinstance(prio, bool) else 0,
                "scopes": scope_map(a.get("scopes"), "rank"), "scope_min_room": scope_map(a.get("scope_min_room"), "room"),
+               "min_room": room(a.get("min_room", cfg.get("min_room"))),
                "memory": a.get("memory", "none"), "tier": a.get("tier") if a.get("tier") == "team" else "mine"}
         if a.get("fallback") == "auto":  # shared account crow may pick alone, within its caps
             row.update(fallback="auto", **{k: a[k] for k in ("max_5h_pct", "max_week_pct", "free_5h_min") if k in a})

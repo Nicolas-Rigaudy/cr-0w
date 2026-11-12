@@ -418,6 +418,7 @@ def pick_accounts(accts, rows, current, now, scope=None):
 
     scope (registry scope or `hub`): when any account carries a `scopes` map, an account without a rank
     for it, or under its `scope_min_room` for it, gets a `scope_skip` reason and is never picked.
+    `min_room` (per account, default from the top of accounts.yaml) does the same for any scope.
 
     accts: crow-accounts json entries; rows: cdx status rows by name. Returns
     {current, current_blocked, accounts[], auto_target, recommended}: auto_target needs no OK
@@ -430,14 +431,18 @@ def pick_accounts(accts, rows, current, now, scope=None):
             continue
         row = rows.get(a["name"])
         rank, skip = 0, None
+        left = min((row or {}).get("remaining_5h_pct") or 0, (row or {}).get("remaining_week_pct") or 0)
         if scoped:
             rank = (a.get("scopes") or {}).get(scope)
-            left = min((row or {}).get("remaining_5h_pct") or 0, (row or {}).get("remaining_week_pct") or 0)
             floor = (a.get("scope_min_room") or {}).get(scope)
             if rank is None:
                 skip = f"no rank for scope {scope}"
             elif floor is not None and left < floor:
                 skip = f"{left}% left, under the {floor}% minimum for scope {scope}"
+        # min_room: a floor for every scope (and no scope), so an account nearly out is never picked.
+        floor = a.get("min_room")
+        if not skip and row and floor is not None and left < floor:
+            skip = f"{left}% left, under the {floor}% minimum"
         out.append({"name": a["name"], "policy": a["policy"], "fallback": a.get("fallback"),
                     "priority": a.get("priority") or 0, "rank": rank, "scope_skip": skip,
                     "current": a["name"] == current,

@@ -200,3 +200,31 @@ def test_dispatch_passes_failover(tmp_path, monkeypatch):
 def test_dispatch_routes_by_the_project_scope(tmp_path, monkeypatch):
     cmd = _dispatch(tmp_path, monkeypatch, state=[row("work"), row("home"), row("shared")])
     assert cmd[2] == "home"  # personal project: the personal rank beats the default account
+
+
+# ---------- min_room: a floor for every account, scoped or not ----------
+
+def test_min_room_skips_a_nearly_out_account_without_a_scope():
+    accts = [acct("rk", priority=90, min_room=10), acct("other", priority=10, min_room=10)]
+    p = pick(accts, [row("rk", 80, 4), row("other", 50)], default="rk")
+    assert p["account"] == "other"
+    assert {"name": "rk", "why": "4% left, under the 10% minimum"} in p["skipped"]
+
+
+def test_min_room_applies_inside_a_scope_too():
+    accts = [acct("rk", scopes={"hub": 1}, min_room=10), acct("other", scopes={"hub": 2}, min_room=10)]
+    assert pick(accts, [row("rk", 4), row("other", 50)], "hub")["account"] == "other"
+
+
+def test_min_room_lets_an_account_at_the_floor_through():
+    assert pick([acct("a", min_room=10)], [row("a", 10, 90)])["account"] == "a"
+
+
+def test_json_carries_min_room_with_the_top_level_default(hub):
+    (hub[0] / "local" / "accounts.yaml").write_text(
+        "min_room: 10\ndefault: main\naccounts:\n"
+        "  - {name: main, policy: use, memory: permanent}\n"
+        "  - {name: spare, policy: use, memory: permanent, min_room: 25}\n"
+        "  - {name: bad, policy: use, memory: permanent, min_room: lots}\n")
+    rooms = {a["name"]: a["min_room"] for a in json.loads(run(hub, "crow-accounts", "json").stdout)["accounts"]}
+    assert rooms == {"main": 10, "spare": 25, "bad": None}

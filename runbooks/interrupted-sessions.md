@@ -19,7 +19,7 @@ message. They can continue on another allowed account through a cdx handoff.
   Any other `ask-first` target needs a typed `yes`.
 - With `scopes` in `local/accounts.yaml` (docs/accounts.example.yaml) the target also follows the sessions' scope: when
   all stranded sessions sit in projects of one registry scope, accounts with no rank for it are not offered, a rank
-  beats the cdx priority, and `scope_min_room` keeps a low-rank account from being drained. Mixed scopes use the plain order.
+  beats the cdx priority, and `scope_min_room` keeps a low-rank account from being drained. `min_room` (default 10) skips any account nearly out, whatever the scope. `--account <name>` on open/term/handoff forces one, the calling session's own included. Mixed scopes use the plain order.
 - `cdx rescue` moves only the latest conversation of an account and reads policies from `cdx set --policy`.
   Without cdx policies it treats every account as `use`, so prefer `crow rescue`.
 - `crow runs sessions` and `crow runs relaunch` cover older stops and a single session.

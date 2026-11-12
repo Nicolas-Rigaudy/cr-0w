@@ -3,12 +3,13 @@
 #
 # Start
 #   crow                 open the hub session
-#   crow open [--model M] [--on-busy fail] <project> [prompt | --task T --end-state E]
+#   crow open [--account A] [--model M] [--on-busy fail] <project> [prompt | --task T --end-state E]
 #                        open a session in a registered project, optionally on a first message (model: opus, sonnet)
-#   crow term [--model M] [--on-busy fail] <project> [...]   same, in a new terminal window (safe to call from inside a Claude session)
-#   crow handoff <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
+#   crow term [--account A] [--model M] [--on-busy fail] <project> [...]   same, in a new terminal window (safe to call from inside a Claude session)
+#   crow handoff [--account A] <project> --task T --end-state E [--context C]   hand the work to a repo session (crow term)
 #   open, term and handoff pick a free allowed account with quota left (crow-accounts pick);
-#   CROW_ACCOUNT=<name> forces one. --on-busy fail never asks (scripts).
+#   --account <name> forces one, even the calling session's own account (CROW_ACCOUNT=<name> also
+#   forces one, except when it is only inherited from the calling session). --on-busy fail never asks (scripts).
 #   term, focus and relaunch open windows through CROW_TERMINAL=kitty|tmux|print (unset: kitty, else tmux, else print).
 #   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
 # See
@@ -121,13 +122,14 @@ pick_account() {
   CROW_ACCOUNT_GIVEN="$CROW_ACCOUNT"
 }
 
-# launch_opts: leading --model M / --on-busy B of open and term.
+# launch_opts: leading --account A / --model M / --on-busy B of open, term and handoff.
 on_busy=ask
 model=()
 launch_opts() {
   n=0
   while :; do
     case "${1:-}" in
+      --account) CROW_ACCOUNT="${2:?usage: --account <name>}"; CROW_ACCOUNT_GIVEN="$CROW_ACCOUNT"; shift 2; n=$((n+2)) ;;
       --model)   model=(--model "${2:?usage: crow open|term [--model M] [--on-busy fail] <project> ...}"); shift 2; n=$((n+2)) ;;
       --on-busy) on_busy="${2:?usage: --on-busy ask|fail}"; [[ "$on_busy" == ask || "$on_busy" == fail ]] \
                    || { echo "crow: --on-busy must be ask or fail" >&2; exit 1; }; shift 2; n=$((n+2)) ;;
@@ -204,10 +206,11 @@ case "$cmd" in
             fi ;;
   work)     exec "$CROW_ENGINE/bin/crow-project" work "$@" ;;
   handoff)  # Pick before writing the note: a refusal leaves no orphan note.
+            launch_opts "$@"; shift "$n"
             pick_account "$(project_scope "$1")"
             task="$("$CROW_ENGINE/bin/crow-project" handoff --for-cdx "$@")"
             end=""; prev=""; for a in "$@"; do [[ "$prev" == --end-state ]] && end="$a"; [[ "$a" == --end-state=* ]] && end="${a#--end-state=}"; prev="$a"; done
-            CROW_ACCOUNT="$CROW_ACCOUNT" CROW_ACCOUNT_PICKED=1 exec "$CROW_ENGINE/bin/crow" term "$1" --task "$task" --end-state "$end" ;;
+            CROW_ACCOUNT="$CROW_ACCOUNT" CROW_ACCOUNT_PICKED=1 exec "$CROW_ENGINE/bin/crow" term ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$1" --task "$task" --end-state "$end" ;;
   ls)       python3 -c "
 import yaml
 for p in yaml.safe_load(open('$REGISTRY'))['projects']:
