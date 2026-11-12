@@ -15,7 +15,7 @@ export interface Item {
   hide?: boolean
   // Extra shifts tried right after home (the card: above the planet, docked at the bottom).
   alt?: Array<[number, number]>
-  // Ignores this obstacle (a planet label sits next to its own planet).
+  // Ignores this obstacle at home (a planet label sits next to its own planet).
   own?: number
   prev?: [number, number]
 }
@@ -58,7 +58,8 @@ export function declutter(items: Item[], obstacles: Box[], w: number, h: number)
     const cost = ([dx, dy]: [number, number]) => {
       const b = { ...it.box, x: it.box.x + dx, y: it.box.y + dy }
       let c = outside(b, w, h) * 8 + text(dx, dy) * 8
-      obstacles.forEach((o, k) => { if (k !== it.own) c += overlap(b, o) })
+      // The own planet is ignored only at home (beside it); a shifted label must not cover it.
+      obstacles.forEach((o, k) => { if (k !== it.own || dx !== 0 || dy !== 0) c += overlap(b, o) })
       return c
     }
     let best: [number, number] = [0, 0], bc = Infinity

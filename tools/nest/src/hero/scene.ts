@@ -1,6 +1,5 @@
 import type { UiState } from '../data/state'
 import type { HeroModel } from './model'
-import type { AgendaEvent } from '../data/types'
 import { elapsed } from '../format'
 
 // Static ASCII scene, ported from the approved hero pass 7 renderer (item_139) with the
@@ -15,20 +14,19 @@ export interface PlanetLabel {
   tag?: { x: number; y: number; text: string }; cx: number; cy: number; rad: number; a0: number; back: boolean; hidden?: boolean
 }
 export interface MoonOut { x: number; y: number; r: number; id: string; title: string; state: UiState }
-export interface RimLabel { x: number; y: number; text: string; kind: 'hour' | 'event'; side?: 'l' | 'r' }
 export interface HeadBox { x: number; y: number; top: number; left: number; right: number }
-export interface SceneOut { planets: PlanetLabel[]; rim: RimLabel[]; head: HeadBox; lens: { x: number; y: number }; moons: MoonOut[]; more?: { x: number; y: number; n: number } }
+export interface SceneOut { planets: PlanetLabel[]; head: HeadBox; lens: { x: number; y: number }; moons: MoonOut[]; more?: { x: number; y: number; n: number } }
 // spin: degrees added to every planet angle (item_158). hover: lifted planet and its moons.
 // look: head turn override (-1 left, 1 right, 0 front). lean: head tilt in degrees.
 // pulse: 0..1 working pulse phase. lift: needs-you lift per project (0..1 of 4 px).
 // glitch: failed glitch per project (0..1 left of the 180 ms).
 export interface SceneOpts {
-  now: Date; agenda: AgendaEvent[]; spin?: number; hover?: { name: string; k: number }
-  look?: number; lean?: number; pulse?: number; lift?: Record<string, number>; glitch?: Record<string, number>
+  now: Date; spin?: number; hover?: { name: string; k: number }
+  look?: number; lean?: number; pulse?: number; sweep?: number; lift?: Record<string, number>; glitch?: Record<string, number>
 }
 
 // Cell size in px. The scene uses the head's own cell size, so the table, planets and moons
-// keep the same ASCII definition as the head (item_158). Narrow heroes shrink both together.
+// keep the same ASCII definition as the head (item_158). Cells scale with the hero (item_194).
 const CW0 = 4, CH0 = 7
 let CW = CW0, CH = CH0, FONT = 6.65
 const RAMP = '.,-~:;=!*#$@'
@@ -71,16 +69,19 @@ function camera(pos: V3, tgt: V3, focal: number, cx: number, cy: number) {
   }
 }
 
-interface Grid { cols: number; rows: number; z: Float32Array; ch: (string | null)[]; col: RGB[]; a: Float32Array }
+// bg: optional cell backdrop alpha (sphere cells), so a sphere reads as one solid disc.
+// k: cell scale vs the scene grid (head bakes at another density).
+interface Grid { cols: number; rows: number; z: Float32Array; ch: (string | null)[]; col: RGB[]; a: Float32Array; bg?: Float32Array; k?: number }
 function makeGrid(w: number, h: number): Grid {
   const cols = Math.ceil(w / CW), rows = Math.ceil(h / CH), n = cols * rows
-  return { cols, rows, z: new Float32Array(n).fill(1e9), ch: new Array(n).fill(null), col: new Array(n), a: new Float32Array(n) }
+  return { cols, rows, z: new Float32Array(n).fill(1e9), ch: new Array(n).fill(null), col: new Array(n), a: new Float32Array(n), bg: new Float32Array(n) }
 }
-function put(g: Grid, c: number, r: number, z: number, ch: string | null, col: RGB, a = 1) {
+function put(g: Grid, c: number, r: number, z: number, ch: string | null, col: RGB, a = 1, bg = 0) {
   if (c < 0 || r < 0 || c >= g.cols || r >= g.rows) return
   const i = r * g.cols + c
   if (z >= g.z[i]) return
   g.z[i] = z; g.ch[i] = ch; g.col[i] = col; g.a[i] = a
+  if (g.bg) g.bg[i] = bg
 }
 function splat(g: Grid, cam: Cam, p: V3, ch: string, col: RGB, a = 1, zb = 0) {
   const s = cam.proj(p)
@@ -140,37 +141,39 @@ function raySpheres(g: Grid, cam: Cam, spheres: Sphere[]) {
     if (!hs || !d) continue
     const s: Sphere = hs
     const n = norm(sub(add(cam.pos, mul(d, best)), s.c))
-    const L = clamp(Math.max(0, dot(n, LIGHT)) * (1 - s.emit) + s.emit * 0.75 + 0.08, 0, 1) * s.dimf
-    put(g, c, r, best * dot(d, cam.f), rampCh(L), mix(mix(s.col, [20, 20, 50], 0.5), mix(s.col, WHITE, s.emit * 0.4), L), 0.4 + 0.6 * L)
+    const L = clamp(Math.max(0, dot(n, LIGHT)) * (1 - s.emit) + s.emit * 0.75 + 0.22, 0, 1) * s.dimf
+    const z = best * dot(d, cam.f)
+    put(g, c, r, z, rampCh(L), mix(mix(s.col, [20, 20, 50], 0.25), mix(s.col, WHITE, s.emit * 0.4), L), 0.7 + 0.3 * L, (0.14 + 0.16 * L) * s.dimf)
   }
 }
 
 
 // Holotable (item_162): a projector lens on a galaxy-map table, CR-0W floating above it.
-// Planets = projects (size = open missions, colour = most urgent state). A project that waits
-// on you rises on a stalk (height = wait). Rim = 24h ruler: day so far lit, now notch, agenda.
+// Planets = projects, colour = most urgent state.
+// Sky ring (item_197): planets sit evenly on a ring parallel to the table, under the head. Height
+// above the table = priority (failed, needs you, working, quiet, done just above the table). The highest
+// sits at the front, the next ones alternate left and right; a spin shows the rest.
 const RT = 4.6
 const PY = -0.55
-// Free placement on the table: [angle (90 = facing the camera), fraction of the table radius].
-// Urgent planets sit in front, working ones at the sides, quiet ones at the back.
-const SPOTS: Record<'urgent' | 'working' | 'quiet', [number, number][]> = {
-  urgent: [[138, 0.7], [64, 0.88], [100, 0.4], [168, 0.44], [14, 0.44]],
-  working: [[248, 0.5], [206, 0.78], [340, 0.4], [196, 0.4]],
-  quiet: [[296, 0.5], [322, 0.66], [236, 0.86], [304, 0.88], [270, 0.8]],
-}
+const RING = 0.8
+const RANK: Record<UiState, number> = { failed: 0, needs: 1, working: 2, sleeping: 3, queued: 3, done: 4 }
+const ALT: Record<UiState, number> = { failed: 0.95, needs: 0.62, working: 0.38, sleeping: 0.2, queued: 0.2, done: 0.08 }
+// Size by priority, so the same state always reads the same (not by open missions).
+const SIZE: Record<UiState, number> = { failed: 0.34, needs: 0.34, working: 0.3, sleeping: 0.26, queued: 0.26, done: 0.24 }
 const MAXP = 9
-// Head scale on the table: the full option B grid (692 px) would cover the whole map.
-const HS = 0.62
-const hourAngle = (h: number) => 90 + h * 15
-const hoursOf = (d: Date) => d.getHours() + d.getMinutes() / 60
+// Cell scale (item_194): one rule for every size, calibrated on the phone cover hero (344x400 at
+// 0.434). The smaller of the width and height fits wins, so head and scene keep their share of the hero.
+// DENSITY: glyphs per head-scale cell (item_195: 1.25x so spheres and head read rounder). The
+// head is baked at the same density (scripts/hero-heads.mjs); HEAD_COLS is its width at 1x, so
+// a bake at another density keeps the head the same size.
+const HS = 0.434, REF_W = 344, REF_H = 400, HEAD_COLS = 173, DENSITY = 1.25
 export const fmtWait = (m: number) => (m < 60 ? `${m}m` : `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`)
-const two = (n: number) => String(n).padStart(2, '0')
 
 export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: number, m: HeroModel, heads: Heads | undefined, pal: Palette, turn: { l: Heads; r: Heads } | undefined, opts: SceneOpts): SceneOut {
   const cw = Math.round(w * dpr), ch = Math.round(h * dpr)
   if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch }
-  const cs = HS * clamp(w / 560, 0.7, 1)
-  CW = CW0 * cs; CH = CH0 * cs; FONT = 6.65 * cs
+  const cs = HS * Math.min(w / REF_W, h / REF_H)
+  CW = (CW0 * cs) / DENSITY; CH = (CH0 * cs) / DENSITY; FONT = (6.65 * cs) / DENSITY
   const g = makeGrid(w, h), rnd = rng(42), SC = pal.state
   const spin = opts.spin ?? 0
   const POS = V(0, 4.4, -14.5), TGT = V(0, 0.2, 0), LENS = V(0, PY, 0)
@@ -183,19 +186,20 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   for (const f of [0.25, 0.5, 0.75]) for (let t = 0; t < 360; t += 2.4 / f) splat(g, cam, at(t, f), '·', pal.ring, 0.2)
   for (let k = 0; k < 8; k++) for (let f = 0.2; f < 0.92; f += 0.05) splat(g, cam, at(k * 45 + 22.5 + spin, f), '·', pal.ring, 0.1)
 
-  // Rim = 24h ruler, midnight at the front, running clockwise seen from above. Fixed: time, not space.
-  const nowH = hoursOf(opts.now)
-  for (let hh = 0; hh < 24; hh += 0.04) {
-    const lit = hh <= nowH, front = Math.max(0, Math.sin(hourAngle(hh) * D2R))
-    splat(g, cam, at(hourAngle(hh), 1), lit ? '=' : '-', lit ? SC.working : pal.ring, lit ? 0.95 : 0.18 + 0.14 * front)
+  // Rim (item_197, the 24h clock is gone): a bezel that turns with the planets, minor ticks every
+  // 10 deg, long accent ticks every 45. Front is lit more, the back fades.
+  const TC = mix(pal.ring, pal.fg, 0.55)
+  const rimA = (t: number) => 0.4 + 0.45 * Math.max(0, Math.sin((((t % 360) + 360) % 360) * D2R))
+  for (let t = 0; t < 360; t += 0.8) splat(g, cam, at(t, 1), '-', TC, rimA(t) * 0.8)
+  for (let k = 0; k < 36; k++) {
+    const t = k * 10 + spin, major = k % 9 === 0
+    for (let f = 1.015; f < (major ? 1.11 : 1.045); f += 0.012) splat(g, cam, at(t, f), major ? '#' : "'", major ? pal.accent : TC, rimA(t) * (major ? 2.2 : 1.6))
   }
-  for (let i = 0; i < 96; i++) {
-    const big = i % 4 === 0
-    for (let f = big ? 0.93 : 0.965; f < 0.995; f += 0.012) splat(g, cam, at(hourAngle(i / 4), f), big ? '|' : '.', pal.ring, big ? 0.55 : 0.3)
+  // Scan sweep (idle): a bright head with a fading tail running round the rim.
+  if (opts.sweep !== undefined) {
+    const s0 = opts.sweep * 360
+    for (let d = 0; d < 60; d += 0.5) for (const f of [0.98, 1, 1.02]) splat(g, cam, at(s0 - d, f), d < 3 ? '#' : d < 12 ? '=' : '-', mix(SC.working, WHITE, d < 3 ? 0.5 : 0), 1.6 * (1 - d / 60) ** 1.3)
   }
-  for (let f = 0.86; f < 1.05; f += 0.008) splat(g, cam, at(hourAngle(nowH), f), '#', WHITE, 0.95)
-  const today = opts.agenda.filter((e) => new Date(e.start).toDateString() === opts.now.toDateString())
-  for (const e of today) for (let f = 1.01; f < 1.08; f += 0.01) splat(g, cam, at(hourAngle(hoursOf(new Date(e.start))), f), '^', SC.needs, 0.9)
 
   // Lens: the projector core, and a sparse cone that carries the head up.
   for (let r = 0; r < 0.34; r += 0.03) for (let t = 0; t < 360; t += 4) splat(g, cam, add(LENS, V(r * Math.cos(t * D2R), 0.02, r * Math.sin(t * D2R))), r < 0.18 ? '@' : '*', mix(WHITE, SC.working, r * 2.5), 0.9)
@@ -206,56 +210,63 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   }
 
   // Planets.
-  const used = { urgent: 0, working: 0, quiet: 0 }
   const hov = opts.hover
-  const ps = m.projects.slice(0, MAXP).map((p) => {
-    const k = p.state === 'needs' || p.state === 'failed' ? 'urgent' : p.state === 'working' ? 'working' : 'quiet'
-    const [a, f] = SPOTS[k][used[k]++ % SPOTS[k].length]
-    let base = at(a + spin, f)
+  const ranked = m.projects.slice(0, MAXP).map((p, i) => ({ p, i })).sort((a, b) => RANK[a.p.state] - RANK[b.p.state] || a.i - b.i).map((o) => o.p)
+  const stepA = 360 / Math.max(ranked.length, 1)
+  const ps = ranked.map((p, i) => {
+    const a = 90 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * stepA
+    let base = at(a + spin, RING)
     // Back half of the table (behind the lens): smaller and dimmer, labels hidden.
     const depth = clamp(base.z / (RT * 0.5), 0, 1)
     const back = base.z > RT * 0.15
     // Failed: one short sideways glitch.
     const gl = opts.glitch?.[p.name] ?? 0
     if (gl > 0) base = add(base, V((Math.random() - 0.5) * 0.5 * gl, 0, 0))
-    const r = (0.16 + 0.07 * Math.min(p.open, 5)) * (1 - 0.25 * depth)
+    const r = SIZE[p.state] * (1 - 0.25 * depth)
     const z0 = cam.proj(base).z, px = z0 / cam.focal
     const hk = hov?.name === p.name ? hov.k : 0
-    const stalk = (p.state === 'needs' ? 0.45 + 1.75 * Math.min((p.wait ?? 0) / 300, 1) : p.state === 'working' ? 0.24 : 0)
+    const stalk = ALT[p.state] + (p.state === 'needs' ? 0.18 * Math.min((p.wait ?? 0) / 300, 1) : 0)
       + (opts.lift?.[p.name] ?? (p.state === 'needs' ? 1 : 0)) * 4 * px + hk * 0.3
     return { ...p, a0: a, base, r, stalk, depth, back, hk, c: add(base, V(0, stalk + r, 0)) }
   })
+  // Rim footprints: each planet marks the bezel with an arc in its colour, brighter when hovered
+  // and when it turns into the front, so a spin shows which one has the focus.
+  for (const p of ps) {
+    const t0 = p.a0 + spin, off = Math.abs(((((t0 - 90) % 360) + 540) % 360) - 180)
+    const front = Math.max(0, 1 - off / 25), k = 1 + 0.6 * (1 - p.depth) + p.hk + 0.8 * front
+    for (let d = -6; d <= 6; d += 0.5) for (const f of [0.985, 1.015]) splat(g, cam, at(t0 + d, f), '=', mix(SC[p.state], WHITE, 0.25 * front), k * (1 - Math.abs(d) / 8))
+  }
   // Bot intent: longest wait first (model order), then a failure, then live work.
   const target = ps.find((p) => p.state === 'needs') ?? ps.find((p) => p.state === 'failed') ?? ps.find((p) => p.state === 'working')
   const spheres: Sphere[] = []
-  const dimOthers = hov ? 1 - 0.5 * hov.k : 1
+  const dimOthers = hov ? 1 - 0.3 * hov.k : 1
   const pulse = opts.pulse === undefined ? 0 : 0.5 - 0.5 * Math.cos(opts.pulse * Math.PI * 2)
   for (const p of ps) {
     const col = SC[p.state], flat = add(p.base, V(0, 0.02, 0))
     const fade = (p.hk > 0 ? 1 : dimOthers) * (1 - 0.55 * p.depth)
-    if (p.state === 'done') { ringOnPlane(g, cam, flat, 0.34, 'o', col, 0.5, 0.05); ringOnPlane(g, cam, flat, 0.18, '.', col, 0.35, 0.09); continue }
-    if (p.state === 'failed') { brokenRing(g, cam, add(p.base, V(0, 0.08, 0)), col, 0.12); continue }
     ringOnPlane(g, cam, flat, p.r * 1.2, '.', mix(col, [20, 20, 50], 0.35), 0.5, 0.06)
     for (let y = 0.05; y < p.stalk; y += 0.07) splat(g, cam, add(p.base, V(0, y, 0)), ':', col, 0.55)
-    const quiet = p.state === 'sleeping' || p.state === 'queued'
-    const emit = (p === target ? 0.55 : p.state === 'working' ? 0.3 : 0.12) + (p.state === 'working' ? 0.25 * pulse : 0) + 0.25 * p.hk
-    spheres.push({ c: p.c, r: p.r, col: quiet ? pal.ring : col, emit, dimf: (quiet ? 0.45 : p === target ? 1 : 0.85) * fade })
+    const quiet = p.state === 'sleeping' || p.state === 'queued' || p.state === 'done'
+    // One light for every live planet; the target stands out by its marker and the head's gaze.
+    const emit = (quiet ? 0.12 : 0.45) + (p.state === 'working' ? 0.25 * pulse : 0) + 0.25 * p.hk
+    spheres.push({ c: p.c, r: p.r, col: quiet && p.state !== 'done' ? pal.ring : p.state === 'failed' ? mix(col, WHITE, 0.2) : col, emit, dimf: (quiet ? 0.5 : 1) * fade })
+    if (p.state === 'failed') brokenRing(g, cam, p.c, col)
     if (p === target && p.state === 'needs') octa(g, cam, add(p.c, V(0, p.r + 0.34, 0)), 0.12, col, 1.4)
   }
   // Hovered planet: its open missions orbit it as moons, max 6 then +n.
   const moons: { c: V3; r: number; id: string; title: string; state: UiState }[] = []
   let more: { c: V3; n: number } | undefined
   const hp = ps.find((p) => p.hk > 0)
-  if (hp && hp.state !== 'done') {
+  if (hp) {
     // Moons fly out as the hover eases in, leaving room for their titles. The orbit is
     // tilted toward the camera so the titles spread vertically instead of stacking.
     const list = hp.missions.slice(0, 6), R = (Math.max(hp.r, 0.2) * 1.9 + 0.12) * (1 + 0.5 * hp.hk)
     list.forEach((mi, i) => {
       const t = (i / Math.max(list.length, 1)) * Math.PI * 2 + spin * D2R * 0.5 + 0.4
       const c = add(hp.c, V(R * Math.cos(t), R * 0.55 * Math.sin(t), R * 0.8 * Math.sin(t)))
-      const r = 0.11 * hp.hk
+      const r = 0.21 * hp.hk
       moons.push({ c, r, id: mi.id, title: mi.title, state: mi.state })
-      spheres.push({ c, r, col: SC[mi.state], emit: 0.4, dimf: hp.hk })
+      spheres.push({ c, r, col: SC[mi.state], emit: 0.3, dimf: hp.hk })
     })
     if (hp.missions.length > 6) more = { c: add(hp.c, V(0, hp.r + 0.25, 0)), n: hp.missions.length - 6 }
   }
@@ -271,7 +282,7 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   const H = turn && dir ? (dir < 0 ? turn.l : turn.r) : heads
   if (H) {
     const hd = H.moods[m.mood], rows = hd.glyphs.length
-    const hg: Grid = { cols: hd.cols, rows, z: new Float32Array(hd.cols * rows).fill(1e9), ch: new Array(hd.cols * rows).fill(null), col: new Array(hd.cols * rows), a: new Float32Array(hd.cols * rows) }
+    const hg: Grid = { cols: hd.cols, rows, z: new Float32Array(hd.cols * rows).fill(1e9), ch: new Array(hd.cols * rows).fill(null), col: new Array(hd.cols * rows), a: new Float32Array(hd.cols * rows), k: (HEAD_COLS * DENSITY) / hd.cols }
     const eye = target ? SC[target.state] : undefined
     hd.glyphs.forEach((row, r) => {
       const first = row.search(/\S/), last = row.trimEnd().length
@@ -287,7 +298,7 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
         put(hg, c, r, 0, row[c], col, Math.min(1, Number(alpha) * 1.5))
       }
     })
-    const hw = hd.cols * CW, hh = rows * CH
+    const hw = hd.cols * CW * hg.k!, hh = rows * CH * hg.k!
     const top = Math.max(60, (70 + cam.proj(at(270, 1)).y - 50 - hh) / 2)
     layer = { g: hg, scale: 1, x: w / 2 - hw / 2, y: top, zSplit: lens.z, lean: (opts.lean ?? 0) * D2R }
     head = { x: w / 2, y: top + hh / 2, top, left: w / 2 - hw / 2, right: w / 2 + hw / 2 }
@@ -297,14 +308,13 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
 
   const gaps = new Map<PlanetLabel, number>()
   const out: SceneOut = {
-    planets: [], rim: [], head, lens: { x: lens.x, y: lens.y },
+    planets: [], head, lens: { x: lens.x, y: lens.y },
     moons: moons.map((o) => { const s = cam.proj(o.c); return { x: s.x, y: s.y, r: Math.max(6, (o.r * cam.focal) / s.z), id: o.id, title: o.title, state: o.state } }),
     more: more && { ...cam.proj(more.c), n: more.n },
   }
   for (const p of ps) {
-    const flat = p.state === 'done' || p.state === 'failed'
-    const s = cam.proj(flat ? p.base : p.c)
-    const rad = ((flat ? 0.34 : p.r) * cam.focal) / s.z
+    const s = cam.proj(p.c)
+    const rad = (p.r * cam.focal) / s.z
     const side = s.x < w / 2 ? 'l' : 'r'
     const note = p.state === 'working' && p.runFrom ? elapsed(p.runFrom, opts.now)
       : p.state === 'failed' ? `${p.cause ?? 'run'} failed`
@@ -325,24 +335,8 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   const boxes: Box[] = []
   const line = (x0: number, x1: number, y: number): Box => ({ x0, x1, y0: y - 8, y1: y + 8 })
   for (const p of ps) {
-    if (p.state === 'done' || p.state === 'failed') continue
     const c = cam.proj(p.c), rr = (p.r * cam.focal) / c.z
     boxes.push({ x0: c.x - rr, x1: c.x + rr, y0: c.y - rr, y1: c.y + rr, own: p.name })
-  }
-  const next = today.filter((e) => hoursOf(new Date(e.start)) >= nowH).sort((a, b) => a.start.localeCompare(b.start))[0]
-  let ev: RimLabel | undefined
-  if (next) {
-    const d = new Date(next.start), s = cam.proj(at(hourAngle(hoursOf(d)), 1.12))
-    ev = { x: s.x, y: s.y, text: `${two(d.getHours())}:${two(d.getMinutes())} ${next.title}`, kind: 'event', side: s.x < w / 2 ? 'l' : 'r' }
-    // Matches .hero-rim.event: right side ends at the notch, left side starts there; 6px below.
-    const tw = ev.text.length * 6.4, x0 = ev.side === 'r' ? ev.x - tw + 8 : ev.x - 8, x1 = x0 + tw
-    // Keep it off planet spheres: slide down past any disc it crosses.
-    for (const p of ps) {
-      if (p.state === 'done' || p.state === 'failed') continue
-      const c = cam.proj(p.c), rr = (p.r * cam.focal) / c.z
-      if (c.x + rr > x0 && c.x - rr < x1 && c.y + rr > ev.y && c.y - rr < ev.y + 20) ev.y = c.y + rr + 2
-    }
-    boxes.push(line(x0, x1, ev.y + 12))
   }
   for (const l of out.planets) if (l.tag) { const tw = l.tag.text.length * 8.6; boxes.push(line(l.tag.x - tw / 2, l.tag.x + tw / 2, l.tag.y)) }
   for (const l of [...out.planets].sort((a, b) => a.y - b.y)) {
@@ -362,7 +356,7 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     l.y += dy
     boxes.push(line(x0, x1, l.y))
   }
-  // Rim hour labels (hidden where the head covers them) and the next agenda event.
+  // Labels hidden where the head covers them.
   const inHead = (x: number, y: number) => x > head.left + 20 && x < head.right - 20 && y > head.top && y < 2 * head.y - head.top
   // Readability (item_158): back labels hide (YOUR MOVE tags stay); nothing sits under the head.
   for (const l of out.planets) {
@@ -370,11 +364,6 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     l.hidden = l.back || inHead(x0, l.y) || inHead(x0 + tw, l.y) || inHead(x0 + tw / 2, l.y)
     if (l.tag && inHead(l.tag.x, l.tag.y)) l.tag = undefined
   }
-  for (const hh of [0, 6, 12, 18]) {
-    const s = cam.proj(at(hourAngle(hh), 1.09))
-    if (!inHead(s.x, s.y)) out.rim.push({ x: s.x, y: s.y, text: two(hh), kind: 'hour' })
-  }
-  if (ev) out.rim.push(ev)
   return out
 }
 
@@ -389,21 +378,24 @@ function paint(cv: HTMLCanvasElement, g: Grid, dpr: number, head?: HeadLayer) {
   l.setTransform(1, 0, 0, 1, 0, 0); l.clearRect(0, 0, L.width, L.height)
   l.scale(dpr, dpr)
   l.textBaseline = 'middle'; l.textAlign = 'center'
+  const CWg = CW, CHg = CH
   const cells = (gr: Grid, keep: (z: number) => boolean) => {
+    const k = gr.k ?? 1, CW = CWg * k, CH = CHg * k
+    l.font = `500 ${(FONT * k).toFixed(2)}px 'Fira Code', ui-monospace, monospace`
     for (let r = 0; r < gr.rows; r++) for (let c = 0; c < gr.cols; c++) {
       const i = r * gr.cols + c, ch = gr.ch[i]
       if (!ch || !keep(gr.z[i])) continue
       if (ch === ' ') { l.clearRect(c * CW - 0.5, r * CH - 0.5, CW + 1, CH + 1); continue }
-      const col = gr.col[i]
+      const col = gr.col[i], bg = gr.bg?.[i] ?? 0
+      if (bg > 0) { l.fillStyle = `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${bg.toFixed(3)})`; l.fillRect(c * CW, r * CH, CW, CH) }
       l.fillStyle = `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${gr.a[i].toFixed(3)})`
       l.fillText(ch, c * CW + CW / 2, r * CH + CH / 2 + 0.5)
     }
   }
-  l.font = `500 ${FONT.toFixed(2)}px 'Fira Code', ui-monospace, monospace`
   // Behind the lens, then the head (its silhouette hides the table back), then the front.
   cells(g, (z) => !head || z > head.zSplit)
   if (head) {
-    const hw = head.g.cols * CW * head.scale, hh = head.g.rows * CH * head.scale
+    const hk = head.g.k ?? 1, hw = head.g.cols * CW * hk * head.scale, hh = head.g.rows * CH * hk * head.scale
     l.save(); l.translate(head.x + hw / 2, head.y + hh); l.rotate(head.lean); l.translate(-hw / 2, -hh); l.scale(head.scale, head.scale)
     cells(head.g, () => true)
     l.restore()

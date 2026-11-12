@@ -1,7 +1,7 @@
 // Render the hero head spike once per mood and save its glyph grid as text data.
 // Usage: node scripts/hero-heads.mjs <path/to/holo-head.html> [out=src/hero/heads.json]
 // Turned heads for the gaze: HEAD_EXTRA="&yaw=-20" (heads-l.json) and "&yaw=20" (heads-r.json).
-// Head about 100 cells wide, the pass 7 scale: w=690 h=640 focal=794 dy=128.
+// Head at the hero's 1.25x glyph density (scene.ts DENSITY): w=863 h=800 focal=993 dy=160.
 // Headless only. Reads the cell pass (glyph index + colour per cell) back from WebGL.
 import { writeFileSync } from 'node:fs'
 import { chromium } from 'playwright-core'
@@ -10,7 +10,7 @@ const [src, out = 'src/hero/heads.json'] = process.argv.slice(2)
 if (!src) { console.error('usage: hero-heads.mjs <holo-head.html> [out]'); process.exit(2) }
 
 const MOODS = ['idle', 'ask', 'fail', 'run']
-const SIZE = 'holo=0&w=690&h=640&focal=794&dy=128' + (process.env.HEAD_EXTRA ?? '') // holo=0: plain option B, no emitter disc; HEAD_EXTRA e.g. '&yaw=-30'
+const SIZE = 'holo=0&w=863&h=800&focal=993&dy=160' + (process.env.HEAD_EXTRA ?? '') // holo=0: plain option B, no emitter disc; HEAD_EXTRA e.g. '&yaw=-30'
 const STEPS = 12 // colour levels per channel
 
 const b = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import type { UiState } from '../data/state'
 import { lastRun, openInbox } from '../data/state'
-import type { AgendaEvent, InboxItem, Mission } from '../data/types'
+import type { InboxItem, Mission } from '../data/types'
 import { ago, title } from '../format'
 import { navigate } from '../router'
 import { Glyph } from '../ui/Glyph'
@@ -20,6 +20,8 @@ type RGB = [number, number, number]
 const VARS: Record<UiState, string> = { needs: '--c-n', working: '--c-w', failed: '--c-f', sleeping: '--c-s', queued: '--c-q', done: '--c-d' }
 const PULSE_MS = 2400
 const PULSE_FRAME_MS = 100
+// Idle scan sweep round the table rim (item_197): one turn per SWEEP_MS, on the slow tick.
+const SWEEP_MS = 12000
 const LIFT_MS = 420
 const GLITCH_MS = 180
 const HOVER_MS = 200
@@ -84,7 +86,7 @@ const stateOf = (m: Mission): UiState =>
   m.state === 'failed' ? 'failed' : m.state === 'waiting' || m.state === 'review' ? 'needs' : m.state === 'queued' ? (lastRun(m)?.cause === 'usage_limit' ? 'sleeping' : 'queued') : m.state === 'done' ? 'done' : 'working'
 
 // say replaces the model's line (phone Home counts sessions and checks too).
-export function Hero({ missions, inbox, agenda, now, say }: { missions: Mission[]; inbox: InboxItem[]; agenda: AgendaEvent[]; now: Date; say?: string }) {
+export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox: InboxItem[]; now: Date; say?: string }) {
   const m = useMemo(() => heroModel(missions, inbox, now), [missions, inbox, now])
   const reduced = useMedia('(prefers-reduced-motion: reduce)')
   const box = useRef<HTMLDivElement>(null)
@@ -159,15 +161,16 @@ export function Hero({ missions, inbox, agenda, now, say }: { missions: Mission[
     const glitch: Record<string, number> = {}
     for (const n of Object.keys(s.glitch)) glitch[n] = 1 - s.glitch[n]
     const o = drawScene(cv.current, size.w, size.h, window.devicePixelRatio || 1, m, heads, s.pal, turn, {
-      now, agenda, spin: s.spin.spin, hover: s.hover && { name: s.hover.name, k: s.hover.k },
+      now, spin: s.spin.spin, hover: s.hover && { name: s.hover.name, k: s.hover.k },
       look: s.look, lean: s.lean, pulse: live && !reduced ? (t % PULSE_MS) / PULSE_MS : undefined, lift, glitch,
+      sweep: reduced ? undefined : (t % SWEEP_MS) / SWEEP_MS,
     })
     s.out = o
     setOut(o)
     return busy
   }
 
-  // Wake the loop. Fast frames while busy; a slow tick for the working pulse; else sleep.
+  // Wake the loop. Fast frames while busy; a slow tick for the sweep and the working pulse.
   const kick = () => {
     const s = st.current
     clearTimeout(s.timer)
@@ -176,14 +179,14 @@ export function Hero({ missions, inbox, agenda, now, say }: { missions: Mission[
       s.raf = 0
       if (frame(t)) { s.raf = requestAnimationFrame(loop); return }
       s.last = 0
-      if (live && !reduced && document.visibilityState === 'visible') s.timer = window.setTimeout(() => kick(), PULSE_FRAME_MS)
+      if (!reduced && document.visibilityState === 'visible') s.timer = window.setTimeout(() => kick(), PULSE_FRAME_MS)
     }
     s.raf = requestAnimationFrame(loop)
   }
 
   // Data changes: start a lift (entered needs you) or a glitch (entered failed), then redraw.
   const minute = Math.floor(now.getTime() / 60000)
-  const key = JSON.stringify([m.mood, minute, agenda.map((e) => [e.id, e.start]), m.projects.map((p) => [p.name, p.state, p.open, p.wait, p.runFrom, p.cause])])
+  const key = JSON.stringify([m.mood, minute, m.projects.map((p) => [p.name, p.state, p.open, p.wait, p.runFrom, p.cause])])
   useLayoutEffect(() => {
     const s = st.current
     const cur = new Map(m.projects.map((p) => [p.name, p.state]))
@@ -321,17 +324,14 @@ export function Hero({ missions, inbox, agenda, now, say }: { missions: Mission[
         </Fragment>
       ))}
       {out?.more && <div className="hero-rim" style={{ left: out.more.x, top: out.more.y }} data-prio={7} data-hide aria-hidden="true">+{out.more.n}</div>}
-      {hp && out?.moons.map((o, j) => {
+      {hp && out?.moons.map((o) => {
         const l = o.x < hp.cx
         return (
-          <div key={o.id} className={`hero-ml${l ? ' l' : ''}`} style={{ left: o.x + (l ? -1 : 1) * (o.r + 12), top: o.y }} data-prio={5} data-hide data-own={1 + out.planets.length + j} aria-hidden="true">
+          <div key={o.id} className={`hero-ml${l ? ' l' : ''}`} style={{ left: o.x + (l ? -1 : 1) * (o.r + 12), top: o.y }} data-prio={2.5} data-hide aria-hidden="true">
             <Glyph state={o.state} size={11} /> <span>{o.title}</span>
           </div>
         )
       })}
-      {out?.rim.map((r) => (
-        <div key={r.text} className={`hero-rim ${r.kind}${r.side ? ` ${r.side}` : ''}`} style={{ left: r.x, top: r.y }} data-prio={r.kind === 'event' ? 6 : 8} data-hide aria-hidden="true">{r.text}</div>
-      ))}
       {m.asks > 0 && out && (
         <div className="hero-chip" data-prio={0} data-fixed style={{ left: Math.min(out.head.right - 40, (size?.w ?? 0) - 60), top: out.head.top + 40 }} aria-hidden="true">
           {m.asks} {m.asks === 1 ? 'ASK' : 'ASKS'}

@@ -108,13 +108,13 @@ function Agenda({ m }: { m: HomeModel }) {
 // Phone Home (item_171, pass 3b option D). Cover: one column. Inner: holotable
 // column on the left (HUD, holotable, agenda), needs and running on the right.
 function HomeCompact({ snap }: { snap: Snapshot }) {
-  const { missions, inbox, agenda, now } = snap
+  const { missions, inbox, now } = snap
   const inner = useMedia(INNER)
   const m = homeModel(snap)
   const say = m.needs.length
     ? `${m.needs.length} need you, Sir. ${m.working} working.`
     : m.working ? `Nothing needs you, Sir. ${m.working} working.` : 'All quiet, Sir.'
-  const holo = <div className="hwrap"><Hero missions={missions} inbox={inbox} agenda={agenda} now={now} say={say} /></div>
+  const holo = <div className="hwrap"><Hero missions={missions} inbox={inbox} now={now} say={say} /></div>
   if (inner) {
     return (
       <div className="screen home-ph a2">

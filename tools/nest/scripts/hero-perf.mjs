@@ -8,7 +8,8 @@ for (let i = 0; i < 80; i++) { try { await fetch(base); break } catch { await ne
 const browser = await chromium.launch({ headless: true })
 try {
   for (const [w, h] of [[1440, 900], [707, 691], [368, 812]]) {
-    const page = await (await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 })).newPage()
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 })
+    const page = await ctx.newPage()
     await page.goto(base + '/', { waitUntil: 'networkidle' })
     await page.waitForTimeout(800)
     const r = await page.evaluate(async () => {
