@@ -215,3 +215,29 @@ func TestReadOnlyKindHasNoWorktreeLine(t *testing.T) {
 		t.Errorf("research brief names a worktree:\n%s", got)
 	}
 }
+
+// The brief shows the questions.json shape with the mission and version filled in, and the
+// shape decodes strictly as a questions file (runs used to copy crow-block fields).
+func TestBriefShowsTheQuestionsShape(t *testing.T) {
+	in := exampleInput(t)
+	got := Render(in)
+	_, rest, ok := strings.Cut(got, "`questions.json` shape")
+	if !ok {
+		t.Fatalf("brief has no questions.json shape:\n%s", got)
+	}
+	_, rest, ok = strings.Cut(rest, "```json\n")
+	body, _, ok2 := strings.Cut(rest, "```")
+	if !ok || !ok2 {
+		t.Fatalf("questions.json shape is not a json fence:\n%s", got)
+	}
+	var q contract.Questions
+	if err := contract.Decode([]byte(body), &q); err != nil {
+		t.Fatalf("shape does not decode as questions.json: %v\n%s", err, body)
+	}
+	if q.Contract != contract.Version || q.Mission != in.Mission.ID || q.Version != Version(in.Answers) {
+		t.Errorf("shape names contract %d, mission %s, version %d", q.Contract, q.Mission, q.Version)
+	}
+	if len(q.Questions) != 1 || !q.Questions[0].Blocking || q.Questions[0].Choices == nil {
+		t.Errorf("shape question %+v", q.Questions)
+	}
+}

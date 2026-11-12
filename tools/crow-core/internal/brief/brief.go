@@ -305,6 +305,8 @@ func Render(in Input) string {
 	}
 	line("%s", outbox)
 	line("- A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn. Outside a plan or report, write `%s`.", at("outbox/questions.json"))
+	line("- `questions.json` shape (JSON; `choices`, `default` and `recommended` are optional; ids are `q<N>`, choice ids lowercase):")
+	line("%s", questionsShape(m.ID, n))
 	line("- Never wait for an answer inside the run. End the turn. core resumes you with `answers.v%d.md`.", n)
 	line("- From version 2, start the file with a `## Responses` section and fill `responses`.")
 	line("- A report with `verdict: ready` carries `proof`.")
@@ -323,6 +325,17 @@ const blockShape = "```yaml\n" +
 	"publish:\n  - {action: <action>, target: <where>, body: <exact text>}\n" +
 	"proof:\n  - {what: command, cmd: <command>, exit: 0}\n" +
 	"```"
+
+// questionsShape shows outbox/questions.json with the mission and version filled in: runs
+// that only see the file name guess crow-block fields and core rejects the file (unknown
+// field kind).
+func questionsShape(id string, n int) string {
+	return "```json\n" +
+		fmt.Sprintf(`{"contract": %d, "mission": %q, "version": %d, "questions": [`, contract.Version, id, n) + "\n" +
+		`  {"id": "q1", "text": "<question>", "blocking": true, "choices": [{"id": "a", "label": "<choice>"}, {"id": "b", "label": "<choice>"}], "recommended": "a"}` + "\n" +
+		"]}\n" +
+		"```"
+}
 
 func readOnlyAllowed(k *contract.Kind) string {
 	if k.Permission != nil && *k.Permission == "review" {

@@ -57,6 +57,12 @@ proof:
 ```
 - Put any file you want shown under `outbox/` and list it in `artifacts`. Caps: 20 MB per file, 100 MB in total.
 - A choice you cannot make: add it to `questions` with `blocking: true`, set `verdict: needs-input`, and end the turn. Outside a plan or report, write `outbox/questions.json`.
+- `questions.json` shape (JSON; `choices`, `default` and `recommended` are optional; ids are `q<N>`, choice ids lowercase):
+```json
+{"contract": 1, "mission": "20261109-build-item-095", "version": 1, "questions": [
+  {"id": "q1", "text": "<question>", "blocking": true, "choices": [{"id": "a", "label": "<choice>"}, {"id": "b", "label": "<choice>"}], "recommended": "a"}
+]}
+```
 - Never wait for an answer inside the run. End the turn. core resumes you with `answers.v1.md`.
 - From version 2, start the file with a `## Responses` section and fill `responses`.
 - A report with `verdict: ready` carries `proof`.
