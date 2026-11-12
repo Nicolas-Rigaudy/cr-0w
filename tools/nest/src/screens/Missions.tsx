@@ -1,6 +1,7 @@
 import { countByState, LABEL, UI_STATES, uiState, type UiState } from '../data/state'
 import type { Snapshot } from '../data/useData'
 import { sameDay } from '../format'
+import { navigate, useQuery } from '../router'
 import { Glyph, stateClass } from '../ui/Glyph'
 import { MissionRow } from '../ui/MissionRow'
 import { RunsChart } from '../ui/RunsChart'
@@ -30,7 +31,10 @@ function Donut({ counts, total }: { counts: Record<UiState, number>; total: numb
 }
 
 export function Missions({ snap }: { snap: Snapshot }) {
-  const { missions, inbox, now } = snap
+  const { inbox, now } = snap
+  // ?project= narrows the screen to one project (opened from a hero planet).
+  const project = useQuery().get('project') ?? undefined
+  const missions = project ? snap.missions.filter((m) => m.project === project) : snap.missions
   const c = countByState(missions, inbox)
   const sorted = byUrgency(missions, inbox)
   const doneToday = missions.filter((m) => uiState(m, inbox) === 'done' && sameDay(new Date(m.updated), now)).length
@@ -42,6 +46,11 @@ export function Missions({ snap }: { snap: Snapshot }) {
       <div className="screen missions over">
         <section className="pn span2" aria-labelledby="mh">
           <div className="ph"><h1 id="mh" style={{ font: 'inherit' }}>Missions today</h1><span className="sub num">{missions.length} missions</span></div>
+          {project && (
+            <button type="button" className="chip-f" onClick={() => navigate('/missions')} aria-label={`Clear filter ${project}`}>
+              {project.toUpperCase()} <span aria-hidden="true">×</span>
+            </button>
+          )}
           <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
             <span className="only-cover"><Donut counts={c} total={missions.length} /></span>
             <div className="kpis" style={{ flex: 1 }}>

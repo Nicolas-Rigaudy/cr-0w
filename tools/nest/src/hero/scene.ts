@@ -9,14 +9,28 @@ import { elapsed } from '../format'
 export interface Heads { palette: string[]; moods: Record<string, { cols: number; glyphs: string[]; colours: string[] }> }
 type RGB = [number, number, number]
 export interface Palette { ring: RGB; dim: RGB; fg: RGB; accent: RGB; state: Record<UiState, RGB> }
-export interface PlanetLabel { x: number; y: number; name: string; state: UiState; side: 'l' | 'r'; note?: string; target?: boolean; tag?: { x: number; y: number; text: string } }
+// cx, cy, rad: projected planet disc for hit tests. a0: table angle without spin. back: behind the lens.
+export interface PlanetLabel {
+  x: number; y: number; name: string; state: UiState; side: 'l' | 'r'; note?: string; target?: boolean
+  tag?: { x: number; y: number; text: string }; cx: number; cy: number; rad: number; a0: number; back: boolean; hidden?: boolean
+}
+export interface MoonOut { x: number; y: number; r: number; id: string; title: string; state: UiState }
 export interface RimLabel { x: number; y: number; text: string; kind: 'hour' | 'event'; side?: 'l' | 'r' }
 export interface HeadBox { x: number; y: number; top: number; left: number; right: number }
-export interface SceneOut { planets: PlanetLabel[]; rim: RimLabel[]; head: HeadBox; lens: { x: number; y: number } }
-export interface SceneOpts { now: Date; agenda: AgendaEvent[]; spin?: number }
+export interface SceneOut { planets: PlanetLabel[]; rim: RimLabel[]; head: HeadBox; lens: { x: number; y: number }; moons: MoonOut[]; more?: { x: number; y: number; n: number } }
+// spin: degrees added to every planet angle (item_158). hover: lifted planet and its moons.
+// look: head turn override (-1 left, 1 right, 0 front). lean: head tilt in degrees.
+// pulse: 0..1 working pulse phase. lift: needs-you lift per project (0..1 of 4 px).
+// glitch: failed glitch per project (0..1 left of the 180 ms).
+export interface SceneOpts {
+  now: Date; agenda: AgendaEvent[]; spin?: number; hover?: { name: string; k: number }
+  look?: number; lean?: number; pulse?: number; lift?: Record<string, number>; glitch?: Record<string, number>
+}
 
-const CW = 4
-const CH = 7
+// Cell size in px. The scene uses the head's own cell size, so the table, planets and moons
+// keep the same ASCII definition as the head (item_158). Narrow heroes shrink both together.
+const CW0 = 4, CH0 = 7
+let CW = CW0, CH = CH0, FONT = 6.65
 const RAMP = '.,-~:;=!*#$@'
 const KEYS = [...Array(94)].map((_, i) => String.fromCharCode(33 + i)).filter((c) => !'"\\'.includes(c)).join('')
 const WHITE: RGB = [255, 240, 255]
@@ -153,7 +167,10 @@ export const fmtWait = (m: number) => (m < 60 ? `${m}m` : `${Math.floor(m / 60)}
 const two = (n: number) => String(n).padStart(2, '0')
 
 export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: number, m: HeroModel, heads: Heads | undefined, pal: Palette, turn: { l: Heads; r: Heads } | undefined, opts: SceneOpts): SceneOut {
-  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr)
+  const cw = Math.round(w * dpr), ch = Math.round(h * dpr)
+  if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch }
+  const cs = HS * clamp(w / 560, 0.7, 1)
+  CW = CW0 * cs; CH = CH0 * cs; FONT = 6.65 * cs
   const g = makeGrid(w, h), rnd = rng(42), SC = pal.state
   const spin = opts.spin ?? 0
   const POS = V(0, 4.4, -14.5), TGT = V(0, 0.2, 0), LENS = V(0, PY, 0)
@@ -190,26 +207,57 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
 
   // Planets.
   const used = { urgent: 0, working: 0, quiet: 0 }
+  const hov = opts.hover
   const ps = m.projects.slice(0, MAXP).map((p) => {
     const k = p.state === 'needs' || p.state === 'failed' ? 'urgent' : p.state === 'working' ? 'working' : 'quiet'
     const [a, f] = SPOTS[k][used[k]++ % SPOTS[k].length]
-    const base = at(a + spin, f)
-    const r = 0.16 + 0.07 * Math.min(p.open, 5)
-    const stalk = p.state === 'needs' ? 0.45 + 1.75 * Math.min((p.wait ?? 0) / 300, 1) : p.state === 'working' ? 0.24 : 0
-    return { ...p, base, r, stalk, c: add(base, V(0, stalk + r, 0)) }
+    let base = at(a + spin, f)
+    // Back half of the table (behind the lens): smaller and dimmer, labels hidden.
+    const depth = clamp(base.z / (RT * 0.5), 0, 1)
+    const back = base.z > RT * 0.15
+    // Failed: one short sideways glitch.
+    const gl = opts.glitch?.[p.name] ?? 0
+    if (gl > 0) base = add(base, V((Math.random() - 0.5) * 0.5 * gl, 0, 0))
+    const r = (0.16 + 0.07 * Math.min(p.open, 5)) * (1 - 0.25 * depth)
+    const z0 = cam.proj(base).z, px = z0 / cam.focal
+    const hk = hov?.name === p.name ? hov.k : 0
+    const stalk = (p.state === 'needs' ? 0.45 + 1.75 * Math.min((p.wait ?? 0) / 300, 1) : p.state === 'working' ? 0.24 : 0)
+      + (opts.lift?.[p.name] ?? (p.state === 'needs' ? 1 : 0)) * 4 * px + hk * 0.3
+    return { ...p, a0: a, base, r, stalk, depth, back, hk, c: add(base, V(0, stalk + r, 0)) }
   })
   // Bot intent: longest wait first (model order), then a failure, then live work.
   const target = ps.find((p) => p.state === 'needs') ?? ps.find((p) => p.state === 'failed') ?? ps.find((p) => p.state === 'working')
   const spheres: Sphere[] = []
+  const dimOthers = hov ? 1 - 0.5 * hov.k : 1
+  const pulse = opts.pulse === undefined ? 0 : 0.5 - 0.5 * Math.cos(opts.pulse * Math.PI * 2)
   for (const p of ps) {
     const col = SC[p.state], flat = add(p.base, V(0, 0.02, 0))
+    const fade = (p.hk > 0 ? 1 : dimOthers) * (1 - 0.55 * p.depth)
     if (p.state === 'done') { ringOnPlane(g, cam, flat, 0.34, 'o', col, 0.5, 0.05); ringOnPlane(g, cam, flat, 0.18, '.', col, 0.35, 0.09); continue }
     if (p.state === 'failed') { brokenRing(g, cam, add(p.base, V(0, 0.08, 0)), col, 0.12); continue }
     ringOnPlane(g, cam, flat, p.r * 1.2, '.', mix(col, [20, 20, 50], 0.35), 0.5, 0.06)
     for (let y = 0.05; y < p.stalk; y += 0.07) splat(g, cam, add(p.base, V(0, y, 0)), ':', col, 0.55)
     const quiet = p.state === 'sleeping' || p.state === 'queued'
-    spheres.push({ c: p.c, r: p.r, col: quiet ? pal.ring : col, emit: p === target ? 0.55 : p.state === 'working' ? 0.3 : 0.12, dimf: quiet ? 0.45 : p === target ? 1 : 0.85 })
+    const emit = (p === target ? 0.55 : p.state === 'working' ? 0.3 : 0.12) + (p.state === 'working' ? 0.25 * pulse : 0) + 0.25 * p.hk
+    spheres.push({ c: p.c, r: p.r, col: quiet ? pal.ring : col, emit, dimf: (quiet ? 0.45 : p === target ? 1 : 0.85) * fade })
     if (p === target && p.state === 'needs') octa(g, cam, add(p.c, V(0, p.r + 0.34, 0)), 0.12, col, 1.4)
+  }
+  // Hovered planet: its open missions orbit it as moons, max 6 then +n.
+  const moons: { c: V3; r: number; id: string; title: string; state: UiState }[] = []
+  let more: { c: V3; n: number } | undefined
+  const hp = ps.find((p) => p.hk > 0)
+  if (hp && hp.state !== 'done') {
+    // Moons fly out as the hover eases in, leaving room for their titles. The orbit is
+    // tilted toward the camera so the titles spread vertically instead of stacking.
+    const list = hp.missions.slice(0, 6), R = (Math.max(hp.r, 0.2) * 1.9 + 0.12) * (1 + 0.5 * hp.hk)
+    list.forEach((mi, i) => {
+      const t = (i / Math.max(list.length, 1)) * Math.PI * 2 + spin * D2R * 0.5 + 0.4
+      const c = add(hp.c, V(R * Math.cos(t), R * 0.55 * Math.sin(t), R * 0.8 * Math.sin(t)))
+      const r = 0.11 * hp.hk
+      moons.push({ c, r, id: mi.id, title: mi.title, state: mi.state })
+      spheres.push({ c, r, col: SC[mi.state], emit: 0.4, dimf: hp.hk })
+    })
+    if (hp.missions.length > 6) more = { c: add(hp.c, V(0, hp.r + 0.25, 0)), n: hp.missions.length - 6 }
   }
   raySpheres(g, cam, spheres)
 
@@ -219,7 +267,8 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   let head: HeadBox = { x: w / 2, y: lens.y, top: lens.y, left: w / 2, right: w / 2 }
   let layer: HeadLayer | undefined
   const tx = target ? cam.proj(target.c).x : w / 2
-  const H = turn && target && Math.abs(tx - w / 2) > 40 ? (tx < w / 2 ? turn.l : turn.r) : heads
+  const dir = opts.look ?? (target && Math.abs(tx - w / 2) > 40 ? Math.sign(tx - w / 2) : 0)
+  const H = turn && dir ? (dir < 0 ? turn.l : turn.r) : heads
   if (H) {
     const hd = H.moods[m.mood], rows = hd.glyphs.length
     const hg: Grid = { cols: hd.cols, rows, z: new Float32Array(hd.cols * rows).fill(1e9), ch: new Array(hd.cols * rows).fill(null), col: new Array(hd.cols * rows), a: new Float32Array(hd.cols * rows) }
@@ -238,16 +287,20 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
         put(hg, c, r, 0, row[c], col, Math.min(1, Number(alpha) * 1.5))
       }
     })
-    const hw = hd.cols * CW * HS, hh = rows * CH * HS
+    const hw = hd.cols * CW, hh = rows * CH
     const top = Math.max(60, (70 + cam.proj(at(270, 1)).y - 50 - hh) / 2)
-    layer = { g: hg, scale: HS, x: w / 2 - hw / 2, y: top, zSplit: lens.z }
+    layer = { g: hg, scale: 1, x: w / 2 - hw / 2, y: top, zSplit: lens.z, lean: (opts.lean ?? 0) * D2R }
     head = { x: w / 2, y: top + hh / 2, top, left: w / 2 - hw / 2, right: w / 2 + hw / 2 }
   }
 
   paint(cv, g, dpr, layer)
 
   const gaps = new Map<PlanetLabel, number>()
-  const out: SceneOut = { planets: [], rim: [], head, lens: { x: lens.x, y: lens.y } }
+  const out: SceneOut = {
+    planets: [], rim: [], head, lens: { x: lens.x, y: lens.y },
+    moons: moons.map((o) => { const s = cam.proj(o.c); return { x: s.x, y: s.y, r: Math.max(6, (o.r * cam.focal) / s.z), id: o.id, title: o.title, state: o.state } }),
+    more: more && { ...cam.proj(more.c), n: more.n },
+  }
   for (const p of ps) {
     const flat = p.state === 'done' || p.state === 'failed'
     const s = cam.proj(flat ? p.base : p.c)
@@ -256,7 +309,10 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const note = p.state === 'working' && p.runFrom ? elapsed(p.runFrom, opts.now)
       : p.state === 'failed' ? `${p.cause ?? 'run'} failed`
       : p.state === 'done' || p.state === 'sleeping' || p.state === 'queued' ? p.state === 'sleeping' ? 'sleep' : p.state : undefined
-    const label: PlanetLabel = { x: s.x + (side === 'r' ? rad + 8 : -rad - 8), y: s.y, name: p.name, state: p.state, side, note, target: p === target }
+    const label: PlanetLabel = {
+      x: s.x + (side === 'r' ? rad + 8 : -rad - 8), y: s.y, name: p.name, state: p.state, side, note, target: p === target,
+      cx: s.x, cy: s.y, rad: Math.max(rad, 10), a0: p.a0, back: p.back && p.hk === 0,
+    }
     if (p.state === 'needs' && p.wait !== undefined) {
       const t = cam.proj(add(p.c, V(0, p.r + (p === target ? 0.62 : 0.2), 0)))
       label.tag = { x: t.x, y: t.y, text: `YOUR MOVE · ${fmtWait(p.wait)}` }
@@ -308,6 +364,12 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   }
   // Rim hour labels (hidden where the head covers them) and the next agenda event.
   const inHead = (x: number, y: number) => x > head.left + 20 && x < head.right - 20 && y > head.top && y < 2 * head.y - head.top
+  // Readability (item_158): back labels hide (YOUR MOVE tags stay); nothing sits under the head.
+  for (const l of out.planets) {
+    const tw = (l.name.length + (l.note ? l.note.length + 3 : 0)) * 7.2, x0 = l.side === 'r' ? l.x : l.x - tw
+    l.hidden = l.back || inHead(x0, l.y) || inHead(x0 + tw, l.y) || inHead(x0 + tw / 2, l.y)
+    if (l.tag && inHead(l.tag.x, l.tag.y)) l.tag = undefined
+  }
   for (const hh of [0, 6, 12, 18]) {
     const s = cam.proj(at(hourAngle(hh), 1.09))
     if (!inHead(s.x, s.y)) out.rim.push({ x: s.x, y: s.y, text: two(hh), kind: 'hour' })
@@ -316,13 +378,15 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   return out
 }
 
-interface HeadLayer { g: Grid; scale: number; x: number; y: number; zSplit: number }
+interface HeadLayer { g: Grid; scale: number; x: number; y: number; zSplit: number; lean: number }
+let offscreen: HTMLCanvasElement | undefined
 function paint(cv: HTMLCanvasElement, g: Grid, dpr: number, head?: HeadLayer) {
   const ctx = cv.getContext('2d')
   if (!ctx) return
-  const L = document.createElement('canvas')
-  L.width = cv.width; L.height = cv.height
+  const L = (offscreen ??= document.createElement('canvas'))
+  if (L.width !== cv.width || L.height !== cv.height) { L.width = cv.width; L.height = cv.height }
   const l = L.getContext('2d')!
+  l.setTransform(1, 0, 0, 1, 0, 0); l.clearRect(0, 0, L.width, L.height)
   l.scale(dpr, dpr)
   l.textBaseline = 'middle'; l.textAlign = 'center'
   const cells = (gr: Grid, keep: (z: number) => boolean) => {
@@ -335,11 +399,12 @@ function paint(cv: HTMLCanvasElement, g: Grid, dpr: number, head?: HeadLayer) {
       l.fillText(ch, c * CW + CW / 2, r * CH + CH / 2 + 0.5)
     }
   }
-  l.font = "500 6.65px 'Fira Code', ui-monospace, monospace"
+  l.font = `500 ${FONT.toFixed(2)}px 'Fira Code', ui-monospace, monospace`
   // Behind the lens, then the head (its silhouette hides the table back), then the front.
   cells(g, (z) => !head || z > head.zSplit)
   if (head) {
-    l.save(); l.translate(head.x, head.y); l.scale(head.scale, head.scale)
+    const hw = head.g.cols * CW * head.scale, hh = head.g.rows * CH * head.scale
+    l.save(); l.translate(head.x + hw / 2, head.y + hh); l.rotate(head.lean); l.translate(-hw / 2, -hh); l.scale(head.scale, head.scale)
     cells(head.g, () => true)
     l.restore()
     cells(g, (z) => z <= head.zSplit)

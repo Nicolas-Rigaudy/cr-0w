@@ -2,25 +2,30 @@ import type { ChatTarget } from './data/conversation'
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react'
 
 const PathContext = createContext('/')
+const SearchContext = createContext('')
 export const usePath = () => useContext(PathContext)
+// Query string of the current route (e.g. ?project= on Missions).
+export const useQuery = () => new URLSearchParams(useContext(SearchContext))
 
 export function navigate(to: string) {
-  if (to === location.pathname) return
+  if (to === location.pathname + location.search) return
   history.pushState(null, '', to)
   dispatchEvent(new PopStateEvent('popstate'))
 }
 
 export function Router({ children }: { children: React.ReactNode }) {
   const [path, setPath] = useState(location.pathname)
+  const [search, setSearch] = useState(location.search)
   useEffect(() => {
     const on = () => {
       setPath(location.pathname)
+      setSearch(location.search)
       document.querySelector('.main')?.scrollTo(0, 0)
     }
     addEventListener('popstate', on)
     return () => removeEventListener('popstate', on)
   }, [])
-  return <PathContext.Provider value={path}>{children}</PathContext.Provider>
+  return <PathContext.Provider value={path}><SearchContext.Provider value={search}>{children}</SearchContext.Provider></PathContext.Provider>
 }
 
 // A real <a href> that routes in place on a plain click.
