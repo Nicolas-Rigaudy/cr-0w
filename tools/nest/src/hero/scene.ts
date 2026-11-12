@@ -14,7 +14,8 @@ export interface PlanetLabel {
   tag?: { x: number; y: number; text: string }; cx: number; cy: number; rad: number; a0: number; back: boolean; hidden?: boolean
 }
 export interface MoonOut { x: number; y: number; r: number; id: string; title: string; state: UiState }
-export interface HeadBox { x: number; y: number; top: number; left: number; right: number }
+// cw/ch/font: one head cell in CSS px (the live GL head draws on the same grid). hw/hh: head size.
+export interface HeadBox { x: number; y: number; top: number; left: number; right: number; cw: number; ch: number; font: number; hw: number; hh: number }
 export interface SceneOut { planets: PlanetLabel[]; head: HeadBox; lens: { x: number; y: number }; moons: MoonOut[]; more?: { x: number; y: number; n: number } }
 // spin: degrees added to every planet angle (item_158). hover: lifted planet and its moons.
 // look: head turn override (-1 left, 1 right, 0 front). lean: head tilt in degrees.
@@ -23,7 +24,14 @@ export interface SceneOut { planets: PlanetLabel[]; head: HeadBox; lens: { x: nu
 export interface SceneOpts {
   now: Date; spin?: number; hover?: { name: string; k: number }
   look?: number; lean?: number; pulse?: number; sweep?: number; lift?: Record<string, number>; glitch?: Record<string, number>
+  // Item 198. t: animation clock (ms). fx: table life switches. ripple: select wave (0..1 elapsed).
+  // live: the GL head draws the head; the scene only clears its silhouette so the head hides the table back.
+  t?: number; fx?: TableFx; ripple?: { name: string; k: number }; live?: boolean
 }
+export interface TableFx { ping?: boolean; bob?: boolean; stream?: boolean }
+export const TABLE_FX: TableFx = { ping: true, bob: true, stream: true }
+// Fixed head height in bake rows: every mood keeps the same top (the fail bake is shorter).
+const HEAD_ROWS = 87
 
 // Cell size in px. The scene uses the head's own cell size, so the table, planets and moons
 // keep the same ASCII definition as the head (item_158). Cells scale with the hero (item_194).
@@ -125,25 +133,25 @@ function brokenRing(g: Grid, cam: Cam, c: V3, col: RGB, tilt = Math.PI / 2 - 0.2
 }
 interface Sphere { c: V3; r: number; col: RGB; emit: number; dimf: number }
 function raySpheres(g: Grid, cam: Cam, spheres: Sphere[]) {
-  const boxes = spheres.map((s) => { const p = cam.proj(s.c); return { p, rad: (s.r * cam.focal) / p.z } })
-  for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) {
-    const sx = c * CW + CW / 2, sy = r * CH + CH / 2
-    let d: V3 | null = null, best = 1e9, hs: Sphere | null = null
-    spheres.forEach((s, i) => {
-      const { p, rad } = boxes[i]
-      if (Math.abs(sx - p.x) > rad + CW || Math.abs(sy - p.y) > rad + CH) return
-      d ??= cam.ray(sx, sy)
-      const oc = sub(cam.pos, s.c), b = dot(oc, d), h = b * b - (dot(oc, oc) - s.r * s.r)
-      if (h < 0) return
+  // Per sphere, only the cells inside its screen box; the grid z test keeps the nearest hit.
+  for (const s of spheres) {
+    const p = cam.proj(s.c)
+    if (p.z <= 0.1) continue
+    const rad = (s.r * cam.focal) / p.z
+    const c0 = Math.max(0, Math.floor((p.x - rad) / CW) - 1), c1 = Math.min(g.cols - 1, Math.ceil((p.x + rad) / CW) + 1)
+    const r0 = Math.max(0, Math.floor((p.y - rad) / CH) - 1), r1 = Math.min(g.rows - 1, Math.ceil((p.y + rad) / CH) + 1)
+    const oc = sub(cam.pos, s.c), cc = dot(oc, oc) - s.r * s.r
+    const base = mix(s.col, [20, 20, 50], 0.25), lit = mix(s.col, WHITE, s.emit * 0.4)
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      const d = cam.ray(c * CW + CW / 2, r * CH + CH / 2)
+      const b = dot(oc, d), h = b * b - cc
+      if (h < 0) continue
       const t = -b - Math.sqrt(h)
-      if (t > 0 && t < best) { best = t; hs = s }
-    })
-    if (!hs || !d) continue
-    const s: Sphere = hs
-    const n = norm(sub(add(cam.pos, mul(d, best)), s.c))
-    const L = clamp(Math.max(0, dot(n, LIGHT)) * (1 - s.emit) + s.emit * 0.75 + 0.22, 0, 1) * s.dimf
-    const z = best * dot(d, cam.f)
-    put(g, c, r, z, rampCh(L), mix(mix(s.col, [20, 20, 50], 0.25), mix(s.col, WHITE, s.emit * 0.4), L), 0.7 + 0.3 * L, (0.14 + 0.16 * L) * s.dimf)
+      if (t <= 0) continue
+      const n = norm(sub(add(cam.pos, mul(d, t)), s.c))
+      const L = clamp(Math.max(0, dot(n, LIGHT)) * (1 - s.emit) + s.emit * 0.75 + 0.22, 0, 1) * s.dimf
+      put(g, c, r, t * dot(d, cam.f), rampCh(L), mix(base, lit, L), 0.7 + 0.3 * L, (0.14 + 0.16 * L) * s.dimf)
+    }
   }
 }
 
@@ -175,7 +183,7 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   const cs = HS * Math.min(w / REF_W, h / REF_H)
   CW = (CW0 * cs) / DENSITY; CH = (CH0 * cs) / DENSITY; FONT = (6.65 * cs) / DENSITY
   const g = makeGrid(w, h), rnd = rng(42), SC = pal.state
-  const spin = opts.spin ?? 0
+  const spin = opts.spin ?? 0, tt = opts.t ?? 0, fx = opts.fx ?? {}
   const POS = V(0, 4.4, -14.5), TGT = V(0, 0.2, 0), LENS = V(0, PY, 0)
   const focal = ((w / 2 - 28) * 14.5) / RT
   let cam = camera(POS, TGT, focal, w / 2, h / 2)
@@ -198,14 +206,16 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   // Scan sweep (idle): a bright head with a fading tail running round the rim.
   if (opts.sweep !== undefined) {
     const s0 = opts.sweep * 360
-    for (let d = 0; d < 60; d += 0.5) for (const f of [0.98, 1, 1.02]) splat(g, cam, at(s0 - d, f), d < 3 ? '#' : d < 12 ? '=' : '-', mix(SC.working, WHITE, d < 3 ? 0.5 : 0), 1.6 * (1 - d / 60) ** 1.3)
+    for (let d = 0; d < 90; d += 0.4) for (const f of [0.98, 1, 1.02]) splat(g, cam, at(s0 - d, f), d < 2.5 ? '#' : d < 10 ? '=' : d < 40 ? '-' : '.', mix(SC.working, WHITE, d < 2.5 ? 0.55 : 0), 1.7 * (1 - d / 90) ** 1.6)
+    // Faint wedge on the table behind the beam, so the sweep reads as a scan, not a dot.
+    for (let d = 0; d < 24; d += 1.2) for (let f = 0.3; f < 0.97; f += 0.07) splat(g, cam, at(s0 - d, f), '.', SC.working, 0.22 * (1 - d / 24) * f)
   }
 
   // Lens: the projector core, and a sparse cone that carries the head up.
   for (let r = 0; r < 0.34; r += 0.03) for (let t = 0; t < 360; t += 4) splat(g, cam, add(LENS, V(r * Math.cos(t * D2R), 0.02, r * Math.sin(t * D2R))), r < 0.18 ? '@' : '*', mix(WHITE, SC.working, r * 2.5), 0.9)
   ringOnPlane(g, cam, add(LENS, V(0, 0.02, 0)), 0.6, '-', SC.working, 0.6, 0.02)
   for (let i = 0; i < 700; i++) {
-    const y = Math.pow(rnd(), 1.4) * 3.2, rad = (0.2 + y * 0.42) * Math.sqrt(rnd()), t = rnd() * Math.PI * 2
+    const y0 = Math.pow(rnd(), 1.4) * 3.2, y = fx.stream ? (y0 + (tt / 7000) * 3.2) % 3.2 : y0, rad = (0.2 + y * 0.42) * Math.sqrt(rnd()), t = rnd() * Math.PI * 2
     splat(g, cam, add(LENS, V(rad * Math.cos(t), y + 0.05, rad * Math.sin(t))), rnd() < 0.2 ? ':' : '.', mix(SC.working, pal.accent, rnd() * 0.3), 0.08 + 0.2 * (1 - y / 3.2))
   }
 
@@ -227,7 +237,11 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const hk = hov?.name === p.name ? hov.k : 0
     const stalk = ALT[p.state] + (p.state === 'needs' ? 0.18 * Math.min((p.wait ?? 0) / 300, 1) : 0)
       + (opts.lift?.[p.name] ?? (p.state === 'needs' ? 1 : 0)) * 4 * px + hk * 0.3
-    return { ...p, a0: a, base, r, stalk, depth, back, hk, c: add(base, V(0, stalk + r, 0)) }
+    // Beam ping: a planet brightens as the sweep passes it, then fades over 40 deg of beam travel.
+    const behind = opts.sweep === undefined || !fx.ping ? 1e9 : ((((opts.sweep * 360 - (a + spin)) % 360) + 360) % 360)
+    const ping = behind < 40 ? 1 - behind / 40 : 0
+    const bob = fx.bob ? CH * px * Math.sin(tt / 1700 + i * 2.1) : 0
+    return { ...p, a0: a, base, r, stalk, depth, back, hk, ping, c: add(base, V(0, stalk + r + bob, 0)) }
   })
   // Rim footprints: each planet marks the bezel with an arc in its colour, brighter when hovered
   // and when it turns into the front, so a spin shows which one has the focus.
@@ -235,6 +249,12 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const t0 = p.a0 + spin, off = Math.abs(((((t0 - 90) % 360) + 540) % 360) - 180)
     const front = Math.max(0, 1 - off / 25), k = 1 + 0.6 * (1 - p.depth) + p.hk + 0.8 * front
     for (let d = -6; d <= 6; d += 0.5) for (const f of [0.985, 1.015]) splat(g, cam, at(t0 + d, f), '=', mix(SC[p.state], WHITE, 0.25 * front), k * (1 - Math.abs(d) / 8))
+  }
+  // Select ripple: a ring runs out from the picked planet's footprint and fades.
+  const rp = opts.ripple && ps.find((p) => p.name === opts.ripple!.name)
+  if (rp) {
+    const k = opts.ripple!.k, e = 1 - (1 - k) ** 3
+    for (const lag of [0, 0.12]) { const u = Math.max(0, e - lag); if (u > 0) ringOnPlane(g, cam, add(rp.base, V(0, 0.02, 0)), rp.r * 1.2 + u * 1.6, lag ? '.' : '~', mix(SC[rp.state], WHITE, 0.3), 1.4 * (1 - k), 0.01) }
   }
   // Bot intent: longest wait first (model order), then a failure, then live work.
   const target = ps.find((p) => p.state === 'needs') ?? ps.find((p) => p.state === 'failed') ?? ps.find((p) => p.state === 'working')
@@ -248,7 +268,7 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     for (let y = 0.05; y < p.stalk; y += 0.07) splat(g, cam, add(p.base, V(0, y, 0)), ':', col, 0.55)
     const quiet = p.state === 'sleeping' || p.state === 'queued' || p.state === 'done'
     // One light for every live planet; the target stands out by its marker and the head's gaze.
-    const emit = (quiet ? 0.12 : 0.45) + (p.state === 'working' ? 0.25 * pulse : 0) + 0.25 * p.hk
+    const emit = (quiet ? 0.12 : 0.45) + (p.state === 'working' ? 0.25 * pulse : 0) + 0.25 * p.hk + 0.35 * p.ping ** 2
     spheres.push({ c: p.c, r: p.r, col: quiet && p.state !== 'done' ? pal.ring : p.state === 'failed' ? mix(col, WHITE, 0.2) : col, emit, dimf: (quiet ? 0.5 : 1) * fade })
     if (p.state === 'failed') brokenRing(g, cam, p.c, col)
     if (p === target && p.state === 'needs') octa(g, cam, add(p.c, V(0, p.r + 0.34, 0)), 0.12, col, 1.4)
@@ -275,33 +295,54 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   // Head: option B glyph grid on its own layer at HS scale, above the lens, turned toward the
   // target. Its eyes (the violet cells) take the target's state colour.
   const lens = cam.proj(LENS)
-  let head: HeadBox = { x: w / 2, y: lens.y, top: lens.y, left: w / 2, right: w / 2 }
+  let head: HeadBox = { x: w / 2, y: lens.y, top: lens.y, left: w / 2, right: w / 2, cw: CW, ch: CH, font: FONT, hw: 0, hh: 0 }
   let layer: HeadLayer | undefined
   const tx = target ? cam.proj(target.c).x : w / 2
   const dir = opts.look ?? (target && Math.abs(tx - w / 2) > 40 ? Math.sign(tx - w / 2) : 0)
   const H = turn && dir ? (dir < 0 ? turn.l : turn.r) : heads
+  // The face follows the work, never the ask face (owner rule).
+  const working = m.projects.some((p) => p.state === 'working')
+  const face = m.mood === 'fail' ? 'fail' : m.mood === 'run' || (m.mood === 'ask' && working) ? 'run' : 'idle'
   if (H) {
-    const hd = H.moods[m.mood], rows = hd.glyphs.length
-    const hg: Grid = { cols: hd.cols, rows, z: new Float32Array(hd.cols * rows).fill(1e9), ch: new Array(hd.cols * rows).fill(null), col: new Array(hd.cols * rows), a: new Float32Array(hd.cols * rows), k: (HEAD_COLS * DENSITY) / hd.cols }
-    const eye = target ? SC[target.state] : undefined
-    hd.glyphs.forEach((row, r) => {
-      const first = row.search(/\S/), last = row.trimEnd().length
-      if (first < 0) return
-      const eyes = eye && r > rows * 0.36 && r < rows * 0.54
-      for (let c = first; c < last; c++) {
-        const k = hd.colours[r].slice(2 * c, 2 * c + 2)
-        if (row[c] === ' ' || k.length < 2 || k === '  ') { put(hg, c, r, 0, ' ', pal.dim, 0); continue }
-        const [hex, alpha] = H.palette[KEYS.indexOf(k[0]) * KEYS.length + KEYS.indexOf(k[1])].split('/')
-        const n = parseInt(hex.slice(1), 16)
-        let col: RGB = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-        if (eyes && col[0] > col[1] + 40 && col[2] > col[1]) col = mix(col, eye, 0.9)
-        put(hg, c, r, 0, row[c], col, Math.min(1, Number(alpha) * 1.5))
+    // The grid is always HEAD_ROWS tall so the lean pivot (its bottom) matches the GL head.
+    const hd = H.moods[face] ?? H.moods[m.mood], rows = hd.glyphs.length, GR = Math.max(rows, HEAD_ROWS)
+    const hg: Grid = { cols: hd.cols, rows: GR, z: new Float32Array(hd.cols * GR).fill(1e9), ch: new Array(hd.cols * GR).fill(null), col: new Array(hd.cols * GR), a: new Float32Array(hd.cols * GR), k: (HEAD_COLS * DENSITY) / hd.cols }
+    if (opts.live) {
+      // Silhouette only: the union of the three bakes' row spans, padded, cleared so the GL head shows.
+      const PAD = 2
+      for (let r = 0; r < rows + PAD; r++) {
+        let lo = Infinity, hi = -1
+        for (const B of [heads, turn?.l, turn?.r]) for (const rr of [r - PAD, r, r + PAD]) {
+          const row = B?.moods[face]?.glyphs[rr]
+          if (!row) continue
+          const f = row.search(/\S/)
+          if (f >= 0) { lo = Math.min(lo, f); hi = Math.max(hi, row.trimEnd().length) }
+        }
+        if (r >= rows || hi < 0) continue
+        for (let c = Math.max(0, lo - PAD); c < Math.min(hd.cols, hi + PAD); c++) put(hg, c, r, 0, ' ', pal.dim, 0)
       }
-    })
-    const hw = hd.cols * CW * hg.k!, hh = rows * CH * hg.k!
-    const top = Math.max(60, (70 + cam.proj(at(270, 1)).y - 50 - hh) / 2)
+    } else {
+      const eye = target ? SC[target.state] : undefined
+      hd.glyphs.forEach((row, r) => {
+        const first = row.search(/\S/), last = row.trimEnd().length
+        if (first < 0) return
+        const eyes = eye && r > rows * 0.36 && r < rows * 0.54
+        for (let c = first; c < last; c++) {
+          const k = hd.colours[r].slice(2 * c, 2 * c + 2)
+          if (row[c] === ' ' || k.length < 2 || k === '  ') { put(hg, c, r, 0, ' ', pal.dim, 0); continue }
+          const [hex, alpha] = H.palette[KEYS.indexOf(k[0]) * KEYS.length + KEYS.indexOf(k[1])].split('/')
+          const n = parseInt(hex.slice(1), 16)
+          let col: RGB = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+          if (eyes && col[0] > col[1] + 40 && col[2] > col[1]) col = mix(col, eye, 0.9)
+          put(hg, c, r, 0, row[c], col, Math.min(1, Number(alpha) * 1.5))
+        }
+      })
+    }
+    const k = hg.k!, cw = CW * k, chh = CH * k
+    const hw = hd.cols * cw, HH = GR * chh
+    const top = Math.max(60, (70 + cam.proj(at(270, 1)).y - 50 - HH) / 2)
     layer = { g: hg, scale: 1, x: w / 2 - hw / 2, y: top, zSplit: lens.z, lean: (opts.lean ?? 0) * D2R }
-    head = { x: w / 2, y: top + hh / 2, top, left: w / 2 - hw / 2, right: w / 2 + hw / 2 }
+    head = { x: w / 2, y: top + HH / 2, top, left: w / 2 - hw / 2, right: w / 2 + hw / 2, cw, ch: chh, font: FONT * k, hw, hh: HH }
   }
 
   paint(cv, g, dpr, layer)
@@ -368,7 +409,17 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
 }
 
 interface HeadLayer { g: Grid; scale: number; x: number; y: number; zSplit: number; lean: number }
-let offscreen: HTMLCanvasElement | undefined
+let offscreen: HTMLCanvasElement | undefined, bloomCv: HTMLCanvasElement | undefined
+// rgba() strings per quantised colour and alpha: building one per cell per frame dominated the paint.
+const RGBA = new Map<number, string>()
+const rgba = (col: RGB, a: number) => {
+  const r = col[0] & 0xf8, g = col[1] & 0xf8, b = col[2] & 0xf8, q = Math.max(0, Math.min(63, Math.round(a * 63)))
+  const k = (r << 16) | (g << 8) | b | (q << 24)
+  let v = RGBA.get(k)
+  if (!v) { v = `rgba(${r},${g},${b},${(q / 63).toFixed(3)})`; RGBA.set(k, v) }
+  return v
+}
+const BLOOM_DIV = 4
 function paint(cv: HTMLCanvasElement, g: Grid, dpr: number, head?: HeadLayer) {
   const ctx = cv.getContext('2d')
   if (!ctx) return
@@ -382,15 +433,25 @@ function paint(cv: HTMLCanvasElement, g: Grid, dpr: number, head?: HeadLayer) {
   const cells = (gr: Grid, keep: (z: number) => boolean) => {
     const k = gr.k ?? 1, CW = CWg * k, CH = CHg * k
     l.font = `500 ${(FONT * k).toFixed(2)}px 'Fira Code', ui-monospace, monospace`
-    for (let r = 0; r < gr.rows; r++) for (let c = 0; c < gr.cols; c++) {
-      const i = r * gr.cols + c, ch = gr.ch[i]
-      if (!ch || !keep(gr.z[i])) continue
-      if (ch === ' ') { l.clearRect(c * CW - 0.5, r * CH - 0.5, CW + 1, CH + 1); continue }
-      const col = gr.col[i], bg = gr.bg?.[i] ?? 0
-      if (bg > 0) { l.fillStyle = `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${bg.toFixed(3)})`; l.fillRect(c * CW, r * CH, CW, CH) }
-      l.fillStyle = `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${gr.a[i].toFixed(3)})`
-      l.fillText(ch, c * CW + CW / 2, r * CH + CH / 2 + 0.5)
+    // Blank cells clear what is behind them; a run of blanks on a row is one clear (thousands per frame).
+    let run = -1
+    const flush = (r: number, c: number) => { if (run >= 0) { l.clearRect(run * CW - 0.5, r * CH - 0.5, (c - run) * CW + 1, CH + 1); run = -1 } }
+    for (let r = 0; r < gr.rows; r++) {
+      for (let c = 0; c < gr.cols; c++) {
+        const i = r * gr.cols + c, ch = gr.ch[i]
+        if (!ch || !keep(gr.z[i])) { flush(r, c); continue }
+        if (ch === ' ') { if (run < 0) run = c; continue }
+        flush(r, c)
+        draw(gr, i, ch, c, r, CW, CH)
+      }
+      flush(r, gr.cols)
     }
+  }
+  const draw = (gr: Grid, i: number, ch: string, c: number, r: number, CW: number, CH: number) => {
+    const col = gr.col[i], bg = gr.bg?.[i] ?? 0
+    if (bg > 0) { l.fillStyle = rgba(col, bg); l.fillRect(c * CW, r * CH, CW, CH) }
+    l.fillStyle = rgba(col, gr.a[i])
+    l.fillText(ch, c * CW + CW / 2, r * CH + CH / 2 + 0.5)
   }
   // Behind the lens, then the head (its silhouette hides the table back), then the front.
   cells(g, (z) => !head || z > head.zSplit)
@@ -401,11 +462,17 @@ function paint(cv: HTMLCanvasElement, g: Grid, dpr: number, head?: HeadLayer) {
     l.restore()
     cells(g, (z) => z <= head.zSplit)
   }
+  // Bloom at a quarter of the resolution (blur cost scales with pixels x radius), upscaled smooth.
+  const B = (bloomCv ??= document.createElement('canvas'))
+  const bw = Math.ceil(L.width / BLOOM_DIV), bh = Math.ceil(L.height / BLOOM_DIV)
+  if (B.width !== bw || B.height !== bh) { B.width = bw; B.height = bh }
+  const b = B.getContext('2d')!
+  b.clearRect(0, 0, bw, bh); b.drawImage(L, 0, 0, bw, bh)
   ctx.clearRect(0, 0, cv.width, cv.height)
   ctx.save()
-  ctx.globalCompositeOperation = 'lighter'
-  ctx.filter = `blur(${14 * dpr}px)`; ctx.globalAlpha = 0.55; ctx.drawImage(L, 0, 0)
-  ctx.filter = `blur(${3 * dpr}px)`; ctx.globalAlpha = 0.6; ctx.drawImage(L, 0, 0)
+  ctx.globalCompositeOperation = 'lighter'; ctx.imageSmoothingQuality = 'high'
+  ctx.filter = `blur(${(14 * dpr) / BLOOM_DIV}px)`; ctx.globalAlpha = 0.55; ctx.drawImage(B, 0, 0, cv.width, cv.height)
+  ctx.filter = `blur(${(3 * dpr) / BLOOM_DIV}px)`; ctx.globalAlpha = 0.6; ctx.drawImage(B, 0, 0, cv.width, cv.height)
   ctx.restore()
   ctx.drawImage(L, 0, 0)
 }

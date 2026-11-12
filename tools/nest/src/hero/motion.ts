@@ -67,3 +67,31 @@ export function liftCurve(t: number): number {
   const u = (t - 0.6) / 0.4
   return 1.25 - 0.25 * u
 }
+
+// Critically damped spring (item_196), tuned by half-life: the time to close half the gap.
+// Fastest settle with no overshoot from rest; peak speed is bounded by gap * 2 ln2 / (e * half-life).
+export interface Spring { x: number; v: number }
+export function spring(s: Spring, goal: number, halfMs: number, dt: number): void {
+  const y = (2 * Math.LN2) / Math.max(halfMs, 1e-3)
+  const j0 = s.x - goal, j1 = s.v + j0 * y, e = Math.exp(-y * dt)
+  s.x = e * (j0 + j1 * dt) + goal
+  s.v = e * (s.v - j1 * y * dt)
+}
+export const settled = (s: Spring, goal: number, eps = 0.05) => Math.abs(s.x - goal) < eps && Math.abs(s.v) < eps / 50
+
+// Gaze (item_196): the eyes jump to the target first, the head follows on a slower spring.
+// Inside the dead zone only the eyes move. Once the target leaves it the head tracks the target
+// all the way, and goes back to eyes-only when it has arrived (hysteresis: no twitch at the edge).
+export const GAZE = { eyeMs: 40, headMs: 220, dead: 6, eyeMax: 12 }
+export interface Gaze { head: Spring; eye: Spring; goal: number; track?: boolean }
+export const gaze = (yaw = 0): Gaze => ({ head: { x: yaw, v: 0 }, eye: { x: 0, v: 0 }, goal: yaw })
+// Returns true while still moving.
+export function stepGaze(g: Gaze, target: number, dt: number, o = GAZE): boolean {
+  if (Math.abs(target - g.goal) > o.dead) g.track = true
+  if (g.track) g.goal = target
+  spring(g.head, g.goal, o.headMs, dt)
+  if (g.track && settled(g.head, g.goal, 0.5)) g.track = false
+  const off = Math.max(-o.eyeMax, Math.min(o.eyeMax, target - g.head.x))
+  spring(g.eye, off, o.eyeMs, dt)
+  return !settled(g.head, g.goal) || !settled(g.eye, off, 0.2)
+}

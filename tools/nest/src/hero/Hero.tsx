@@ -10,7 +10,9 @@ import { heroModel } from './model'
 import { declutterDom, type Box } from './declutter'
 import { DEG_PER_WIDTH, detent, liftCurve, spinToFront, step, stepTo, type Spin } from './motion'
 import type { Heads, Palette, PlanetLabel, SceneOut } from './scene'
-import { drawScene } from './scene'
+import { drawScene, TABLE_FX } from './scene'
+import { createHead, liveHeadOk, type HeadGL } from './gl/head'
+import { bakeLook, CHARACTER, faceOf, HeadCtl, lookAt, YAW_MAX, type Look } from './headCtl'
 
 // Holotable hero (item_162, item_158): ASCII galaxy map of projects with the option B head above
 // the lens. Drag spins the planets, hover lifts one and shows its moons, click focuses then opens.
@@ -20,6 +22,11 @@ type RGB = [number, number, number]
 const VARS: Record<UiState, string> = { needs: '--c-n', working: '--c-w', failed: '--c-f', sleeping: '--c-s', queued: '--c-q', done: '--c-d' }
 const PULSE_MS = 2400
 const PULSE_FRAME_MS = 100
+// With the live head the table no longer draws head glyphs, so its idle tick can run at 15 fps.
+const TABLE_FRAME_MS = 66
+// Live head: 30 fps while springs or beats move, 20 fps when settled (breathing only).
+const HEAD_IDLE_MS = 50, HEAD_AMBIENT_MS = 33, HEAD_LIVE_MS = 1500
+const RIPPLE_MS = 700
 // Idle scan sweep round the table rim (item_197): one turn per SWEEP_MS, on the slow tick.
 const SWEEP_MS = 12000
 const LIFT_MS = 420
@@ -68,6 +75,19 @@ function Card({ project, missions, inbox, now, at, w }: { project: string; missi
   const runs = missions.filter((m) => m.project === project).flatMap((m) => m.runs.map((r) => ({ r, m }))).sort((a, b) => b.r.started.localeCompare(a.r.started))
   const last = runs[0]
   const left = Math.max(8, Math.min(w - 248, at.cx - 120))
+  const lastTxt = last && `Last run ${last.r.ended ? ago(last.r.ended, now) : 'live'}${last.r.cause && last.r.cause !== 'done' ? ` · ${last.r.cause}${last.r.exit ? ` (exit ${last.r.exit})` : ''}` : ''}`
+  // Phone: one line docked at the hero bottom keeps the head and planets clear.
+  if (w < 480) {
+    const ask = asks[0], top = ms[0]
+    const detail = ask ? `Your move · ${ask.ask}` : top ? `${ms.length} open · ${title(top)}` : lastTxt
+    return (
+      <button type="button" className="hero-card strip" data-prio={1} data-fixed onClick={() => navigate(missionsHref(project))} aria-label={`Open ${project} missions`}>
+        <span className="hc-h"><Glyph state={at.state} /> {project.toUpperCase()}
+          {detail && <span className={`hc-t hc-n${ask ? ' c-n' : ''}`}>{detail}</span>}
+          <span className="hc-go">open →</span></span>
+      </button>
+    )
+  }
   return (
     <button type="button" className="hero-card" data-prio={1} data-up={2 * at.rad + 28} style={{ left, top: at.cy + at.rad + 14, '--cx': `${at.cx}px`, '--cy': `${at.cy}px`, '--r': `${at.rad}px` } as CSSProperties} onClick={() => navigate(missionsHref(project))} aria-label={`Open ${project} missions`}>
       <span className="hc-h"><Glyph state={at.state} /> {project.toUpperCase()}<span className="hc-go">open →</span></span>
@@ -76,7 +96,7 @@ function Card({ project, missions, inbox, now, at, w }: { project: string; missi
       {(ms.length > nM || asks.length > nA) && <span className="hc-r dim">+{Math.max(0, ms.length - nM) + Math.max(0, asks.length - nA)} more</span>}
       {last && (
         <span className={`hc-r dim${at.state === 'failed' ? ' c-f' : ''}`}>
-          Last run {last.r.ended ? ago(last.r.ended, now) : 'live'}{last.r.cause && last.r.cause !== 'done' ? ` · ${last.r.cause}${last.r.exit ? ` (exit ${last.r.exit})` : ''}` : ''}
+          {lastTxt}
         </span>
       )}
     </button>
@@ -104,7 +124,15 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     hover: undefined as undefined | { name: string; k: number; dir: 1 | -1 }, look: undefined as number | undefined, lean: 0,
     lift: {} as Record<string, number>, glitch: {} as Record<string, number>, prev: undefined as Map<string, UiState> | undefined,
     raf: 0, timer: 0, last: 0, pal: undefined as Palette | undefined, out: undefined as SceneOut | undefined,
+    ptr: undefined as { x: number; y: number } | undefined, ripple: undefined as { name: string; k: number } | undefined,
   })
+  const gcv = useRef<HTMLCanvasElement>(null)
+  // Live head state: the GL renderer, its controller and its own loop (item_156/196/198).
+  const hd = useRef({
+    gl: null as HeadGL | null, ctl: new HeadCtl(CHARACTER.lively),
+    raf: 0, timer: 0, last: 0, lay: '', asks: -1, input: -1e9,
+  })
+  const [glOn, setGlOn] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -123,6 +151,16 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     return () => { ro.disconnect(); mo.disconnect(); cancelAnimationFrame(st.current.raf); clearTimeout(st.current.timer) }
   }, [])
+
+  // Live head: created once when the device can run it; a lost context falls back to the bake.
+  useEffect(() => {
+    const c = gcv.current
+    if (!c || reduced || !liveHeadOk()) return
+    const h = hd.current
+    h.gl = createHead(c, () => { h.gl = null; setGlOn(false) })
+    setGlOn(!!h.gl)
+    return () => { cancelAnimationFrame(h.raf); clearTimeout(h.timer); h.raf = 0; h.timer = 0; h.gl?.dispose(); h.gl = null; h.lay = ''; setGlOn(false) }
+  }, [reduced])
 
   const live = m.projects.some((p) => p.state === 'working')
   const a0s = () => (st.current.out?.planets ?? []).map((p) => p.a0)
@@ -145,6 +183,9 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
       if (k === 0 && s.hover.dir < 0) s.hover = undefined
       else if (k > 0 && k < 1) busy = true
     }
+    if (s.ripple) { s.ripple.k += dt / RIPPLE_MS; if (s.ripple.k >= 1) s.ripple = undefined; else busy = true }
+    // Bake fallback: the turned bake from a continuous yaw, with hysteresis so it never flips back and forth.
+    if (!glOn) { const y = want()?.yaw; s.look = y === undefined ? undefined : bakeLook(y, s.look ?? 0) }
     for (const [map, ms] of [[s.lift, LIFT_MS], [s.glitch, GLITCH_MS]] as const) {
       for (const n of Object.keys(map)) {
         map[n] += dt / ms
@@ -164,11 +205,92 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
       now, spin: s.spin.spin, hover: s.hover && { name: s.hover.name, k: s.hover.k },
       look: s.look, lean: s.lean, pulse: live && !reduced ? (t % PULSE_MS) / PULSE_MS : undefined, lift, glitch,
       sweep: reduced ? undefined : (t % SWEEP_MS) / SWEEP_MS,
+      t: reduced ? 0 : t, fx: reduced ? {} : TABLE_FX, ripple: s.ripple, live: glOn,
     })
     s.out = o
+    placeHead(o)
     setOut(o)
     return busy
   }
+
+  // Where the head wants to look: the drag direction, the hovered planet, then the pointer.
+  // undefined = idle (the controller rests on the target planet and glances at the others).
+  const headLook = (x: number, y: number) => {
+    const o = st.current.out!
+    return lookAt(x, y, size!.w, size!.h, o.head.top + o.head.hh * 0.45)
+  }
+  const want = (): Look | undefined => {
+    const s = st.current, o = s.out
+    if (!o || !size) return undefined
+    // Drag: follow the hand, leading into the spin (faster spin, bigger lead), eyes down on the table.
+    if (s.drag?.moved) {
+      const hand = s.ptr ? headLook(s.ptr.x, s.ptr.y).yaw * 0.6 : 0
+      return { yaw: Math.max(-YAW_MAX, Math.min(YAW_MAX, hand + Math.max(-12, Math.min(12, s.spin.vel * 60)))), pitch: 3 }
+    }
+    const hv = s.hover && s.hover.dir > 0 ? o.planets.find((p) => p.name === s.hover!.name) : undefined
+    if (hv) return headLook(hv.cx, hv.cy)
+    if (s.ptr && glOn) return headLook(s.ptr.x, s.ptr.y)
+    return undefined
+  }
+
+  // Head canvas placement: the bake's cell grid, under the table canvas, leaning with the drag.
+  const placeHead = (o: SceneOut) => {
+    const h = hd.current, c = gcv.current
+    if (!h.gl || !c) return
+    const dpr = window.devicePixelRatio || 1, k = `${o.head.cw},${o.head.font},${dpr}`
+    const L = h.gl.layout({ cw: o.head.cw, ch: o.head.ch, font: o.head.font, dpr })
+    if (h.lay !== k) { h.lay = k; c.style.width = `${L.w}px`; c.style.height = `${L.h}px` }
+    c.style.left = `${o.head.left - L.ox}px`; c.style.top = `${o.head.top - L.oy}px`
+    c.style.transformOrigin = `${L.ox + o.head.hw / 2}px ${L.oy + o.head.hh}px`
+    c.style.transform = `rotate(${st.current.lean.toFixed(2)}deg)`
+    headKick()
+  }
+
+  // One head frame. Returns true while springs or beats move.
+  const headFrame = (t: number) => {
+    const h = hd.current, s = st.current, o = s.out
+    if (!h.gl || h.gl.lost() || !o || !size) return false
+    const dt = h.last ? Math.min(t - h.last, 100) : 16
+    h.last = t
+    if (h.asks >= 0 && m.asks > h.asks) h.ctl.ask(t)
+    h.asks = m.asks
+    const tgt = o.planets.find((p) => p.target)
+    const pal = s.pal, face = faceOf(m.mood, live)
+    // Fail and run eyes take their mood colour (red, cyan); calmer faces take the watched planet's state.
+    const eye = !pal ? undefined : face === 'fail' ? pal.state.failed : face === 'run' ? pal.state.working : tgt && pal.state[tgt.state]
+    const { frame: f, busy } = h.ctl.step({
+      t, dt, look: want(), rest: tgt ? headLook(tgt.cx, tgt.cy) : undefined,
+      glances: o.planets.filter((p) => !p.hidden && p !== tgt).map((p) => headLook(p.cx, p.cy)),
+      face, eye, tip: pal?.state.working ?? [46, 242, 255],
+      hover: !!s.hover && s.hover.dir > 0, drag: s.drag?.moved ? s.spin.vel : undefined,
+    })
+    h.gl.render(f, t / 1000)
+    return busy
+  }
+  // The loops outlive a render (a pending rAF or timer keeps the closure it was made in), so they
+  // call the latest frame functions and flags through this ref, never a stale size or glOn.
+  const cur = useRef({ frame, headFrame, reduced, glOn })
+  cur.current = { frame, headFrame, reduced, glOn }
+  // Head loop: every display frame while it answers an input, 30 fps for ambient moves (drift, blinks),
+  // 20 fps settled, stopped while the page is hidden.
+  const headKick = () => {
+    const h = hd.current
+    if (!h.gl || h.raf) return
+    // An input wakes the head on the next display frame, not after the idle tick.
+    if (h.timer) { clearTimeout(h.timer); h.timer = 0 }
+    h.raf = requestAnimationFrame((t) => {
+      h.raf = 0
+      if (document.visibilityState !== 'visible') { h.last = 0; return }
+      const busy = cur.current.headFrame(t)
+      if (busy && t - h.input < HEAD_LIVE_MS) headKick()
+      else h.timer = window.setTimeout(() => { h.timer = 0; headKick() }, busy ? HEAD_AMBIENT_MS : HEAD_IDLE_MS)
+    })
+  }
+  useEffect(() => {
+    const v = () => { if (document.visibilityState === 'visible') { kick(); headKick() } }
+    document.addEventListener('visibilitychange', v)
+    return () => document.removeEventListener('visibilitychange', v)
+  })
 
   // Wake the loop. Fast frames while busy; a slow tick for the sweep and the working pulse.
   const kick = () => {
@@ -177,9 +299,10 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     if (s.raf) return
     const loop = (t: number) => {
       s.raf = 0
-      if (frame(t)) { s.raf = requestAnimationFrame(loop); return }
+      const c = cur.current
+      if (c.frame(t)) { s.raf = requestAnimationFrame(loop); return }
       s.last = 0
-      if (!reduced && document.visibilityState === 'visible') s.timer = window.setTimeout(() => kick(), PULSE_FRAME_MS)
+      if (!c.reduced && document.visibilityState === 'visible') s.timer = window.setTimeout(() => kick(), c.glOn ? TABLE_FRAME_MS : PULSE_FRAME_MS)
     }
     s.raf = requestAnimationFrame(loop)
   }
@@ -199,7 +322,7 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     s.pal = undefined
     document.fonts.ready.then(kick)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, theme, heads, turn, live, reduced])
+  }, [key, size, theme, heads, turn, live, reduced, glOn])
 
   // Turn to a planet: ease (or step) the spin so it sits at the front.
   const bring = (name: string) => {
@@ -215,14 +338,14 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     if (s.hover && name === s.hover.name && s.hover.dir > 0) return
     if (name) s.hover = { name, k: s.hover?.name === name ? s.hover.k : 0, dir: 1 }
     else if (s.hover) s.hover.dir = -1
-    // The head looks at the hovered planet; on leave it turns back to the longest wait.
-    const p = name ? s.out?.planets.find((q) => q.name === name) : undefined
-    s.look = p && size ? (Math.abs(p.cx - size.w / 2) > 40 ? Math.sign(p.cx - size.w / 2) : 0) : undefined
-    kick()
+    // The head looks at the hovered planet (want()); on leave it turns back to the longest wait.
+    kick(); headKick()
   }
   const select = (name: string) => {
     if (focus === name) { navigate(missionsHref(name)); return }
     setFocus(name); setHover(name); bring(name)
+    // Acknowledge: nod and present toward the planet; a ripple runs from its footprint.
+    if (!reduced) { st.current.ripple = { name, k: 0 }; hd.current.input = performance.now(); hd.current.ctl.present(performance.now()); headKick() }
   }
   const clear = () => { setFocus(undefined); setHover(undefined) }
 
@@ -235,6 +358,7 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
   }
   const move = (e: PointerEvent<HTMLDivElement>) => {
     const s = st.current, d = s.drag
+    hd.current.input = performance.now()
     if (d && d.id === e.pointerId) {
       if (!d.moved && Math.abs(e.clientX - d.x0) > DRAG_PX) { d.moved = true; box.current?.setPointerCapture(e.pointerId) }
       if (d.moved && size) {
@@ -243,14 +367,14 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
         s.spin.vel = 0.6 * v + 0.4 * s.spin.vel
         d.x = e.clientX; d.t = e.timeStamp
         s.spin.spin = d.spin0 + ((e.clientX - d.x0) / size.w) * DEG_PER_WIDTH
-        // The head follows the drag direction.
-        s.look = Math.abs(s.spin.vel) > 0.01 ? Math.sign(s.spin.vel) : s.look
-        kick()
+        s.ptr = local(e)
+        kick(); headKick()
         return
       }
     }
     if (e.pointerType !== 'mouse' || d?.moved) return
     const { x, y } = local(e)
+    s.ptr = { x, y }; headKick()
     // Over a moon of the hovered planet: keep the hover.
     if (st.current.out?.moons.some((o) => Math.hypot(x - o.x, y - o.y) < o.r + 4)) return
     const p = hit(st.current.out, x, y)
@@ -264,7 +388,6 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     if (d.moved) {
       // Release: inertia then detent; the head turns back to the longest wait.
       if (e.timeStamp - d.t > 80) s.spin.vel = 0
-      s.look = undefined
       if (reduced) s.spin.vel = 0
       if (s.spin.vel === 0) s.spin.to = detent(a0s(), s.spin.spin)
       kick()
@@ -277,7 +400,7 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
     else clear()
   }
   const cancel = () => { const s = st.current; if (s.drag?.moved) { s.spin.vel = 0; s.spin.to = detent(a0s(), s.spin.spin); kick() } s.drag = undefined }
-  const leave = (e: PointerEvent<HTMLDivElement>) => { if (e.pointerType === 'mouse' && !st.current.drag) setHover(focus) }
+  const leave = (e: PointerEvent<HTMLDivElement>) => { st.current.ptr = undefined; if (e.pointerType === 'mouse' && !st.current.drag) setHover(focus) }
 
   const key2 = (e: KeyboardEvent<HTMLDivElement>) => {
     const ps = st.current.out?.planets ?? []
@@ -310,6 +433,7 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
       aria-label={`CR-0W: ${say ?? m.line}. Left and Right pick a project, Enter opens its missions.`}
       style={out ? ({ '--lens-y': `${out.lens.y}px` } as CSSProperties) : undefined}
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onPointerLeave={leave} onKeyDown={key2}>
+      <canvas ref={gcv} className="hero-gl" aria-hidden="true" style={glOn ? undefined : { display: 'none' }} />
       <canvas ref={cv} className="hero-cv" aria-hidden="true" />
       <div className="hero-say" data-prio={0} data-fixed aria-hidden="true"><b>CR-0W ›</b> {say ?? m.line}<i className="hero-cur" /></div>
       {out?.planets.map((p, i) => (

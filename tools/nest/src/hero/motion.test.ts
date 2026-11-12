@@ -45,3 +45,37 @@ describe('hero motion', () => {
     expect(liftCurve(1)).toBe(1)
   })
 })
+
+describe('head follow (item_196)', () => {
+  it('a critically damped spring never overshoots and bounds its speed', async () => {
+    const { spring } = await import('./motion')
+    const s = { x: 0, v: 0 }, half = 220, gap = 30
+    let vmax = 0, xmax = 0
+    for (let t = 0; t < 3000; t += 16) { spring(s, gap, half, 16); vmax = Math.max(vmax, Math.abs(s.v)); xmax = Math.max(xmax, s.x) }
+    expect(xmax).toBeLessThanOrEqual(gap + 1e-9)
+    expect(vmax).toBeLessThanOrEqual((gap * 2 * Math.LN2) / (Math.E * half) + 1e-9)
+    expect(s.x).toBeCloseTo(gap, 3)
+  })
+
+  it('a fast sweep gives one smooth turn: the head never reverses', async () => {
+    const { gaze, stepGaze } = await import('./motion')
+    const g = gaze(-25)
+    let prev = g.head.x, back = 0
+    // Pointer sweeps left to right in 150 ms, then rests.
+    for (let t = 0; t < 2000; t += 16) {
+      stepGaze(g, -25 + 50 * Math.min(1, t / 150), 16)
+      if (g.head.x < prev - 1e-9) back++
+      prev = g.head.x
+    }
+    expect(back).toBe(0)
+    expect(g.head.x).toBeCloseTo(25, 1)
+  })
+
+  it('small moves stay in the eyes', async () => {
+    const { gaze, stepGaze } = await import('./motion')
+    const g = gaze(0)
+    for (let t = 0; t < 1000; t += 16) stepGaze(g, 4, 16)
+    expect(g.head.x).toBe(0)
+    expect(g.eye.x).toBeCloseTo(4, 1)
+  })
+})
