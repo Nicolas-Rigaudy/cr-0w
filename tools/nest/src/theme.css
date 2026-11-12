@@ -939,3 +939,10 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .chat-cv.chat-in .term { flex: 1; overflow-y: auto; }
 .desk-in:has(.chat-in) { height: 100%; min-height: 0; box-sizing: border-box; }
 .desk-in:has(.chat-in) > .col:first-child { overflow-y: auto; }
+/* Laptop: the picked session's chat is the centre column (item_187 board desk-chat-a). */
+@media (min-width: 1200px) {
+  .desk-lp .chat-cv.chat-in { height: auto; min-height: 0; padding: 12px 16px; }
+  .desk-lp .chat-cv.chat-in .ph { font-size: 15px; }
+  .desk-lp .chat-cv.chat-in .msg { font-size: 13.5px; line-height: 1.55; }
+  .desk-lp .col .ask-pn { flex: 1; }
+}

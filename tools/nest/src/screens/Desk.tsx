@@ -460,26 +460,28 @@ function DeskLaptop({ d }: { d: D }) {
           <section className="pn none" aria-labelledby="dn"><Ph id="dn" className="c-n" sm={<span className="c-n">{needs || ''}</span>}>Needs you</Ph><Needs d={d} /></section>
           <section className="pn grow" aria-labelledby="dr"><Ph id="dr" sm="▶ resume · + queue">Ready to run</Ph><Ready d={d} /></section>
         </div>
-        <section className="pn ask-pn" aria-labelledby="da">
-          <Ph id="da" sm="butler · sees missions, queue, inbox, sessions">Ask CR-0W</Ph>
-          <Chat d={d} />
-          <Chips d={d} />
-          <AskBox d={d} ph="Tell CR-0W what to run, ask about a mission…" />
-        </section>
+        {a ? (
+          <AgentChat key={a.pid} snap={d.snap} refresh={d.refresh} target={{ pid: a.pid }} log={<Timeline d={d} a={a} term />} />
+        ) : (
+          <section className="pn ask-pn" aria-labelledby="da">
+            <Ph id="da" sm="butler · sees missions, queue, inbox, sessions">Ask CR-0W</Ph>
+            <Chat d={d} />
+            <Chips d={d} />
+            <AskBox d={d} ph="Tell CR-0W what to run, ask about a mission…" />
+          </section>
+        )}
         <div className="col">
           <section className="pn none" aria-labelledby="ds"><Ph id="ds" sm="click a slot to open it">Slots and queue</Ph><Slots d={d} /></section>
-          <section className="pn grow" aria-labelledby="dl">
-            {a ? (
-              <>
-                <Ph id="dl" sm={`${a.account} · ${a.state ?? ''}`}>{d.slotOf(a) || 'Session'} live · {a.project}</Ph>
-                <div className="lt">{nameOf(a)}</div>
-                <Ask d={d} a={a} />
-                <Timeline d={d} a={a} />
-                {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
-                <LiveBtns d={d} a={a} cls="end" />
-              </>
-            ) : (<><Ph id="dl">Live</Ph><div className="sm">Nothing runs. Start one with /dispatch.</div></>)}
-          </section>
+          {a ? (
+            <section className="pn grow ask-pn" aria-labelledby="da">
+              <Ph id="da" sm="butler">Ask CR-0W</Ph>
+              <Chat d={d} />
+              <Chips d={d} />
+              <AskBox d={d} ph="Tell CR-0W what to run…" />
+            </section>
+          ) : (
+            <section className="pn grow" aria-labelledby="dl"><Ph id="dl">Live</Ph><div className="sm">Nothing runs. Start one with /dispatch.</div></section>
+          )}
           <section className="pn none" aria-labelledby="dv">
             <Ph id="dv" sm={d.sessions.length}>Live sessions</Ph>
             <div className="list">

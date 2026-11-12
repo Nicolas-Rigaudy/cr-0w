@@ -1,10 +1,10 @@
 ## item_187_session_chat_in_the_laptop_desk_live_pane - Session chat in the laptop Desk live pane
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -54,4 +54,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
+| 2026-11-12T10:55:00+01:00 | hub | 2730ccad | Laptop desk session chat | succeeded |  | Owner picked option A (chat in the centre, Ask CR-0W under Slots) from `Research/nest-design/item_187/options/`. Final boards (modern, cyber) in `item_187/final/`. DeskLaptop renders the session Chat (inner mode) in the centre when a slot is picked; with nothing picked the centre stays the full Ask CR-0W. tsc and 55 tests pass. Laptop shots in `item_187/shots/`, compared with the board in `item_187/compare.html`. Live test: the owner sent a line from the laptop desk chat to this session; it arrived. AskUserQuestion answers split to item_193. |
