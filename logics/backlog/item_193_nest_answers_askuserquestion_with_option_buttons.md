@@ -1,10 +1,10 @@
 ## item_193_nest_answers_askuserquestion_with_option_buttons - Nest answers a session's AskUserQuestion with option buttons
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 80
-> Confidence: 70
-> Progress: 0%
+> Status: Done
+> Understanding: 100
+> Confidence: 95
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -44,3 +44,22 @@
 
 # Notes
 - Raised by the owner during the item_187 live test.
+
+# Key map (Claude Code 2.1, spiked 2026-11-12)
+- Single select: the option digit selects and moves on. With one single-select question it submits (no review step).
+- Other: digit N+1 (the "Type something." row), the text, Enter.
+- MultiSelect: digits toggle, Down to the Next row, Enter. Other in a multiSelect: digit N+1, Down to its row, the text, Down, Enter.
+- Several questions or any multiSelect end on a review step: "1" submits. Escape cancels.
+
+# Outcome
+- Board: option A (option cards, one question per step) picked by the owner (AC1). Board and build shots in the vault crow folder, Research/nest-design/item_193.
+- crow-prompt records `questions`; `crow-prompt answer --answers JSON` presses the keys. Core `POST /api/sessions/<pid>/answer` takes `{prompt, answers}`; allow on a question prompt and answers on a tool prompt are 409; deny cancels.
+- Nest: `AskDock` replaces the permission card when the prompt has questions (Chat.tsx), all layouts and both themes.
+
+# AC proofs
+- AC1: owner picked A on 2026-11-12.
+- AC2: core `/api/state/dispatch` listed the live session's two questions with options right after the hook fired; Nest renders them from that section (fixture shots cover, laptop, both themes).
+- AC3: live haiku session in hidden tmux: `[[1],[0,2]]` answered "Color → Blue; Fruits → Apple, Plum"; a single question `[[1]]` answered "Pet → Dog" with no review step. The session carried on each time.
+- AC4: through core: `[{"other":"Medium please"},{"other":"Basil","options":[0]}]` arrived as "Size → Medium please; Toppings → Cheese, Basil".
+- AC5: core 409 on a stale prompt id and on allow for a question prompt; nothing was pressed (the dialog stayed up).
+- AC6: pytest 622 passed, go test ok, tsc clean, vitest 57 passed.

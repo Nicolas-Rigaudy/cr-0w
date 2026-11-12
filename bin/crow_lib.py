@@ -847,20 +847,22 @@ SCRIPT_SCHEMA = 1  # "schema" of every deck/core script JSON output (logics/spec
 ACTION_SCHEMA = 1  # logics/specs/script_contract/schemas/action.schema.json
 
 
-PROMPT_FIELDS = ("id", "tool", "detail", "description", "work_approval", "options")
+PROMPT_FIELDS = ("id", "tool", "detail", "description", "work_approval", "options", "questions")
 
 
 def pending_prompt(pid, meta, home=None):
     """The permission prompt pid waits on now (written by `crow-prompt hook`), else None.
 
-    Pending while Claude's own status file (meta) says waiting on a permission prompt for the
-    session the hook recorded."""
+    Pending while Claude's own status file (meta) says waiting on a permission prompt (or on
+    input, for AskUserQuestion) for the session the hook recorded."""
     from pathlib import Path
     try:
         p = json.loads((Path(home or data_home()) / "local/state/prompts" / f"{int(pid)}.json").read_text())
     except (OSError, ValueError, TypeError):
         return None
-    if not meta or meta.get("status") != "waiting" or "permission" not in str(meta.get("waitingFor") or ""):
+    waiting_for = str((meta or {}).get("waitingFor") or "")
+    asks = p.get("tool") == "AskUserQuestion" and "input" in waiting_for
+    if not meta or meta.get("status") != "waiting" or not ("permission" in waiting_for or asks):
         return None
     if p.get("session_id") and meta.get("sessionId") and p["session_id"] != meta["sessionId"]:
         return None

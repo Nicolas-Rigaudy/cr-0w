@@ -4,6 +4,7 @@
   crow-prompt hook                          PermissionRequest hook (stdin: the hook payload)
   crow-prompt show --pid PID [--json]       the prompt PID waits on now, or nothing (exit 1)
   crow-prompt answer --pid PID --prompt ID --option allow|deny [--dry-run] [--json]
+  crow-prompt answer --pid PID --prompt ID --answers JSON [--dry-run] [--json]
 
 hook: records the exact tool and input of the prompt in <state>/prompts/<pid>.json, PID being
 the claude process that runs the hook. It prints nothing: stdout from a PermissionRequest hook
@@ -17,7 +18,15 @@ answer: re-checks that PID still waits on prompt ID, then presses the key in the
 holds PID: allow = "1" (Yes, once), deny = Escape (No; the turn stops and the session waits for
 the owner). "Always allow" is never offered: permission rules are not changed from here.
 Allow is refused on a work approval (push or MR/PR creation in a work repo): the owner gives
-those on the exact text (item_175). --json prints one action line (action.schema.json):
+those on the exact text (item_175).
+
+AskUserQuestion (item_193): the hook also records the full questions (header, question, options with
+descriptions, multiSelect). Claude marks that wait "input needed". --answers is one entry per question:
+a list of 0-based option indexes, or {"other": text} (a multiSelect may add "options": [...]).
+Keys, as Claude Code 2.1 draws the question: single select = the option digit (selects and moves on);
+Other = digit N+1, the text, Enter; multiSelect = digits toggle, Down to the Next row, Enter; Other in a
+multiSelect = digit N+1, Down to its row, the text, Down, Enter. Several questions or any multiSelect end
+on a review step: "1" submits. deny (Escape) cancels the question. --json prints one action line (action.schema.json):
 exit 0 done, 1 refused (prompt changed, no window, work approval), 2 error.
 """
 import hashlib
@@ -34,6 +43,9 @@ import crow_term  # noqa: E402
 
 OPTIONS = [{"key": "allow", "label": "Allow once"}, {"key": "deny", "label": "Deny"}]
 APPROVAL_OPTIONS = [{"key": "deny", "label": "Deny"}]
+ASK_OPTIONS = [{"key": "deny", "label": "Cancel"}]
+ASK = "AskUserQuestion"
+KEY_PAUSE = 0.35
 DETAIL_KEYS = ("command", "file_path", "url", "pattern", "query", "path", "prompt", "skill")
 DETAIL_MAX = 2000
 PUSH_OR_MR = re.compile(r"\bgit\b[^|;&\n]*?\spush\b|\bgh\s+pr\s+create\b|\bglab\s+mr\s+create\b")
@@ -57,6 +69,62 @@ def detail_of(tool, inp):
         if isinstance(inp.get(k), str) and inp[k].strip():
             return inp[k][:DETAIL_MAX]
     return json.dumps(inp, ensure_ascii=False)[:DETAIL_MAX] if inp else tool
+
+
+def questions_of(inp):
+    """AskUserQuestion input as a clean list, or None when it has no questions."""
+    out = []
+    for q in inp.get("questions") or []:
+        if not isinstance(q, dict):
+            continue
+        opts = [{"label": str(o.get("label", "")), "description": o.get("description") if isinstance(
+            o.get("description"), str) else None} for o in q.get("options") or [] if isinstance(o, dict)]
+        out.append({"header": str(q.get("header", "")), "question": str(q.get("question", "")),
+                    "multiSelect": bool(q.get("multiSelect")), "options": opts})
+    return out or None
+
+
+def ask_keys(questions, answers):
+    """The key steps that give answers to questions: [(kind, value)], kind key|text|special. Raises ValueError."""
+    if not isinstance(answers, list) or len(answers) != len(questions):
+        raise ValueError(f"answers: one entry per question ({len(questions)})")
+    steps = []
+    for n_q, (q, a) in enumerate(zip(questions, answers), 1):
+        n = len(q["options"])
+        picks, other = (a, None) if isinstance(a, list) else (a.get("options", []), a.get("other")) \
+            if isinstance(a, dict) else (None, None)
+        if not isinstance(picks, list) or any(not isinstance(i, int) or isinstance(i, bool) or not 0 <= i < n
+                                              for i in picks) or len(set(picks)) != len(picks):
+            raise ValueError(f"question {n_q}: option indexes 0..{n - 1}")
+        if other is not None and (not isinstance(other, str) or not other.strip() or "\n" in other):
+            raise ValueError(f"question {n_q}: other must be one line of text")
+        if q["multiSelect"]:
+            if not picks and other is None:
+                raise ValueError(f"question {n_q}: pick at least one option")
+            steps += [("key", str(i + 1)) for i in sorted(picks)]
+            if other is not None:
+                steps += [("key", str(n + 1))] + [("special", "down")] * n + [("text", other), ("special", "down")]
+            else:
+                steps += [("special", "down")] * (n + 1)
+            steps.append(("special", "enter"))
+        elif other is not None and not picks:
+            steps += [("key", str(n + 1)), ("text", other), ("special", "enter")]
+        elif len(picks) == 1 and other is None:
+            steps.append(("key", str(picks[0] + 1)))
+        else:
+            raise ValueError(f"question {n_q}: single select takes one option or other")
+    if len(questions) > 1 or any(q["multiSelect"] for q in questions):
+        steps.append(("key", "1"))
+    return steps
+
+
+def ask_summary(questions, answers):
+    parts = []
+    for q, a in zip(questions, answers):
+        picks, other = (a, None) if isinstance(a, list) else (a.get("options", []), a.get("other"))
+        labels = [q["options"][i]["label"] for i in sorted(picks)] + ([other] if other else [])
+        parts.append(f"{q['header'] or q['question']} → {', '.join(labels)}")
+    return "; ".join(parts)
 
 
 def owner_project(path, projects):
@@ -94,12 +162,14 @@ def record(event, pid, projects, now=None):
     at = now if now is not None else time.time()
     raw = json.dumps([pid, sid, tool, inp, at], sort_keys=True, ensure_ascii=False)
     approval = work_approval(tool, inp, event.get("cwd"), projects)
+    questions = questions_of(inp) if tool == ASK else None
     return {
         "schema": 1, "id": hashlib.sha1(raw.encode()).hexdigest()[:12], "pid": pid, "session_id": sid,
-        "tool": tool, "detail": detail_of(tool, inp),
+        "tool": tool, "detail": questions[0]["question"][:DETAIL_MAX] if questions else detail_of(tool, inp),
         "description": inp.get("description") if isinstance(inp.get("description"), str) else None,
         "cwd": event.get("cwd"), "at": at, "work_approval": approval,
-        "options": APPROVAL_OPTIONS if approval else OPTIONS,
+        "options": ASK_OPTIONS if questions else APPROVAL_OPTIONS if approval else OPTIONS,
+        "questions": questions,
     }
 
 
@@ -144,15 +214,30 @@ def public(p):
     return {k: p.get(k) for k in crow_lib.PROMPT_FIELDS}
 
 
-def answer(pid, prompt_id, option, dry=False, backend=None, home=None, meta=None):
-    """(exit code, message)."""
-    if option not in ("allow", "deny"):
+def press(pid, steps, backend):
+    """Send key steps to the window holding pid, pausing between them. False when a step found no window."""
+    for i, (kind, value) in enumerate(steps):
+        if i:
+            time.sleep(KEY_PAUSE)
+        ok = crow_term.send_special(pid, value, backend) if kind == "special" else crow_term.send_key(pid, value, backend)
+        if not ok:
+            return False
+    return True
+
+
+def answer(pid, prompt_id, option=None, dry=False, backend=None, home=None, meta=None, answers=None):
+    """(exit code, message). option allow|deny, or answers for an AskUserQuestion."""
+    if answers is None and option not in ("allow", "deny"):
         return 2, f"option must be allow or deny, not {option!r}"
     p = pending(pid, home, meta)
     if p is None:
-        return 1, f"pid {pid} waits on no permission prompt now"
+        return 1, f"pid {pid} waits on no prompt now"
     if p["id"] != prompt_id:
         return 1, f"pid {pid} now waits on another prompt ({p['id']}, {p['tool']}: {p['detail'][:80]})"
+    if answers is not None:
+        return answer_questions(pid, p, answers, dry, backend)
+    if option == "allow" and p.get("questions"):
+        return 1, "an AskUserQuestion takes answers, not allow"
     if option == "allow" and p.get("work_approval"):
         return 1, f"work approval on {p['work_approval']}: give it on the exact text in approvals, not here"
     backend = backend or crow_term.choose()
@@ -164,6 +249,25 @@ def answer(pid, prompt_id, option, dry=False, backend=None, home=None, meta=None
         return 1, (f"no {backend} window holds pid {pid}" if backend != "print"
                    else "the print backend cannot press keys in a window (CROW_TERMINAL=kitty|tmux)")
     return 0, ("allowed once: " if option == "allow" else "denied: ") + f"{p['tool']} {p['detail'][:80]}"
+
+
+def answer_questions(pid, p, answers, dry, backend):
+    if not p.get("questions"):
+        return 2, f"pid {pid} waits on {p['tool']}, not on AskUserQuestion: use --option"
+    try:
+        steps = ask_keys(p["questions"], answers)
+    except ValueError as e:
+        return 2, str(e)
+    backend = backend or crow_term.choose()
+    summary = ask_summary(p["questions"], answers)
+    if dry:
+        keys = " ".join(f"'{v}'" if k == "text" else v for k, v in steps)
+        return 0, f"press {keys} in the {backend} window holding pid {pid} ({summary})"
+    if backend == "print":
+        return 1, "the print backend cannot press keys in a window (CROW_TERMINAL=kitty|tmux)"
+    if not press(pid, steps, backend):
+        return 1, f"no {backend} window holds pid {pid}"
+    return 0, f"answered: {summary}"
 
 
 def opts_of(args):
@@ -189,9 +293,16 @@ def main(argv):
             print(f"{p['tool']}: {p['detail']}" + (f"  [work approval: {p['work_approval']}]" if p["work_approval"] else ""))
         return 0 if p else 1
     if argv[:1] == ["answer"]:
-        if not opts.get("prompt") or not opts.get("option"):
+        if not opts.get("prompt") or not (opts.get("option") or opts.get("answers")):
             sys.exit(__doc__)
-        code, msg = answer(pid, opts["prompt"], opts["option"], dry="--dry-run" in flags)
+        answers = None
+        if opts.get("answers"):
+            try:
+                answers = json.loads(opts["answers"])
+            except ValueError:
+                answers = "bad"
+        code, msg = (2, "answers: not JSON") if answers == "bad" else \
+            answer(pid, opts["prompt"], opts.get("option"), dry="--dry-run" in flags, answers=answers)
         if as_json:
             return crow_lib.action_result(code == 0, "answer", pid, msg, code)
         print(msg if code == 0 else f"crow-prompt: {msg}", file=sys.stdout if code == 0 else sys.stderr)

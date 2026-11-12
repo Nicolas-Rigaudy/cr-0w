@@ -7,7 +7,12 @@
         "prompt": { "id": "p-shots", "tool": "Bash", "detail": "npm run build && node scripts/shots.mjs /tmp/nest-shots", "description": "Build and take headless screenshots", "work_approval": null, "options": [{ "key": "allow", "label": "Allow once" }, { "key": "deny", "label": "Deny" }] } },
       { "kind": "session", "pid": 5252, "account": "work", "project": "lambda", "cwd": "/src/lambda.wt/fix-timeout", "session_id": "s-lambda", "run_id": null, "label": null, "title": "lambda: fix timeout", "state": "waiting", "started_at": "2026-11-09T15:44:00+01:00", "last_action": "Bash: Push the branch", "last_prompt": "push and open the MR",
         "prompt": { "id": "p-push", "tool": "Bash", "detail": "git push -u origin fix-timeout", "description": "Push the branch", "work_approval": "lambda", "options": [{ "key": "deny", "label": "Deny" }] } },
-      { "kind": "session", "pid": 6161, "account": "main", "project": "website", "cwd": "/src/website", "session_id": "s-web", "run_id": null, "label": null, "title": "website: footer links", "state": "idle", "started_at": "2026-11-09T14:02:00+01:00", "last_action": "says: Done, the links point to the new pages.", "last_prompt": "fix the footer links" },
+      { "kind": "session", "pid": 6161, "account": "main", "project": "website", "cwd": "/src/website", "session_id": "s-web", "run_id": null, "label": null, "title": "website: footer links", "state": "waiting", "started_at": "2026-11-09T14:02:00+01:00", "last_action": "AskUserQuestion: Footer style", "last_prompt": "fix the footer links",
+        "prompt": { "id": "p-ask", "tool": "AskUserQuestion", "detail": "Which footer layout?", "description": null, "work_approval": null, "options": [{ "key": "deny", "label": "Cancel" }],
+          "questions": [
+            { "header": "Layout", "question": "Which footer layout?", "multiSelect": false, "options": [{ "label": "Two columns (Recommended)", "description": "Links left, contact right" }, { "label": "One row", "description": "All links inline, wraps on phone" }, { "label": "Stacked", "description": "One link per line" }] },
+            { "header": "Links", "question": "Which links stay?", "multiSelect": true, "options": [{ "label": "Blog", "description": "Moved to /news" }, { "label": "Careers", "description": null }, { "label": "Press", "description": "Two visits a month" }] }
+          ] } },
       { "kind": "run", "pid": 7171, "account": "work", "project": "cr-0w", "cwd": "/src/cr-0w.wt/flaky-test", "session_id": "s-run", "run_id": "a1b2c3d4", "label": "flaky-test", "title": "Fix the flaky test", "state": "working", "started_at": "2026-11-09T16:06:00+01:00", "last_action": "Edit: tests/test_runs.py", "last_prompt": null }
     ],
     "finished": []

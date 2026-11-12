@@ -65,10 +65,13 @@ type RunRequest struct {
 }
 
 // PromptAnswer is the body of POST /api/sessions/{pid}/answer (item_174): the prompt id the
-// owner saw and the option tapped, allow (once) or deny.
+// owner saw and the option tapped, allow (once) or deny. An AskUserQuestion prompt (item_193)
+// takes answers instead: one entry per question, a list of 0-based option indexes or
+// {"other": text, "options": [...]}; crow-prompt validates them against the questions.
 type PromptAnswer struct {
-	Prompt string `json:"prompt"`
-	Option string `json:"option"`
+	Prompt  string          `json:"prompt"`
+	Option  string          `json:"option,omitempty"`
+	Answers json.RawMessage `json:"answers,omitempty"`
 }
 
 // Send is the body of POST /api/sessions/{pid}/send.
@@ -245,8 +248,13 @@ func (s *Server) promptAnswer(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &b, false) {
 		return
 	}
-	if b.Option != "allow" && b.Option != "deny" {
-		fail(w, http.StatusBadRequest, "option: allow or deny")
+	asks := len(b.Answers) > 0 && string(b.Answers) != "null"
+	if asks == (b.Option != "") || (!asks && b.Option != "allow" && b.Option != "deny") {
+		fail(w, http.StatusBadRequest, "option: allow or deny, or answers")
+		return
+	}
+	if asks && (b.Answers[0] != '[' || !json.Valid(b.Answers)) {
+		fail(w, http.StatusBadRequest, "answers: one entry per question")
 		return
 	}
 	if strings.TrimSpace(b.Prompt) == "" {
@@ -267,10 +275,22 @@ func (s *Server) promptAnswer(w http.ResponseWriter, r *http.Request) {
 	case b.Option == "allow" && str(p, "work_approval") != "":
 		fail(w, http.StatusConflict, "work approval on "+str(p, "work_approval")+": give it in approvals")
 		return
+	case asks && p["questions"] == nil:
+		fail(w, http.StatusConflict, "pid "+pid+": that prompt takes allow or deny")
+		return
+	case b.Option == "allow" && p["questions"] != nil:
+		fail(w, http.StatusConflict, "pid "+pid+": that prompt takes answers")
+		return
 	}
-	ev := LiveAction{Action: "answer", Target: pid, Text: b.Option + ": " + str(p, "tool") + " " + str(p, "detail"),
+	verb, args := b.Option, []string{"--option", b.Option}
+	if asks {
+		var compact bytes.Buffer
+		_ = json.Compact(&compact, b.Answers)
+		verb, args = "answers", []string{"--answers", compact.String()}
+	}
+	ev := LiveAction{Action: "answer", Target: pid, Text: verb + ": " + str(p, "tool") + " " + str(p, "detail"),
 		Account: str(a, "account"), Project: str(a, "project")}
-	s.runAction(w, ev, nil, "crow-prompt", "answer", "--pid", pid, "--prompt", b.Prompt, "--option", b.Option, "--json")
+	s.runAction(w, ev, nil, "crow-prompt", append(append([]string{"answer", "--pid", pid, "--prompt", b.Prompt}, args...), "--json")...)
 	s.Refresh("dispatch")
 }
 

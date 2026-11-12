@@ -52,6 +52,13 @@ describe('live actions over the core API', () => {
     expect(JSON.parse(seen[0].init.body as string)).toEqual({ prompt: 'p-shots', option: 'allow' })
   })
 
+  it('answers an AskUserQuestion with one entry per question', async () => {
+    const { get, seen } = recorder()
+    await apiActions('/api', get).ask(6161, 'p-ask', [[0], { other: 'Docs', options: [1] }])
+    expect(seen[0].url).toBe('/api/sessions/6161/answer')
+    expect(JSON.parse(seen[0].init.body as string)).toEqual({ prompt: 'p-ask', answers: [[0], { other: 'Docs', options: [1] }] })
+  })
+
   it('returns the logged action', async () => {
     const r = await apiActions('/api', recorder().get).send(4242, 'x')
     expect(r).toEqual(JSON.parse(body('live-send.json')))
@@ -103,6 +110,16 @@ describe('fixture actions', () => {
     await src.actions.answer(5151, 'p-shots', 'allow')
     expect((await agent(5151))?.prompt ?? null).toBeNull()
     await expect(src.actions.answer(5151, 'p-shots', 'allow')).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('ask clears a question prompt and refuses a stale one or a wrong count', async () => {
+    const src = fixtureSource()
+    const agent = async (pid: number) => dispatchOf(await src.section('dispatch')).agents.find((a) => a.pid === pid)
+    expect((await agent(6161))?.prompt?.questions?.map((q) => q.header)).toEqual(['Layout', 'Links'])
+    await expect(src.actions.ask(6161, 'old', [[0], [1]])).rejects.toMatchObject({ status: 409 })
+    await expect(src.actions.ask(6161, 'p-ask', [[0]])).rejects.toMatchObject({ status: 400 })
+    await src.actions.ask(6161, 'p-ask', [[0], [0, 2]])
+    expect((await agent(6161))?.prompt ?? null).toBeNull()
   })
 
   it('done drops the mail', async () => {

@@ -1,13 +1,14 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../data/api'
 import { blocksOf, partsOf, spansOf, type Block, type ChatTarget, type Entry } from '../data/conversation'
-import { dispatchOf, type Agent } from '../data/live'
+import { dispatchOf, type Agent, type AskAnswer } from '../data/live'
 import type { InboxItem, InboxVerb, Mission } from '../data/types'
 import { useConversation } from '../data/useConversation'
 import { useSource, type Snapshot } from '../data/useData'
 import { ago, elapsed, time, title } from '../format'
 import { Link, navigate } from '../router'
 import { REJECT, useAnswer, verbLabel } from '../ui/answer'
+import { AskDock } from '../ui/AskDock'
 import { Sheet, type Confirm } from '../ui/Sheet'
 
 // Phone chat of one session, run or mission (item_177, boards chat-cover and
@@ -144,6 +145,21 @@ export function Chat({ snap, refresh, target, log }: { snap: Snapshot; refresh: 
     void refresh()
   }
 
+  const sendAsk = async (answers: AskAnswer[]) => {
+    if (!agent || !prompt) return
+    setNote('')
+    setBusy(true)
+    try {
+      await act.ask(agent.pid, prompt.id, answers)
+      pinned.current = true
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+    void refresh()
+  }
+
   const stop = () => {
     setMenu(false)
     if (mission && mission.state === 'running') {
@@ -229,7 +245,9 @@ export function Chat({ snap, refresh, target, log }: { snap: Snapshot; refresh: 
           </Fragment>
         ))}
       </div>
-      {prompt && agent && (
+      {prompt?.questions?.length && agent ? (
+        <AskDock key={prompt.id} who={slot || 'Session'} questions={prompt.questions} busy={busy} onSend={(a) => void sendAsk(a)} onCancel={() => void allow('deny')} />
+      ) : prompt && agent && (
         <div className="ask" role="group" aria-label={`Permission asked by ${name}`}>
           <div className="who"><span className="c-n">◆ {slot || 'Session'} waits on you</span></div>
           <div className="aq"><span className="c-n">{prompt.tool}</span> <code>{prompt.detail}</code></div>

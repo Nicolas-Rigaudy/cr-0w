@@ -13,5 +13,8 @@ Use when a feature reacts to a live Claude Code session (hooks, permission promp
 
 Notes
 - Permission menu: 1 Yes, 2 always allow, 3 auto mode, 4 No. `1` allows once; Escape denies and ends the turn.
+- AskUserQuestion: ask the session to call it with given headers and options. Its status file shows `input needed`. Keys: see `bin/crow-prompt --help` (digits, Other row N+1, Down to Next, review step "1"). Answer through `crow-prompt answer --answers` or core `POST /api/sessions/<pid>/answer`.
+- After `bin/crow core restart` the dispatch view answers 409 "stale" for a few seconds: wait until `/api/state/dispatch` lists the prompt id.
+- Nest shots on fixtures need the vite dev server (`npx vite --port N`): `vite preview` serves the production build, which reads the real core API.
 - Claude's own status file `<HOME>/.claude/sessions/<pid>.json` shows `waiting` / `permission prompt` while the dialog is up.
 - Never `pkill -f` a pattern that matches your own command line.

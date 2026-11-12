@@ -61,6 +61,15 @@ function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, n
       set('dispatch', { ...d, agents: d.agents.map((x) => (x === a ? { ...x, prompt: null, state: option === 'allow' ? 'working' : 'idle' } : x)) })
       return reply('answer', String(pid), { text: `${option}: ${p.tool} ${p.detail}`, account: a.account, project: a.project })
     },
+    async ask(pid, prompt, answers) {
+      const a = agent(pid)
+      const p = a.prompt
+      if (!p || p.id !== prompt) throw new ApiError(409, `pid ${pid} no longer waits on prompt ${prompt}`)
+      if (!p.questions || answers.length !== p.questions.length) throw new ApiError(400, 'answers: one entry per question')
+      const d = dispatch()
+      set('dispatch', { ...d, agents: d.agents.map((x) => (x === a ? { ...x, prompt: null, state: 'working' } : x)) })
+      return reply('answer', String(pid), { text: `answers: ${p.tool} ${p.detail}`, account: a.account, project: a.project })
+    },
     async stop(pid) {
       const a = drop(pid)
       return reply('stop', String(pid), { account: a.account, project: a.project })

@@ -88,6 +88,7 @@ export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, ini
     send: (pid, text) => post(`/sessions/${pid}/send`, { text }),
     interrupt: (pid) => post(`/sessions/${pid}/interrupt`),
     answer: (pid, prompt, option) => post(`/sessions/${pid}/answer`, { prompt, option }),
+    ask: (pid, prompt, answers) => post(`/sessions/${pid}/answer`, { prompt, answers }),
     stop: (pid) => post(`/sessions/${pid}/stop`),
     resume: (conv, account) => post(`/sessions/${id(conv)}/resume`, account ? { account } : undefined),
     start: (s) => post('/sessions', s),

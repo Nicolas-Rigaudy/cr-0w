@@ -268,6 +268,19 @@ def send_key(pid, key, backend=None):
                     else [["tmux", "send-keys", "-t", t, "-l", key]])
 
 
+TMUX_KEYS = {"down": "Down", "enter": "Enter", "tab": "Tab", "escape": "Escape"}
+
+
+def send_special(pid, key, backend=None):
+    """Press a named key (down, enter, tab, escape) in the window holding pid. True when a window took it."""
+    where = locate(pid, backend)
+    if not where or key not in TMUX_KEYS:
+        return False
+    kind, t = where
+    return _run_all([["kitten", "@", "--to", t[0], "send-key", "--match", f"id:{t[1]}", key]] if kind == "kitty"
+                    else [["tmux", "send-keys", "-t", t, TMUX_KEYS[key]]])
+
+
 def is_claude(pid, proc="/proc"):
     """True when pid runs the claude CLI (its command line names it)."""
     try:

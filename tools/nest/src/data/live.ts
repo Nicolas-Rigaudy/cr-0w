@@ -31,7 +31,20 @@ export interface Prompt {
   description?: string | null
   work_approval?: string | null
   options: Array<{ key: 'allow' | 'deny'; label: string }>
+  // AskUserQuestion (item_193): the questions in order; deny is Cancel, answers go through ask().
+  questions?: Question[] | null
 }
+
+export interface Question {
+  header: string
+  question: string
+  multiSelect: boolean
+  options: Array<{ label: string; description?: string | null }>
+}
+
+// One answer per question: 0-based option indexes, or a free "Other" text (with the
+// options also ticked on a multiSelect).
+export type AskAnswer = number[] | { other: string; options?: number[] }
 
 export interface Dispatch {
   slots: { busy: number; max: number }
@@ -85,6 +98,7 @@ export interface Actions {
   send(pid: number, text: string): Promise<LiveReply>
   interrupt(pid: number): Promise<LiveReply>
   answer(pid: number, prompt: string, option: 'allow' | 'deny'): Promise<LiveReply>
+  ask(pid: number, prompt: string, answers: AskAnswer[]): Promise<LiveReply>
   stop(pid: number): Promise<LiveReply>
   resume(id: string, account?: string): Promise<LiveReply>
   start(s: NewSession): Promise<LiveReply>

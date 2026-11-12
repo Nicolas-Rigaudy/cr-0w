@@ -101,7 +101,7 @@
        "object",
        "null"
       ],
-      "description": "The permission prompt a waiting session shows (crow-prompt hook, item_174); null otherwise. options: allow (press 1, once) and deny (Escape); a work push/MR approval offers deny only.",
+      "description": "The permission prompt a waiting session shows (crow-prompt hook, item_174); null otherwise. options: allow (press 1, once) and deny (Escape); a work push/MR approval offers deny only. An AskUserQuestion prompt (item_193) offers deny (Cancel) only and carries questions; it is answered with answers, one entry per question.",
       "required": [
        "id",
        "tool",
@@ -125,6 +125,37 @@
             "allow",
             "deny"
            ]
+          }
+         }
+        }
+       },
+       "questions": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "description": "AskUserQuestion questions in order; null for any other tool.",
+        "items": {
+         "type": "object",
+         "required": [
+          "header",
+          "question",
+          "multiSelect",
+          "options"
+         ],
+         "properties": {
+          "multiSelect": {
+           "type": "boolean"
+          },
+          "options": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "label",
+             "description"
+            ]
+           }
           }
          }
         }
