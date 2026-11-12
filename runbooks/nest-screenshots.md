@@ -26,3 +26,19 @@ Gotchas:
 - The script runs `vite preview` on port 4317; it needs `dist/`.
 - Add a screen by editing `SCREENS` in `scripts/shots.mjs`.
 - An empty `package.json` at the repo root breaks Vite resolution above `tools/nest`; the package reads shared fixtures through a virtual module for that reason.
+
+## Hero holotable (layout, idle, perf)
+
+The hero reads fixtures only under `vite dev`, so these scripts start their own dev server (no `dist/` needed).
+Run from `tools/nest` with `PLAYWRIGHT_BROWSERS_PATH` set as above.
+
+- `node scripts/hero-layout.mjs <out_dir> [size]`: rest, hover and card shots at cover, cover-cyber, inner and laptop.
+  It waits for `.hero-pl[data-c]` (planets placed) before shooting; without it `dataset` is null and the script crashes.
+- `node scripts/hero-idle.mjs`: paints per second at rest. Expect 0 with reduced motion; a live project runs a throttled pulse (about 8 fps).
+- `node scripts/hero-perf.mjs`: median and max draw time per frame per size. Baseline 2026-11-12: laptop 15 ms, phone 11 ms.
+
+Overlay rules (`src/hero/declutter.ts`, tests beside it):
+- Every text box over the canvas carries `data-prio` (lower places first). `data-fixed` only blocks, `data-hide` may hide, `data-own` ignores its own planet disc, `data-up` lets the card flip above or dock at the bottom.
+- Text never covers text and labels never clip at the edge; a box with no free spot hides.
+- Layout reruns after `document.fonts.ready`, since widths change once Fira Code loads.
+- Scene cells share the head cell size (`HS * clamp(w/560, 0.7, 1)`), so phone and laptop keep the same ASCII detail.

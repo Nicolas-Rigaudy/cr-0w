@@ -51,6 +51,6 @@ want to trigger it by name.
 - [mission-e2e-scratch](mission-e2e-scratch.md): real cheap mission run (dispatch, park, answer, resume) in a scratch core store, and how to read a failed run
 - [headless-webgl-render](headless-webgl-render.md): render WebGL pages to PNG and bench frame time headless (SwiftShader and real GPU)
 - [core-service](core-service.md): install and probe the crow-core service (read API under /api, Nest at /, tailnet identity, socket)
-- [nest-screenshots](nest-screenshots.md): headless screenshots of the Nest PWA at the board sizes, both themes
+- [nest-screenshots](nest-screenshots.md): headless screenshots of the Nest PWA at the board sizes, both themes; hero layout, idle and perf scripts
 - [nest-phone-install](nest-phone-install.md): serve Nest on the tailnet and install it as an app on Android (Play parks it while the VPN is up)
 - [vault-sync-new-device](vault-sync-new-device.md): add a machine to the vault Syncthing mesh (direct pairing, ignore patterns, conflict cleanup)

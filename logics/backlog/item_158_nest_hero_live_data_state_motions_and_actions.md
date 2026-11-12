@@ -1,10 +1,10 @@
 ## item_158_nest_hero_live_data_state_motions_and_actions - Nest hero live data, state motions and actions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 80%
-> Progress: 0%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -76,3 +76,11 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Outcome (2026-11-12)
+- Built in Nest: live planets per project, moons per mission with titles beside them, moons spread on hover, glass card A on click, planet opens Missions filtered by `?project=`.
+- Overlay declutter (`src/hero/declutter.ts`, 8 tests): no text over text, no clipped labels, low-priority labels hide when boxed in.
+- Scene and head share one ASCII cell size, so phone, inner and laptop read with the same detail.
+- Review sheets: vault `Research/nest-design/hero-live-158/final/`.
+- Perf: draw about 15 ms per frame on laptop at dpr 2; 0 paints at rest with reduced motion.
+- Small screens: the card docks over the bottom of the table.
