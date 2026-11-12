@@ -1,0 +1,708 @@
+{
+  "budgets": {
+    "max_docs": 32,
+    "max_docs_per_ref": 4
+  },
+  "changed_paths": [
+    "logics/backlog/item_187_session_chat_in_the_laptop_desk_live_pane.md",
+    "logics/backlog/item_188_start_an_interactive_session_that_lives_in_nest.md",
+    "logics/backlog/item_189_several_session_chats_side_by_side_on_the_laptop.md",
+    "logics/backlog/item_190_laptop_missions_from_the_approved_missions_board.md",
+    "logics/backlog/item_191_laptop_inbox_layout.md",
+    "logics/backlog/item_192_laptop_trial_day_without_terminals.md",
+    "logics/product/prod_009_nest_laptop_parity.md",
+    "logics/request/req_057_nest_on_the_laptop_replaces_the_owner_s_terminals.md",
+    "logics/scaffold/nest_laptop_parity.json",
+    "logics/tasks/task_023_orchestrate_nest_laptop_parity.md"
+  ],
+  "command": "logics-manager sync context-pack req_057_nest_on_the_laptop_replaces_the_owner_s_terminals item_187_session_chat_in_the_laptop_desk_live_pane item_188_start_an_interactive_session_that_lives_in_nest item_189_several_session_chats_side_by_side_on_the_laptop item_190_laptop_missions_from_the_approved_missions_board item_191_laptop_inbox_layout item_192_laptop_trial_day_without_terminals task_023_orchestrate_nest_laptop_parity --mode diff-first --profile normal --handoff",
+  "companion_docs": [
+    {
+      "kind": "product",
+      "linked_refs": {
+        "item": [
+          "item_187_session_chat_in_the_laptop_desk_live_pane",
+          "item_188_start_an_interactive_session_that_lives_in_nest",
+          "item_189_several_session_chats_side_by_side_on_the_laptop",
+          "item_190_laptop_missions_from_the_approved_missions_board",
+          "item_191_laptop_inbox_layout",
+          "item_192_laptop_trial_day_without_terminals"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/product/prod_009_nest_laptop_parity.md",
+      "ref": "prod_009_nest_laptop_parity",
+      "sections": {
+        "Goals": [
+          "- Every session readable and drivable from the laptop Nest.",
+          "- Several sessions on screen at once, like tmux panes.",
+          "- New sessions start inside Nest, with no desktop window.",
+          "- Missions and Inbox use the laptop width."
+        ],
+        "Key product decisions": [
+          "- Use structured input as the source of truth for generated docs.",
+          "- Keep generated write paths local and repo-bounded."
+        ],
+        "Overview": [
+          "Nest is built for the Fold first. On the laptop the owner still runs sessions in terminals because the laptop Desk lacks the chat, cannot show several sessions at once and cannot start a session that stays inside Nest. This pass brings the laptop layout to the point where terminals become optional."
+        ],
+        "References": [
+          "- Product back-reference: `req_057_nest_on_the_laptop_replaces_the_owner_s_terminals`",
+          "- Task back-reference: `task_023_orchestrate_nest_laptop_parity`"
+        ]
+      },
+      "status": "Proposed",
+      "title": "Nest laptop parity"
+    },
+    {
+      "kind": "product",
+      "linked_refs": {
+        "adr": [
+          "adr_001_core_missions_and_inbox_architecture"
+        ],
+        "item": [
+          "item_107_render_the_mission_brief_from_kind_record_and_answers"
+        ],
+        "prod": [
+          "prod_005_crow_jarvis_layer"
+        ],
+        "req": [
+          "req_025_account_routing_by_scope",
+          "req_026_personal_butler",
+          "req_027_conversations_feed_for_core_deck_nest",
+          "req_028_jarvis_layer_missions_inbox_butler_chat_model_router",
+          "req_029_spike_hosts_model_sources_and_local_ai_benchmarks",
+          "req_030_spike_mission_safety_and_sandbox",
+          "req_031_spike_nest_stack_and_app_shape",
+          "req_032_spike_butler_engine_and_persona",
+          "req_033_spike_android_extras_for_nest",
+          "req_034_work_views_in_nest",
+          "req_035_forge_ops_in_nest",
+          "req_036_fun_layer_for_crow",
+          "req_037_mission_kinds_and_run_contract",
+          "req_038_nest_design_rules",
+          "req_039_news_board_for_tech_news_and_repos"
+        ],
+        "road": [
+          "road_001_crow_roadmap_after_the_deck_pass"
+        ],
+        "task": [
+          "task_016_orchestrate_jarvis_core_slices_1_and_2_missions_and_inbox"
+        ]
+      },
+      "path": "logics/product/prod_005_crow_jarvis_layer.md",
+      "ref": "prod_005_crow_jarvis_layer",
+      "sections": {
+        "Goals": [
+          "- The owner steers work and personal projects from nest or deck. Terminal sessions are kept for deep repo work.",
+          "- Most missions finish with only an FYI. The rest stop at one clear question with buttons.",
+          "- Every live run reads as one plain sentence. Raw trails are available but never pushed.",
+          "- Every model source is used for what it does best. Work data never leaves Claude accounts; private personal data never leaves the owner's machines.",
+          "- Every repeat costs less than the last: failures, manual gestures and corrections feed a weekly pass.",
+          "- It is fun to use and fun to tinker with."
+        ],
+        "Overview": [
+          "crow today is a hub you drive from terminal sessions: skills, `crow dispatch` and `crow runs`, the deck TUI (MR pane, agents panel), review ledgers, Logics, cdx accounts. The Jarvis layer turns it into an assistant you steer from one interface. You state a goal; a mission runs it in the background through cdx; you only see questions, approvals, proposals and short status. Detail stays one tap away: the MR pane, the live terminal, the full trail.",
+          "This brief merges three inputs:",
+          "- **The owner's wishes**, collected in five question rounds on 2026-11-06.",
+          "- **Ultron**, a colleague's cockpit: Claude Code background sessions on one Mac around a two-gate workflow (plan, then report). About two weeks old, React PWA, iPhone. Private copy: `local/reference/ultron-design.md`.",
+          "- **Jarvis**, a colleague's operations assistant: missions that come back merged and deployed, a vanilla-JS PWA (HQ), a chat gateway, three hosts on a tailnet, nightly self-repair, home and personal pages. Private copy: `local/reference/jarvis-design-document.md`.",
+          "Both colleagues already use cdx and Logics, so most of their ideas port with little friction."
+        ],
+        "References": [
+          "- `logics/request/req_028_jarvis_layer_missions_inbox_butler_chat_model_router.md`",
+          "- `logics/architecture/adr_001_core_missions_and_inbox_architecture.md`",
+          "- `logics/roadmap/road_001_crow_roadmap_after_the_deck_pass.md`",
+          "- `logics/request/req_025_account_routing_by_scope.md`",
+          "- `logics/request/req_027_conversations_feed_for_core_deck_nest.md`",
+          "- Colleague design docs (private copies): `local/reference/ultron-design.md`, `local/reference/jarvis-design-document.md`"
+        ]
+      },
+      "status": "Proposed",
+      "title": "Crow Jarvis layer"
+    },
+    {
+      "kind": "architecture",
+      "linked_refs": {
+        "adr": [
+          "adr_001_core_missions_and_inbox_architecture"
+        ],
+        "prod": [
+          "prod_005_crow_jarvis_layer"
+        ],
+        "req": [
+          "req_028_jarvis_layer_missions_inbox_butler_chat_model_router",
+          "req_037_mission_kinds_and_run_contract",
+          "req_039_news_board_for_tech_news_and_repos"
+        ]
+      },
+      "path": "logics/architecture/adr_001_core_missions_and_inbox_architecture.md",
+      "ref": "adr_001_core_missions_and_inbox_architecture",
+      "sections": {
+        "Overview": [
+          "core is one always-on service. It owns missions, the inbox, the scheduler, the router and policy. Runs talk to it through files in a mission dir. Every surface reads one HTTP API. core alone publishes."
+        ],
+        "References": [
+          "- Related request: `req_028_jarvis_layer_missions_inbox_butler_chat_model_router`",
+          "- Run contract: `req_037_mission_kinds_and_run_contract`",
+          "- Product brief: `prod_005_crow_jarvis_layer`"
+        ]
+      },
+      "status": "Proposed",
+      "title": "Core missions and inbox architecture"
+    }
+  ],
+  "docs": [
+    {
+      "ai_context": {
+        "keywords": "nest, laptop, replaces, owner, terminals",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "request",
+      "linked_refs": {
+        "item": [
+          "item_187_session_chat_in_the_laptop_desk_live_pane",
+          "item_188_start_an_interactive_session_that_lives_in_nest",
+          "item_189_several_session_chats_side_by_side_on_the_laptop",
+          "item_190_laptop_missions_from_the_approved_missions_board",
+          "item_191_laptop_inbox_layout",
+          "item_192_laptop_trial_day_without_terminals"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_055_a_work_day_from_nest_without_a_terminal",
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_018_nest_app_shell_on_core_fixtures"
+        ]
+      },
+      "path": "logics/request/req_057_nest_on_the_laptop_replaces_the_owner_s_terminals.md",
+      "ref": "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- AC1: On the laptop the Desk shows the selected session or run as the item_177 chat (full message text, tool folds, Earlier, send, permission answers, Pause and Stop), checked against an approved laptop board.",
+          "- AC2: The owner types into any live session and answers its prompts from the laptop, and the reply shows in the chat without a page reload.",
+          "- AC3: Two or more session chats are visible side by side on the laptop, the owner picks which sessions fill the panes, and keyboard keys move focus and send.",
+          "- AC4: The owner starts a new interactive session in a registered project from Nest; it runs without opening a window on the desktop, appears in Nest, and its chat works at once. Opening the same session in a terminal stays possible.",
+          "- AC5: Missions on the laptop matches the approved missions-board boards on live data.",
+          "- AC6: Inbox on the laptop has its own layout, from a board the owner approved before the build."
+        ],
+        "Needs": [
+          "- Owner, 2026-11-12: Nest work went to the phone and the laptop was left behind, so on the laptop the owner still works in terminals.",
+          "- Read live session output in Nest on the laptop, with full message text, as in a terminal.",
+          "- Type into any session and answer its prompts from Nest on the laptop.",
+          "- See several sessions at once, side by side like tmux panes.",
+          "- Start a new interactive session in a project from Nest, and drive it from Nest without a terminal window.",
+          "- Laptop layouts for Missions and Inbox, which today fall back to the Fold inner layouts."
+        ]
+      },
+      "status": "Draft",
+      "title": "Nest on the laptop replaces the owner's terminals"
+    },
+    {
+      "ai_context": {
+        "keywords": "nest, no terminal, butler chat, mission chat, web push, mail, calendar, rituals, retro, always on",
+        "skip when": "deck parity (req_054), Nest visual design passes.",
+        "summary": "after req_054, close the gaps that still send the owner to a terminal: butler chat, chat inside a mission or session, phone push, mail and calendar actions, rituals, a core that stays up when the laptop sleeps, and retros run as missions.",
+        "use when": "grooming or building anything that lets the owner run a work day from Nest."
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "request",
+      "linked_refs": {
+        "adr": [
+          "adr_001_core_missions_and_inbox_architecture"
+        ],
+        "item": [
+          "item_176_butler_chat_in_nest_on_the_core_mcp_tools",
+          "item_177_chat_inside_any_session_or_mission_run_from_nest",
+          "item_178_phone_push_when_something_needs_the_owner",
+          "item_179_mail_and_calendar_actions_from_nest",
+          "item_180_rituals_as_mission_kinds_started_from_nest",
+          "item_181_core_reachable_when_the_laptop_sleeps",
+          "item_182_retro_mission_kind_that_improves_crow"
+        ],
+        "prod": [
+          "prod_005_crow_jarvis_layer"
+        ],
+        "req": [
+          "req_027_conversations_feed_for_core_deck_nest",
+          "req_029_spike_hosts_model_sources_and_local_ai_benchmarks",
+          "req_031_spike_nest_stack_and_app_shape",
+          "req_032_butler",
+          "req_032_spike_butler_engine_and_persona",
+          "req_037_mission_kinds_and_run_contract",
+          "req_037_run_contract",
+          "req_054_nest_sees_and_pilots_everything_deck_does",
+          "req_055_a_work_day_from_nest_without_a_terminal"
+        ]
+      },
+      "path": "logics/request/req_055_a_work_day_from_nest_without_a_terminal.md",
+      "ref": "req_055_a_work_day_from_nest_without_a_terminal",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- AC1: From Nest on the phone the owner asks the butler to start, steer or check work, and the butler acts through core actions only, with the same confirmations and approvals as a tap.",
+          "- AC2: The owner reads and writes inside any running mission or session from Nest, and the phone gets a push when one needs them.",
+          "- AC3: The owner reads flagged mail and today's meetings, approves a drafted reply, and accepts or declines a meeting from Nest. Nothing is sent without an approval on the exact text.",
+          "- AC4: brief, daily, eod, wrap, weekly and retro start from Nest as missions and their output reads in Nest.",
+          "- AC5: Nest and core answer while the laptop sleeps, or the gap is a decided, written limit.",
+          "- AC6: A retro is a mission; each proposed crow fix is an inbox item; an approved fix runs as a build mission on cr-0w."
+        ],
+        "Needs": [
+          "- Owner, 2026-11-10: \"nearly not have to open a terminal anymore and just talk in nest to the orchestrator butler chat or in missions/sessions/runs themselves, handle my calendar, mails\". Also: run retros on crow easily, maybe as missions.",
+          "- Owner, 2026-11-10: \"basically most runs will be missions\". Missions are the main run path. Plain sessions and `crow dispatch` stay reachable but come second in every list and action.",
+          "- The owner picked all four gap groups (2026-11-10): butler chat; session and mission chat plus push; mail and calendar; rituals plus always-on core. Retros: retro mission kind."
+        ]
+      },
+      "status": "Ready",
+      "title": "A work day from Nest without a terminal"
+    },
+    {
+      "ai_context": {
+        "keywords": "session, chat, laptop, desk, live, pane",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_187_session_chat_in_the_laptop_desk_live_pane"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/backlog/item_187_session_chat_in_the_laptop_desk_live_pane.md",
+      "ref": "item_187_session_chat_in_the_laptop_desk_live_pane",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- The owner approved a rendered laptop Desk board with the chat before the build.",
+          "- Selecting a slot on the laptop Desk shows its chat with full message text, Earlier, send and permission answers.",
+          "- A message sent from the laptop reaches the live session and its reply appears without reload (live test on a real session).",
+          "- Nest tests and tsc pass; a laptop screenshot is compared with the board."
+        ],
+        "Problem": [
+          "- The laptop Desk Live pane shows the old timeline and tell box; the item_177 chat only appears on the phone and the Fold inner Desk."
+        ]
+      },
+      "status": "Ready",
+      "title": "Session chat in the laptop Desk live pane"
+    },
+    {
+      "ai_context": {
+        "keywords": "start, interactive, session, lives, nest",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_188_start_an_interactive_session_that_lives_in_nest"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/backlog/item_188_start_an_interactive_session_that_lives_in_nest.md",
+      "ref": "item_188_start_an_interactive_session_that_lives_in_nest",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- Starting a session from Nest opens no window on the desktop; it shows in the Desk within one poll and its chat accepts a message.",
+          "- The account picker rules of crow term apply (allowed account, quota left).",
+          "- Open in terminal attaches to the same session; closing that terminal leaves the session running.",
+          "- Core tests cover the headless start; live test on a real project."
+        ],
+        "Problem": [
+          "- POST /api/sessions runs `crow term`, which opens a kitty window on the desktop. A session started from Nest should run without a window and be driven from Nest."
+        ]
+      },
+      "status": "Ready",
+      "title": "Start an interactive session that lives in Nest"
+    },
+    {
+      "ai_context": {
+        "keywords": "orchestrate, nest, laptop, parity",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "task",
+      "linked_refs": {
+        "item": [
+          "item_187_session_chat_in_the_laptop_desk_live_pane",
+          "item_188_start_an_interactive_session_that_lives_in_nest",
+          "item_189_several_session_chats_side_by_side_on_the_laptop",
+          "item_190_laptop_missions_from_the_approved_missions_board",
+          "item_191_laptop_inbox_layout",
+          "item_192_laptop_trial_day_without_terminals"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/tasks/task_023_orchestrate_nest_laptop_parity.md",
+      "ref": "task_023_orchestrate_nest_laptop_parity",
+      "schema_version": "1.0",
+      "sections": {
+        "Context": [
+          "- Orchestrate the scaffolded request chain and keep sibling implementation slices linked."
+        ],
+        "Validation": [
+          "- (no validation recorded yet)"
+        ]
+      },
+      "status": "Ready",
+      "title": "Orchestrate Nest laptop parity"
+    },
+    {
+      "ai_context": {},
+      "execution_table": "",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "product",
+      "linked_refs": {
+        "item": [
+          "item_187_session_chat_in_the_laptop_desk_live_pane",
+          "item_188_start_an_interactive_session_that_lives_in_nest",
+          "item_189_several_session_chats_side_by_side_on_the_laptop",
+          "item_190_laptop_missions_from_the_approved_missions_board",
+          "item_191_laptop_inbox_layout",
+          "item_192_laptop_trial_day_without_terminals"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/product/prod_009_nest_laptop_parity.md",
+      "ref": "prod_009_nest_laptop_parity",
+      "schema_version": "1.0",
+      "sections": {},
+      "status": "Proposed",
+      "title": "Nest laptop parity"
+    },
+    {
+      "ai_context": {
+        "keywords": "several, session, chats, side, laptop",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_189_several_session_chats_side_by_side_on_the_laptop"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/backlog/item_189_several_session_chats_side_by_side_on_the_laptop.md",
+      "ref": "item_189_several_session_chats_side_by_side_on_the_laptop",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- The owner approved a rendered multi-pane board before the build.",
+          "- Two or more chats show at once, each reading and sending on its own session.",
+          "- Keyboard focus moves between panes and sends without the mouse.",
+          "- Polling cost stays bounded with several panes (one read per pane per interval, hidden page stops reading)."
+        ],
+        "Problem": [
+          "- In terminals the owner keeps several sessions visible at once; Nest shows one at a time."
+        ]
+      },
+      "status": "Ready",
+      "title": "Several session chats side by side on the laptop"
+    },
+    {
+      "ai_context": {
+        "keywords": "laptop, missions, approved, board",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_190_laptop_missions_from_the_approved_missions_board"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/backlog/item_190_laptop_missions_from_the_approved_missions_board.md",
+      "ref": "item_190_laptop_missions_from_the_approved_missions_board",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- Side-by-side compare page of the build vs both boards gets the owner's OK.",
+          "- Every column and the chart read live core data; chart axes are labelled.",
+          "- Opening a mission from the laptop shows its last run chat."
+        ],
+        "Problem": [
+          "- Missions on the laptop renders the Fold layout; the laptop board (missions-board, missions-board-cyber) is approved but not built."
+        ]
+      },
+      "status": "Ready",
+      "title": "Laptop Missions from the approved missions board"
+    },
+    {
+      "ai_context": {
+        "keywords": "laptop, inbox, layout",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_191_laptop_inbox_layout"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/backlog/item_191_laptop_inbox_layout.md",
+      "ref": "item_191_laptop_inbox_layout",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- The owner approved a rendered laptop Inbox board before the build.",
+          "- Answering and hiding work from the laptop as on the Fold.",
+          "- Compare page of the build vs the board gets the owner's OK."
+        ],
+        "Problem": [
+          "- Inbox on the laptop renders the Fold inner layout and has no laptop board."
+        ]
+      },
+      "status": "Ready",
+      "title": "Laptop Inbox layout"
+    },
+    {
+      "ai_context": {
+        "keywords": "laptop, trial, day, terminals",
+        "skip when": "(unfilled: replace before this doc is used)",
+        "summary": "(unfilled: replace before this doc is used)",
+        "use when": "(unfilled: replace before this doc is used)"
+      },
+      "execution_table": "# Executions\n| When | Runner | Run id | Title | State | PR | Notes |\n| --- | --- | --- | --- | --- | --- | --- |\n\n",
+      "executions": {
+        "older_count": 0,
+        "rows": []
+      },
+      "kind": "backlog",
+      "linked_refs": {
+        "item": [
+          "item_192_laptop_trial_day_without_terminals"
+        ],
+        "prod": [
+          "prod_009_nest_laptop_parity"
+        ],
+        "req": [
+          "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals"
+        ],
+        "task": [
+          "task_023_orchestrate_nest_laptop_parity"
+        ]
+      },
+      "path": "logics/backlog/item_192_laptop_trial_day_without_terminals.md",
+      "ref": "item_192_laptop_trial_day_without_terminals",
+      "schema_version": "1.0",
+      "sections": {
+        "Acceptance criteria": [
+          "- A dated trial note in the vault lists the gaps or says none.",
+          "- Every gap has a backlog item linked to this request."
+        ],
+        "Problem": [
+          "- Parity is only proven when the owner works a real day from Nest on the laptop."
+        ]
+      },
+      "status": "Ready",
+      "title": "Laptop trial day without terminals"
+    }
+  ],
+  "estimates": {
+    "char_count": 22506,
+    "companion_doc_count": 3,
+    "doc_count": 10
+  },
+  "generated_at": "2026-11-12T09:34:08Z",
+  "handoff": {
+    "companion_doc_count": 3,
+    "enabled": true,
+    "source_refs": [
+      "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals",
+      "item_187_session_chat_in_the_laptop_desk_live_pane",
+      "item_188_start_an_interactive_session_that_lives_in_nest",
+      "item_189_several_session_chats_side_by_side_on_the_laptop",
+      "item_190_laptop_missions_from_the_approved_missions_board",
+      "item_191_laptop_inbox_layout",
+      "item_192_laptop_trial_day_without_terminals",
+      "task_023_orchestrate_nest_laptop_parity"
+    ],
+    "validation_summary_count": 1
+  },
+  "i18n": {
+    "actions": [
+      "Choose the source locale for app-owned user-facing copy.",
+      "Run logics-manager i18n init --source-locale <locale>.",
+      "Route new UI copy through stable semantic keys."
+    ],
+    "applicable": null,
+    "configured": false,
+    "contract_path": "logics/i18n/contract.json",
+    "findings": [],
+    "next_action": "Run logics-manager i18n init --source-locale <locale> for a project that owns user-facing copy.",
+    "ok": true,
+    "state": "absent"
+  },
+  "mode": "diff-first",
+  "profile": "normal",
+  "ref": "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals,item_187_session_chat_in_the_laptop_desk_live_pane,item_188_start_an_interactive_session_that_lives_in_nest,item_189_several_session_chats_side_by_side_on_the_laptop,item_190_laptop_missions_from_the_approved_missions_board,item_191_laptop_inbox_layout,item_192_laptop_trial_day_without_terminals,task_023_orchestrate_nest_laptop_parity",
+  "refs": [
+    "req_057_nest_on_the_laptop_replaces_the_owner_s_terminals",
+    "item_187_session_chat_in_the_laptop_desk_live_pane",
+    "item_188_start_an_interactive_session_that_lives_in_nest",
+    "item_189_several_session_chats_side_by_side_on_the_laptop",
+    "item_190_laptop_missions_from_the_approved_missions_board",
+    "item_191_laptop_inbox_layout",
+    "item_192_laptop_trial_day_without_terminals",
+    "task_023_orchestrate_nest_laptop_parity"
+  ],
+  "release": {
+    "blocking_reasons": [
+      "Missing logics/release/contract.json."
+    ],
+    "configured": false,
+    "contract_path": "logics/release/contract.json",
+    "guidance": [
+      "Release readiness must come from project-owned evidence, not conversational memory.",
+      "Use release status or validate before preparing or claiming release readiness.",
+      "Publication-oriented actions are explicit operator actions and are separate from safe read/validate actions."
+    ],
+    "next_action": "Run logics-manager release discover --write, then review and promote logics/release/contract.draft.json to logics/release/contract.json.",
+    "publication_actions": [
+      "GitHub release publication",
+      "external publication"
+    ],
+    "required_gates": [],
+    "safe_actions": [
+      "logics-manager release status",
+      "logics-manager release plan <version>",
+      "logics-manager release validate <version>"
+    ],
+    "state": "not_configured",
+    "target_id": null,
+    "target_version": null,
+    "targets": []
+  },
+  "validation_summary": [
+    {
+      "items": [
+        "- (no validation recorded yet)"
+      ],
+      "path": "logics/tasks/task_023_orchestrate_nest_laptop_parity.md",
+      "ref": "task_023_orchestrate_nest_laptop_parity"
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "title": "Nest on the laptop replaces the owner's terminals",
+  "references": [
+    "tools/nest/src/screens/Chat.tsx",
+    "tools/nest/src/screens/Desk.tsx",
+    "tools/nest/src/screens/Missions.tsx",
+    "tools/nest/src/screens/Inbox.tsx",
+    "tools/nest/src/data/useConversation.ts",
+    "tools/nest/src/ui/useMedia.ts",
+    "tools/crow-core/internal/api/conversation.go",
+    "tools/crow-core/internal/api/live.go",
+    "bin/crow",
+    "bin/crow-runs",
+    "logics/request/req_055_a_work_day_from_nest_without_a_terminal.md",
+    "logics/tasks/task_018_nest_app_shell_on_core_fixtures.md",
+    "runbooks/nest-screenshots.md"
+  ],
+  "request": {
+    "complexity": "High",
+    "theme": "Nest",
+    "needs": [
+      "Owner, 2026-11-12: Nest work went to the phone and the laptop was left behind, so on the laptop the owner still works in terminals.",
+      "Read live session output in Nest on the laptop, with full message text, as in a terminal.",
+      "Type into any session and answer its prompts from Nest on the laptop.",
+      "See several sessions at once, side by side like tmux panes.",
+      "Start a new interactive session in a project from Nest, and drive it from Nest without a terminal window.",
+      "Laptop layouts for Missions and Inbox, which today fall back to the Fold inner layouts."
+    ],
+    "context": [
+      "Nest switches to the laptop layout at 1200 px (LAPTOP in tools/nest/src/ui/useMedia.ts). Only Home and Desk have a laptop layout; Missions and Inbox render their Fold layouts.",
+      "item_177 (commit 5fcb8ce) built the session and mission chat: core GET /api/sessions/{pid}/conversation and /api/missions/{id}/conversation through `crow-runs conversation` (cdx conversation pages, tail/cursor/before), the Nest Chat screen with tool folds, Earlier paging, send, permission answer buttons, Pause and Stop. It is used by the phone cover (/desk/<pid>) and the Fold inner Desk right pane. It polls every 3 s.",
+      "The laptop Desk (DeskLaptop in Desk.tsx) still shows the old Live pane: Timeline, Ask and TellBox. It does not use the chat.",
+      "Core actions already exist: POST /api/sessions (crow term in a project, optional account and prompt), POST /api/sessions/{pid}/send, /interrupt, /stop, /answer, /resume.",
+      "`crow term` opens through CROW_TERMINAL=kitty|tmux|print. From core it opens a kitty window on the owner's desktop. Send and prompt answers reach a session through its terminal (tmux fallback from item_174).",
+      "item_148 (run conversation poller with cursors in core) and item_146 (SSE stream) are the planned push path for conversation entries; until then the chat polls.",
+      "Laptop Missions has approved boards: local/state/shots/nest-rebuild/boards/missions-board.png and missions-board-cyber.png (task_018 note 2026-11-10: kp title row, 5 columns Ready+Scheduled, Queued, Running n/2, Needs you+failed, Done today, bottom lane timeline and 7-day runs chart). No laptop Inbox board exists.",
+      "Owner rules: visual choices are rendered and shown side by side before any build, one screen at a time with an OK before the next; build only from the board the item names as approved; never open test windows on the live desktop (headless screenshots, runbooks/nest-screenshots.md).",
+      "Owner answers 2026-11-12: all four needs are wanted (live output, type into sessions, several sessions at once, start new sessions). Plan first, build later item by item."
+    ],
+    "acceptance_criteria": [
+      "AC1: On the laptop the Desk shows the selected session or run as the item_177 chat (full message text, tool folds, Earlier, send, permission answers, Pause and Stop), checked against an approved laptop board.",
+      "AC2: The owner types into any live session and answers its prompts from the laptop, and the reply shows in the chat without a page reload.",
+      "AC3: Two or more session chats are visible side by side on the laptop, the owner picks which sessions fill the panes, and keyboard keys move focus and send.",
+      "AC4: The owner starts a new interactive session in a registered project from Nest; it runs without opening a window on the desktop, appears in Nest, and its chat works at once. Opening the same session in a terminal stays possible.",
+      "AC5: Missions on the laptop matches the approved missions-board boards on live data.",
+      "AC6: Inbox on the laptop has its own layout, from a board the owner approved before the build.",
+      "AC7: For a normal workday the owner can keep sessions in Nest on the laptop instead of terminals; a live trial day lists any gap left, and each gap becomes a backlog item."
+    ]
+  },
+  "product": {
+    "title": "Nest laptop parity",
+    "overview": "Nest is built for the Fold first. On the laptop the owner still runs sessions in terminals because the laptop Desk lacks the chat, cannot show several sessions at once and cannot start a session that stays inside Nest. This pass brings the laptop layout to the point where terminals become optional.",
+    "goals": [
+      "Every session readable and drivable from the laptop Nest.",
+      "Several sessions on screen at once, like tmux panes.",
+      "New sessions start inside Nest, with no desktop window.",
+      "Missions and Inbox use the laptop width."
+    ],
+    "non_goals": [
+      "A full terminal emulator in the browser (raw TTY, colors, TUIs).",
+      "Phone changes; the phone keeps the item_177 screens.",
+      "Butler chat (item_176), push (item_178), mail and calendar (item_179)."
+    ]
+  },
+  "backlog_items": [
+    {
+      "title": "Session chat in the laptop Desk live pane",
+      "complexity": "Medium",
+      "theme": "Nest",
+      "request_acs": ["AC1", "AC2"],
+      "problem": [
+        "The laptop Desk Live pane shows the old timeline and tell box; the item_177 chat only appears on the phone and the Fold inner Desk."
+      ],
+      "scope_in": [
+        "Render options for the laptop Live pane with the chat (where Ask CR-0W goes, Chat/Log toggle, header actions) and get the owner's pick before the build.",
+        "DeskLaptop uses the Chat component for the selected agent; send and permission answers work from the laptop.",
+        "Headless screenshots vs the approved board."
+      ],
+      "scope_out": [
+        "Several panes (next item).",
+        "Moving the chat from polling to item_148/146."
+      ],
+      "acceptance_criteria": [
+        "The owner approved a rendered laptop Desk board with the chat before the build.",
+        "Selecting a slot on the laptop Desk shows its chat with full message text, Earlier, send and permission answers.",
+        "A message sent from the laptop reaches the live session and its reply appears without reload (live test on a real session).",
+        "Nest tests and tsc pass; a laptop screenshot is compared with the board."
+      ]
+    },
+    {
+      "title": "Start an interactive session that lives in Nest",
+      "complexity": "Medium",
+      "theme": "Nest",
+      "request_acs": ["AC4"],
+      "problem": [
+        "POST /api/sessions runs `crow term`, which opens a kitty window on the desktop. A session started from Nest should run without a window and be driven from Nest."
+      ],
+      "scope_in": [
+        "Core starts Nest sessions on a headless backend (detached tmux) so send, answers and stop work with no desktop window.",
+        "Nest new-session form on the laptop: project, account (picker default), optional first prompt; the new session opens in its chat.",
+        "An 'open in terminal' action that attaches a terminal to the same session when the owner wants one."
+      ],
+      "scope_out": [
+        "Remote hosts (item_120, item_181)."
+      ],
+      "acceptance_criteria": [
+        "Starting a session from Nest opens no window on the desktop; it shows in the Desk within one poll and its chat accepts a message.",
+        "The account picker rules of crow term apply (allowed account, quota left).",
+        "Open in terminal attaches to the same session; closing that terminal leaves the session running.",
+        "Core tests cover the headless start; live test on a real project."
+      ]
+    },
+    {
+      "title": "Several session chats side by side on the laptop",
+      "complexity": "High",
+      "theme": "Nest",
+      "request_acs": ["AC3"],
+      "problem": [
+        "In terminals the owner keeps several sessions visible at once; Nest shows one at a time."
+      ],
+      "scope_in": [
+        "Render layout options (2, 3, 4 panes, how panes are picked, where the slot list goes) and get the owner's pick before the build.",
+        "A laptop view that tiles chats of chosen sessions; the pane choice survives a reload.",
+        "Keyboard: move focus between panes, focus the input, send, Esc; shown in a key hint."
+      ],
+      "scope_out": [
+        "Resizable splits by drag unless the chosen board asks for them."
+      ],
+      "acceptance_criteria": [
+        "The owner approved a rendered multi-pane board before the build.",
+        "Two or more chats show at once, each reading and sending on its own session.",
+        "Keyboard focus moves between panes and sends without the mouse.",
+        "Polling cost stays bounded with several panes (one read per pane per interval, hidden page stops reading)."
+      ]
+    },
+    {
+      "title": "Laptop Missions from the approved missions board",
+      "complexity": "Medium",
+      "theme": "Nest",
+      "request_acs": ["AC5"],
+      "problem": [
+        "Missions on the laptop renders the Fold layout; the laptop board (missions-board, missions-board-cyber) is approved but not built."
+      ],
+      "scope_in": [
+        "Build the laptop Missions layout from local/state/shots/nest-rebuild/boards/missions-board.png and missions-board-cyber.png on live data: kp title row, 5 columns, lane timeline, 7-day runs chart with labelled axes.",
+        "A mission row opens its chat (/desk/m/<id>)."
+      ],
+      "scope_out": [
+        "New mission actions beyond item_147 and item_168."
+      ],
+      "acceptance_criteria": [
+        "Side-by-side compare page of the build vs both boards gets the owner's OK.",
+        "Every column and the chart read live core data; chart axes are labelled.",
+        "Opening a mission from the laptop shows its last run chat."
+      ]
+    },
+    {
+      "title": "Laptop Inbox layout",
+      "complexity": "Medium",
+      "theme": "Nest",
+      "request_acs": ["AC6"],
+      "problem": [
+        "Inbox on the laptop renders the Fold inner layout and has no laptop board."
+      ],
+      "scope_in": [
+        "Render laptop Inbox options (list plus reading pane plus answer, using the width) and get the owner's pick.",
+        "Build the picked layout on live data, inline answer and hide kept from item_168."
+      ],
+      "scope_out": [
+        "Mail and calendar items (item_179)."
+      ],
+      "acceptance_criteria": [
+        "The owner approved a rendered laptop Inbox board before the build.",
+        "Answering and hiding work from the laptop as on the Fold.",
+        "Compare page of the build vs the board gets the owner's OK."
+      ]
+    },
+    {
+      "title": "Laptop trial day without terminals",
+      "complexity": "Low",
+      "theme": "Nest",
+      "request_acs": ["AC7"],
+      "problem": [
+        "Parity is only proven when the owner works a real day from Nest on the laptop."
+      ],
+      "scope_in": [
+        "One workday with sessions started and driven from Nest on the laptop; the owner notes every time a terminal was still needed.",
+        "Each gap becomes a backlog item linked to this request."
+      ],
+      "scope_out": [
+        "Fixing the gaps inside this item."
+      ],
+      "acceptance_criteria": [
+        "A dated trial note in the vault lists the gaps or says none.",
+        "Every gap has a backlog item linked to this request."
+      ]
+    }
+  ],
+  "orchestration_task": {
+    "title": "Orchestrate Nest laptop parity",
+    "plan": [
+      "1. Session chat in the laptop Desk live pane: render options, owner pick, build, live send test.",
+      "2. Start an interactive session that lives in Nest: headless tmux start in core, new-session form, open in terminal.",
+      "3. Several session chats side by side: render options, owner pick, build with keyboard focus.",
+      "4. Laptop Missions from the approved missions boards.",
+      "5. Laptop Inbox: render options, owner pick, build.",
+      "6. Laptop trial day; gaps become backlog items.",
+      "Each step runs in a fresh session from its backlog doc; one screen at a time, owner OK before the next."
+    ]
+  },
+  "context_pack": {
+    "out": "logics/context-packs/nest_laptop_parity.json",
+    "mode": "diff-first",
+    "profile": "normal"
+  }
+}

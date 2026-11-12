@@ -18,6 +18,7 @@
 | [prod_006_crow_data_in_the_vault](product/prod_006_crow_data_in_the_vault.md) | Crow data in the vault | Settled |  |  | product/prod_006_crow_data_in_the_vault.md |
 | [prod_007_nest_home_design_pass](product/prod_007_nest_home_design_pass.md) | Nest Home design pass | Proposed |  |  | product/prod_007_nest_home_design_pass.md |
 | [prod_008_crow_on_the_tower](product/prod_008_crow_on_the_tower.md) | crow on the tower | Proposed |  |  | product/prod_008_crow_on_the_tower.md |
+| [prod_009_nest_laptop_parity](product/prod_009_nest_laptop_parity.md) | Nest laptop parity | Proposed |  |  | product/prod_009_nest_laptop_parity.md |
 
 ## Roadmaps
 
@@ -86,6 +87,7 @@
 | [req_054_nest_sees_and_pilots_everything_deck_does](request/req_054_nest_sees_and_pilots_everything_deck_does.md) | Nest sees and pilots everything deck does | Ready |  |  | request/req_054_nest_sees_and_pilots_everything_deck_does.md |
 | [req_055_a_work_day_from_nest_without_a_terminal](request/req_055_a_work_day_from_nest_without_a_terminal.md) | A work day from Nest without a terminal | Ready |  |  | request/req_055_a_work_day_from_nest_without_a_terminal.md |
 | [req_056_crow_on_the_windows_tower](request/req_056_crow_on_the_windows_tower.md) | crow on the Windows tower | Draft |  |  | request/req_056_crow_on_the_windows_tower.md |
+| [req_057_nest_on_the_laptop_replaces_the_owner_s_terminals](request/req_057_nest_on_the_laptop_replaces_the_owner_s_terminals.md) | Nest on the laptop replaces the owner's terminals | Draft |  |  | request/req_057_nest_on_the_laptop_replaces_the_owner_s_terminals.md |
 
 ## Backlog
 
@@ -258,10 +260,10 @@
 | [item_165_telemetry_strip_on_the_laptop_home](backlog/item_165_telemetry_strip_on_the_laptop_home.md) | Telemetry strip on the laptop Home | Ready |  | 0% | backlog/item_165_telemetry_strip_on_the_laptop_home.md |
 | [item_166_boot_sequence_on_first_load_of_the_nest](backlog/item_166_boot_sequence_on_first_load_of_the_nest.md) | Boot sequence on first load of the Nest | Ready |  | 0% | backlog/item_166_boot_sequence_on_first_load_of_the_nest.md |
 | [item_167_nest_reads_live_data_from_the_core_api](backlog/item_167_nest_reads_live_data_from_the_core_api.md) | Nest reads live data from the core API | Done |  | 100% | backlog/item_167_nest_reads_live_data_from_the_core_api.md |
-| [item_168_nest_answer_sheet_for_inbox_items_and_mission_actions](backlog/item_168_nest_answer_sheet_for_inbox_items_and_mission_actions.md) | Nest answer sheet for inbox items and mission actions | Ready |  | 0% | backlog/item_168_nest_answer_sheet_for_inbox_items_and_mission_actions.md |
+| [item_168_nest_answer_sheet_for_inbox_items_and_mission_actions](backlog/item_168_nest_answer_sheet_for_inbox_items_and_mission_actions.md) | Nest answer sheet for inbox items and mission actions | In progress |  | 90% | backlog/item_168_nest_answer_sheet_for_inbox_items_and_mission_actions.md |
 | [item_169_core_serves_every_deck_source_as_read_only_sections](backlog/item_169_core_serves_every_deck_source_as_read_only_sections.md) | Core serves every deck source as read-only sections | Done |  | 100% | backlog/item_169_core_serves_every_deck_source_as_read_only_sections.md |
 | [item_170_core_actions_on_live_sessions_and_dispatch_runs](backlog/item_170_core_actions_on_live_sessions_and_dispatch_runs.md) | Core actions on live sessions and dispatch runs | Done |  | 100% | backlog/item_170_core_actions_on_live_sessions_and_dispatch_runs.md |
-| [item_171_nest_home_shows_live_sessions_runs_alerts_and_quota](backlog/item_171_nest_home_shows_live_sessions_runs_alerts_and_quota.md) | Nest Home shows live sessions, runs, alerts and quota | Ready |  | 0% | backlog/item_171_nest_home_shows_live_sessions_runs_alerts_and_quota.md |
+| [item_171_nest_home_shows_live_sessions_runs_alerts_and_quota](backlog/item_171_nest_home_shows_live_sessions_runs_alerts_and_quota.md) | Nest Home shows live sessions, runs, alerts and quota | Done |  | 100% | backlog/item_171_nest_home_shows_live_sessions_runs_alerts_and_quota.md |
 | [item_172_nest_work_and_system_screens_on_the_deck_sources](backlog/item_172_nest_work_and_system_screens_on_the_deck_sources.md) | Nest Work and System screens on the deck sources | Ready |  | 0% | backlog/item_172_nest_work_and_system_screens_on_the_deck_sources.md |
 | [item_173_deck_scripts_get_a_stable_json_contract_for_the_app](backlog/item_173_deck_scripts_get_a_stable_json_contract_for_the_app.md) | Deck scripts get a stable JSON contract for the app | Done | crow | 100% | backlog/item_173_deck_scripts_get_a_stable_json_contract_for_the_app.md |
 | [item_174_nest_answers_a_session_s_permission_prompt_with_buttons](backlog/item_174_nest_answers_a_session_s_permission_prompt_with_buttons.md) | Nest answers a session's permission prompt with buttons | Done |  | 100% | backlog/item_174_nest_answers_a_session_s_permission_prompt_with_buttons.md |
@@ -275,6 +277,14 @@
 | [item_182_retro_mission_kind_that_improves_crow](backlog/item_182_retro_mission_kind_that_improves_crow.md) | Retro mission kind that improves crow | Ready |  | 0% | backlog/item_182_retro_mission_kind_that_improves_crow.md |
 | [item_183_crow_runs_on_the_windows_tower_in_wsl_arch](backlog/item_183_crow_runs_on_the_windows_tower_in_wsl_arch.md) | crow runs on the Windows tower in WSL Arch | Ready |  | 0% | backlog/item_183_crow_runs_on_the_windows_tower_in_wsl_arch.md |
 | [item_184_crow_helps_manage_game_mods_on_the_tower](backlog/item_184_crow_helps_manage_game_mods_on_the_tower.md) | crow helps manage game mods on the tower | Ready |  | 0% | backlog/item_184_crow_helps_manage_game_mods_on_the_tower.md |
+| [item_185_nest_bundle_back_under_90_kb_gzip](backlog/item_185_nest_bundle_back_under_90_kb_gzip.md) | Nest bundle back under 90 kB gzip | Ready |  | 0% | backlog/item_185_nest_bundle_back_under_90_kb_gzip.md |
+| [item_186_deck_chat_pane_in_the_terminal](backlog/item_186_deck_chat_pane_in_the_terminal.md) | Deck chat pane in the terminal | Ready |  | 0% | backlog/item_186_deck_chat_pane_in_the_terminal.md |
+| [item_187_session_chat_in_the_laptop_desk_live_pane](backlog/item_187_session_chat_in_the_laptop_desk_live_pane.md) | Session chat in the laptop Desk live pane | Ready |  | 0% | backlog/item_187_session_chat_in_the_laptop_desk_live_pane.md |
+| [item_188_start_an_interactive_session_that_lives_in_nest](backlog/item_188_start_an_interactive_session_that_lives_in_nest.md) | Start an interactive session that lives in Nest | Ready |  | 0% | backlog/item_188_start_an_interactive_session_that_lives_in_nest.md |
+| [item_189_several_session_chats_side_by_side_on_the_laptop](backlog/item_189_several_session_chats_side_by_side_on_the_laptop.md) | Several session chats side by side on the laptop | Ready |  | 0% | backlog/item_189_several_session_chats_side_by_side_on_the_laptop.md |
+| [item_190_laptop_missions_from_the_approved_missions_board](backlog/item_190_laptop_missions_from_the_approved_missions_board.md) | Laptop Missions from the approved missions board | Ready |  | 0% | backlog/item_190_laptop_missions_from_the_approved_missions_board.md |
+| [item_191_laptop_inbox_layout](backlog/item_191_laptop_inbox_layout.md) | Laptop Inbox layout | Ready |  | 0% | backlog/item_191_laptop_inbox_layout.md |
+| [item_192_laptop_trial_day_without_terminals](backlog/item_192_laptop_trial_day_without_terminals.md) | Laptop trial day without terminals | Ready |  | 0% | backlog/item_192_laptop_trial_day_without_terminals.md |
 
 ## Tasks
 
@@ -299,9 +309,10 @@
 | [task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy](tasks/task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy.md) | Orchestrate Jarvis core slices 3 to 5: API, summaries and autonomy | Ready |  | 0% | tasks/task_017_orchestrate_jarvis_core_slices_3_to_5_api_summaries_and_autonomy.md |
 | [task_018_nest_app_shell_on_core_fixtures](tasks/task_018_nest_app_shell_on_core_fixtures.md) | Nest app shell on core fixtures | In progress | crow | 40% | tasks/task_018_nest_app_shell_on_core_fixtures.md |
 | [task_019_orchestrate_the_nest_home_design_pass](tasks/task_019_orchestrate_the_nest_home_design_pass.md) | Orchestrate the Nest Home design pass | Ready |  | 0% | tasks/task_019_orchestrate_the_nest_home_design_pass.md |
-| [task_020_orchestrate_nest_going_live_on_the_core_api](tasks/task_020_orchestrate_nest_going_live_on_the_core_api.md) | Orchestrate Nest going live on the core API | In progress | crow | 50% | tasks/task_020_orchestrate_nest_going_live_on_the_core_api.md |
+| [task_020_orchestrate_nest_going_live_on_the_core_api](tasks/task_020_orchestrate_nest_going_live_on_the_core_api.md) | Orchestrate Nest going live on the core API | In progress | crow | 57% | tasks/task_020_orchestrate_nest_going_live_on_the_core_api.md |
 | [task_021_orchestrate_a_work_day_from_nest](tasks/task_021_orchestrate_a_work_day_from_nest.md) | Orchestrate a work day from Nest | Ready |  | 0% | tasks/task_021_orchestrate_a_work_day_from_nest.md |
 | [task_022_orchestrate_crow_on_the_windows_tower](tasks/task_022_orchestrate_crow_on_the_windows_tower.md) | Orchestrate crow on the Windows tower | Ready |  | 0% | tasks/task_022_orchestrate_crow_on_the_windows_tower.md |
+| [task_023_orchestrate_nest_laptop_parity](tasks/task_023_orchestrate_nest_laptop_parity.md) | Orchestrate Nest laptop parity | Ready |  | 0% | tasks/task_023_orchestrate_nest_laptop_parity.md |
 
 ## Runbooks
 
