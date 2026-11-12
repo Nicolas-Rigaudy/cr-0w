@@ -2,9 +2,9 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Understanding: 92%
+> Confidence: 88%
+> Progress: 15%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -59,3 +59,9 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Notes from item_197 (2026-11-12)
+- Decided: the table spins with the planets (bezel ticks and spokes follow the spin).
+- Built as a first cut: a rim scan sweep (`SWEEP_MS` 12 s) on the 10 fps slow tick. The slow tick now runs whenever the page is visible (not only with a live project), off with reduced motion. Owner: smooth it out and expand it here.
+- Rejected for now: a front-arc marker (reads too complex); hover link kept as the footprint brightening.
+- AC2 baseline changes: idle paints are about 10/s at rest now; update `scripts/hero-idle.mjs` expectations.

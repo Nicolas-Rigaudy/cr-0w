@@ -1,10 +1,10 @@
 ## item_197_hero_sky_planets - Projects as planets up in the sky, with state looks
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -61,3 +61,9 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Outcome (2026-11-12, commit 58c790a)
+- Planets sit evenly on a sky ring parallel to the table, under the head. Altitude by priority (failed highest, done just above the table); the highest sits at the front, a spin shows the rest.
+- The 24h table clock and agenda ticks are gone (owner: confusing, agenda lives elsewhere).
+- Rim, owner picks from `Research/nest-design/item_197/rings.html`: bold bezel (minor ticks every 10 deg, accent `#` every 45) that turns with the planets; each planet marks the rim with an arc in its colour, brighter on hover and at the front (no extra front marker); a cyan scan sweep every 12 s on the slow tick.
+- A planet label that has to move now counts its own planet as an obstacle (declutter), so it never covers its sphere.

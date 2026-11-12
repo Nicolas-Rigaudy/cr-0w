@@ -34,11 +34,20 @@ Run from `tools/nest` with `PLAYWRIGHT_BROWSERS_PATH` set as above.
 
 - `node scripts/hero-layout.mjs <out_dir> [size]`: rest, hover and card shots at cover, cover-cyber, inner and laptop.
   It waits for `.hero-pl[data-c]` (planets placed) before shooting; without it `dataset` is null and the script crashes.
-- `node scripts/hero-idle.mjs`: paints per second at rest. Expect 0 with reduced motion; a live project runs a throttled pulse (about 8 fps).
-- `node scripts/hero-perf.mjs`: median and max draw time per frame per size. Baseline 2026-11-12: laptop 15 ms, phone 11 ms.
+- `node scripts/hero-idle.mjs`: paints per second at rest. Expect 0 with reduced motion; otherwise the slow tick (rim sweep, working pulse) paints about 10/s.
+- `node scripts/hero-perf.mjs`: median and max draw time per frame per size. Baseline 2026-11-12 (1.25x grid): laptop about 18 ms, inner and phone about 16 ms. Budget 20 ms; medians drift 1 to 2 ms between runs.
 
 Overlay rules (`src/hero/declutter.ts`, tests beside it):
 - Every text box over the canvas carries `data-prio` (lower places first). `data-fixed` only blocks, `data-hide` may hide, `data-own` ignores its own planet disc, `data-up` lets the card flip above or dock at the bottom.
 - Text never covers text and labels never clip at the edge; a box with no free spot hides.
 - Layout reruns after `document.fonts.ready`, since widths change once Fira Code loads.
-- Scene cells share the head cell size (`HS * clamp(w/560, 0.7, 1)`), so phone and laptop keep the same ASCII detail.
+- Scene cells share the head cell size (`HS * min(w/344, h/400)`, divided by `DENSITY`), so phone and laptop keep the same ASCII detail.
+- `hero-layout.mjs` sometimes times out waiting for planets: rerun it. If it fails every time, check port 4320 for a stale vite. Never `pkill -f` a pattern that is also in your own command line: it kills the calling shell.
+
+### Head rebake at another density
+`scripts/hero-heads.mjs` bakes heads.json, heads-l.json and heads-r.json from the spike page. `SIZE` sets the bake resolution; scale every value with `DENSITY` in `scene.ts`:
+1x `w=690&h=640&focal=794&dy=128`, 1.25x `w=863&h=800&focal=993&dy=160`, 1.5x `w=1035&h=960&focal=1191&dy=192`.
+`HEAD_COLS` stays the 1x width (173), so the head keeps its on-screen size.
+
+### Visual variants for a design pick
+Put a temporary `globalThis.__ring`-style switch in the scene, shoot each variant with a throwaway Playwright script (`addInitScript` sets the switch), then lay them out with `bin/crow-compare`. Review zoom crops before showing: first passes are usually too faint. Hardcode the pick and delete the switch before committing.

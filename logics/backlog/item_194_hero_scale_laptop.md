@@ -1,10 +1,10 @@
 ## item_194_hero_scale_laptop - Hero scales to the space it has on laptop
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95%
 > Confidence: 90%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -60,3 +60,8 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Outcome (2026-11-12, commit 58c790a)
+- One cell rule for every size: `HS * min(w/REF_W, h/REF_H)`, calibrated on the phone cover hero (344x400). Owner OK on the side by side sheet.
+- Glyph grid at DENSITY 1.25 (owner pick over 1x and 1.5x; 1.5x cost 23 ms). The head is rebaked at the same density, so head, table and spheres share one grid.
+- Perf medians 16 to 18 ms (laptop, inner, cover).

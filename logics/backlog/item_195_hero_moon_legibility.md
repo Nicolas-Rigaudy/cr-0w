@@ -1,10 +1,10 @@
 ## item_195_hero_moon_legibility - Moon titles and moons readable on every size
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -55,3 +55,7 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Outcome (2026-11-12, commit 58c790a)
+- Moons are shaded spheres again (emit 0.3) on the 1.25x grid; titles placed by declutter with `data-hide`.
+- Moon titles shown: laptop 3/3, phone and inner 2/3 (one hides when no free spot).
