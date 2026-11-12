@@ -1,3 +1,4 @@
+import type { ChatTarget } from './data/conversation'
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react'
 
 const PathContext = createContext('/')
@@ -35,6 +36,7 @@ export function Link({ href, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchor
 
 export type Route =
   | { tab: 'home' | 'desk' | 'missions' | 'inbox' | 'mrs' | 'agenda' | 'reports' }
+  | { tab: 'chat'; target: ChatTarget }
   | { tab: 'missing' }
 
 export function match(path: string): Route {
@@ -42,6 +44,9 @@ export function match(path: string): Route {
   if (p === '/') return { tab: 'home' }
   // Old mission links (no detail screen since item_168) land on Missions.
   if (/^\/missions\/[^/]+$/.test(p)) return { tab: 'missions' }
+  // The chat of a live session or run (/desk/<pid>) or of a mission's last run (/desk/m/<id>).
+  const c = /^\/desk\/(?:(\d+)|m\/([^/]+))$/.exec(p)
+  if (c) return { tab: 'chat', target: c[1] ? { pid: Number(c[1]) } : { mission: decodeURIComponent(c[2]) } }
   const key = p.slice(1)
   if (['desk', 'missions', 'inbox', 'mrs', 'agenda', 'reports'].includes(key)) return { tab: key as 'desk' }
   return { tab: 'missing' }

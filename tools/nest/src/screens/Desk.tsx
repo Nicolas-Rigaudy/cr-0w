@@ -5,7 +5,9 @@ import { useSource, type Snapshot } from '../data/useData'
 import { ago, elapsed, time, title } from '../format'
 import type { Mission } from '../data/types'
 import { missionOfRun } from '../data/state'
+import { Link, navigate } from '../router'
 import { Sheet, type Confirm } from '../ui/Sheet'
+import { Chat as AgentChat } from './Chat'
 import { LAPTOP, useMedia } from '../ui/useMedia'
 
 // Desk (item_138 boards desk, fold-desk-inner, fold-desk-cover) on the live actions of
@@ -219,7 +221,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   }
 
   return {
-    snap, slots, agents, runs, sessions, resumable, mail, projects, accounts,
+    snap, refresh, slots, agents, runs, sessions, resumable, mail, projects, accounts,
     sheet, setSheet, log, picked, slotOf, since, pick, tell, setTell, text, setText, ask, setAsk, submitAsk,
     form, setForm, run, setRun, start, setStart,
     send, pause, stop, dispatch, open, resume, flag, answer, queue, cancel,
@@ -509,23 +511,19 @@ function DeskInner({ d }: { d: D }) {
         <section className="pn grow" aria-labelledby="ir"><Ph id="ir" sm="▶ resume · + queue">Ready to run</Ph><Ready d={d} /></section>
       </div>
       <div className="col">
-        <section className="pn grow" aria-labelledby="il">
-          {a ? (
-            <>
-              <Ph id="il" sm={`${a.account} · ${d.since(a)}`}><span className={waits(a) ? 'c-n' : 'c-w'}>●</span> {d.slotOf(a) || 'Session'} · {nameOf(a)}</Ph>
-              <Ask d={d} a={a} />
-              <Timeline d={d} a={a} term />
-              {d.tell && a.kind === 'session' && <TellBox d={d} a={a} />}
-              <LiveBtns d={d} a={a} cls="wide" />
-            </>
-          ) : (<><Ph id="il">Live</Ph><div className="sm">Nothing runs. Start one with /dispatch.</div></>)}
-        </section>
-        <section className="pn ask-pn" aria-labelledby="ia">
-          <Ph id="ia" className="c-m" sm="hub">Ask CR-0W</Ph>
-          <Chat d={d} />
-          <Chips d={d} />
-          <AskBox d={d} ph="Run, queue, explain…" />
-        </section>
+        {a ? (
+          <AgentChat key={a.pid} snap={d.snap} refresh={d.refresh} target={{ pid: a.pid }} log={<Timeline d={d} a={a} term />} />
+        ) : (
+          <>
+            <section className="pn grow" aria-labelledby="il"><Ph id="il">Live</Ph><div className="sm">Nothing runs. Start one with /dispatch.</div></section>
+            <section className="pn ask-pn" aria-labelledby="ia">
+              <Ph id="ia" className="c-m" sm="hub">Ask CR-0W</Ph>
+              <Chat d={d} />
+              <Chips d={d} />
+              <AskBox d={d} ph="Run, queue, explain…" />
+            </section>
+          </>
+        )}
       </div>
     </div>
   )
@@ -554,7 +552,7 @@ function DeskCover({ d }: { d: D }) {
               </svg>
               <div className="rc"><span className={`bign ${waits(a) ? 'c-n' : 'c-w'}`}>{d.since(a) || '—'}</span><span className="gs">elapsed</span></div>
             </div>
-            <div className="hm"><h2 className="gh" id="ch">{nameOf(a)}</h2><span className="gs">{a.project}{a.kind === 'run' && a.run_id ? ` · ${a.run_id}` : ''}</span>
+            <div className="hm"><h2 className="gh" id="ch"><Link href={`/desk/${a.pid}`}>{nameOf(a)}</Link></h2><span className="gs">{a.project}{a.kind === 'run' && a.run_id ? ` · ${a.run_id}` : ''}</span>
               {a.started_at && <span className="gs">since {time(new Date(a.started_at))}</span>}</div>
           </div>
           {a.prompt ? <Ask d={d} a={a} /> : <Timeline d={d} a={a} term />}
@@ -568,7 +566,7 @@ function DeskCover({ d }: { d: D }) {
       <div className="gl">
         <div className="gls"><span>Slots and queue</span><span>{d.resumable.length} ready</span></div>
         {rest.map((x) => (
-          <button type="button" key={x.pid} className="row r2" onClick={() => d.pick(x, waits(x) && !x.prompt)}>
+          <button type="button" key={x.pid} className="row r2" onClick={() => navigate(`/desk/${x.pid}`)}>
             <span className={`ic${waits(x) ? ' n' : ''}`}>{waits(x) ? <Diamond s={14} /> : <Spin />}</span>
             <span className="t"><b>{d.slotOf(x) ? `${d.slotOf(x)} · ` : ''}{nameOf(x)}</b><span>{x.account} · {waits(x) ? 'waits' : x.state}</span></span>
             <span className="sm num">{d.since(x)}</span><span className="chev">›</span>

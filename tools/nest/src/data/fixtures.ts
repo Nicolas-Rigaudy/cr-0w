@@ -4,6 +4,7 @@ import stateInbox from '../../fixtures/states/inbox.json'
 import stateAgenda from '../../fixtures/states/agenda.json'
 import stateLive from '../../fixtures/states/live.json'
 import { ApiError } from './api'
+import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversation'
 import type { Actions, Dispatch, LiveReply } from './live'
 import type { DataSource } from './source'
 import { CANCELLABLE } from './state'
@@ -100,6 +101,46 @@ function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, n
   }
 }
 
+// The board chat (chat-cover): a user turn, folded tools, a list reply, a question.
+const at = (hm: string) => `2026-11-09T${hm}:00+01:00`
+const tool = (id: string, hm: string, name: string): Entry[] => [
+  { at: at(hm), id: `${id}c`, role: 'tool', text: '', tool_name: name, tool_summary: 'Call recorded' },
+  { at: at(hm), id: `${id}r`, role: 'tool', text: '', tool_name: name, tool_summary: 'Result recorded' },
+]
+export const CHAT: Entry[] = [
+  { at: at('15:58'), id: 'e1', role: 'user', text: 'basically i want to be able to chat with you easily from the phone, not the diffs, all the text' },
+  ...tool('t1', '15:58', 'Read'), ...tool('t2', '15:58', 'Bash'), ...tool('t3', '15:59', 'Read'), ...tool('t4', '15:59', 'Bash'),
+  { at: at('15:59'), id: 'e2', role: 'assistant', text: 'Clear. On the phone you get every word I write, no diffs or logs.\n\nWhat changes:\n- Tap a session: its chat opens\n- Replies show in full, line breaks kept\n- Tool calls fold to one line, tap to open\n- The box at the bottom talks to that session' },
+  { at: at('16:01'), id: 'e3', role: 'user', text: 'show me how it looks in nest' },
+  ...['Bash', 'Read', 'Edit', 'Bash', 'Read', 'Edit', 'Bash', 'Read', 'Edit'].flatMap((n, i) => tool(`u${i}`, '16:02', n)),
+  { at: at('16:06'), id: 'e4', role: 'assistant', text: 'Agenda modern is updated: reminder card, +38 -6.\n\nPublish now or continue with Reports?' },
+]
+
+// Pages over one in-memory list per target: the cursor is the count already read.
+function fixtureChats(known: (t: ChatTarget) => void) {
+  const chats = new Map<string, Entry[]>()
+  const list = (t: ChatTarget) => {
+    known(t)
+    const k = 'pid' in t ? `p${t.pid}` : `m${t.mission}`
+    let l = chats.get(k)
+    if (!l) chats.set(k, (l = [...CHAT]))
+    return l
+  }
+  const page = async (t: ChatTarget, p: PageAsk): Promise<ConversationPage> => {
+    const l = list(t)
+    let from = Math.max(0, l.length - (p.tail ?? 50))
+    let to = l.length
+    if (p.cursor) from = Number(p.cursor)
+    else if (p.before) [from, to] = [Math.max(0, Number(p.before) - 50), Number(p.before)]
+    return {
+      account: 'rk1', conversation_id: 'fixture', entries: l.slice(from, to),
+      next_cursor: String(l.length), before_cursor: from > 0 ? String(from) : undefined, has_more: from > 0,
+    }
+  }
+  const said = (pid: number, text: string, now: Date) => list({ pid }).push({ at: now.toISOString(), id: `s${Math.random()}`, role: 'user', text })
+  return { page, said }
+}
+
 export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[] = INBOX, now: Date = NOW, agenda: AgendaEvent[] = AGENDA, live: LiveData = stateLive): DataSource {
   const data: LiveData = structuredClone(live)
   // One body object per section version, so unchanged sections keep their reference.
@@ -111,13 +152,25 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     return b
   }
   const rec = { missions, inbox }
+  const actions = { ...fixtureActions(data, bodies, now), ...missionActions(rec, now) }
+  const chats = fixtureChats((t) => {
+    if ('pid' in t && !(data.dispatch as Dispatch | undefined)?.agents.some((a) => a.pid === t.pid)) throw new ApiError(404, `no live session with pid ${t.pid}`)
+    if ('mission' in t && !rec.missions.some((m) => m.id === t.mission)) throw new ApiError(404, 'no mission')
+  })
+  const send = actions.send
+  actions.send = async (pid, text) => {
+    const r = await send(pid, text)
+    chats.said(pid, text, now)
+    return r
+  }
   return {
     missions: async () => rec.missions,
     mission: async (id) => rec.missions.find((m) => m.id === id),
     inbox: async () => rec.inbox,
     agenda: async () => agenda,
     section,
-    actions: { ...fixtureActions(data, bodies, now), ...missionActions(rec, now) },
+    conversation: chats.page,
+    actions,
     now: () => now,
   }
 }

@@ -1026,6 +1026,40 @@ def listing(a):
     print("\n".join(render(collect(a.since, a.all), color=sys.stdout.isatty())))
 
 
+def conversation(a):
+    """One page of a run's or session's conversation for crow-core (item_148/177): `cdx conversation` by the
+    exact conversation id, found from the run id when --run is given. Prints the cdx page plus account and id."""
+    acct, conv = a.account, a.conversation
+    if a.run:
+        try:
+            r = json.loads(sh("cdx", "run-status", a.run, "--json") or "{}").get("run") or {}
+        except ValueError:
+            r = {}
+        acct, conv = r.get("session"), r.get("conversation_id")
+        if not (acct and conv):
+            print(json.dumps({"ok": False, "error": {"code": "no_conversation", "message": f"run {a.run} has no conversation yet"}}))
+            sys.exit(1)
+    if not (acct and conv):
+        sys.exit("crow: give --run, or --account with --conversation")
+    page = ["--tail", str(a.tail)]
+    if a.cursor:
+        page = ["--cursor", a.cursor]
+    elif a.before:
+        page = ["--before", a.before]
+    cmd = ["cdx", "conversation", acct, "--conversation", conv, *page, "--limit", str(a.limit), "--json"]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        d = json.loads(r.stdout)
+    except ValueError:
+        msg = (r.stderr or r.stdout).strip().splitlines()[-1:] or ["no output"]
+        print(json.dumps({"ok": False, "error": {"code": "cdx_failed", "message": msg[0][:300]}}))
+        sys.exit(2)
+    keep = ("ok", "status", "reason", "entries", "next_cursor", "before_cursor", "has_more", "reset_required")
+    print(json.dumps({"schema": crow_lib.SCRIPT_SCHEMA, "account": acct, "conversation_id": conv,
+                      **{k: d[k] for k in keep if k in d}}))
+    sys.exit(0 if d.get("ok") else 1)
+
+
 def main():
     ap = argparse.ArgumentParser(prog="crow runs")
     sub = ap.add_subparsers(dest="cmd")
@@ -1063,6 +1097,12 @@ def main():
     sp.add_argument("run_id")
     sp.add_argument("--json", action="store_true", help="print {schema, ok, action, target, message, code}; exit 0 stopped, 1 refused, 2 error")
     sub.add_parser("notify").add_argument("run_ids", nargs="+")
+    cv = sub.add_parser("conversation", help="one page of a run's or session's conversation, as JSON (crow-core)")
+    cv.add_argument("--run"); cv.add_argument("--account"); cv.add_argument("--conversation")
+    pg = cv.add_mutually_exclusive_group()
+    pg.add_argument("--cursor"); pg.add_argument("--before")
+    cv.add_argument("--tail", type=int, default=50); cv.add_argument("--limit", type=int, default=50)
+    cv.add_argument("--json", action="store_true")
     ib = sub.add_parser("inbox")
     ib.add_argument("--hook", action="store_true"); ib.add_argument("--peek", action="store_true")
     for name in ("list", "json"):
@@ -1079,6 +1119,8 @@ def main():
         stop(a.run_id, a.json)
     elif a.cmd == "state":
         print(json.dumps(run_end_state(a.run_id)))
+    elif a.cmd == "conversation":
+        conversation(a)
     elif a.cmd == "notify":
         notify(a.run_ids)
     elif a.cmd == "inbox":

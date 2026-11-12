@@ -1,3 +1,4 @@
+import { conversationPath, pageQuery, type ConversationPage } from './conversation'
 import type { Actions, LiveReply } from './live'
 import type { DataSource } from './source'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
@@ -124,6 +125,11 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
       if (res.status === 404) return undefined
       if (!res.ok) throw await failure(res)
       return ((await res.json()) as MissionDetail).mission
+    },
+    async conversation(target, page) {
+      const res = await get(`${base}${conversationPath(target)}${pageQuery(page)}`, { cache: 'no-store' })
+      if (!res.ok) throw await failure(res)
+      return (await res.json()) as ConversationPage
     },
     async agenda() {
       const body = await section('today')

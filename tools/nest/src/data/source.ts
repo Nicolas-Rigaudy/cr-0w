@@ -1,3 +1,4 @@
+import type { ChatTarget, ConversationPage, PageAsk } from './conversation'
 import type { Actions } from './live'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName } from './types'
 
@@ -10,6 +11,8 @@ export interface DataSource {
   agenda(): Promise<AgendaEvent[]>
   // One script section. An unchanged section returns the same object.
   section(name: SectionName): Promise<SectionBody>
+  // A page of a session's or a mission's conversation (item_177).
+  conversation(target: ChatTarget, page: PageAsk): Promise<ConversationPage>
   // Live actions (item_170). Callers refetch after each one; nothing is optimistic.
   actions: Actions
   // Reference time for "today" and elapsed clocks. Fixtures pin it, the API uses the wall clock.

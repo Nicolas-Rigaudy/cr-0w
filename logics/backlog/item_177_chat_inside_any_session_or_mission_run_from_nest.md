@@ -52,6 +52,7 @@
 # Priority
 - Priority: High
 - Rationale: steering missions needs their words, not only their state.
+- 2026-11-11 build, uncommitted: core GET sessions/{pid}/conversation and missions/{id}/conversation through crow-runs conversation; Nest Chat cover (/desk/<pid>, /desk/m/<id>) and the inner Desk right pane with Chat/Log toggle and Pause/Stop in the header. Owner OK on both screens vs boards (vault Research/nest-design/item_177/chat-cover-compare, chat-inner-compare). Earlier keys on the before cursor: cdx has_more on a tail page speaks of later turns. Live probe OK. Gaps: no waits-since time on the permission ask, 3 s polling instead of the item_148 store, fixtures share one conversation. Next: owner reviews the diff, then commit.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

@@ -2,6 +2,7 @@ import { useFeed } from './data/useData'
 import { match, usePath } from './router'
 import { Home } from './screens/Home'
 import { Inbox } from './screens/Inbox'
+import { Chat } from './screens/Chat'
 import { Desk } from './screens/Desk'
 import { Missions } from './screens/Missions'
 import { Placeholder } from './screens/Placeholder'
@@ -17,13 +18,14 @@ const LATER: Record<string, [string, string]> = {
 export function App() {
   const route = match(usePath())
   const [snap, refresh] = useFeed()
-  const active = route.tab === 'missing' ? 'home' : route.tab
+  const active = route.tab === 'missing' ? 'home' : route.tab === 'chat' ? 'desk' : route.tab
   let body = null
   if (snap) {
     if (route.tab === 'home') body = <Home snap={snap} />
     else if (route.tab === 'missions') body = <Missions snap={snap} />
     else if (route.tab === 'inbox') body = <Inbox snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
+    else if (route.tab === 'chat') body = <Chat snap={snap} refresh={refresh} target={route.target} />
     else body = <Placeholder name={LATER[route.tab][0]} note={LATER[route.tab][1]} />
   }
   return <Shell active={active} snap={snap}>{body}</Shell>

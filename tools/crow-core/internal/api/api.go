@@ -112,6 +112,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	mux.HandleFunc("GET /api/events", s.events)
 	s.routeActions(mux)
 	s.routeLive(mux)
+	s.routeConversation(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})
