@@ -11,7 +11,7 @@ export interface Palette { ring: RGB; dim: RGB; fg: RGB; accent: RGB; state: Rec
 // cx, cy, rad: projected planet disc for hit tests. a0: table angle without spin. back: behind the lens.
 export interface PlanetLabel {
   x: number; y: number; name: string; state: UiState; side: 'l' | 'r'; note?: string; target?: boolean
-  tag?: { x: number; y: number; text: string }; cx: number; cy: number; rad: number; a0: number; back: boolean; hidden?: boolean
+  cx: number; cy: number; rad: number; a0: number; back: boolean; hidden?: boolean
 }
 export interface MoonOut { x: number; y: number; r: number; id: string; title: string; state: UiState }
 // cw/ch/font: one head cell in CSS px (the live GL head draws on the same grid). hw/hh: head size.
@@ -357,16 +357,13 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const s = cam.proj(p.c)
     const rad = (p.r * cam.focal) / s.z
     const side = s.x < w / 2 ? 'l' : 'r'
+    // The colour carries the state: the note only adds what it cannot say (run time, wait, failure cause).
     const note = p.state === 'working' && p.runFrom ? elapsed(p.runFrom, opts.now)
-      : p.state === 'failed' ? `${p.cause ?? 'run'} failed`
-      : p.state === 'done' || p.state === 'sleeping' || p.state === 'queued' ? p.state === 'sleeping' ? 'sleep' : p.state : undefined
+      : p.state === 'needs' && p.wait !== undefined ? fmtWait(p.wait)
+      : p.state === 'failed' ? p.cause : undefined
     const label: PlanetLabel = {
       x: s.x + (side === 'r' ? rad + 8 : -rad - 8), y: s.y, name: p.name, state: p.state, side, note, target: p === target,
       cx: s.x, cy: s.y, rad: Math.max(rad, 10), a0: p.a0, back: p.back && p.hk === 0,
-    }
-    if (p.state === 'needs' && p.wait !== undefined) {
-      const t = cam.proj(add(p.c, V(0, p.r + (p === target ? 0.62 : 0.2), 0)))
-      label.tag = { x: t.x, y: t.y, text: `YOUR MOVE · ${fmtWait(p.wait)}` }
     }
     out.planets.push(label)
     gaps.set(label, rad + 8)
@@ -379,7 +376,6 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const c = cam.proj(p.c), rr = (p.r * cam.focal) / c.z
     boxes.push({ x0: c.x - rr, x1: c.x + rr, y0: c.y - rr, y1: c.y + rr, own: p.name })
   }
-  for (const l of out.planets) if (l.tag) { const tw = l.tag.text.length * 8.6; boxes.push(line(l.tag.x - tw / 2, l.tag.x + tw / 2, l.tag.y)) }
   for (const l of [...out.planets].sort((a, b) => a.y - b.y)) {
     const tw = (l.name.length + (l.note ? l.note.length + 3 : 0)) * 7.2
     const span = () => (l.side === 'r' ? [l.x, l.x + tw] : [l.x - tw, l.x])
@@ -403,7 +399,6 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
   for (const l of out.planets) {
     const tw = (l.name.length + (l.note ? l.note.length + 3 : 0)) * 7.2, x0 = l.side === 'r' ? l.x : l.x - tw
     l.hidden = l.back || inHead(x0, l.y) || inHead(x0 + tw, l.y) || inHead(x0 + tw / 2, l.y)
-    if (l.tag && inHead(l.tag.x, l.tag.y)) l.tag = undefined
   }
   return out
 }

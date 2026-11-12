@@ -438,7 +438,6 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
       <div className="hero-say" data-prio={0} data-fixed aria-hidden="true"><b>CR-0W ›</b> {say ?? m.line}<i className="hero-cur" /></div>
       {out?.planets.map((p, i) => (
         <Fragment key={p.name}>
-          {p.tag && <div className={`hero-tag${p.target ? ' on' : ''}`} style={{ left: p.tag.x, top: p.tag.y }} data-prio={p.target ? 2 : 3} data-own={1 + i} aria-hidden="true">{p.tag.text}</div>}
           {!p.hidden && (
             <div className={`hero-pl ${p.side}${p.target || p.name === focus ? ' on' : ''}`} style={{ left: p.x, top: p.y }} data-c={`${Math.round(p.cx)},${Math.round(p.cy)}`} data-prio={p.name === focus ? 2 : 4} data-own={1 + i} aria-hidden="true">
               {p.name.toUpperCase()}
