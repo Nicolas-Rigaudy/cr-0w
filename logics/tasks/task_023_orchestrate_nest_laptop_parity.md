@@ -57,7 +57,7 @@
 - (no validation recorded yet)
 
 # Report
-- Not started.
+- 2026-11-12: item_187 done (f8cd300). Owner raised AskUserQuestion answers from Nest; filed item_193, runs next before 188.
 
 # Links
 - Request: `req_057_nest_on_the_laptop_replaces_the_owner_s_terminals`
@@ -67,4 +67,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
