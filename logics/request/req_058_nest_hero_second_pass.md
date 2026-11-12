@@ -54,6 +54,7 @@
 - `item_196_hero_head_turn_smoothing`
 - `item_197_hero_sky_planets`
 - `item_198_hero_idle_follow_animations`
+- `item_201_hero_gaze_follows_the_table_spin`
 
 # Execution order
 1. item_194 laptop scale (quick, no design pass).
