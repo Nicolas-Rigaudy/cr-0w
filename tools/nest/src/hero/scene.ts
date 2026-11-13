@@ -100,9 +100,9 @@ function splatLit(g: Grid, cam: Cam, p: V3, n: V3, col: RGB, gain = 1, floor = 0
   const L = clamp(Math.max(0, dot(n, LIGHT)) * gain + floor, 0, 1)
   splat(g, cam, p, rampCh(L), mix(mix(col, [20, 20, 50], 0.55), col, L), a * (0.45 + 0.55 * L))
 }
-function ringOnPlane(g: Grid, cam: Cam, c: V3, R: number, ch: string, col: RGB, a = 1, step = 0.012, dash = 0) {
+function ringOnPlane(g: Grid, cam: Cam, c: V3, R: number, ch: string, col: RGB, a = 1, step = 0.012, dash = 0, phase = 0) {
   for (let t = 0; t < Math.PI * 2; t += step) {
-    if (dash && Math.floor(t / dash) % 2) continue
+    if (dash && Math.floor((t + phase) / dash) % 2) continue
     splat(g, cam, add(c, V(R * Math.cos(t), 0, R * Math.sin(t))), ch, col, a)
   }
 }
@@ -273,6 +273,16 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const qcol = mix(pal.dim, [128, 128, 128], 0.6), wemit = p.state === 'working' ? 0.25 : 0
     spheres.push({ c: p.c, r: p.r, col: quiet && p.state !== 'done' ? qcol : p.state === 'failed' ? mix(col, WHITE, 0.2) : col, emit: emit + wemit, dimf: (quiet ? 0.5 : 1) * fade })
     if (p.state === 'failed') brokenRing(g, cam, p.c, col)
+    // Running planets wear a turning ring around their equator, so work reads without relying on colour.
+    if (p.state === 'working') {
+      // Tilted toward the camera like Saturn's, so its front arc crosses the planet's face.
+      const R = p.r * 1.9, tilt = 0.45, ph = -tt * 0.0008, rc = mix(col, WHITE, 0.35)
+      for (let t = 0; t < Math.PI * 2; t += 0.012) {
+        if (Math.floor((t + ph) / 0.35) % 3 === 2) continue
+        const x = R * Math.cos(t), z = R * Math.sin(t)
+        splat(g, cam, add(p.c, V(x, -z * Math.sin(tilt), z * Math.cos(tilt))), '=', rc, 1.2 * fade)
+      }
+    }
     if (p === target && p.state === 'needs') octa(g, cam, add(p.c, V(0, p.r + 0.34, 0)), 0.12, col, 1.4)
   }
   // Hovered planet: its open missions orbit it as moons, max 6 then +n.
