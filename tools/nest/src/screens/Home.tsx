@@ -114,7 +114,7 @@ function HomeCompact({ snap }: { snap: Snapshot }) {
   const say = m.needs.length
     ? `${m.needs.length} need you, Sir. ${m.working} working.`
     : m.working ? `Nothing needs you, Sir. ${m.working} working.` : 'All quiet, Sir.'
-  const holo = <div className="hwrap"><Hero missions={missions} inbox={inbox} now={now} say={say} /></div>
+  const holo = <div className="hwrap"><Hero missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} /></div>
   if (inner) {
     return (
       <div className="screen home-ph a2">

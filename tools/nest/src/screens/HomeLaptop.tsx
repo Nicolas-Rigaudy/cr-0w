@@ -118,7 +118,7 @@ export function HomeLaptop({ snap }: { snap: Snapshot }) {
       </div>
 
       <section className="slot hero-slot" aria-label="CR-0W overview">
-        <Hero missions={missions} inbox={inbox} now={now} />
+        <Hero missions={missions} inbox={inbox} now={now} sections={snap.sections} />
       </section>
 
       <div className="rail">

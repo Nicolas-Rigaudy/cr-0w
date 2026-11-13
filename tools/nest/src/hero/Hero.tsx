@@ -1,12 +1,12 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import type { UiState } from '../data/state'
 import { lastRun, openInbox } from '../data/state'
-import type { InboxItem, Mission } from '../data/types'
+import type { InboxItem, Mission, SectionBody, SectionName } from '../data/types'
 import { ago, title } from '../format'
 import { navigate } from '../router'
 import { Glyph } from '../ui/Glyph'
 import { useMedia } from '../ui/useMedia'
-import { heroModel } from './model'
+import { heroLiveOf, heroModel, type HeroAgent } from './model'
 import { declutterDom, type Box } from './declutter'
 import { DEG_PER_WIDTH, detent, liftCurve, spinToFront, step, stepTo, type Spin } from './motion'
 import type { Heads, Palette, PlanetLabel, SceneOut } from './scene'
@@ -68,7 +68,7 @@ export const missionsHref = (project: string) => `/missions?project=${encodeURIC
 
 // Detail card for the focused planet: open missions, what waits on you, last run.
 // Small heroes (phone, inner panel) get a compact card: one ask, two missions.
-function Card({ project, missions, inbox, now, at, w }: { project: string; missions: Mission[]; inbox: InboxItem[]; now: Date; at: PlanetLabel; w: number }) {
+function Card({ project, missions, inbox, agents, now, at, w }: { project: string; missions: Mission[]; inbox: InboxItem[]; agents: HeroAgent[]; now: Date; at: PlanetLabel; w: number }) {
   const nA = w < 760 ? 1 : 2, nM = w < 760 ? 2 : 4
   const ms = missions.filter((m) => m.project === project && m.state !== 'done' && m.state !== 'cancelled')
   const asks = openInbox(inbox).filter((r) => r.project === project && r.type !== 'fyi')
@@ -78,8 +78,8 @@ function Card({ project, missions, inbox, now, at, w }: { project: string; missi
   const lastTxt = last && `Last run ${last.r.ended ? ago(last.r.ended, now) : 'live'}${last.r.cause && last.r.cause !== 'done' ? ` · ${last.r.cause}${last.r.exit ? ` (exit ${last.r.exit})` : ''}` : ''}`
   // Phone: one line docked at the hero bottom keeps the head and planets clear.
   if (w < 480) {
-    const ask = asks[0], top = ms[0]
-    const detail = ask ? `Your move · ${ask.ask}` : top ? `${ms.length} open · ${title(top)}` : lastTxt
+    const ask = asks[0], top = ms[0], ag = agents[0]
+    const detail = ask ? `Your move · ${ask.ask}` : top ? `${ms.length} open · ${title(top)}` : ag ? `${agentWord(ag)} · ${ag.title}` : lastTxt
     return (
       <button type="button" className="hero-card strip" data-prio={1} data-fixed onClick={() => navigate(missionsHref(project))} aria-label={`Open ${project} missions`}>
         <span className="hc-h"><Glyph state={at.state} /> {project.toUpperCase()}
@@ -92,8 +92,9 @@ function Card({ project, missions, inbox, now, at, w }: { project: string; missi
     <button type="button" className="hero-card" data-prio={1} data-up={2 * at.rad + 28} style={{ left, top: at.cy + at.rad + 14, '--cx': `${at.cx}px`, '--cy': `${at.cy}px`, '--r': `${at.rad}px` } as CSSProperties} onClick={() => navigate(missionsHref(project))} aria-label={`Open ${project} missions`}>
       <span className="hc-h"><Glyph state={at.state} /> {project.toUpperCase()}<span className="hc-go">open →</span></span>
       {asks.slice(0, nA).map((r) => <span key={r.id} className="hc-r c-n"><span className="hc-t">Your move · {r.ask}</span></span>)}
-      {ms.slice(0, nM).map((m) => <span key={m.id} className="hc-r"><Glyph state={stateOf(m)} /> <span className="hc-t">{title(m)}</span></span>)}
-      {(ms.length > nM || asks.length > nA) && <span className="hc-r dim">+{Math.max(0, ms.length - nM) + Math.max(0, asks.length - nA)} more</span>}
+      {agents.slice(0, nM).map((a) => <span key={a.pid} className={`hc-r${a.state === 'needs' ? ' c-n' : ''}`}><Glyph state={a.state} /> <span className="hc-t">{agentWord(a)} · {a.title}</span></span>)}
+      {ms.slice(0, Math.max(0, nM - agents.length)).map((m) => <span key={m.id} className="hc-r"><Glyph state={stateOf(m)} /> <span className="hc-t">{title(m)}</span></span>)}
+      {(ms.length + agents.length > nM || asks.length > nA) && <span className="hc-r dim">+{Math.max(0, ms.length + agents.length - nM) + Math.max(0, asks.length - nA)} more</span>}
       {last && (
         <span className={`hc-r dim${at.state === 'failed' ? ' c-f' : ''}`}>
           {lastTxt}
@@ -102,12 +103,15 @@ function Card({ project, missions, inbox, now, at, w }: { project: string; missi
     </button>
   )
 }
+const agentWord = (a: HeroAgent) => (a.state === 'needs' ? 'Waits on you' : a.kind === 'run' ? 'Run' : 'Session')
 const stateOf = (m: Mission): UiState =>
   m.state === 'failed' ? 'failed' : m.state === 'waiting' || m.state === 'review' ? 'needs' : m.state === 'queued' ? (lastRun(m)?.cause === 'usage_limit' ? 'sleeping' : 'queued') : m.state === 'done' ? 'done' : 'working'
 
 // say replaces the model's line (phone Home counts sessions and checks too).
-export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox: InboxItem[]; now: Date; say?: string }) {
-  const m = useMemo(() => heroModel(missions, inbox, now), [missions, inbox, now])
+// sections: the live script sections (projects, dispatch, sessions) the planets read besides missions.
+export function Hero({ missions, inbox, now, say, sections }: { missions: Mission[]; inbox: InboxItem[]; now: Date; say?: string; sections?: Partial<Record<SectionName, SectionBody>> }) {
+  const liveIn = useMemo(() => heroLiveOf(sections), [sections])
+  const m = useMemo(() => heroModel(missions, inbox, liveIn, now), [missions, inbox, liveIn, now])
   const reduced = useMedia('(prefers-reduced-motion: reduce)')
   const box = useRef<HTMLDivElement>(null)
   const cv = useRef<HTMLCanvasElement>(null)
@@ -460,7 +464,7 @@ export function Hero({ missions, inbox, now, say }: { missions: Mission[]; inbox
           {m.asks} {m.asks === 1 ? 'ASK' : 'ASKS'}
         </div>
       )}
-      {fp && size && <Card project={fp.name} missions={missions} inbox={inbox} now={now} at={fp} w={size.w} />}
+      {fp && size && <Card project={fp.name} missions={missions} inbox={inbox} agents={m.projects.find((p) => p.name === fp.name)?.agents ?? []} now={now} at={fp} w={size.w} />}
       {/* Screen readers and keyboard users get the planets as a plain list. */}
       <ul className="vh">
         {m.projects.map((p) => (

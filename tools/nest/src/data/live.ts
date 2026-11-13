@@ -19,6 +19,9 @@ export interface Agent {
   started_at?: string | null
   last_action?: string | null
   last_prompt?: string | null
+  last_activity_s?: number | null
+  projects?: Array<{ name: string; share_pct?: number }> | null
+  recent?: Array<{ action: string; ts: string }> | null
   prompt?: Prompt | null
 }
 
@@ -135,3 +138,10 @@ export const projectsOf = (b: SectionBody | undefined) => list<{ name: string }>
 
 // Accounts a new session may use; "never" accounts are refused by core anyway.
 export const accountsOf = (b: SectionBody | undefined) => list<Account>(obj(b).accounts).filter((a) => a.policy !== 'never')
+
+// Registry entry of `crow-projects json` (the parts the hero reads).
+export interface RegProject { name: string; path?: string; status?: string; short?: string }
+
+// Active registered projects, in registry order.
+export const registryOf = (b: SectionBody | undefined) =>
+  list<RegProject>(obj(b).projects).filter((p) => p.name && (!p.status || p.status === 'active'))

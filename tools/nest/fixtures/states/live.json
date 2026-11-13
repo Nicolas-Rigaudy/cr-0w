@@ -28,7 +28,7 @@
     "events": [],
     "tomorrow": [{ "subject": "Daily Meeting", "start": "2026-11-10T11:30:00+01:00", "end": "2026-11-10T11:45:00+01:00", "all_day": false }]
   },
-  "projects": { "projects": [{ "name": "cr-0w" }, { "name": "demo" }, { "name": "nest" }, { "name": "website" }] },
+  "projects": { "projects": [{ "name": "cr-0w", "path": "/src/cr-0w", "status": "active" }, { "name": "demo", "path": "/src/demo", "status": "active" }, { "name": "nest", "path": "/src/nest", "status": "active" }, { "name": "website", "path": "/src/website", "status": "active" }] },
   "accounts": { "default": "main", "accounts": [{ "name": "main", "policy": "use" }, { "name": "work", "policy": "ask-first" }, { "name": "locked", "policy": "never" }] }
 ,
   "usage": {
