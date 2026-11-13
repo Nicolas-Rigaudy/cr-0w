@@ -55,3 +55,6 @@
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+# Progress note (2026-11-13)
+- Quiet colour decided and built: grey quiet planets, working planet glows more (vault Research/nest-design/item_200/quiet-color). Still open: the 9-planet cap (live data has 14 projects).
