@@ -1,10 +1,10 @@
 ## item_199_hero_planets_from_projects_and_live_activity - Hero planets from projects and live activity
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -60,3 +60,9 @@
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+# Outcome (2026-11-13)
+- Commit ec53670. Planets come from the registry, open inbox asks, missions, live dispatch agents and parked sessions. Precedence failed > needs > working > sleeping > queued > done; quiet projects sort last.
+- AC1: live core model check during this hub session: cr-0w working, runFrom set, mood run.
+- AC2, AC3: model unit tests. AC4: 96 tests, tsc clean, hero-reel renders every beat (run phase reads "4 need you, 6 working").
+- Live data yields 14 planets against MAXP 9: item_200 handles the cap and the quiet look.
