@@ -269,7 +269,9 @@ export function drawScene(cv: HTMLCanvasElement, w: number, h: number, dpr: numb
     const quiet = p.state === 'sleeping' || p.state === 'queued' || p.state === 'done'
     // One light for every live planet; the target stands out by its marker and the head's gaze.
     const emit = (quiet ? 0.12 : 0.45) + (p.state === 'working' ? 0.25 * pulse : 0) + 0.25 * p.hk + 0.35 * p.ping ** 2
-    spheres.push({ c: p.c, r: p.r, col: quiet && p.state !== 'done' ? pal.ring : p.state === 'failed' ? mix(col, WHITE, 0.2) : col, emit, dimf: (quiet ? 0.5 : 1) * fade })
+    // Quiet planets go grey so only live states carry a colour; the working one glows a bit more (item_200 pick B).
+    const qcol = mix(pal.dim, [128, 128, 128], 0.6), wemit = p.state === 'working' ? 0.25 : 0
+    spheres.push({ c: p.c, r: p.r, col: quiet && p.state !== 'done' ? qcol : p.state === 'failed' ? mix(col, WHITE, 0.2) : col, emit: emit + wemit, dimf: (quiet ? 0.5 : 1) * fade })
     if (p.state === 'failed') brokenRing(g, cam, p.c, col)
     if (p === target && p.state === 'needs') octa(g, cam, add(p.c, V(0, p.r + 0.34, 0)), 0.12, col, 1.4)
   }

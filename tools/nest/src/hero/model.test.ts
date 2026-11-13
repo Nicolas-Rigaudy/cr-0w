@@ -55,6 +55,7 @@ describe('hero planets from projects and live work (item_199)', () => {
     const m = heroModel([], [], { registry: reg, agents: [agent({})], parked: [] }, now)
     expect(by(m)['cr-0w']).toMatchObject({ state: 'working', runFrom: '2026-11-13T09:20:00+01:00', open: 1, live: true })
     expect(m.mood).toBe('run')
+    expect(m.line).toMatch(/run going/)
   })
 
   it('matches worktrees and keeps every registered project, quiet ones last (AC3)', () => {
@@ -75,6 +76,8 @@ describe('hero planets from projects and live work (item_199)', () => {
     expect(by(m)['cr-0w']).toMatchObject({ state: 'needs', wait: 10 })
     expect(m.projects[0].name).toBe('cr-0w')
     expect(m.mood).toBe('ask')
+    expect(m.line).toMatch(/ask waits on you/)
+    expect(m.asks).toBe(1)
   })
 
   it('shows an inbox ask on a project as needs over a working agent', async () => {

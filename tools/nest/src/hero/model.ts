@@ -81,7 +81,9 @@ export function heroModel(missions: Mission[], inbox: InboxItem[], live: HeroLiv
   const asks = openInbox(inbox).filter((r) => r.type !== 'fyi').length
   const agentState = (a: Agent): UiState => (a.state === 'waiting' ? 'needs' : 'working')
   const waiting = live.agents.filter((a) => agentState(a) === 'needs').length
-  const mood = moodOf({ ...c, working: c.working + live.agents.length - waiting }, asks + waiting)
+  // Live sessions and runs count like missions: waiting ones ask, the others work.
+  const working = c.working + live.agents.length - waiting, asking = asks + waiting
+  const mood = moodOf({ ...c, working }, asking)
 
   const known = new Set([...live.registry.map((p) => p.name), ...missions.map((m) => m.project)])
   const names = new Map<string, true>()
@@ -136,12 +138,12 @@ export function heroModel(missions: Mission[], inbox: InboxItem[], live: HeroLiv
   projects.sort((a, b) => Number(!!a.quiet) - Number(!!b.quiet) || RANK[a.state] - RANK[b.state] || (b.wait ?? 0) - (a.wait ?? 0) || a.name.localeCompare(b.name))
 
   const parts: string[] = []
-  if (asks) parts.push(`${word(asks)} ${asks === 1 ? 'ask waits' : 'asks wait'} on you, Sir.`)
+  if (asking) parts.push(`${word(asking)} ${asking === 1 ? 'ask waits' : 'asks wait'} on you, Sir.`)
   const failed = missions.filter((m) => uiState(m, inbox) === 'failed')
   if (failed.length === 1) parts.push(`${title(failed[0])} failed.`)
   else if (failed.length) parts.push(`${word(failed.length)} runs failed.`)
-  if (!parts.length && c.working) parts.push(`${word(c.working)} ${c.working === 1 ? 'run' : 'runs'} going, Sir.`)
+  if (!parts.length && working) parts.push(`${word(working)} ${working === 1 ? 'run' : 'runs'} going, Sir.`)
   if (!parts.length) parts.push('All quiet, Sir.')
 
-  return { mood, asks, line: parts.join(' '), projects }
+  return { mood, asks: asking, line: parts.join(' '), projects }
 }
