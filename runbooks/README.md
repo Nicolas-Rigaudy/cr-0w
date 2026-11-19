@@ -48,6 +48,7 @@ want to trigger it by name.
 - [tui-usage-ux](tui-usage-ux.md): token and cost usage UX research: ledger, runway timeline, account cards
 - [tui-themes-ux](tui-themes-ux.md): TUI theme research: axes a theme can change, four skeleton-level theme specs
 - [open-threads](open-threads.md): the three-section format (me, crow, waiting) of `Open Threads.md`, the done and stale rules, who reads and writes it
+- [pending-items](pending-items.md): one schema over Open Threads and pending files (`crow-pending`): loss check, overdue follow-ups for brief and Inbox, purge of settled rows
 - [graph-today](graph-today.md): Entra app + device-code login for `bin/crow-today`, the Graph calendar and mail feed of the deck Today box
 - [mail-drafts](mail-drafts.md): `bin/crow-mail-draft`, one reply draft per input file through graph, classic Outlook COM or the connector, with post-write checks; never sends
 - [releases](releases.md): VERSION, per-release changelogs, the aggregate and the version-bump gate, `crow release propose`
