@@ -14,6 +14,7 @@ import { drawScene, TABLE_FX } from './scene'
 import { createHead, liveHeadOk, type HeadGL } from './gl/head'
 import { bakeLook, CHARACTER, faceOf, HeadCtl, lookAt, PITCH_MAX, type Look } from './headCtl'
 import { watchActive, type Active } from './active'
+import { budgetWatch, tablePref } from './budget'
 
 // Holotable hero (item_162, item_158): ASCII galaxy map of projects with the option B head above
 // the lens. Drag spins the planets, hover lifts one and shows its moons, click focuses then opens.
@@ -35,7 +36,7 @@ const SWEEP_MS = 12000
 // table angle (deg) over which the head reaches most of its turn.
 const GAZE_MAX = 14, GAZE_DOWN = -PITCH_MAX, GAZE_TURN = 40
 const LIFT_MS = 420
-// The lit table (item_216 board a) is the table.
+// The lit table (item_216 board a) is the table, unless the device misses the frame budget (budget.ts).
 const TABLE = 'a' as const
 const GLITCH_MS = 180
 const HOVER_MS = 200
@@ -146,6 +147,8 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
     raf: 0, timer: 0, last: 0, lay: '', asks: -1, input: -1e9,
   })
   const [glOn, setGlOn] = useState(false)
+  const [table, setTable] = useState<typeof TABLE | undefined>(() => (tablePref() === 'plain' ? undefined : TABLE))
+  const watch = useRef(tablePref() ? undefined : budgetWatch())
   const act = useRef<Active | undefined>(undefined)
   const running = () => act.current?.on() ?? document.visibilityState === 'visible'
 
@@ -225,12 +228,17 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
     for (const n of Object.keys(s.lift)) lift[n] = liftCurve(s.lift[n])
     const glitch: Record<string, number> = {}
     for (const n of Object.keys(s.glitch)) glitch[n] = 1 - s.glitch[n]
+    const t0 = performance.now()
     const o = drawScene(cv.current, size.w, size.h, window.devicePixelRatio || 1, m, heads, s.pal, turn, {
       now, spin: s.spin.spin, hover: s.hover && { name: s.hover.name, k: s.hover.k },
       look: s.look, pulse: live && !reduced ? (t % PULSE_MS) / PULSE_MS : undefined, lift, glitch,
       sweep: reduced ? undefined : (t % SWEEP_MS) / SWEEP_MS,
-      t: reduced ? 0 : t, fx: reduced ? {} : TABLE_FX, ripple: s.ripple, live: glOn, table: TABLE,
+      t: reduced ? 0 : t, fx: reduced ? {} : TABLE_FX, ripple: s.ripple, live: glOn, table,
     })
+    if (watch.current && table) {
+      const v = watch.current(performance.now() - t0)
+      if (v) { watch.current = undefined; if (v === 'miss') setTable(undefined) }
+    }
     s.out = o
     placeHead(o)
     setOut(o)
@@ -345,7 +353,7 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
     s.pal = undefined
     document.fonts.ready.then(kick)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, theme, heads, turn, live, reduced, glOn])
+  }, [key, size, theme, heads, turn, live, reduced, glOn, table])
 
   // Turn to a planet: ease (or step) the spin so it sits at the front.
   const bring = (name: string) => {
@@ -453,7 +461,7 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
   const hname = st.current.hover?.name
   const hp = hname ? out?.planets.find((p) => p.name === hname) : undefined
   return (
-    <div ref={box} className="hero-box" tabIndex={0} role="group" aria-roledescription="holotable"
+    <div ref={box} className="hero-box" data-table={table ? 'lit' : 'plain'} tabIndex={0} role="group" aria-roledescription="holotable"
       aria-label={`CR-0W: ${say ?? m.line}. Left and Right pick a project, Enter opens its missions.`}
       style={out ? ({ '--lens-y': `${out.lens.y}px` } as CSSProperties) : undefined}
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onPointerLeave={leave} onKeyDown={key2}>
