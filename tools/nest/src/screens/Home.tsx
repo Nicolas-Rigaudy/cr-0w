@@ -8,8 +8,11 @@ import { AskBar } from '../ui/AskBar'
 import { Glyph } from '../ui/Glyph'
 import { HomeLaptop } from './HomeLaptop'
 import { LAPTOP, useMedia } from '../ui/useMedia'
+import { heroLiveOf, heroModel } from '../hero/model'
+import { ButlerChat, railLabel } from '../ui/ButlerRail'
+import { HomeHudCompact } from '../ui/HomeHud'
 
-const INNER = '(min-width: 600px)'
+export const INNER = '(min-width: 600px)'
 
 export function Home({ snap }: { snap: Snapshot }) {
   const laptop = useMedia(LAPTOP)
@@ -115,20 +118,8 @@ function HomeCompact({ snap }: { snap: Snapshot }) {
   const say = c.needs
     ? `${c.needs} need you, Sir. ${c.working} working.`
     : c.working ? `Nothing needs you, Sir. ${c.working} working.` : 'All quiet, Sir.'
+  if (inner) return <HomeFold snap={snap} say={say} />
   const holo = <div className="hwrap"><Hero missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} /></div>
-  if (inner) {
-    return (
-      <div className="screen home-ph col g1">
-        <HudRow m={m} />
-        {holo}
-        <AskBar />
-        <div className="c2">
-          <div className="stack"><Needs m={m} /><Agenda m={m} /></div>
-          <div className="stack"><Running m={m} /></div>
-        </div>
-      </div>
-    )
-  }
   return (
     <div className="screen home-ph col">
       <HudRow m={m} />
@@ -137,6 +128,27 @@ function HomeCompact({ snap }: { snap: Snapshot }) {
       <Needs m={m} />
       <Running m={m} />
       <Agenda m={m} />
+    </div>
+  )
+}
+
+// Fold inner Home (item_259, board F1): hero on the left, a 300px side with the mood line,
+// the top ask, one summary line, then the chat. The chat lives here, so the header has no badge.
+function HomeFold({ snap, say }: { snap: Snapshot; say: string }) {
+  const { missions, inbox, now } = snap
+  const h = heroModel(missions, inbox, heroLiveOf(snap.sections), now)
+  return (
+    <div className="screen home-f1">
+      <section className="f1-hero" aria-label="CR-0W overview">
+        <Hero missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} />
+      </section>
+      <aside className="f1-side" aria-label="CR-0W">
+        <div className="f1-hdr">
+          <span className={`rl-mood m-${h.mood}`}><i className="dia" aria-hidden="true" />{railLabel(h)}</span>
+          <HomeHudCompact snap={snap} />
+        </div>
+        <ButlerChat snap={snap} />
+      </aside>
     </div>
   )
 }

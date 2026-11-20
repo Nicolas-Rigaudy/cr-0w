@@ -1,10 +1,10 @@
 ## item_259_nest_home_butler_chat_with_its_own_width_and_fold_hero_fits_its_frame - Nest Home butler chat with its own width and fold, hero fits its frame
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 30%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -70,4 +70,14 @@
   - HUD card (H3 tiles): header "Needs you" + count + Inbox link; each Needs-you item is its own card with an icon tile, the top ask highlighted with the only filled button, others ghost buttons; below, Next (big time, title, countdown bar) and Running (live count, slots pips) as two tinted cards.
   - Fold inner: F1 laptop split (hero left, about 300px header + chat right), header = H3 compacted (top ask card + one summary line). Reference `sketch.html?v=F1`.
   - Rejected: tiles strip (A), tabs (C), wide-hero fold (F2), lists + Ask bar fold (F3), styles glass/console/minimal.
-- Still open: build (AC1-AC5).
+- 2026-11-20, built.
+  - Home rail: own keys `nest.rail.home` (opens by default) and `nest.railw.home` (480px default); the rail is keyed apart in App.tsx so state never leaks. Header = mood line + `HomeHud` (H3 tiles, Next and Running cards). Rail modifier class is `home-rail` (`.home` is an old grid rule).
+  - Hero: refit debounced 160ms and held while `data-rail-drag` is set; the canvases sit in a `.hero-stage` kept at the last fitted size and centred, so nothing stretches mid-drag.
+  - Fold inner: `HomeFold` split, hero left, 300px side (mood line, `HomeHudCompact`, chat). No header badge on inner Home since the chat is in the side. The side keeps the account picker (the board left it out).
+  - Proof (vault `Research/nest-design/item_259/build/`, script `build-shots.mjs`, both themes):
+    - AC1: after a drag Home stores 680, other pages keep 320 (Inbox rail 320px).
+    - AC2: 1280 open stage 800x744 (rail 480).
+    - AC3: no planet, rim or card outside the hero box at 1280/1920 open and folded.
+    - AC4: during an 8-step drag the stage stays 800x744 / 1440x1024, then refits once (600x744 / 1240x1024).
+    - AC5: `fold-inner-*.png` against `shots/F1-*.png`; stage 407x587, not clipped.
+  - Tests: Home width key and 480 default in `railWidth.test.ts`; 247 tests pass, typecheck and build clean.

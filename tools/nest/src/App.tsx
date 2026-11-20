@@ -3,7 +3,7 @@ import { scopeSnapshot } from './data/scope'
 import { useFeed } from './data/useData'
 import { useScope } from './data/useScope'
 import { match, usePath } from './router'
-import { Home } from './screens/Home'
+import { Home, INNER } from './screens/Home'
 import { Inbox } from './screens/Inbox'
 import { Chat } from './screens/Chat'
 import { Desk } from './screens/Desk'
@@ -31,6 +31,7 @@ export function App() {
   const snap = useMemo(() => raw && scopeSnapshot(raw, scope), [raw, scope])
   const active = screenTab(route)
   const laptop = useMedia(LAPTOP)
+  const inner = useMedia(INNER)
   let body = null
   if (snap && raw) {
     if (route.tab === 'home') body = <Home snap={snap} />
@@ -40,12 +41,13 @@ export function App() {
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
     else body = <Placeholder name={LATER[route.tab][0]} note={LATER[route.tab][1]} />
   }
-  // Butler rail on every laptop screen (item_176); Home keeps its own hero, so no head there.
-  // Ops is a full page (item_190): no rail.
+  // Butler rail on every laptop screen (item_176). Ops is a full page (item_190): no rail.
+  // Home has its own rail (item_259): keyed apart so its fold and width never leak to other pages.
   const home = route.tab === 'home'
-  const rail = laptop && snap && route.tab !== 'ops' ? <ButlerRail snap={snap} head={!home} pinned={home} /> : null
+  const rail = laptop && snap && route.tab !== 'ops' ? <ButlerRail key={home ? 'home' : 'page'} snap={snap} home={home} /> : null
   // Phone and Fold: a header badge and a chat sheet instead of the rail.
-  const badge = !laptop && snap ? <ButlerBadge snap={snap} /> : null
+  // Fold inner Home shows the chat in its side (item_259): no badge there.
+  const badge = !laptop && snap && !(home && inner) ? <ButlerBadge snap={snap} /> : null
   return (
     <ButlerProvider>
       <Shell active={active} snap={snap} scope={scope} setScope={setScope} rail={rail} badge={badge}>{body}</Shell>

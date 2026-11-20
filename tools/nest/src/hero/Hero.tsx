@@ -30,6 +30,8 @@ const TABLE_FRAME_MS = 66
 // Live head: 30 fps while springs or beats move, 20 fps when settled (breathing only).
 const HEAD_IDLE_MS = 50, HEAD_AMBIENT_MS = 33, HEAD_LIVE_MS = 1500
 const RIPPLE_MS = 700
+// Quiet time after the last resize before the table refits (item_259).
+const SETTLE_MS = 160
 // Idle scan sweep round the table rim (item_197): one turn per SWEEP_MS, on the slow tick.
 const SWEEP_MS = 12000
 // Gaze during a drag and its coast (item_201): max head turn (deg), look down at the table (deg), and the
@@ -163,7 +165,19 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
   useEffect(() => {
     const el = box.current
     if (!el) return
-    const ro = new ResizeObserver(([e]) => setSize({ w: Math.round(e.contentRect.width), h: Math.round(e.contentRect.height) }))
+    // Refit once the frame settles (item_259): the first size at once, later ones when resizes stop
+    // and the rail grip is let go. Meanwhile the stage keeps its size, centred and clipped.
+    let wait = 0
+    const fit = () => {
+      if (document.documentElement.dataset.railDrag !== undefined) { wait = window.setTimeout(fit, SETTLE_MS); return }
+      wait = 0
+      setSize({ w: Math.round(el.clientWidth), h: Math.round(el.clientHeight) })
+    }
+    let first = true
+    const ro = new ResizeObserver(() => {
+      clearTimeout(wait)
+      if (first) { first = false; fit() } else wait = window.setTimeout(fit, SETTLE_MS)
+    })
     ro.observe(el)
     const mo = new MutationObserver(() => setTheme(document.documentElement.dataset.theme))
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
@@ -173,7 +187,7 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
       cancelAnimationFrame(s.raf); clearTimeout(s.timer); s.raf = 0; s.timer = 0; s.last = 0
       cancelAnimationFrame(h.raf); clearTimeout(h.timer); h.raf = 0; h.timer = 0; h.last = 0
     })
-    return () => { ro.disconnect(); mo.disconnect(); act.current?.stop(); act.current = undefined; cancelAnimationFrame(st.current.raf); clearTimeout(st.current.timer) }
+    return () => { clearTimeout(wait); ro.disconnect(); mo.disconnect(); act.current?.stop(); act.current = undefined; cancelAnimationFrame(st.current.raf); clearTimeout(st.current.timer) }
   }, [])
 
   // Live head: created once when the device can run it; a lost context falls back to the bake.
@@ -465,9 +479,9 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
       aria-label={`CR-0W: ${say ?? m.line}. Left and Right pick a project, Enter opens its missions.`}
       style={out ? ({ '--lens-y': `${out.lens.y}px` } as CSSProperties) : undefined}
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onPointerLeave={leave} onKeyDown={key2}>
+      <div className="hero-stage" style={size ? { width: size.w, height: size.h, left: `calc(50% - ${size.w / 2}px)`, top: `calc(50% - ${size.h / 2}px)` } : undefined}>
       <canvas ref={gcv} className="hero-gl" aria-hidden="true" style={glOn ? undefined : { display: 'none' }} />
       <canvas ref={cv} className="hero-cv" aria-hidden="true" />
-      <div className="hero-say" data-prio={0} data-fixed aria-hidden="true"><b>CR-0W ›</b> {say ?? m.line}<i className="hero-cur" /></div>
       {out?.planets.map((p, i) => (
         <Fragment key={p.name}>
           {!p.hidden && (
@@ -488,6 +502,8 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
         )
       })}
       {fp && size && <Card project={fp.name} names={namesOf(m.projects.find((p) => p.name === fp.name))} missions={missions} inbox={inbox} agents={m.projects.find((p) => p.name === fp.name)?.agents ?? []} now={now} at={fp} w={size.w} />}
+      </div>
+      <div className="hero-say" data-prio={0} data-fixed aria-hidden="true"><b>CR-0W ›</b> {say ?? m.line}<i className="hero-cur" /></div>
       {/* Screen readers and keyboard users get the planets as a plain list. */}
       <ul className="vh">
         {m.projects.map((p) => (

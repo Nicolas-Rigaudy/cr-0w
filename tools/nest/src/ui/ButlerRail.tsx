@@ -8,24 +8,27 @@ import { heroLiveOf, heroModel, type HeroModel } from '../hero/model'
 import { RailHead } from '../hero/RailHead'
 import { Link, navigate } from '../router'
 import { enterSubmits, rowsOf } from './keys'
-import { useRailWidth } from './railWidth'
+import { HomeHud } from './HomeHud'
+import { HOME_W, HOME_W_KEY, RAIL_W, RAIL_W_KEY, useRailWidth } from './railWidth'
 import { stickBottom } from './stickBottom'
 
 const FOLD_KEY = 'nest.rail'
+// Home keeps its own fold (item_259).
+const HOME_FOLD_KEY = 'nest.rail.home'
 
 type Fold = 'folded' | 'open' | null
 
 // The owner's fold choice, remembered; null until they pick one.
-function useFold(auto: boolean): [boolean, () => void] {
+function useFold(key: string, auto: boolean): [boolean, () => void] {
   const [pick, setPick] = useState<Fold>(() => {
-    try { const v = localStorage.getItem(FOLD_KEY); return v === 'folded' || v === 'open' ? v : null } catch { return null }
+    try { const v = localStorage.getItem(key); return v === 'folded' || v === 'open' ? v : null } catch { return null }
   })
   const folded = pick ? pick === 'folded' : auto
   const now = useRef(folded)
   now.current = folded
   const toggle = () => {
     const next: Fold = now.current ? 'open' : 'folded'
-    try { localStorage.setItem(FOLD_KEY, next) } catch { /* storage off: fold lasts the visit */ }
+    try { localStorage.setItem(key, next) } catch { /* storage off: fold lasts the visit */ }
     setPick(next)
   }
   useEffect(() => {
@@ -64,16 +67,16 @@ function Msg({ m }: { m: ButlerMsg }) {
 }
 
 // Butler rail (item_176, board desk-rail-a): CR-0W on the right of every laptop screen.
-// Hero on top (none on Home, which has its own), the hero line, the conversation, then the
-// account and the input. A grip on the left edge sets the width (item_256). Ctrl+B folds it to a strip, remembered. Pinned (Home, where the rail
-// is the right column): no hero line (the hero says it already), and folded while the chat is
-// empty until the owner picks open or folded (owner 2026-11-18).
-export function ButlerRail({ snap, head = true, pinned = false }: { snap: Snapshot; head?: boolean; pinned?: boolean }) {
+// Hero on top, the hero line, the conversation, then the account and the input. A grip on the
+// left edge sets the width (item_256). Ctrl+B folds it to a strip, remembered.
+// Home (item_259, board H3): the right third next to the hero, open and 480px wide by default,
+// with its own fold and width; the HUD card (needs you, next, running) replaces head and line.
+export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: boolean }) {
   const b = useButler()
-  const [folded, fold] = useFold(pinned && !!b && b.messages.length === 0 && !b.busy)
+  const [folded, fold] = useFold(home ? HOME_FOLD_KEY : FOLD_KEY, false)
   const m = useMemo(() => heroModel(snap.missions, snap.inbox, heroLiveOf(snap.sections), snap.now), [snap])
   const working = m.projects.some((p) => p.state === 'working')
-  const grip = useRailWidth()
+  const grip = useRailWidth(home ? HOME_W_KEY : RAIL_W_KEY, home ? HOME_W : RAIL_W)
 
   if (!b) return null
   const label = railLabel(m)
@@ -92,14 +95,17 @@ export function ButlerRail({ snap, head = true, pinned = false }: { snap: Snapsh
   }
 
   return (
-    <aside className="b-rail" aria-label="CR-0W">
+    <aside className={`b-rail${home ? ' home-rail' : ''}`} aria-label="CR-0W">
       <div className="rl-grip" {...grip} />
-      <div className="rl-top">
-        <span className={`rl-mood m-${m.mood}`}><i className="dia" aria-hidden="true" />{label}</span>
-        <button type="button" className="rl-kbd" onClick={fold} title="Fold (Ctrl+B)" aria-expanded="true">Ctrl B</button>
+      <div className={home ? 'rl-hdr' : 'rl-hdr plain'}>
+        <div className="rl-top">
+          <span className={`rl-mood m-${m.mood}`}><i className="dia" aria-hidden="true" />{label}</span>
+          <button type="button" className="rl-kbd" onClick={fold} title="Fold (Ctrl+B)" aria-expanded="true">Ctrl B</button>
+        </div>
+        {home && <HomeHud snap={snap} />}
       </div>
-      {head && <RailHead mood={m.mood} working={working} asks={m.asks} />}
-      {!pinned && <p className="rl-line"><b>cr-0w</b> › {lower(m.line)}<span className="cur" aria-hidden="true">▌</span></p>}
+      {!home && <RailHead mood={m.mood} working={working} asks={m.asks} />}
+      {!home && <p className="rl-line"><b>cr-0w</b> › {lower(m.line)}<span className="cur" aria-hidden="true">▌</span></p>}
       <ButlerChat snap={snap} fold={fold} />
     </aside>
   )

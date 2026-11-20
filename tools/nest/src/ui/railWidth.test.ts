@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampRail, RAIL_W_KEY, readRailWidth, saveRailWidth } from './railWidth'
+import { clampRail, HOME_W, HOME_W_KEY, RAIL_W_KEY, readRailWidth, saveRailWidth } from './railWidth'
 
 const memory = () => {
   const m = new Map<string, string>()
@@ -50,5 +50,19 @@ describe('rail width storage (item_256)', () => {
   it('falls back to 320 on blocked storage without an error', () => {
     expect(readRailWidth(blocked)).toBe(320)
     expect(() => saveRailWidth(500, blocked)).not.toThrow()
+  })
+})
+
+describe('Home rail width (item_259)', () => {
+  it('starts at 480 on the first visit', () => {
+    expect(readRailWidth(memory(), HOME_W_KEY, HOME_W)).toBe(480)
+  })
+
+  it('keeps Home and other pages apart', () => {
+    const s = memory()
+    saveRailWidth(600, s, HOME_W_KEY)
+    saveRailWidth(300, s)
+    expect(readRailWidth(s, HOME_W_KEY, HOME_W)).toBe(600)
+    expect(readRailWidth(s)).toBe(300)
   })
 })
