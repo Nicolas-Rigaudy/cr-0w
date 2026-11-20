@@ -147,7 +147,7 @@ function HomeFold({ snap, say }: { snap: Snapshot; say: string }) {
           <span className={`rl-mood m-${h.mood}`}><i className="dia" aria-hidden="true" />{railLabel(h)}</span>
           <HomeHudCompact snap={snap} />
         </div>
-        <ButlerChat snap={snap} />
+        <ButlerChat snap={snap} framed />
       </aside>
     </div>
   )

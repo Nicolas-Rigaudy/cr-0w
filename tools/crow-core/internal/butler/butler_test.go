@@ -194,3 +194,39 @@ func TestBadInput(t *testing.T) {
 		t.Fatalf("note %+v", v)
 	}
 }
+
+func TestClearStartsFreshAndHidesHistory(t *testing.T) {
+	var calls []launch
+	m := manager(t, fake(t, `["mcp__core__brief"]`), &calls)
+	defer m.Close()
+	m.Say("main", "first", "")
+	wait(t, m, "main", func(v View) bool { return len(crow(v)) == 1 && !v.Busy })
+	v, err := m.Clear("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(v.Messages) != 0 || v.Cleared == 0 || v.Cleared != v.Last || v.Running {
+		t.Fatalf("after clear %+v", v)
+	}
+	m.Say("main", "second", "")
+	v = wait(t, m, "main", func(v View) bool { return len(crow(v)) == 1 && !v.Busy })
+	if len(calls) != 2 || calls[1].resume != "" {
+		t.Fatalf("launches %+v", calls)
+	}
+	if got := crow(v)[0].Text; got != "re: auto1 second" {
+		t.Fatalf("fresh turn carried history: %q", got)
+	}
+	if v.Messages[0].Seq <= v.Cleared {
+		t.Fatalf("view shows cleared messages %+v", v)
+	}
+	// An account change after a clear seeds nothing from before it.
+	m.SetAccount("main", "spare2")
+	m.Say("main", "third", "")
+	v = wait(t, m, "main", func(v View) bool { return len(crow(v)) == 2 && !v.Busy })
+	if last := crow(v)[1].Text; strings.Contains(last, "first") {
+		t.Fatalf("seed reached past the clear: %q", last)
+	}
+	if _, err := m.Clear("BAD id"); !errors.Is(err, ErrConv) {
+		t.Fatalf("bad id %v", err)
+	}
+}

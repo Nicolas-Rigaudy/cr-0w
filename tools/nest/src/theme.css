@@ -1032,10 +1032,10 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .home-ph.g1 .hwrap { height: 420px; }
 .home-f1 { height: 100%; max-width: none; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-height: 0; }
 .home-f1 .f1-hero { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
-.home-f1 .f1-side { display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-left: 1px solid var(--line); background: var(--panel-solid); }
-.home-f1 .f1-hdr { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border-bottom: 1px solid var(--line); }
-.home-f1 .rl-log { padding: 8px 10px; }
-.home-f1 .rl-foot { padding: 8px 10px 10px; }
+.home-f1 .f1-side { display: flex; flex-direction: column; gap: 8px; padding: 8px; min-height: 0; overflow: hidden; border-left: 1px solid var(--line); background: var(--dots), var(--bg); }
+.home-f1 .f1-hdr { flex: none; display: flex; flex-direction: column; gap: 8px; }
+.home-f1 .f1-hdr > .rl-mood { padding: 2px 4px 0; }
+.home-f1 .rl-in textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 [data-theme='cyber'] .home-f1 .f1-side { border-left-color: var(--c-w); }
 .home-ph .c2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .home-ph .ph .r { display: flex; gap: 8px; align-items: baseline; }
@@ -1265,9 +1265,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .rl-hdr:not(.plain) { flex: none; display: flex; flex-direction: column; gap: 9px; padding: 12px 14px 10px; border-bottom: 1px solid var(--line); }
   .rl-hdr:not(.plain) .rl-top { padding: 0; }
   .hh { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .hh-h { display: flex; align-items: center; gap: 8px; padding: 0 2px; font: 600 10.5px var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; color: var(--sub); }
-  .hh-h .cnt { background: var(--c-n); color: #181926; border-radius: 9px; padding: 0 7px; font-size: 10.5px; letter-spacing: 0; }
-  .hh-h a, .hh-duo .lb a, .hh-sum a, .hh-more { margin-left: auto; color: var(--accent); text-transform: none; letter-spacing: 0; font-weight: 500; text-decoration: none; }
+  .hh-duo .lb a, .hh-sum a, .hh-more { margin-left: auto; color: var(--accent); text-transform: none; letter-spacing: 0; font-weight: 500; text-decoration: none; }
   .hh-more { align-self: flex-end; font-size: 11px; }
   .hh-quiet { margin: 0; padding: 4px 2px; font-size: 12px; color: var(--sub); }
   .hh-need {
@@ -1303,7 +1301,39 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .hh-sum { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font: 600 10.5px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--sub); }
   .hh-sum span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hh-sum a { margin-left: 0; flex: none; }
-  [data-theme='cyber'] .hh-need, [data-theme='cyber'] .hh-ico, [data-theme='cyber'] .hh-duo > div, [data-theme='cyber'] .hh-h .cnt, [data-theme='cyber'] .hh-b { border-radius: 0; }
+  [data-theme='cyber'] .hh-need, [data-theme='cyber'] .hh-ico, [data-theme='cyber'] .hh-duo > div, [data-theme='cyber'] .hh-b { border-radius: 0; }
+
+  /* Framed Home panels (item_259 follow-up, board panels B): the rail and the Fold side show the
+     dotted page background; Needs you, Next, Running and Chat each sit in a titled panel. */
+  .b-rail.home-rail { background: var(--dots), var(--bg); padding: 10px 10px 10px 12px; gap: 10px; }
+  .home-rail .rl-hdr:not(.plain) { padding: 0; gap: 10px; border-bottom: 0; }
+  .home-rail .rl-top { padding: 2px 4px 0; }
+  .home-rail .hh { gap: 10px; }
+  .home-rail .hh-duo { gap: 10px; }
+  .hpn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+  .hh-duo > .hpn, .hh-duo > .hpn.hh-run { background: var(--panel); }
+  .hpn-h {
+    flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px 6px; border-bottom: 1px solid var(--ph-line);
+    font: 600 12px var(--font-head); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ph);
+  }
+  .hpn-h .r { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .hpn-h .r a { color: var(--accent); text-decoration: none; }
+  .hpn-b { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+  .hh-chat { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .hh-chat .rl-log { padding: 8px 12px; }
+  .hh-chat .rl-err { padding: 4px 12px; }
+  .hh-chat .rl-foot { padding: 8px 10px 10px; }
+  .hpn.hh.compact { padding: 8px; }
+  .rl-clear {
+    font: 600 10.5px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--sub);
+    background: none; border: 1px solid var(--line); border-radius: 5px; padding: 2px 8px; cursor: pointer;
+  }
+  .rl-clear:hover:not(:disabled) { color: var(--fg); }
+  .rl-clear.armed { color: var(--c-f); border-color: var(--c-f); }
+  .rl-clear:disabled { opacity: 0.45; cursor: default; }
+  [data-theme='cyber'] .hpn { border-radius: 0; clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
+  [data-theme='cyber'] .hpn-h { font-family: 'Oxanium', sans-serif; letter-spacing: 0.16em; }
+  [data-theme='cyber'] .rl-clear { border-radius: 0; }
   [data-theme='cyber'] .hh-bar, [data-theme='cyber'] .hh-slots i { border-radius: 0; }
 }
 

@@ -62,4 +62,12 @@ func TestButlerRoutes(t *testing.T) {
 	if strings.Join(launched, ",") != "spare" {
 		t.Fatalf("launched %v", launched)
 	}
+	if w := do(t, s, call{method: http.MethodPost, path: "/api/butler/main/clear"}); w.Code != 403 {
+		t.Fatalf("clear without csrf: %d", w.Code)
+	}
+	w := do(t, s, post("/api/butler/main/clear", ``))
+	var v butler.View
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &v) != nil || len(v.Messages) != 0 || v.Cleared != v.Last || v.Cleared == 0 {
+		t.Fatalf("clear: %d %s", w.Code, w.Body)
+	}
 }

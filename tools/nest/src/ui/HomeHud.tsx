@@ -6,6 +6,7 @@ import { Link } from '../router'
 
 // Home rail header (item_259, board H3): Needs you as tiles, then Next and Running side by side.
 // The Fold inner Home shows the compact form: the top ask and one summary line.
+// Each part is its own framed panel (.hpn) on the dotted rail, like the Desk panels.
 
 const ICON: Record<NeedKind, ReactElement> = {
   ask: <svg viewBox="0 0 16 16" className="c-n" aria-hidden="true"><path d="M8 1 15 8 8 15 1 8Z" fill="currentColor" /></svg>,
@@ -52,14 +53,21 @@ export function HomeHud({ snap }: { snap: Snapshot }) {
   const pips = Math.max(m.slots.max, 1)
   return (
     <div className="hh">
-      <div className="hh-h">
-        Needs you {m.needs.length > 0 && <span className="cnt">{m.needs.length}</span>}
-        <Link href="/inbox">Inbox ›</Link>
-      </div>
-      {m.needs.length ? m.needs.slice(0, SHOWN).map((r, i) => <Need key={r.key} r={r} top={i === 0} />) : <p className="hh-quiet">All quiet, Sir.</p>}
-      {m.needs.length > SHOWN && <Link href="/inbox" className="hh-more">{m.needs.length - SHOWN} more in Inbox ›</Link>}
+      <section className="hpn hh-needs" aria-label="Needs you">
+        <div className="hpn-h">
+          Needs you
+          <span className="r">
+            {m.needs.length > 0 && <span className="c-n">{m.needs.length} open</span>}
+            <Link href="/inbox">Inbox ›</Link>
+          </span>
+        </div>
+        <div className="hpn-b">
+          {m.needs.length ? m.needs.slice(0, SHOWN).map((r, i) => <Need key={r.key} r={r} top={i === 0} />) : <p className="hh-quiet">All quiet, Sir.</p>}
+          {m.needs.length > SHOWN && <Link href="/inbox" className="hh-more">{m.needs.length - SHOWN} more in Inbox ›</Link>}
+        </div>
+      </section>
       <div className="hh-duo">
-        <div className="hh-next">
+        <div className="hpn hh-next">
           <span className="lb">Next <Link href="/agenda">Agenda ›</Link></span>
           {nx ? (
             <>
@@ -69,7 +77,7 @@ export function HomeHud({ snap }: { snap: Snapshot }) {
             </>
           ) : <span className="s">Nothing left today</span>}
         </div>
-        <div className="hh-run">
+        <div className="hpn hh-run">
           <span className="lb">Running <Link href="/ops">Ops ›</Link></span>
           <span className="big c-w">{m.working} <small>{live}</small></span>
           <span className="s">{runs} {runs === 1 ? 'run' : 'runs'} · slots {m.slots.busy}/{m.slots.max}</span>
@@ -90,9 +98,9 @@ export function HomeHudCompact({ snap }: { snap: Snapshot }) {
     nx ? `next ${time(nx.ev.start)} ${nx.ev.title}` : '',
   ].filter(Boolean)
   return (
-    <div className="hh compact">
+    <section className="hpn hh compact" aria-label="Needs you">
       {first && <Need r={first} top />}
       <div className="hh-sum"><span>{bits.join(' · ')}</span><Link href="/inbox">Inbox ›</Link></div>
-    </div>
+    </section>
   )
 }

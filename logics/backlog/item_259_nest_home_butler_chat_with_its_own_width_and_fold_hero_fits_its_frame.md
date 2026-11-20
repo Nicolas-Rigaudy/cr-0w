@@ -81,3 +81,8 @@
     - AC4: during an 8-step drag the stage stays 800x744 / 1440x1024, then refits once (600x744 / 1240x1024).
     - AC5: `fold-inner-*.png` against `shots/F1-*.png`; stage 407x587, not clipped.
   - Tests: Home width key and 480 default in `railWidth.test.ts`; 247 tests pass, typecheck and build clean.
+
+## Follow-up 20/11: framed panels and chat clear
+- Owner feedback: the rail read as one flat block. Board panels B picked (vault item_259/compare-panels.html): mood line bare, then Needs you, Next, Running and Chat as titled `.hpn` frames on the dotted background, chamfered in cyber. Same on the Fold side.
+- Chat Clear starts a new conversation: `POST /api/butler/{conv}/clear` stops the process, drops the session and queue, writes a clear marker. Views show only what follows the marker; seeding never reaches past it. Two-step button (Clear, then "Clear it?" for 3 s).
+- Proof: go tests (butler, api), vitest 249, shots vault item_259/panels/built-*.png and clear-*.png.

@@ -27,7 +27,7 @@ const ToolPrefix = "mcp__core__"
 type Msg struct {
 	Seq     int    `json:"seq"`
 	TS      string `json:"ts"`
-	Role    string `json:"role"` // you, crow, tool, note
+	Role    string `json:"role"` // you, crow, tool, note, clear
 	Text    string `json:"text"`
 	Surface string `json:"surface,omitempty"`
 	Account string `json:"account,omitempty"`
@@ -58,6 +58,7 @@ type View struct {
 	Running  bool     `json:"running"` // a process is up
 	Account  string   `json:"account"` // account the next turn runs on; empty = auto
 	Last     int      `json:"last"`    // highest seq
+	Cleared  int      `json:"cleared"` // seq of the last clear; messages up to it are hidden
 	Tools    []string `json:"tools,omitempty"`
 }
 
@@ -159,12 +160,37 @@ func (c *conv) view(after int) View {
 	v := View{Conv: c.id, Messages: []Msg{}, Partial: c.partial.String(), Busy: c.busy, Queued: len(c.queue),
 		Running: c.proc != nil, Account: c.want, Tools: c.meta.Tools}
 	for _, msg := range c.msgs {
-		if msg.Seq > after {
+		if msg.Role == "clear" {
+			v.Cleared = msg.Seq
+			v.Messages = v.Messages[:0]
+		} else if msg.Seq > after {
 			v.Messages = append(v.Messages, msg)
 		}
 		v.Last = msg.Seq
 	}
 	return v
+}
+
+// Clear starts the conversation over: it stops the process, drops queued turns and
+// forgets the session, so the next turn runs on a fresh one with no seed. The transcript
+// stays on disk with a clear marker; views only show what follows it.
+func (m *Manager) Clear(id string) (View, error) {
+	c, err := m.get(id)
+	if err != nil {
+		return View{}, err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.stop()
+	if c.timer != nil {
+		c.timer.Stop()
+	}
+	c.busy, c.queue, c.chips, c.seed = false, nil, nil, false
+	c.partial.Reset()
+	c.meta.SessionID = ""
+	c.saveMeta()
+	c.add(Msg{TS: m.o.Now().Format(time.RFC3339), Role: "clear"})
+	return c.view(0), nil
 }
 
 // SetAccount changes the account of the next turn. A change from the account the session
@@ -248,6 +274,9 @@ func (c *conv) seedText() string {
 	var b strings.Builder
 	n := 0
 	for i := len(c.msgs) - 2; i >= 0 && n < 10; i-- { // the last message is the one being sent
+		if c.msgs[i].Role == "clear" {
+			break
+		}
 		if r := c.msgs[i].Role; r == "you" || r == "crow" {
 			n++
 		}

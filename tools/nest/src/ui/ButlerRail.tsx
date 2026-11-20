@@ -106,13 +106,32 @@ export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: bool
       </div>
       {!home && <RailHead mood={m.mood} working={working} asks={m.asks} />}
       {!home && <p className="rl-line"><b>cr-0w</b> › {lower(m.line)}<span className="cur" aria-hidden="true">▌</span></p>}
-      <ButlerChat snap={snap} fold={fold} />
+      <ButlerChat snap={snap} fold={fold} framed={home} />
     </aside>
   )
 }
 
-// The conversation and its input (the rail body).
-export function ButlerChat({ snap, fold, close }: { snap: Snapshot; fold?: () => void; close?: () => void }) {
+// Clear starts a new conversation. The first click arms it for a few seconds, the second clears.
+const ARM_MS = 3000
+
+function ClearChat({ clear, empty }: { clear: () => Promise<void>; empty: boolean }) {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), ARM_MS)
+    return () => clearTimeout(t)
+  }, [armed])
+  return (
+    <button type="button" className={`rl-clear${armed ? ' armed' : ''}`} disabled={empty}
+      title="Start a new conversation: CR-0W forgets this one" onClick={() => { if (!armed) return setArmed(true); setArmed(false); void clear() }}>
+      {armed ? 'Clear it?' : 'Clear'}
+    </button>
+  )
+}
+
+// The conversation and its input (the rail body). Framed (Home): a titled panel with Clear in
+// its header; otherwise Clear sits in the account row.
+export function ButlerChat({ snap, fold, close, framed = false }: { snap: Snapshot; fold?: () => void; close?: () => void; framed?: boolean }) {
   const b = useButler()
   const [text, setText] = useState('')
   const [acct, setAcct] = useState<string | null>(null)
@@ -139,7 +158,8 @@ export function ButlerChat({ snap, fold, close }: { snap: Snapshot; fold?: () =>
     void b.say(t, 'nest', acct ?? undefined)
   }
 
-  return (
+  const empty = !b.messages.length && !b.busy
+  const body = (
     <>
       <ol className="rl-log" ref={log} aria-live="polite">
         {b.messages.map((x) => <Msg key={x.seq} m={x} />)}
@@ -159,6 +179,7 @@ export function ButlerChat({ snap, fold, close }: { snap: Snapshot; fold?: () =>
               {accounts.map((a) => <option key={a.name} value={a.name}>{a.name}</option>)}
             </select>
           </label>
+          {!framed && <ClearChat clear={b.clear} empty={empty} />}
           {fold && <button type="button" className="bare sm" onClick={fold}>Ctrl B fold</button>}
           {close && <button type="button" className="rl-close" onClick={close} aria-label="Close the chat" title="Close"><i aria-hidden="true" /></button>}
         </div>
@@ -169,6 +190,13 @@ export function ButlerChat({ snap, fold, close }: { snap: Snapshot; fold?: () =>
         </div>
       </form>
     </>
+  )
+  if (!framed) return body
+  return (
+    <section className="hpn hh-chat" aria-label="Chat with CR-0W">
+      <div className="hpn-h">Chat with CR-0W<span className="r"><ClearChat clear={b.clear} empty={empty} /></span></div>
+      {body}
+    </section>
   )
 }
 

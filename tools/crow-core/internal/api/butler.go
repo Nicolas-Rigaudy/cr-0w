@@ -16,6 +16,21 @@ import (
 func (s *Server) routeButler(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/butler/{conv}", s.butlerGet)
 	mux.HandleFunc("POST /api/butler/{conv}/say", s.butlerSay)
+	mux.HandleFunc("POST /api/butler/{conv}/clear", s.butlerClear)
+}
+
+// butlerClear is POST /api/butler/{conv}/clear: a fresh conversation, transcript kept.
+func (s *Server) butlerClear(w http.ResponseWriter, r *http.Request) {
+	if s.o.Butler == nil {
+		fail(w, http.StatusNotFound, "butler disabled on this core")
+		return
+	}
+	v, err := s.o.Butler.Clear(r.PathValue("conv"))
+	if err != nil {
+		fail(w, butlerStatus(err), err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, v)
 }
 
 // Say is POST /api/butler/{conv}/say. Account is the account of this turn and the next

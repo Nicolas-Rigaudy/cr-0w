@@ -1,6 +1,6 @@
 // Butler chat (item_176): one conversation with CR-0W, shared by the laptop rail and the
 // phone sheet. Core runs the claude process (internal/butler) and serves
-// GET /api/butler/<conv>?after=N and POST /api/butler/<conv>/say.
+// GET /api/butler/<conv>?after=N, POST /api/butler/<conv>/say and POST /api/butler/<conv>/clear.
 
 export type ButlerRole = 'you' | 'crow' | 'tool' | 'note'
 export type Surface = 'nest' | 'phone'
@@ -26,12 +26,16 @@ export interface ButlerView {
   running?: boolean
   account?: string
   last: number
+  // Seq of the last clear: messages up to it are gone from the view.
+  cleared?: number
 }
 
 export interface ButlerApi {
   get(conv: string, after: number): Promise<ButlerView>
   // account: undefined keeps the current one, '' means auto.
   say(conv: string, text: string, surface: Surface, account?: string): Promise<ButlerMsg>
+  // A fresh conversation: the next reply starts with no context. The core keeps the transcript.
+  clear(conv: string): Promise<ButlerView>
 }
 
 // Merge a page of new messages into the list by seq: replays and overlaps are dropped.
@@ -72,36 +76,50 @@ export function apiButler(base = '/api', get: Fetch = (i, init) => fetch(i, init
       if (!res.ok) throw await failure(res)
       return (await res.json()) as ButlerMsg
     },
+    async clear(conv) {
+      const res = await get(`${at(conv)}/clear`, { method: 'POST', headers: { 'X-Crow': '1' }, cache: 'no-store' })
+      if (!res.ok) throw await failure(res)
+      return (await res.json()) as ButlerView
+    },
   }
 }
 
 // In-memory butler for fixtures and screenshots: a seeded exchange, and a canned reply
 // one tick after each message.
 export function fixtureButler(now: Date, seed: ButlerMsg[] = []): ButlerApi {
-  const convs = new Map<string, { msgs: ButlerMsg[]; busy: boolean; account?: string }>()
+  const convs = new Map<string, { msgs: ButlerMsg[]; busy: boolean; account?: string; cleared: number; seq: number }>()
   const conv = (c: string) => {
     let v = convs.get(c)
-    if (!v) convs.set(c, (v = { msgs: c === 'main' ? structuredClone(seed) : [], busy: false }))
+    if (!v) {
+      const msgs = c === 'main' ? structuredClone(seed) : []
+      convs.set(c, (v = { msgs, busy: false, cleared: 0, seq: msgs.at(-1)?.seq ?? 0 }))
+    }
     return v
   }
   const ts = now.toISOString()
   return {
     async get(c, after) {
       const v = conv(c)
-      const last = v.msgs.at(-1)?.seq ?? 0
-      return { conv: c, messages: v.msgs.filter((m) => m.seq > after), busy: v.busy, account: v.account, last }
+      return { conv: c, messages: v.msgs.filter((m) => m.seq > after), busy: v.busy, account: v.account, last: v.seq, cleared: v.cleared }
     },
     async say(c, text, surface, account) {
       const v = conv(c)
       if (account !== undefined) v.account = account || undefined
-      const m: ButlerMsg = { seq: (v.msgs.at(-1)?.seq ?? 0) + 1, ts, role: 'you', text, surface }
+      const m: ButlerMsg = { seq: ++v.seq, ts, role: 'you', text, surface }
       v.msgs.push(m)
       v.busy = true
       setTimeout(() => {
-        v.msgs.push({ seq: m.seq + 1, ts, role: 'crow', text: 'Noted, Sir. Nothing else waits on you.', account: v.account ?? 'auto' })
+        v.msgs.push({ seq: ++v.seq, ts, role: 'crow', text: 'Noted, Sir. Nothing else waits on you.', account: v.account ?? 'auto' })
         v.busy = false
       }, 400)
       return m
+    },
+    async clear(c) {
+      const v = conv(c)
+      v.msgs = []
+      v.busy = false
+      v.cleared = ++v.seq
+      return { conv: c, messages: [], busy: false, account: v.account, last: v.seq, cleared: v.cleared }
     },
   }
 }

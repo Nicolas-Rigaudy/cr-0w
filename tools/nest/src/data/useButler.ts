@@ -10,6 +10,8 @@ export interface Butler {
   error: string
   // account: undefined keeps the current one, '' means auto.
   say(text: string, surface: Surface, account?: string): Promise<void>
+  // Start over: CR-0W forgets the conversation and the view empties.
+  clear(): Promise<void>
   // Phone and Fold chat sheet: the header badge opens it, a phone message opens it too.
   sheet: boolean
   setSheet(open: boolean): void
@@ -28,6 +30,7 @@ function useButlerState(api: ButlerApi | undefined, conv: string): Butler | null
   const [error, setError] = useState('')
   const [sheet, setSheet] = useState(false)
   const last = useRef(0)
+  const cleared = useRef(0)
   const kick = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -40,6 +43,11 @@ function useButlerState(api: ButlerApi | undefined, conv: string): Butler | null
       try {
         const v = await api.get(conv, last.current)
         if (!live) return
+        // Cleared elsewhere (the phone, another tab): drop what the clear hid.
+        if ((v.cleared ?? 0) > cleared.current) {
+          const c = (cleared.current = v.cleared ?? 0)
+          setMsgs((h) => h.filter((m) => m.seq > c))
+        }
         if (v.messages.length) {
           last.current = Math.max(last.current, ...v.messages.map((m) => m.seq))
           setMsgs((h) => mergeMsgs(h, v.messages))
@@ -79,8 +87,23 @@ function useButlerState(api: ButlerApi | undefined, conv: string): Butler | null
     }
   }, [api, conv])
 
+  const clear = useCallback(async () => {
+    if (!api) return
+    try {
+      const v = await api.clear(conv)
+      cleared.current = v.cleared ?? v.last
+      last.current = Math.max(last.current, v.last)
+      setMsgs([])
+      setPartial('')
+      setBusy(false)
+      setError('')
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }, [api, conv])
+
   if (!api) return null
-  return { messages: msgs, partial, busy, account, error, say, sheet, setSheet }
+  return { messages: msgs, partial, busy, account, error, say, clear, sheet, setSheet }
 }
 
 const ButlerContext = createContext<Butler | null>(null)
