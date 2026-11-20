@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 15%
+> Progress: 30%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -65,4 +65,9 @@
 
 # Notes
 - 2026-11-19, table fit done ahead of the layout: the table scale width is `min(w, 1.05 * h)` (`FIT` in `src/hero/scene.ts`). Wide, short heroes (Fold inner 683x420, laptop with the chat folded 1010x816, 1920 folded) keep the table and planets in the frame. Cover and laptop with the chat open are unchanged (width under 1.05x height). Shots: `scripts/hero-fit.mjs`, `local/state/shots/hero-fit/compare.png`.
-- Still open: the Home layout itself (AC0-AC2) and AC4 (no jump on fold/drag).
+- 2026-11-20, AC0 met: owner approved the mockup. Design notes and boards: vault `Research/nest-design/item_259/design-notes.md`.
+  - Laptop Home: hero left 2/3, right third (480px default, own fold and width keys) = mood line, HUD card, chat transcript, input. Build reference `sketch.html?v=H3`.
+  - HUD card (H3 tiles): header "Needs you" + count + Inbox link; each Needs-you item is its own card with an icon tile, the top ask highlighted with the only filled button, others ghost buttons; below, Next (big time, title, countdown bar) and Running (live count, slots pips) as two tinted cards.
+  - Fold inner: F1 laptop split (hero left, about 300px header + chat right), header = H3 compacted (top ask card + one summary line). Reference `sketch.html?v=F1`.
+  - Rejected: tiles strip (A), tabs (C), wide-hero fold (F2), lists + Ask bar fold (F3), styles glass/console/minimal.
+- Still open: build (AC1-AC5).
