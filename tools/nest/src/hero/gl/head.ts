@@ -4,6 +4,8 @@
 // and the static fallback sit at the same place and size. Margins around the bake grid leave room
 // for the fin, the bloom and the arms.
 
+import { BLUR_FS, COPY_FS, glKit, type Prog } from './common'
+
 type RGB = [number, number, number]
 interface V3 { x: number; y: number; z: number }
 export const V = (x: number, y: number, z: number): V3 => ({ x, y, z })
@@ -226,16 +228,6 @@ void main(){
   }
 }`
 
-const COPY_FS = `#version 300 es
-precision highp float;uniform sampler2D uSrc;uniform vec2 uRes;out vec4 o;
-void main(){o=texture(uSrc,gl_FragCoord.xy/uRes);}`
-
-const BLUR_FS = `#version 300 es
-precision highp float;uniform sampler2D uSrc;uniform vec2 uRes,uDir;uniform float uSigma,uStep;out vec4 o;
-void main(){vec2 uv=gl_FragCoord.xy/uRes;vec4 s=vec4(0);float ws=0.;
-  for(int i=-12;i<=12;i++){float x=float(i)*uStep;float w=exp(-x*x/(2.*uSigma*uSigma));s+=texture(uSrc,uv+uDir*x/uRes)*w;ws+=w;}
-  o=s/ws;}`
-
 // Composite: sharp layer + the same two blooms as the table canvas (3 px * 0.6, 14 px * 0.55).
 // Output is premultiplied; bloom adds light where the sharp layer is empty.
 const COMP_FS = `#version 300 es
@@ -309,20 +301,8 @@ export function createHead(canvas: HTMLCanvasElement, onLost?: () => void): Head
   const lostH = (e: Event) => { e.preventDefault(); isLost = true; onLost?.() }
   canvas.addEventListener('webglcontextlost', lostH)
 
-  const sh = (type: number, src: string) => {
-    const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s)
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader')
-    return s
-  }
-  type Prog = { p: WebGLProgram; U: Record<string, WebGLUniformLocation | null> }
-  const prog = (fs: string): Prog => {
-    const p = gl.createProgram()!; gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs))
-    gl.bindAttribLocation(p, 0, 'p'); gl.linkProgram(p)
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) ?? 'link')
-    const U: Prog['U'] = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS)
-    for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i)!.name.replace('[0]', ''); U[nm] = gl.getUniformLocation(p, nm) }
-    return { p, U }
-  }
+  const K = glKit(gl)
+  const prog = (fs: string) => K.prog(VS, fs)
   let P: Record<'cell' | 'glyph' | 'copy' | 'blur' | 'comp', Prog>
   try { P = { cell: prog(CELL_FS), glyph: prog(GLYPH_FS), copy: prog(COPY_FS), blur: prog(BLUR_FS), comp: prog(COMP_FS) } }
   catch (e) { console.warn('head: shader', e); return null }
@@ -331,19 +311,8 @@ export function createHead(canvas: HTMLCanvasElement, onLost?: () => void): Head
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
   const textures: WebGLTexture[] = [], fbos: WebGLFramebuffer[] = []
-  const tex = (w: number, h: number, filter: number) => {
-    const t = gl.createTexture()!; textures.push(t); gl.bindTexture(gl.TEXTURE_2D, t)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-    return t
-  }
-  const fbo = (...ts: WebGLTexture[]) => {
-    const f = gl.createFramebuffer()!; fbos.push(f); gl.bindFramebuffer(gl.FRAMEBUFFER, f)
-    ts.forEach((t, i) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, t, 0))
-    if (ts.length > 1) gl.drawBuffers(ts.map((_, i) => gl.COLOR_ATTACHMENT0 + i))
-    return f
-  }
+  const tex = (w: number, h: number, filter: number) => { const t = K.tex(w, h, filter); textures.push(t); return t }
+  const fbo = (...ts: WebGLTexture[]) => { const f = K.fbo(...ts); fbos.push(f); return f }
   const T = { col: tex(COLS, ROWS, gl.NEAREST), aux: tex(COLS, ROWS, gl.NEAREST) }
   const Fcell = fbo(T.col, T.aux)
   let S: { FW: number; FH: number; HW: number; HH: number; QW: number; QH: number; L: WebGLTexture; h1: WebGLTexture; h2: WebGLTexture; q1: WebGLTexture; q2: WebGLTexture; F: Record<string, WebGLFramebuffer> } | undefined
@@ -432,13 +401,10 @@ export function createHead(canvas: HTMLCanvasElement, onLost?: () => void): Head
     return { pa, pb, n: M.length, bound: [bc.x, bc.y, bc.z, R], octa, hs }
   }
 
-  const pass = (p: Prog, f: WebGLFramebuffer | null, w: number, h: number) => { gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.viewport(0, 0, w, h); gl.useProgram(p.p) }
-  const bindT = (p: Prog, name: string, unit: number, t: WebGLTexture) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(p.U[name], unit) }
-  const blur = (src: WebGLTexture, dst: WebGLFramebuffer, w: number, h: number, dx: number, dy: number, sigma: number, stp: number) => {
-    const p = P.blur; pass(p, dst, w, h); bindT(p, 'uSrc', 0, src)
-    gl.uniform2f(p.U.uRes, w, h); gl.uniform2f(p.U.uDir, dx, dy); gl.uniform1f(p.U.uSigma, sigma); gl.uniform1f(p.U.uStep, stp)
-    gl.drawArrays(gl.TRIANGLES, 0, 3)
-  }
+  const { pass, bindT } = K
+  const tri = () => gl.drawArrays(gl.TRIANGLES, 0, 3)
+  const blur = (src: WebGLTexture, dst: WebGLFramebuffer, w: number, h: number, dx: number, dy: number, sigma: number, stp: number) =>
+    K.blur(P.blur, src, dst, w, h, dx, dy, sigma, stp, tri)
   const c3 = (c: RGB) => [c[0] / 255, c[1] / 255, c[2] / 255] as const
 
   function render(f: HeadFrame, t: number) {

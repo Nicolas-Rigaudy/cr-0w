@@ -9,6 +9,8 @@
 //                                             A busy machine slows both, so the ratio holds. Also counts
 //                                             canvas calls per frame (exact, load-free). Compare ratios
 //                                             and counts before/after; `idle` = ratio x CAL_IDLE_MS.
+//   node scripts/hero-table.mjs fallback [table]  WebGL grid fallback (item_270 AC3): a lost context and no
+//                                             WebGL2 must both draw the same frame as the 2D path, never blank
 //   node scripts/hero-table.mjs prof [table]   CPU profile of the perf frames at 1440x900: top self time per function
 import { spawn } from 'node:child_process'
 import { chromium } from 'playwright-core'
@@ -44,6 +46,30 @@ try {
       if (mode === 'shot') {
         sc.drawScene(cv, W, H, 2, m, heads, pal, undefined, opt(3, true))
         return { W, H, png: cv.toDataURL('image/png') }
+      }
+      if (mode === 'fallback') {
+        // Keep every WebGL2 context the page creates, to lose the grid's on demand.
+        const real = HTMLCanvasElement.prototype.getContext, made = []
+        let noGl = false
+        HTMLCanvasElement.prototype.getContext = function (k, ...a) { if (k === 'webgl2' && noGl) return null; const c = real.call(this, k, ...a); if (k === 'webgl2' && c) made.push(c); return c }
+        const frame = async () => {
+          sc.drawScene(cv, W, H, 2, m, heads, pal, undefined, opt(3, true))
+          const px = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data
+          let lit = 0; for (let i = 3; i < px.length; i += 4) if (px[i]) lit++
+          const d = new Uint8Array(await crypto.subtle.digest('SHA-256', px))
+          return { hash: [...d.slice(0, 6)].map((b) => b.toString(16).padStart(2, '0')).join(''), lit }
+        }
+        const use = (v) => { localStorage.setItem('nest.tablegl', v); sc.resetTableGl() }
+        // The first frame of a page differs (one-time scene state): warm up before the reference.
+        use('off'); await frame(); const d2 = await frame()
+        use('on'); const gl = await frame(); const glCtx = made.at(-1)
+        // The lost event fires later; the very next frame must already take the 2D path.
+        glCtx.getExtension('WEBGL_lose_context').loseContext()
+        const lost = await frame()
+        noGl = true; use('on'); const none = await frame()
+        HTMLCanvasElement.prototype.getContext = real
+        const ok = lost.hash === d2.hash && none.hash === d2.hash && gl.lit > 0 && gl.hash !== d2.hash
+        return { W, H, d2, gl, lost, none, ok }
       }
       if (mode === 'hash') {
         const out = []

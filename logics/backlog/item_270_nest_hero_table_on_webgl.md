@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 75%
+> Progress: 95%
 > Complexity: high
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -65,13 +65,15 @@
 - Owner 2026-11-19: go for WebGL.
 - Bench under load: `PLAYWRIGHT_BROWSERS_PATH=<playwright cache> node scripts/hero-table.mjs bench a`, 2-3 runs; compare ratios, not ms.
 - glyph positions in `paint()`: runs are letter-spaced to the cell width and centred glyphs shift by half the spacing; the atlas pass must place glyphs at the cell centre plus `CH/2 + 0.5`.
-- 2026-11-19 build: `gl/grid.ts` draws each layer as instanced quads (blank clears, cell backgrounds, atlas glyphs), then the bloom, and `paint()` copies the result with one drawImage. On by default when `liveHeadOk()` passes; `localStorage nest.tablegl=on|off` forces it; context loss falls back to 2D. Shared `gl/common.ts` (step 1) not done yet: the blur and copy shaders are duplicated from head.ts.
+- 2026-11-19 build: `gl/grid.ts` draws each layer as instanced quads (blank clears, cell backgrounds, atlas glyphs), then the bloom, and `paint()` copies the result with one drawImage. On by default when `liveHeadOk()` passes; `localStorage nest.tablegl=on|off` forces it; context loss falls back to 2D. Shared `gl/common.ts` (2026-11-20): copy/blur shaders, program, target, pass and blur helpers used by head.ts and grid.ts. Head probe PNG byte-identical, GL table hashes unchanged.
 - Pixel match (frame composited over black; the shots are RGBA, so diff them composited or faint bloom looks huge): 1.6-1.9% of pixels differ by more than 24, 0.12-0.44% with a 1 device px tolerance. The rest is position: 2D letter-spaced runs drift up to 1 px off the cell grid (hinted advances); GL glyph quads snap to whole device pixels. Bloom matches at the 2D scale (`__bloomK` 1/4).
 - Bench (load avg 6-8, 2 runs each), p10 ratio GL vs 2D: laptop 2.65-2.87 vs 4.48-4.49, inner 2.07-2.28 vs 3.40-3.79, cover 1.41 vs 2.40-2.86. Frame p10 roughly halves (laptop 23-28 vs 46-47 ms). Canvas calls per frame: 1 drawImage (was 3000-4400 fillText). AC2 2x reached on cover only; the rest of the frame is the CPU grid build (out of scope).
 - Default hash unchanged on both paths. tsc clean, vitest 241 green.
 - Debug hooks: `TABLEGL`, `BLOOMK`, `BLOOMG` (bloom gain, 0 = off) env in `hero-table.mjs`.
 - AC1: owner OK 2026-11-19 (same look on both sides; crop in the vault, Research/nest-design/item_270/).
-- Left: AC3 forced fallback check, AC5 rebuild and hero-fit shots, gl/common.ts extraction.
+- AC3 (2026-11-20): `hero-table.mjs fallback` forces a lost context and no WebGL2; both draw the exact 2D frame hash, ok on 1440, 707 and 368.
+- AC5 (2026-11-20): tsc clean, vitest 32 files / 241 green, `npm run build` ok. `hero-fit.mjs` with `TABLEGL=on|off` on cover, inner, laptop, laptop folded, wide folded: same look, no clipping, 1.1-2.5% pixels off by more than 24 (position drift above). Side by side in the vault, Research/nest-design/item_270/fit/.
+- Left: owner call on AC2 (2x on cover only).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

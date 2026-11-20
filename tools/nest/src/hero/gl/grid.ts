@@ -3,6 +3,8 @@
 // quads (one draw call per step). Glyphs come from an atlas rendered with the table font.
 // The result is drawn onto the table canvas with one drawImage; paint() keeps the 2D path as fallback.
 
+import { BLUR_FS, COPY_FS, glKit, type Prog } from './common'
+
 type RGB = [number, number, number]
 export interface GridLike { cols: number; rows: number; z: Float32Array; ch: (string | null)[]; col: RGB[]; a: Float32Array; bg?: Float32Array; k?: number }
 export interface GridLayer { g: GridLike; keep: (z: number) => boolean; m: DOMMatrix }
@@ -26,14 +28,6 @@ precision highp float;uniform sampler2D uT;in vec2 vUv;in vec4 vCol;in float vG;
 void main(){float c=vG<0.?1.:texture(uT,vUv).a;float a=vCol.a*c;o=vec4(vCol.rgb*a,a);}`
 const QVS = `#version 300 es
 layout(location=0) in vec2 aC;void main(){gl_Position=vec4(aC*2.-1.,0,1);}`
-const COPY_FS = `#version 300 es
-precision highp float;uniform sampler2D uSrc;uniform vec2 uRes;out vec4 o;
-void main(){o=texture(uSrc,gl_FragCoord.xy/uRes);}`
-const BLUR_FS = `#version 300 es
-precision highp float;uniform sampler2D uSrc;uniform vec2 uRes,uDir;uniform float uSigma,uStep;out vec4 o;
-void main(){vec2 uv=gl_FragCoord.xy/uRes;vec4 s=vec4(0);float ws=0.;
-  for(int i=-12;i<=12;i++){float x=float(i)*uStep;float w=exp(-x*x/(2.*uSigma*uSigma));s+=texture(uSrc,uv+uDir*x/uRes)*w;ws+=w;}
-  o=s/ws;}`
 // Same blend as paint(): the two blooms add ('lighter', clamped), the sharp layer goes over them.
 const COMP_FS = `#version 300 es
 precision highp float;uniform sampler2D uL,uW,uS;uniform vec2 uRes;uniform float uKw,uKs;out vec4 o;
@@ -49,19 +43,7 @@ export function createGrid(): GridGL | null {
   let isLost = false
   canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); isLost = true })
 
-  const sh = (type: number, src: string) => {
-    const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s)
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader')
-    return s
-  }
-  type Prog = { p: WebGLProgram; U: Record<string, WebGLUniformLocation | null> }
-  const prog = (vs: string, fs: string): Prog => {
-    const p = gl.createProgram()!; gl.attachShader(p, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p)
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) ?? 'link')
-    const U: Prog['U'] = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS)
-    for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i)!.name; U[nm] = gl.getUniformLocation(p, nm) }
-    return { p, U }
-  }
+  const K = glKit(gl), prog = K.prog
   let P: Record<'cell' | 'copy' | 'blur' | 'comp', Prog>
   try { P = { cell: prog(VS, FS), copy: prog(QVS, COPY_FS), blur: prog(QVS, BLUR_FS), comp: prog(QVS, COMP_FS) } }
   catch (e) { console.warn('grid: shader', e); return null }
@@ -79,14 +61,7 @@ export function createGrid(): GridGL | null {
   let inst = new Float32Array(FLOATS * 16384)
   const at = (o: number) => { gl.vertexAttribPointer(1, 4, gl.FLOAT, false, B, o); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, B, o + 16); gl.vertexAttribPointer(3, 1, gl.FLOAT, false, B, o + 32) }
 
-  const tex = (w: number, h: number) => {
-    const t = gl.createTexture()!; gl.bindTexture(gl.TEXTURE_2D, t)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-    return t
-  }
-  const fbo = (t: WebGLTexture) => { const f = gl.createFramebuffer()!; gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f }
+  const { tex, fbo, bindT } = K
   type Tgt = { t: WebGLTexture; f: WebGLFramebuffer; w: number; h: number }
   const target = (w: number, h: number): Tgt => { const t = tex(w, h); return { t, f: fbo(t), w, h } }
   const drop = (x: Tgt) => { gl.deleteTexture(x.t); gl.deleteFramebuffer(x.f) }
@@ -156,16 +131,12 @@ export function createGrid(): GridGL | null {
   }
 
   const quad = () => gl.drawArrays(gl.TRIANGLES, 0, 6)
-  const pass = (p: Prog, t: Tgt | null, w: number, h: number) => { gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.f : null); gl.viewport(0, 0, w, h); gl.useProgram(p.p) }
-  const bindT = (p: Prog, name: string, unit: number, t: WebGLTexture) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(p.U[name], unit) }
-  const blur = (src: Tgt, dst: Tgt, dx: number, dy: number, sigma: number) => {
-    const p = P.blur; pass(p, dst, dst.w, dst.h); bindT(p, 'uSrc', 0, src.t)
-    gl.uniform2f(p.U.uRes, dst.w, dst.h); gl.uniform2f(p.U.uDir, dx, dy); gl.uniform1f(p.U.uSigma, sigma); gl.uniform1f(p.U.uStep, Math.max(0.35, (sigma * 3) / 12))
-    quad()
-  }
+  const pass = (p: Prog, t: Tgt | null, w: number, h: number) => K.pass(p, t ? t.f : null, w, h)
+  const blur = (src: Tgt, dst: Tgt, dx: number, dy: number, sigma: number) =>
+    K.blur(P.blur, src.t, dst.f, dst.w, dst.h, dx, dy, sigma, Math.max(0.35, (sigma * 3) / 12), quad)
 
   function render(f: GridFrame): boolean {
-    if (isLost) return false
+    if (isLost || gl.isContextLost()) return false
     const W = Math.max(1, Math.round(f.w)), H = Math.max(1, Math.round(f.h)), div = f.bloom.div
     if (canvas.width !== W || canvas.height !== H || !S || S.L.w !== W || S.L.h !== H || S.div !== div) {
       canvas.width = W; canvas.height = H
@@ -208,5 +179,5 @@ export function createGrid(): GridGL | null {
     quad()
     return true
   }
-  return { canvas, render, lost: () => isLost }
+  return { canvas, render, lost: () => isLost || gl.isContextLost() }
 }
