@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 90%
 > Confidence: 70%
-> Progress: 70%
+> Progress: 85%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -55,6 +55,7 @@
 - 2026-11-19 change: in the lit table, each pass draws its planet cell backgrounds as one cols x rows image, scaled up without smoothing, instead of one fillRect per cell. Their glyphs then join the text runs. Per frame: fillRect 879/1828/1057 → 0, fillText 3674/4826/3237 → 3518/4367/3032. Bench p10 ratio (load avg 10): laptop 4.2-4.9, inner 3.7-3.8, cover 2.6-2.8. Pixel diff: 0.16-0.40% of pixels, on planet rims only; identical at 3x zoom. Default hash unchanged.
 - Tried, reverted: 16-step alpha for text runs. It cut fillText by another 15% but changed 2.5-3.5% of pixels (a look change).
 - Remaining lever: about 3000-4400 fillText calls per frame, mostly single glyphs (distinct alpha per cell). Only a WebGL cell-grid renderer (glyph atlas, the gl/head.ts pipeline) removes them. Owner chose WebGL: item_270.
+- 2026-11-20, AC1 met with item_270 (WebGL table, default when `liveHeadOk()`): idle `perf a` (load 2), median/max ms GL vs 2D: 1440x900 5.0/26 (3 of 4 runs, one 9.1) vs 11.0/24, 707x691 6.5-7.7 vs 13.7-14.0, 368x812 4.8 vs 10.1. Under budget on GL; 2D stays over on laptop. Left: AC5, the budget-miss fallback to the plain table (not built; also covers devices on the 2D path).
 - Next in order: item_220, then item_259 (mockups first), then item_221 (owner 2026-11-19).
 
 # Outcome (2026-11-17)

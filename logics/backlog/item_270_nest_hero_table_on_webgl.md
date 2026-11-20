@@ -1,10 +1,10 @@
 ## item_270_nest_hero_table_on_webgl - Nest hero table on WebGL
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 95%
+> Progress: 100%
 > Complexity: high
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -73,7 +73,8 @@
 - AC1: owner OK 2026-11-19 (same look on both sides; crop in the vault, Research/nest-design/item_270/).
 - AC3 (2026-11-20): `hero-table.mjs fallback` forces a lost context and no WebGL2; both draw the exact 2D frame hash, ok on 1440, 707 and 368.
 - AC5 (2026-11-20): tsc clean, vitest 32 files / 241 green, `npm run build` ok. `hero-fit.mjs` with `TABLEGL=on|off` on cover, inner, laptop, laptop folded, wide folded: same look, no clipping, 1.1-2.5% pixels off by more than 24 (position drift above). Side by side in the vault, Research/nest-design/item_270/fit/.
-- Left: owner call on AC2 (2x on cover only).
+- AC2 (owner 2026-11-20): accepted partial, p10 ratio about 1.7x laptop, 1.6x inner, 1.9x cover. The CPU grid build is the next lever: item_271.
+- Idle `perf a` (load 2, 2026-11-20), median/max ms, GL vs 2D: 1440x900 5.0/26 (3 of 4 runs, one 9.1) vs 11.0/24, 707x691 6.5-7.7 vs 13.7-14.0, 368x812 4.8 vs 10.1. Closes item_220 AC1.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
