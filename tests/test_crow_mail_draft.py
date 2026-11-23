@@ -92,6 +92,8 @@ def test_compose_escapes_text_and_appends_the_signature_once(tmp_path):
     html = M.compose(d, ["Best,", "Sam"])
     assert "a &lt; b" in html and html.count("Best,") == 1
     assert M.html_text(html) == "a < b line 2 Best, Sam"
+    para = M.compose(M.load_draft(draft_file(tmp_path, text="Hi,\n\nBody.")), [])
+    assert '<div style="margin:0"><br></div>' in para
     with pytest.raises(M.Refused):
         M.compose({"html": "<div> </div>"}, [])
 

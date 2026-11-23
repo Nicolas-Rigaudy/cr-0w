@@ -117,7 +117,9 @@ def squash(text):
 
 
 def lines_html(lines):
-    return "".join('<div style="margin:0">' + html_module.escape(line) + "</div>" for line in lines)
+    # An empty div has no height in Outlook: blank lines need a <br> to keep paragraphs apart.
+    return "".join('<div style="margin:0">' + (html_module.escape(line) if line.strip() else "<br>") + "</div>"
+                   for line in lines)
 
 
 REPLY_START = re.compile(r"""<div\b[^>]*\bid\s*=\s*["']?crow-reply\b[^>]*>""", re.I)
