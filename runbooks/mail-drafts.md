@@ -7,7 +7,7 @@
    - `graph`: Microsoft Graph with the `crow-today` sign-in (`runbooks/graph-today.md`). Drafts need the `Mail.ReadWrite` scope.
    - `com`: classic Outlook on Windows, driven from WSL. Outlook must be running. Nothing to sign in.
    - `connector`: no local mailbox access. The script queues a request for a hub session that has the M365 connector.
-2. Fill `internal_domains` and `signatures` (one list of lines per kind).
+2. Fill `internal_domains` and `signatures` (one list of lines per kind). A line can be `{image: PATH, width: PX, alt: TEXT}`: the image goes in as an inline attachment (`cid:`), PATH relative to the crow home, 3 MB max. Graph cannot read Outlook's own signature, so keep a PNG copy and replace it when the Outlook signature changes.
 3. `com` only: `bin/crow-mail-draft probe` must print `"connected": true`.
 
 ## One draft
@@ -28,7 +28,7 @@ cc: []
 | Check | Fails when |
 | --- | --- |
 | body_visible | the reply text is not in the draft |
-| signature_once | the configured signature appears zero or several times outside the quoted thread |
+| signature_once | the configured signature (text and each image) appears zero or several times in the reply part (`#crow-reply`); without that wrapper, outside the quoted thread |
 | no_native_signature | Outlook's automatic signature (`_MailAutoSig`) is still in the draft |
 | attachments | an attachment named in the draft file is missing |
 | still_draft / not_sent | the message left Drafts or carries the sent flag |
@@ -36,7 +36,7 @@ cc: []
 Classic Outlook `ReplyAll()` inserts the owner's automatic signature. The COM bridge removes it before inserting the reply; the two signature checks catch a draft where that did not happen.
 
 ## Connector backend
-`save` writes `local/state/mail/connector/<stamp>.json` with the HTML, the tool to call and the readback path. A hub session creates the draft with the connector, writes the readback JSON (`draft_id, html, body_text, attachments, is_draft, sent`) and runs `bin/crow-mail-draft check <draft file> --readback <readback>`. `signature: auto` needs a `recipients:` list in the draft file here.
+`save` writes `local/state/mail/connector/<stamp>.json` with the HTML, the tool to call and the readback path. A hub session creates the draft with the connector, adds `inline_images` as inline attachments with their `cid`, writes the readback JSON (`draft_id, html, body_text, attachments, is_draft, sent`) and runs `bin/crow-mail-draft check <draft file> --readback <readback>`. `signature: auto` needs a `recipients:` list in the draft file here.
 
 ## Rules
 - A write whose answer is lost is reported `uncertain: true` and never retried. Look in Drafts before a new attempt.

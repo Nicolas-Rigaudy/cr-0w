@@ -13,7 +13,10 @@ Config: local/mail.yaml (docs/mail.example.yaml). draft_backend: graph | com | c
   connector  writes a request in local/state/mail/connector/ for a hub session with the M365 connector;
              that session writes the readback and runs `check`
 Draft file (YAML or JSON): message_id, store_id (com, optional), mode (all | sender, default all),
-  html or text, signature (auto | internal | external | none, default auto), cc [addresses], attachments [paths].
+  html or text, signature (auto | internal | external | none, default auto), cc [addresses], attachments [paths],
+  recipients [addresses] (connector backend with signature auto: it cannot read the original message).
+Signature lines in local/mail.yaml are text, or {image: PATH, width: PX, alt: TEXT} for an inline image
+  (PATH relative to the data home); the image goes in as an inline attachment.
 Checks: body_visible, signature_once, no_native_signature, attachments, still_draft, not_sent.
 Output {schema, ok, backend, draft_id, checks:[{name, ok, detail}], uncertain}. Exit 0 all checks pass,
 1 a check failed or the request was refused, 2 config or backend error.
@@ -42,6 +45,7 @@ import crow_lib  # noqa: E402
 ENGINE = Path(crow_lib.ENGINE)
 BACKENDS = ("graph", "com", "connector")
 SIGNATURES = ("auto", "internal", "external", "none")
+RECORD_DAYS = 30
 CHECKS = ("body_visible", "signature_once", "no_native_signature", "attachments", "still_draft", "not_sent")
 NATIVE_SIGNATURE = re.compile(r"""\bname\s*=\s*["']?_MailAutoSig\b""", re.I)
 
@@ -116,6 +120,23 @@ def lines_html(lines):
     return "".join('<div style="margin:0">' + html_module.escape(line) + "</div>" for line in lines)
 
 
+REPLY_START = re.compile(r"""<div\b[^>]*\bid\s*=\s*["']?crow-reply\b[^>]*>""", re.I)
+DIV_TAG = re.compile(r"<(/?)div\b[^>]*>", re.I)
+
+
+def reply_part(html_body):
+    """The HTML of the crow-reply wrapper both writing backends add, or None when it is absent."""
+    start = REPLY_START.search(html_body or "")
+    if not start:
+        return None
+    depth = 1
+    for tag in DIV_TAG.finditer(html_body, start.end()):
+        depth += -1 if tag.group(1) else 1
+        if depth == 0:
+            return html_body[start.end():tag.start()]
+    return html_body[start.end():]
+
+
 # --- draft request --------------------------------------------------------
 
 def load_draft(path):
@@ -174,14 +195,49 @@ def signature_lines(kind, recipients, cfg):
     lines = (cfg.get("signatures") or {}).get(kind)
     if not lines or not isinstance(lines, list):
         raise Refused(f"signatures.{kind} is not configured in local/mail.yaml")
-    return kind, [str(x) for x in lines]
+    return kind, [signature_image(x) if isinstance(x, dict) else str(x) for x in lines]
+
+
+def signature_image(entry):
+    """One {image, width, alt} signature line, path resolved against the data home and checked."""
+    if not entry.get("image"):
+        raise Refused("a signature line that is a mapping needs image: PATH")
+    path = Path(os.path.expanduser(str(entry["image"])))
+    path = path if path.is_absolute() else home() / path
+    if not path.is_file():
+        raise Refused(f"signature image not found: {path}")
+    if path.stat().st_size > GraphBackend.MAX_ATTACHMENT:
+        raise Refused(f"signature image over 3 MB: {path.name}")
+    width = entry.get("width")
+    if width is not None and not (isinstance(width, int) and 0 < width <= 2000):
+        raise Refused("signature image width must be a number of pixels")
+    return {"image": str(path), "width": width, "alt": str(entry.get("alt") or "")}
+
+
+def signature_images(signature):
+    """[{path, name, cid}] for the image lines, in order. The cid ties the <img> to its inline attachment."""
+    return [{"path": x["image"], "name": Path(x["image"]).name, "cid": f"crow-sig-{i}@crow"}
+            for i, x in enumerate(x for x in signature if isinstance(x, dict))]
+
+
+def signature_html(signature):
+    images = iter(signature_images(signature))
+    out = []
+    for line in signature:
+        if isinstance(line, dict):
+            cid = next(images)["cid"]
+            width = f' width="{line["width"]}" style="max-width:{line["width"]}px"' if line["width"] else ""
+            out.append(f'<div style="margin:0"><img src="cid:{cid}" alt="{html_module.escape(line["alt"])}"{width}></div>')
+        else:
+            out.append(lines_html([line]))
+    return "".join(out)
 
 
 def compose(draft, signature):
     body = draft["html"] if draft.get("html") else lines_html(str(draft["text"]).splitlines())
     if not html_text(body):
         raise Refused("draft body is empty")
-    sig = ("<div><br></div>" + lines_html(signature)) if signature else ""
+    sig = ("<div><br></div>" + signature_html(signature)) if signature else ""
     style = draft.get("_style")
     inner = body + sig
     return f'<div style="{html_module.escape(style)}">{inner}</div>' if style else inner
@@ -194,8 +250,10 @@ def run_checks(readback, expected):
     html_body = readback.get("html") or ""
     text = squash(readback.get("body_text")) or html_text(html_body)
     quoted = squash(readback.get("quoted_text"))
+    reply = reply_part(html_body)
     body = expected["body_text"]
-    sig = squash(" ".join(expected["signature"]))
+    sig = squash(" ".join(x for x in expected["signature"] if isinstance(x, str)))
+    cids = [x["cid"] for x in expected.get("signature_images") or []]
     names = Counter(a.get("name", "") for a in readback.get("attachments") or [])
     want = Counter(expected["attachments"])
     out = []
@@ -204,9 +262,16 @@ def run_checks(readback, expected):
         out.append({"name": name, "ok": bool(ok), "detail": detail})
 
     add("body_visible", body and body in text, "reply text found in the draft" if body in text else "reply text missing from the draft")
-    if sig:
-        count = text.count(sig) - quoted.count(sig)
-        add("signature_once", count == 1, f"signature found {count} time(s) outside the quote, expected 1")
+    if sig or cids:
+        # Count inside the reply wrapper when present: the quote header repeats names ("To: First Last").
+        count = html_text(reply).count(sig) if reply is not None else text.count(sig) - quoted.count(sig)
+        count = count if sig else 1
+        images = [(reply if reply is not None else html_body).count("cid:" + c) for c in cids]
+        ok = count == 1 and all(n == 1 for n in images)
+        detail = f"signature found {count} time(s) outside the quote, expected 1"
+        if cids:
+            detail += f"; signature image(s) found {images} time(s), expected 1 each"
+        add("signature_once", ok, detail)
     else:
         add("signature_once", True, "no signature requested")
     native = bool(NATIVE_SIGNATURE.search(html_body))
@@ -276,6 +341,7 @@ class ComBackend:
 
     def write(self, draft, html_body):
         files = [{"path": self.to_windows(p)} for p in draft["attachments"]]
+        files += [{"path": self.to_windows(img["path"]), "cid": img["cid"]} for img in draft.get("_inline") or []]
         value = self.call("reply", entry_id=draft["message_id"], store_id=draft.get("store_id"), mode=draft["mode"],
                           html=html_body, cc=list(draft["cc"]), files=files)
         return value
@@ -342,6 +408,11 @@ class GraphBackend:
                 self.request("POST", f"/me/messages/{did}/attachments", {
                     "@odata.type": "#microsoft.graph.fileAttachment", "name": Path(p).name,
                     "contentBytes": base64.b64encode(Path(p).read_bytes()).decode()}, write=True)
+            for img in draft.get("_inline") or []:
+                self.request("POST", f"/me/messages/{did}/attachments", {
+                    "@odata.type": "#microsoft.graph.fileAttachment", "name": img["name"], "isInline": True,
+                    "contentId": img["cid"], "contentBytes": base64.b64encode(Path(img["path"]).read_bytes()).decode()},
+                    write=True)
         except BackendError as e:
             raise BackendError(f"{e} (draft {did} created, check it before retrying)", True)
         value = self.readback(did)
@@ -383,9 +454,9 @@ class ConnectorBackend:
         tool = "outlook_create_reply_all_draft" if draft["mode"] == "all" else "outlook_create_reply_draft"
         path.write_text(json.dumps({
             "message_id": draft["message_id"], "tool": tool, "html": html_body, "cc": draft["cc"],
-            "attachments": draft["attachments"], "draft_file": draft["_path"],
+            "attachments": draft["attachments"], "inline_images": draft.get("_inline") or [], "draft_file": draft["_path"],
             "readback": str(path.with_suffix(".readback.json")),
-            "steps": [f"Create the draft with {tool}; never send.",
+            "steps": [f"Create the draft with {tool}; never send. Add inline_images as inline attachments with their cid.",
                       "Read the draft back and write {draft_id, html, body_text, attachments:[{name}], is_draft, sent} to readback.",
                       "Run: crow-mail-draft check <draft_file> --readback <readback>."]}, indent=2, ensure_ascii=False))
         return {"pending": True, "request": str(path)}
@@ -405,18 +476,24 @@ def prepare(draft, cfg, chosen):
     recipients = chosen.recipients(draft) if draft["signature"] == "auto" else None
     kind, signature = signature_lines(draft["signature"], recipients, cfg)
     draft["_style"] = cfg.get("body_style")
+    draft["_inline"] = signature_images(signature)
     html_body = compose(draft, signature)
     expected = {"body_text": html_text(draft["html"]) if draft.get("html") else squash(str(draft["text"])),
-                "signature": signature, "signature_kind": kind,
-                "attachments": [Path(p).name for p in draft["attachments"]]}
+                "signature": signature, "signature_kind": kind, "signature_images": draft["_inline"],
+                "attachments": [Path(p).name for p in draft["attachments"]] + [i["name"] for i in draft["_inline"]]}
     return html_body, expected
 
 
 def record(cfg, name, payload):
     directory = state_dir(cfg) / "drafts"
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    (directory / f"{stamp}-{name}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False))
+    now = dt.datetime.now()
+    (directory / f"{now:%Y%m%d-%H%M%S}-{name}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False))
+    # Records hold full mail bodies: keep RECORD_DAYS days only.
+    cutoff = f"{now - dt.timedelta(days=RECORD_DAYS):%Y%m%d}"
+    for old in directory.glob("*.json"):
+        if old.name[:8].isdigit() and old.name[:8] < cutoff:
+            old.unlink(missing_ok=True)
 
 
 def result(chosen, readback, expected):
@@ -490,7 +567,10 @@ def main(argv=None):
         elif a[0] in ("probe", "inbox"):
             if cfg["draft_backend"] != "com":
                 raise Refused(f"{a[0]} needs draft_backend: com")
-            limit = int(a[a.index("--limit") + 1]) if "--limit" in a else 20
+            raw = a[a.index("--limit") + 1] if "--limit" in a and a.index("--limit") + 1 < len(a) else "20"
+            if not raw.isdigit() or not 0 < int(raw) <= 500:
+                raise Refused("--limit takes a number from 1 to 500")
+            limit = int(raw)
             out = ComBackend(cfg).call(a[0], **({"limit": limit} if a[0] == "inbox" else {}))
             print(json.dumps(out, ensure_ascii=False))
             return 0

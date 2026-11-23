@@ -4,6 +4,8 @@ internal_domains: [example.com]   # signature auto: external when any recipient 
 signatures:                   # one list of lines per kind; the draft file picks auto | internal | external | none
   internal: ["Best,", "Your Name"]
   external: ["Best regards,", "Your Name", "Your title, Company"]
+  # A line can be an image (inline attachment), path relative to the crow home:
+  # external: ["Best regards,", "Your Name", {image: local/mail/signature.png, width: 600, alt: "Company"}]
 body_style: ""                # optional CSS for a wrapper div around reply and signature
 attachment_roots: []          # when set, attachments must sit under one of these folders
 com:                          # classic Outlook from WSL

@@ -8,7 +8,8 @@
   crow-today snooze ID [--json]  flag the mail due tomorrow 08:00; Today hides it until then
                        --json prints {schema, ok, action, target, message, code}; exit 0 ok, 1 refused, 2 error
   crow-today thread ID print the mail's thread, newest first (sender, date, plain body)
-  crow-today draft ID [--all] < text   save a reply draft above the quote in Outlook Drafts (never sends)
+  crow-today draft ID [--all] < text   save a reply draft via crow-mail-draft (graph, signature from
+                                       local/mail.yaml, checks run); never sends
 
 Config: local/graph.yaml (tenant, client_id, user, timezone, mark_important).
 With mark_important: true, crow flags the mail it picks (category "crow"), once per mail, and
@@ -277,16 +278,34 @@ def thread(c, mid):
         print((x.get("body") or {}).get("content", "").strip())
 
 
-def draft(c, mid, text, reply_all):
-    """A reply draft with text above the native quote. Nothing is sent."""
-    tok = access(c)
-    path = "/me/messages/" + mid + ("/createReplyAll" if reply_all else "/createReply")
-    req = urllib.request.Request(GRAPH + path, json.dumps({"comment": text}).encode(), method="POST",
-                                 headers={"Authorization": "Bearer " + tok, "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        d = json.load(r)
+def draft(mid, text, reply_all):
+    """A reply draft through crow-mail-draft on the graph backend: signature from local/mail.yaml, checks run.
+    Nothing is sent. Exits 1 when a check fails."""
+    if not text:
+        sys.exit("draft: empty text on stdin")
+    from importlib.machinery import SourceFileLoader
+    from importlib.util import module_from_spec, spec_from_loader
+    import tempfile
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crow-mail-draft")
+    loader = SourceFileLoader("crow_mail_draft", path)
+    md = module_from_spec(spec_from_loader("crow_mail_draft", loader))
+    loader.exec_module(md)
+    try:
+        cfg = {**md.load_config(), "draft_backend": "graph"}  # Today ids are Graph ids
+        with tempfile.TemporaryDirectory() as tmp:
+            f = os.path.join(tmp, "draft.json")
+            with open(f, "w") as fh:
+                json.dump({"message_id": mid, "text": text, "mode": "all" if reply_all else "sender"}, fh)
+            out = md.cmd_save(f, cfg)
+    except (md.Refused, md.BackendError) as e:
+        sys.exit(f"draft: {e}")
     drop_cache()
-    print("draft saved: " + d.get("webLink", d.get("id", "")))
+    for ch in out["checks"]:
+        if not ch["ok"]:
+            print(f"check failed: {ch['name']}: {ch['detail']}")
+    print(("draft saved: " if out["ok"] else "draft saved, checks failed: ") + (out.get("link") or out.get("draft_id") or ""))
+    if not out["ok"]:
+        sys.exit(1)
 
 
 def fetch(c):
@@ -325,7 +344,7 @@ def main():
     if a[:1] == ["thread"]:
         return thread(c, a[1])
     if a[:1] == ["draft"]:
-        return draft(c, a[1], sys.stdin.read().strip(), "--all" in a)
+        return draft(a[1], sys.stdin.read().strip(), "--all" in a)
     if a[:1] != ["json"]:
         sys.exit(__doc__)
     if "-f" not in a and os.path.exists(CACHE) and time.time() - os.path.getmtime(CACHE) < TTL:

@@ -165,7 +165,7 @@ type mailActMsg struct{ text string }
 func mailTask(r todayRow) (task, end string) {
 	task = fmt.Sprintf("Mail from %s: %q (Graph message id %s). Read the thread with `bin/crow-today thread %s`, "+
 		"say in a few lines what it needs, then save a reply draft in French with `bin/crow-today draft %s [--all] < text` "+
-		"(sign-off per local/owner-prefs.md). Never send.", r.Tag, r.Subject, r.ID, r.ID, r.ID)
+		"(no sign-off: the signature comes from local/mail.yaml). Never send.", r.Tag, r.Subject, r.ID, r.ID, r.ID)
 	return task, "A reply draft in Outlook Drafts and a short summary of the thread; nothing sent."
 }
 

@@ -50,15 +50,16 @@
 - Built `bin/crow-mail-draft` (save, check, probe, inbox, delete-draft) with `draft_backend: graph | com | connector` in `local/mail.yaml` (`docs/mail.example.yaml`), one draft file per reply (message id, mode, html or text, signature rule, cc, attachments), and one backend-independent post-write check.
 - `bin/crow-mail-draft-com.ps1` is ported from the second user's tested panel bridge: fixed action list (probe, inbox, body, conversation, reply, draft, delete_draft), JSON request file, no Send, one attempt per write, lost answers reported uncertain.
 - Duplicate signature: Outlook ReplyAll inserts the automatic signature. The bridge drops it before inserting the reply; `signature_once` counts the configured signature outside the quote and `no_native_signature` fails on any `_MailAutoSig` bookmark left in the draft.
-- AC proofs: AC2 backend part (draft lands in Drafts with the given text, nothing sent) proved live on com. AC3 proved by tests (missing signature, duplicated signature, missing attachment) and live. AC4 config switch done; graph backend built and tested against a fake Graph only.
-- Left for later slices: Inbox rows and the Nest draft flow (AC1, AC2 UI part), the graph live proof on the owner's mailbox.
+- AC proofs: AC2 backend part (draft lands in Drafts with the given text, nothing sent) proved live on com. AC3 proved by tests (missing signature, duplicated signature, missing attachment) and live. AC4 config switch done; graph backend proved live on the owner's mailbox (2026-11-23).
+- Left for later slices: Inbox rows and the Nest draft flow (AC1, AC2 UI part).
 
-# Questions for the upstream owner
-- Graph drafts need `Mail.ReadWrite`; `docs/graph.example.yaml` lists `Mail.Read`. Can the owner's app get it, and will the owner run the graph live proof (AC4)?
-- `crow-today draft` already writes a Graph reply with a plain comment. Keep both, or route it through `crow-mail-draft`?
-- Signatures are text lines. The second user's panel also adds an external image signature (cid). Wanted in the engine?
-- Nest hook: which core route should call `crow-mail-draft save` (next slice)?
-- The 4 failing tests on origin/main above.
+# Owner decisions (2026-11-23)
+- `Mail.ReadWrite` is granted on the owner's app. Graph live proof (AC4) done on the owner's mailbox 2026-11-23: reply draft created, read back, six checks ok, deleted, nothing sent. Docs now list `Mail.ReadWrite`.
+- The live run found a `signature_once` false positive: the quoted header repeats the owner's name ("To: First Last"). The count now runs inside the `#crow-reply` wrapper both writing backends add.
+- One path: `crow-today draft` wraps `crow-mail-draft save` on the graph backend (signature and checks included).
+- Image signature in the engine: a signature line can be `{image, width, alt}`, sent as an inline attachment (graph `isInline`/`contentId`, com `cid`, connector `inline_images`); `signature_once` also checks each image once.
+- Nest route for `save`: defined in the Nest slice of item_224.
+- Nits fixed: `--limit` validated, `recipients` documented, draft records pruned after 30 days.
 
 # Links
 - Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`

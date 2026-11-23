@@ -54,6 +54,7 @@
 
 # Notes
 - Merges the draft parts of item_179 and item_092; those items keep calendar and the timer.
+- Engine slice (task_025) taken 2026-11-23: `bin/crow-mail-draft` with graph/com/connector backends, image signature, `crow-today draft` as its wrapper. AC3 and AC4 proved (AC4 live on graph). Left: Inbox rows and the Nest draft flow (AC1, AC2 UI), including the Nest route that calls `save`.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

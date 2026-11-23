@@ -39,7 +39,9 @@ def draft_file(tmp_path, **extra):
 
 def readback(**extra):
     base = {"draft_id": "D1", "is_draft": True, "sent": False, "attachments": [],
-            "html": '<html><body><div id="crow-reply">x</div><div>quoted</div></body></html>',
+            "html": ('<html><body><div id="crow-reply"><div>Hello,</div><div>The report is attached.</div>'
+                     '<div><br></div><div>Best,</div><div>Sam</div></div><div>From: A</div><div>Old text</div>'
+                     '</body></html>'),
             "body_text": "Hello,\r\nThe report is attached.\r\n\r\nBest,\r\nSam\r\n\r\nFrom: A\r\nOld text",
             "quoted_text": "Old text"}
     return {**base, **extra}
@@ -103,12 +105,24 @@ def test_checks_pass_on_a_clean_draft():
 def test_check_catches_a_duplicated_signature():
     # Classic Outlook ReplyAll adds its own closing next to the configured one.
     dup = readback(body_text="Hello,\nThe report is attached.\n\nBest,\nSam\n\nBest,\nSam\n\nFrom: A\nOld text")
+    dup["html"] = dup["html"].replace("<div>Sam</div></div>", "<div>Sam</div></div><div>Best,</div><div>Sam</div>")
+    assert by_name(M.run_checks(dup, EXPECTED))["signature_once"] is True  # the extra one sits outside crow-reply
+    dup["html"] = dup["html"].replace("<div>Sam</div></div>", "<div>Sam</div><div>Best,</div><div>Sam</div></div>")
     assert by_name(M.run_checks(dup, EXPECTED))["signature_once"] is False
+    no_marker = readback(html="", body_text=dup["body_text"])
+    assert by_name(M.run_checks(no_marker, EXPECTED))["signature_once"] is False
 
 
 def test_check_catches_the_native_signature_bookmark_even_with_other_text():
     native = readback(html='<body><div id="crow-reply">x</div><div><a name="_MailAutoSig">Corporate block</a></div></body>')
     assert by_name(M.run_checks(native, EXPECTED))["no_native_signature"] is False
+
+
+def test_quote_header_names_do_not_count_as_a_signature():
+    # Outlook's quoted header repeats the sender's name ("To: Sam"); only the reply part is counted.
+    rb = readback(body_text="Hello,\nThe report is attached.\nBest,\nSam\nFrom: A\nTo: Best, Sam")
+    rb["html"] = rb["html"].replace("<div>From: A</div>", "<div>From: A</div><div>To: Best, Sam</div>")
+    assert by_name(M.run_checks(rb, EXPECTED))["signature_once"] is True
 
 
 def test_signature_in_the_quoted_thread_does_not_count():
@@ -117,7 +131,8 @@ def test_signature_in_the_quoted_thread_does_not_count():
 
 
 def test_checks_flag_missing_signature_body_attachment_and_sent():
-    checks = by_name(M.run_checks(readback(body_text="Other text", is_draft=False, sent=True),
+    checks = by_name(M.run_checks(readback(body_text="Other text", html='<div id="crow-reply">Other text</div>',
+                                           is_draft=False, sent=True),
                                   {**EXPECTED, "attachments": ["a.pdf"]}))
     assert not any(checks[k] for k in ("body_visible", "signature_once", "attachments", "still_draft", "not_sent"))
 
@@ -289,3 +304,41 @@ def test_bridge_refuses_an_unknown_action(tmp_path):
                         "-RequestFile", to_win(req)], capture_output=True, encoding="utf-8", timeout=30)
     value = json.loads(r.stdout.lstrip("﻿"))
     assert r.returncode == 1 and value["ok"] is False and value["error"]["uncertain"] is False
+
+
+# --- image signature ---------------------------------------------------------------
+
+def test_image_signature_line_becomes_an_inline_attachment(tmp_path, cfg, monkeypatch):
+    monkeypatch.setattr(M, "home", lambda: tmp_path)
+    (tmp_path / "sig.png").write_bytes(b"\x89PNG")
+    cfg["signatures"]["external"] = ["Best regards,", "Sam", {"image": "sig.png", "width": 300, "alt": "Corp"}]
+    kind, sig = M.signature_lines("external", None, cfg)
+    assert sig[2] == {"image": str(tmp_path / "sig.png"), "width": 300, "alt": "Corp"}
+    images = M.signature_images(sig)
+    assert images == [{"path": str(tmp_path / "sig.png"), "name": "sig.png", "cid": "crow-sig-0@crow"}]
+    html = M.compose(M.load_draft(draft_file(tmp_path)), sig)
+    assert html.count('src="cid:crow-sig-0@crow"') == 1 and 'width="300"' in html
+    expected = {**EXPECTED, "signature": sig, "signature_images": images, "attachments": ["sig.png"]}
+    rb = readback(attachments=[{"name": "sig.png"}], html='<div id="crow-reply">' + html + "</div><div>Old text</div>",
+                  body_text="Hello, The report is attached. Best regards, Sam")
+    assert all(by_name(M.run_checks(rb, expected)).values())
+    rb["html"] = rb["html"].replace("cid:crow-sig-0@crow", "cid:other")
+    assert by_name(M.run_checks(rb, expected))["signature_once"] is False
+
+
+def test_image_signature_line_is_validated(tmp_path, cfg, monkeypatch):
+    monkeypatch.setattr(M, "home", lambda: tmp_path)
+    for bad in ({"image": "missing.png"}, {"width": 10}, {"image": "sig.png", "width": "wide"}):
+        (tmp_path / "sig.png").write_bytes(b"\x89PNG")
+        cfg["signatures"]["internal"] = ["Best,", bad]
+        with pytest.raises(M.Refused):
+            M.signature_lines("internal", None, cfg)
+
+
+def test_record_prunes_logs_older_than_the_retention(tmp_path, cfg):
+    old = M.state_dir(cfg) / "drafts"
+    old.mkdir(parents=True, exist_ok=True)
+    (old / "20000101-000000-old.json").write_text("{}")
+    M.record(cfg, "new", {"ok": True})
+    names = [p.name for p in old.glob("*.json")]
+    assert "20000101-000000-old.json" not in names and len(names) == 1
