@@ -280,7 +280,7 @@ def run_ps(script, tmp_path):
     path.write_text(script, encoding="utf-8-sig")
     win = subprocess.run(["wslpath", "-w", str(path)], capture_output=True, text=True, check=True).stdout.strip()
     return subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", win],
-                          capture_output=True, timeout=30)
+                          capture_output=True, timeout=30, check=False)
 
 
 def test_bridge_strips_only_the_automatic_signature(tmp_path):
@@ -301,7 +301,7 @@ def test_bridge_refuses_an_unknown_action(tmp_path):
     req.write_text('{"action":"send"}')
     to_win = lambda p: subprocess.run(["wslpath", "-w", str(p)], capture_output=True, text=True, check=True).stdout.strip()
     r = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", to_win(PS1),
-                        "-RequestFile", to_win(req)], capture_output=True, encoding="utf-8", timeout=30)
+                        "-RequestFile", to_win(req)], capture_output=True, encoding="utf-8", timeout=30, check=False)
     value = json.loads(r.stdout.lstrip("﻿"))
     assert r.returncode == 1 and value["ok"] is False and value["error"]["uncertain"] is False
 
@@ -312,7 +312,7 @@ def test_image_signature_line_becomes_an_inline_attachment(tmp_path, cfg, monkey
     monkeypatch.setattr(M, "home", lambda: tmp_path)
     (tmp_path / "sig.png").write_bytes(b"\x89PNG")
     cfg["signatures"]["external"] = ["Best regards,", "Sam", {"image": "sig.png", "width": 300, "alt": "Corp"}]
-    kind, sig = M.signature_lines("external", None, cfg)
+    _, sig = M.signature_lines("external", None, cfg)
     assert sig[2] == {"image": str(tmp_path / "sig.png"), "width": 300, "alt": "Corp"}
     images = M.signature_images(sig)
     assert images == [{"path": str(tmp_path / "sig.png"), "name": "sig.png", "cid": "crow-sig-0@crow"}]
