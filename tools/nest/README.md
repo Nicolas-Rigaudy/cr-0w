@@ -59,7 +59,7 @@ UI states map from contract states:
 - Inner (>= 600px): header pills, two columns. Laptop (>= 1200px): Home in three columns.
 - Fold spanning (`horizontal-viewport-segments: 2`) splits on the hinge.
 - Themes: `modern` and `cyber` on `<html data-theme>`, toggled in the header, kept in localStorage.
-- Desk, MRs, Agenda and Reports are placeholders until the live API.
+- Pages come from `/api/modules`: a page with every section off is hidden. Brick list sections render after a page's own panels (`docs/writing-a-brick.md`). Install: `docs/install-bricks.md`.
 
 ## Budget
 

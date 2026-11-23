@@ -1,6 +1,6 @@
 {
   "section": "projects",
-  "version": "708f5c3ea06a9201",
+  "version": "e1941f02e1cb8fd5",
   "updated_at": "2026-11-10T09:00:00Z",
   "data": {
     "daily_dir": "daily_dir",
@@ -14,6 +14,7 @@
           "email": "email",
           "stale_trees": "stale_trees"
         },
+        "layout": "repo",
         "logics": "logics",
         "name": "name",
         "path": "path",

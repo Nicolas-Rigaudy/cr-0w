@@ -33,3 +33,19 @@ func TestForgeOnKeepsMRsPage(t *testing.T) {
 		t.Errorf("3 went to page %d, want 2", n.page)
 	}
 }
+
+func TestMailOffSkipsTodaySource(t *testing.T) {
+	setHiddenPages([]brickPages{{Name: "mail", Boxes: []string{"today"}}, {Name: "team", On: true, Boxes: []string{"checks"}}})
+	t.Cleanup(func() { setHiddenPages(nil) })
+	if fetchCmd(srcToday) != nil {
+		t.Error("mail off: today is still fetched")
+	}
+	if fetchCmd(srcChecks) == nil {
+		t.Error("team on: checks not fetched")
+	}
+	m := newModel(defaultConfig())
+	m.w, m.h = 120, 40
+	if pageHidden(0) {
+		t.Error("a box switch hid a page")
+	}
+}

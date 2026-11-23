@@ -24,12 +24,54 @@ var yaml11Bools = map[string]bool{
 
 // Manifest is the part of an engine module manifest (modules/<brick>.yaml) the loader reads.
 type Manifest struct {
-	Name     string         `yaml:"name"`
-	Summary  string         `yaml:"summary"`
-	Default  bool           `yaml:"default"`
-	Requires []string       `yaml:"requires"`
-	Config   map[string]any `yaml:"config"`
-	User     bool           `yaml:"-"`
+	Name         string         `yaml:"name"`
+	Summary      string         `yaml:"summary"`
+	Default      bool           `yaml:"default"`
+	Requires     []string       `yaml:"requires"`
+	Config       map[string]any `yaml:"config"`
+	CoreSections []string       `yaml:"core_sections"`
+	CoreRoutes   []string       `yaml:"core_routes"`
+	Nest         NestManifest   `yaml:"nest"`
+	Deck         DeckManifest   `yaml:"deck"`
+	User         bool           `yaml:"-"`
+	Dir          string         `yaml:"-"` // folder of a user brick (its bin/ holds the scripts)
+}
+
+// NestManifest lists the Nest sections a brick adds (item_237).
+type NestManifest struct {
+	Sections []NestSection `yaml:"sections" json:"sections"`
+}
+
+// NestSection is one Nest panel. Page is home, desk, ops or reports (or a brick's built-in
+// page). Source is the core section it reads. View is "list" for the generic list view;
+// empty means a view built into Nest. Run makes core serve the section from the brick's
+// bin/ script (user bricks): [script, args...], its stdout JSON is the section data.
+type NestSection struct {
+	ID      string       `yaml:"id" json:"id"`
+	Page    string       `yaml:"page" json:"page"`
+	Source  string       `yaml:"source" json:"source"`
+	Title   string       `yaml:"title" json:"title,omitempty"`
+	View    string       `yaml:"view" json:"view,omitempty"`
+	Run     []string     `yaml:"run" json:"-"`
+	TTL     string       `yaml:"ttl" json:"-"`
+	Actions []NestAction `yaml:"actions" json:"actions,omitempty"`
+}
+
+// NestAction is a button of a section. Core runs Script (bin/ of the brick) with Args
+// through POST /api/modules/<brick>/actions/<id>; "{item}" in an arg is the row id.
+type NestAction struct {
+	ID      string   `yaml:"id" json:"id"`
+	Label   string   `yaml:"label" json:"label"`
+	Script  string   `yaml:"script" json:"-"`
+	Args    []string `yaml:"args" json:"-"`
+	Confirm bool     `yaml:"confirm" json:"confirm"`
+	Row     bool     `yaml:"-" json:"row"` // an arg takes {item}: the button sits on each row
+}
+
+// DeckManifest lists the deck pages and Home boxes a brick owns.
+type DeckManifest struct {
+	Pages []string `yaml:"pages" json:"pages"`
+	Boxes []string `yaml:"boxes" json:"boxes"`
 }
 
 // Module is the state of one brick after crow.yaml.
@@ -140,7 +182,7 @@ func UserManifests(home, engine string, engineNames map[string]Manifest) (map[st
 		if _, has := top["default"]; !has {
 			m.Default = true
 		}
-		m.Name, m.User = name, true
+		m.Name, m.User, m.Dir = name, true, filepath.Join(root, name)
 		out[name] = m
 	}
 	return out, errs
@@ -159,9 +201,43 @@ func CrowYAMLPath(home string) string {
 // crow_lib.load_modules does. A broken file or key is listed in Errors and keeps the
 // default; core stays on. The error is for unreadable engine manifests only.
 func LoadModules(home, engine string) (ModuleState, error) {
+	st, _, err := loadAll(home, engine)
+	return st, err
+}
+
+// Brick is one brick with its switch and manifest.
+type Brick struct {
+	Manifest
+	On bool
+}
+
+// Bricks returns every brick sorted by name, with the crow.yaml state and its errors.
+func Bricks(home, engine string) ([]Brick, ModuleState, error) {
+	st, manifests, err := loadAll(home, engine)
+	if err != nil {
+		return nil, st, err
+	}
+	out := make([]Brick, 0, len(manifests))
+	for _, n := range sortedKeys(manifests) {
+		m := manifests[n]
+		for i, sec := range m.Nest.Sections {
+			for j, a := range sec.Actions {
+				for _, arg := range a.Args {
+					if strings.Contains(arg, "{item}") {
+						m.Nest.Sections[i].Actions[j].Row = true
+					}
+				}
+			}
+		}
+		out = append(out, Brick{Manifest: m, On: st.Modules[n].On})
+	}
+	return out, st, nil
+}
+
+func loadAll(home, engine string) (ModuleState, map[string]Manifest, error) {
 	manifests, err := EngineManifests(engine)
 	if err != nil {
-		return ModuleState{}, err
+		return ModuleState{}, nil, err
 	}
 	users, userErrs := UserManifests(home, engine, manifests)
 	for n, m := range users {
@@ -264,7 +340,7 @@ func LoadModules(home, engine string) (ModuleState, error) {
 		a, b := st.Errors[i], st.Errors[j]
 		return a.Key < b.Key || a.Key == b.Key && a.Error < b.Error
 	})
-	return st, nil
+	return st, manifests, nil
 }
 
 // Modules is the on set with config: brick -> config for every brick that is on.

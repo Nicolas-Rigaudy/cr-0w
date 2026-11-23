@@ -154,9 +154,10 @@ modules:
 
 ## Front and back
 - `core-api` is the back brick. Its contract is versioned in `logics/specs/core_contract` with `contract_version` in every `/api/state` response. crow-check runs the contract check.
-- New `GET /api/modules`: `{contract_version, modules: [{name, on, sections, nest: {sections}, deck: {pages}}]}`. Fronts read it at start and after a `modules` event.
-- Nest is a static build. Its config is the core URL and a token; it builds once and runs against any core.
-- Nest navigation comes from `/api/modules`. A page shows when at least one of its sections is on. Sections render with components shipped in the Nest bundle. A manifest may name a built-in view or the generic list view over its section JSON; no code is loaded at runtime.
+- New `GET /api/modules`: `{contract_version, version, modules: [{name, on, user, sections, nest: {sections}, deck: {pages, boxes}}], errors}`. Core reads crow.yaml and the manifests again when one changes (checked at most once a second). Nest polls the route with an ETag; there is no `modules` event.
+- Login without Tailscale: `crow core url` prints `/?token=<token>`. Opening it sets an HttpOnly cookie. The tailnet owner login still works behind `tailscale serve`.
+- Nest is a static build served by core at its own origin (`serve.nest` in `local/core.yaml`). It builds once and runs against any core. Install steps: `docs/install-bricks.md`.
+- Nest navigation comes from `/api/modules`. A page shows when at least one of its sections is on. Sections render with components shipped in the Nest bundle. A manifest may name a built-in view or the generic list view over its section JSON; no code is loaded at runtime. Generic list sections go on the page they name, after its panels. Their actions run through `POST /api/modules/<brick>/actions/<id>` (`docs/writing-a-brick.md`).
 - The deck reads `crow modules json` (core may be off) and hides pages and boxes the same way.
 
 ## Nest is the panel

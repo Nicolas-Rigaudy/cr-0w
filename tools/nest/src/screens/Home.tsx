@@ -127,7 +127,7 @@ function HomeCompact({ snap }: { snap: Snapshot }) {
       <AskBar />
       <Needs m={m} />
       <Running m={m} />
-      <Agenda m={m} />
+      {!snap.sections.today?.off && <Agenda m={m} />}
     </div>
   )
 }

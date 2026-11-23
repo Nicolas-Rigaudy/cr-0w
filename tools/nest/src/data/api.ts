@@ -1,6 +1,7 @@
 import { apiButler } from './butler'
 import { conversationPath, pageQuery, type ConversationPage } from './conversation'
 import type { Actions, LiveReply, Screen } from './live'
+import type { Modules } from './modules'
 import type { Ops, RunReport } from './ops'
 import type { DataSource } from './source'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
@@ -120,6 +121,7 @@ export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, ini
     },
     afkSave: (job, text) => post('/afk', { id: job, text }, 'PUT'),
     afkSkip: (job) => post(`/afk/skip?id=${id(job)}`),
+    module: (brick, action, item) => post(`/modules/${id(brick)}/actions/${id(action)}`, item === undefined ? undefined : { item }),
   }
 }
 
@@ -128,10 +130,21 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
   // all=1 keeps answered asks, which mission detail lists as history.
   const inbox = records<InboxItem>(get, `${base}/state/inbox?all=1`)
   const sections = new Map<SectionName, () => Promise<SectionBody>>()
-  const section = (name: SectionName) => {
-    let read = sections.get(name)
-    if (!read) sections.set(name, (read = scriptSection(get, `${base}/state/${name}`)))
+  const section = (name: SectionName | string) => {
+    let read = sections.get(name as SectionName)
+    if (!read) sections.set(name as SectionName, (read = scriptSection(get, `${base}/state/${encodeURIComponent(name)}`)))
     return read()
+  }
+  // /api/modules answers 304 while no switch or manifest changed: the same object comes back.
+  let mods: Modules | null = null
+  let modsTag = ''
+  const modules = async (): Promise<Modules> => {
+    const res = await get(`${base}/modules`, { headers: modsTag ? { 'If-None-Match': modsTag } : {}, cache: 'no-store' })
+    if (res.status === 304 && mods) return mods
+    if (!res.ok) throw await failure(res)
+    mods = (await res.json()) as Modules
+    modsTag = res.headers.get('ETag') ?? ''
+    return mods
   }
   // The agenda array is rebuilt only when the today body changes.
   let today: SectionBody | null = null
@@ -140,6 +153,8 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
     missions,
     inbox,
     section,
+    modules,
+    brickSection: section,
     async mission(id) {
       const res = await get(`${base}/missions/${encodeURIComponent(id)}`, { cache: 'no-store' })
       if (res.status === 404) return undefined
@@ -162,8 +177,15 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
       if (!res.ok) throw await failure(res)
       return (await res.json()) as RunReport
     },
+    // The agenda follows the today section; a failure (mail off, script error) keeps the
+    // last one, so only missions and inbox decide that core is down.
     async agenda() {
-      const body = await section('today')
+      let body: SectionBody
+      try {
+        body = await section('today')
+      } catch {
+        return agenda
+      }
       if (body !== today) [today, agenda] = [body, agendaOf(body)]
       return agenda
     },

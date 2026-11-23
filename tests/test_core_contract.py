@@ -41,7 +41,17 @@ def test_every_schema_has_fixtures():
     assert {p.name for p in SCHEMAS.glob("*.json")} == {
         "request.schema.json", "reply.schema.json", "event.schema.json",
         "mission.schema.json", "run.schema.json", "inbox.schema.json", "live-action.schema.json",
-        "work-item.schema.json", "ops.schema.json", "run-report.schema.json"}
+        "work-item.schema.json", "ops.schema.json", "run-report.schema.json", "modules.schema.json"}
+
+
+def test_modules_fixture_valid():
+    doc = load(FIX / "api" / "modules.json")
+    errs = errors("modules.schema.json", doc)
+    assert not errs, "; ".join(errs)
+    assert any(a["row"] for b in doc["modules"] for s in b["nest"]["sections"] for a in s.get("actions", []))
+    bad = json.loads(json.dumps(doc))
+    bad["modules"][0]["nest"]["sections"] = [{"id": "x", "page": "home", "source": "x", "run": ["crow-x"]}]
+    assert errors("modules.schema.json", bad), "script names must not reach Nest"
 
 
 def test_run_report_fixtures_valid():
@@ -236,7 +246,7 @@ def test_api_section_fixture(path):
 
 def test_api_state_fixture():
     st = load(API / "state.json")
-    assert set(st) == {"version", "sections"}
+    assert set(st) == {"contract_version", "version", "sections"}
     assert set(st["sections"]) == {
         "inbox", "missions", "runs", "sessions", "dispatch", "usage", "today",
         "mrs", "checks", "projects", "accounts", "jobs", "work", "ops", "ready"}

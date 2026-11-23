@@ -43,10 +43,12 @@ const usage = `usage: crow-core <command>
   tick [--json]     finish the mission runs that ended, then start queued missions through
                     crow-runs (oldest first, CROW_MAX_RUNS at once, default 2)
   serve             run the HTTP service: /api read routes and the Nest app, on the loopback
-                    port tailscale serve proxies to (owner login required) and a unix socket
+                    port tailscale serve proxies to (owner login or core token required) and a unix socket
   install           write and start the crow-core systemd user unit, point tailscale serve at it
   status            unit state, listen addresses and tailscale serve config
   restart           restart the unit (crow core rebuilds the binary first)
+  url               print the login link: opening it once sets the core token cookie, for
+                    browsers without the tailnet login (WSL, LAN)
   mcp               MCP stdio server of the butler: core tools over the unix socket (item_176)
   config            print the resolved paths as JSON
   version           print the core and contract versions
@@ -96,7 +98,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		Projects: cfg.Projects, Prefs: cfg.Prefs, Now: time.Now, StopRun: stopRun(cfg.Engine),
 	}
 	switch cmd {
-	case "serve", "install", "status", "restart":
+	case "serve", "install", "status", "restart", "url":
 		return coreCmd(cmd, env, cfg, stdout)
 	case "mission":
 		return missionCmd(env, rest, stdout)

@@ -22,6 +22,8 @@ Contract version: **1**. It is the `v` field of every sidecar message and the `c
 | `fixtures/records/ops.json` | One ops answer |
 | `schemas/run-report.schema.json` | Data of `GET /api/runs/{id}` (item_257) |
 | `fixtures/records/run-report.json` | One run report |
+| `schemas/modules.schema.json` | `GET /api/modules`: bricks, switches, Nest sections and actions, deck pages and boxes (item_237) |
+| `fixtures/api/modules.json` | One modules answer, written by the Go api test |
 
 Fixtures from `../req_037_run_contract/` read by both sides: the 8 kind files, every crow block under `examples/`, `examples/gates/questions.json`, `examples/20261109-build-item-095/events.jsonl`.
 

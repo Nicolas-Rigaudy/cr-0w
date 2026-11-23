@@ -10,12 +10,19 @@ import (
 // keys do nothing.
 var hiddenPages = map[int]bool{}
 
+// hiddenBoxes holds the deck sources of off bricks (deck.boxes, item_237). They are never
+// fetched, so their boxes stay empty and hide as they do with no data.
+var hiddenBoxes = map[string]bool{}
+
 func pageHidden(i int) bool { return hiddenPages[i] }
+
+func boxHidden(src string) bool { return hiddenBoxes[src] }
 
 type brickPages struct {
 	Name  string   `json:"name"`
 	On    bool     `json:"on"`
 	Pages []string `json:"deck_pages"`
+	Boxes []string `json:"deck_boxes"`
 }
 
 // loadHiddenPages reads the brick switches once at start. A failure keeps every page.
@@ -29,12 +36,15 @@ func loadHiddenPages() {
 	setHiddenPages(r.Modules)
 }
 
-// setHiddenPages hides the pages of every brick that is off.
+// setHiddenPages hides the pages and boxes of every brick that is off.
 func setHiddenPages(mods []brickPages) {
-	hiddenPages = map[int]bool{}
+	hiddenPages, hiddenBoxes = map[int]bool{}, map[string]bool{}
 	for _, b := range mods {
 		if b.On {
 			continue
+		}
+		for _, src := range b.Boxes {
+			hiddenBoxes[src] = true
 		}
 		for _, name := range b.Pages {
 			for i, n := range pageNames {

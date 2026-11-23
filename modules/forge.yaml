@@ -22,5 +22,6 @@ nest:
     - {id: mrs, page: mrs, source: mrs}
 deck:
   pages: [MRs]
+  boxes: [mrs]  # the deck source: off, the Home blockers and decide rows lose their MR rows
 config:
   hosts: {}  # forge name -> host, empty = public hosts

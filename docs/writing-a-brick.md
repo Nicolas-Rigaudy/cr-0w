@@ -48,6 +48,50 @@ modules:
 
 After a change, run `crow modules link` to relink skills.
 
+## Nest sections
+
+A brick can add a panel to Nest without Nest code. Declare a section with the generic list
+view and a `bin/` script that prints its data. Core runs the script, caches the result for
+`ttl` and serves it at `/api/state/<id>`. The panel sits on the page it names, after that
+page's own panels.
+
+```yaml
+nest:
+  sections:
+    - id: notes            # also the core section name
+      page: desk           # home, desk, ops or reports
+      title: Notes
+      view: list
+      run: [crow-notes, json]
+      ttl: 1m
+      actions:
+        - {id: done, label: Done, script: crow-notes, args: [done, "{item}"], confirm: true}
+        - {id: sweep, label: Sweep, script: crow-notes, args: [sweep]}
+```
+
+The script prints one JSON object on stdout:
+
+```json
+{"items": [{"id": "n-42", "title": "Call the bank", "detail": "before Friday", "meta": "2d", "url": "https://..."}]}
+```
+
+Only `id` and `title` are required. `url` makes the title a link.
+
+Actions:
+
+- Nest posts to `POST /api/modules/<brick>/actions/<id>`. Core runs `bin/<script>` of the brick
+  with `args`, under the script contract.
+- An action with `{item}` in its args is a row button. `{item}` becomes the row `id`. Row ids
+  must be plain: letters, digits, spaces and `._:@/+=~-`, at most 200 characters.
+- An action without `{item}` is a button in the panel header.
+- `confirm: true` asks for a second click.
+- The last stdout line is shown as the result. Exit 2 shows the stderr line as a refusal
+  (HTTP 409). Any other failure shows as an error (HTTP 502). Actions time out after 90 s.
+- The section is refreshed after each action.
+
+`/api/modules` never shows `run`, `script` or `args`. When the brick is off, the section is
+not served and its actions answer 404 `module off`.
+
 ## Script contract
 
 - `crow <cmd>` runs `bin/<cmd>` or `bin/crow-<cmd>` from an on user brick when no engine command has that name. Engine commands always win.

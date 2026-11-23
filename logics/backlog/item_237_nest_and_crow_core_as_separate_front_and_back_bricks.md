@@ -1,8 +1,8 @@
 ## item_237_nest_and_crow_core_as_separate_front_and_back_bricks - Nest and crow-core as separate front and back bricks
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90
+> Status: In progress
+> Understanding: 95
 > Confidence: 80
 > Progress: 0%
 > Complexity: Medium
@@ -31,6 +31,11 @@
   - Try it on the second user's setup (WSL, no forge) as the acceptance run.
 - Out:
   - Hosting outside the tailnet.
+
+# Owner decisions (2026-11-23)
+- Auth without Tailscale: token cookie. Core makes a token at install; `crow core url` prints `http://127.0.0.1:8787/?token=...`; opening it once sets an HttpOnly cookie and Nest works, live events included. The Tailscale setup is unchanged.
+- Generic sections go on the page they name (home, desk, ops, reports), after that page's built-in panels. No new tab.
+- Reload: core checks crow.yaml mtime on each modules read and sends a `modules` event; Nest updates its tabs without a reload.
 
 # Acceptance criteria
 - AC1: Nest built with no MR/mail modules shows no empty tabs.

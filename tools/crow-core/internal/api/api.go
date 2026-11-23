@@ -49,10 +49,14 @@ type Options struct {
 	Nest      string        // built Nest dir served at /; empty serves no app
 	Sources   []Source      // sections outside the store, refreshed in the background
 	Now       func() time.Time
-	Script    Script          // runs the bin/ scripts of the live actions (live.go); nil refuses them
-	ActionLog string          // core action log the live actions append to
-	StateDir  string          // machine state dir (local/state): AFK jobs for ops; empty skips them
-	Butler    *butler.Manager // butler chat (item_176); nil disables it
+	Script    Script                   // runs the bin/ scripts of the live actions (live.go); nil refuses them
+	ActionLog string                   // core action log the live actions append to
+	StateDir  string                   // machine state dir (local/state): AFK jobs for ops; empty skips them
+	Butler    *butler.Manager          // butler chat (item_176); nil disables it
+	Modules   func() (*Modules, error) // brick switches (item_237); nil gates nothing
+	Home      string                   // CROW_HOME, passed to brick action scripts
+	Engine    string                   // CROW_ENGINE, holds the engine bin/
+	Token     func() string            // TCP login token (item_237); nil or empty turns it off
 }
 
 // Server answers the routes. It is safe for concurrent use.
@@ -82,8 +86,9 @@ type Section struct {
 
 // State is GET /api/state.
 type State struct {
-	Version  string             `json:"version"`
-	Sections map[string]Section `json:"sections"`
+	ContractVersion int                `json:"contract_version"`
+	Version         string             `json:"version"`
+	Sections        map[string]Section `json:"sections"`
 }
 
 // New returns a server over the options.
@@ -128,23 +133,41 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	s.routeConversation(mux)
 	s.routeTerminal(mux)
 	s.routeButler(mux)
+	s.routeModules(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})
 	mux.HandleFunc("/", s.static)
-	return s.guard(trusted, mux)
+	return s.guard(trusted, s.gate(mux))
+}
+
+// gate answers 404 "module off" on the routes of an off brick (adr_002).
+func (s *Server) gate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") && s.mods().routeOff(r) {
+			fail(w, http.StatusNotFound, "module off")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // guard checks identity and the CSRF header before any route.
 func (s *Server) guard(trusted bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !trusted {
-			owner := s.o.Owner()
-			if owner == "" {
-				fail(w, http.StatusForbidden, "owner login unknown: set serve.owner_login or log in to tailscale")
+			switch s.login(w, r) {
+			case loginRedirected:
 				return
-			}
-			if r.Header.Get(IdentityHeader) != owner {
+			case loginRefused:
+				if s.tokenOn() {
+					fail(w, http.StatusForbidden, "owner only: open the link `crow core url` prints")
+					return
+				}
+				if s.o.Owner() == "" {
+					fail(w, http.StatusForbidden, "owner login unknown: set serve.owner_login or log in to tailscale")
+					return
+				}
 				fail(w, http.StatusForbidden, "owner only")
 				return
 			}
@@ -171,9 +194,13 @@ func sameOrigin(r *http.Request, trusted bool) bool {
 }
 
 func (s *Server) state(w http.ResponseWriter, r *http.Request) {
-	out := State{Sections: map[string]Section{}}
+	out := State{ContractVersion: contract.Version, Sections: map[string]Section{}}
 	h := sha256.New()
+	mods := s.mods()
 	for _, name := range s.order {
+		if mods.sectionOff(name) {
+			continue
+		}
 		sec, err := s.read(name, r)
 		if err != nil {
 			fail(w, http.StatusInternalServerError, name+": "+err.Error())
@@ -190,6 +217,10 @@ func (s *Server) section(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("section")
 	if !slices.Contains(s.order, name) {
 		fail(w, http.StatusNotFound, "no section "+name)
+		return
+	}
+	if s.mods().sectionOff(name) {
+		fail(w, http.StatusNotFound, "module off")
 		return
 	}
 	sec, err := s.read(name, r)

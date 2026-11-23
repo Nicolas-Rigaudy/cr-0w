@@ -1284,6 +1284,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   }
   .hh-b.p { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .hh-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .hh-duo > :only-child { grid-column: 1 / -1; }
   .hh-duo > div {
     display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 9px 12px;
     border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--c-n) 7%, var(--row));
@@ -1488,4 +1489,20 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 @media (min-width: 1200px) {
   .ops { height: 100%; overflow-y: auto; padding: 12px 20px 16px; }
   .ops-low { grid-template-columns: 1fr 1fr; }
+}
+
+/* Generic brick sections (item_237): list rows with optional actions, after a page's panels. */
+.bricks { display: flex; flex-direction: column; gap: 12px; padding-top: 0; }
+.brick .ph { align-items: center; }
+.brick-acts { display: flex; gap: 6px; }
+.brick-row { display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 13px; }
+.brick-row + .brick-row { border-top: 1px solid var(--line); }
+.brick-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brick .btn.sm { min-height: 0; height: 24px; padding: 0 9px; font-size: 11px; border-radius: 6px; flex: none; }
+/* Laptop pages fill the screen: with bricks the page shrinks and the bricks scroll under it. */
+@media (min-width: 1200px) {
+  .with-bricks { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  .with-bricks > :first-child { flex: 1; height: auto; min-height: 0; }
+  .with-bricks > .bricks { flex: none; align-self: stretch; max-width: none; margin: 0; max-height: 40%; overflow-y: auto; padding: 0 20px 16px; }
+  .with-bricks > .bricks > .brick { width: 100%; box-sizing: border-box; }
 }

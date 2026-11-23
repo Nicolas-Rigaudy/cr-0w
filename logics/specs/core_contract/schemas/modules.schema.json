@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/modules.schema.json",
+  "title": "modules",
+  "description": "GET /api/modules (item_237): every brick with its switch, the core sections it serves and what it adds to Nest and the deck. version changes when crow.yaml or a manifest changes. Script names and args stay in core.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "version", "modules", "errors"],
+  "properties": {
+    "contract_version": {"type": "integer", "minimum": 1},
+    "version": {"type": "string", "minLength": 1},
+    "modules": {"type": "array", "items": {"$ref": "#/$defs/brick"}},
+    "errors": {"type": "array", "items": {"$ref": "#/$defs/error"}}
+  },
+  "$defs": {
+    "brick": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "on", "user", "sections", "nest", "deck"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "on": {"type": "boolean"},
+        "user": {"type": "boolean", "description": "A user brick from <CROW_HOME>/modules/<name>/."},
+        "sections": {"type": "array", "items": {"type": "string"}, "description": "Core sections it serves. Off: they leave /api/state and answer 404 module off."},
+        "nest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sections"],
+          "properties": {"sections": {"type": "array", "items": {"$ref": "#/$defs/section"}}}
+        },
+        "deck": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pages", "boxes"],
+          "properties": {
+            "pages": {"type": "array", "items": {"type": "string"}},
+            "boxes": {"type": "array", "items": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "page", "source"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "page": {"type": "string", "minLength": 1, "description": "Nest page it shows on: a built-in page (home, desk, ops, reports) or a page of its own."},
+        "source": {"type": "string", "minLength": 1, "description": "Core section it reads: /api/state/<source>."},
+        "title": {"type": "string"},
+        "view": {"enum": ["list"], "description": "list: Nest draws it with the generic list view. Absent: a built-in panel."},
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "confirm", "row"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+        "label": {"type": "string", "minLength": 1},
+        "confirm": {"type": "boolean"},
+        "row": {"type": "boolean", "description": "Runs on one row: POST {\"item\": <row id>}."}
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "key", "error"],
+      "properties": {"file": {"type": "string"}, "key": {"type": "string"}, "error": {"type": "string"}}
+    }
+  }
+}

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { startBoot } from './boot/boot'
 import { apiSource } from './data/api'
-import { fixtureSource } from './data/fixtures'
+import { DEMO_BRICKS, fixtureSource } from './data/fixtures'
 import { DataContext } from './data/useData'
 import { Router } from './router'
 import './theme.css'
@@ -11,7 +11,9 @@ import './theme.css'
 // The adapter is picked here and nowhere else (AC3). Builds read the core API;
 // dev and tests use fixtures unless VITE_NEST_SOURCE=api.
 const live = import.meta.env.PROD || import.meta.env.VITE_NEST_SOURCE === 'api'
-const source = live ? apiSource() : fixtureSource()
+// ?bricks shows the fixtures with demo bricks: mail, forge and team off, a user list section.
+const demo = !live && new URLSearchParams(location.search).has('bricks')
+const source = live ? apiSource() : demo ? fixtureSource(undefined, undefined, undefined, undefined, undefined, DEMO_BRICKS) : fixtureSource()
 
 // Trace boot on the first Home load of a session; ?boot=1 replays it.
 startBoot()

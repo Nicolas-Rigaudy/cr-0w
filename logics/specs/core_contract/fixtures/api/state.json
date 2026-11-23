@@ -1,5 +1,6 @@
 {
-  "version": "55e91eaa497efe03",
+  "contract_version": 1,
+  "version": "17a33dadb12b7807",
   "sections": {
     "accounts": {
       "section": "accounts",
@@ -393,7 +394,7 @@
     },
     "projects": {
       "section": "projects",
-      "version": "708f5c3ea06a9201",
+      "version": "e1941f02e1cb8fd5",
       "updated_at": "2026-11-10T09:00:00Z",
       "data": {
         "daily_dir": "daily_dir",
@@ -407,6 +408,7 @@
               "email": "email",
               "stale_trees": "stale_trees"
             },
+            "layout": "repo",
             "logics": "logics",
             "name": "name",
             "path": "path",

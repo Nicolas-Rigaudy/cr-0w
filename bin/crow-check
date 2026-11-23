@@ -165,7 +165,25 @@ def g_version(root):
     return "pass", f"version {ver}, changelog current"
 
 
-GROUPS = [("pytest", g_pytest, True), ("shellcheck", g_shellcheck, False), ("ruff", g_ruff, False),
+def g_contract(root):
+    """Core contract (item_237): the Python schema tests, then the Go side when go is installed."""
+    test = root / "tests" / "test_core_contract.py"
+    if not test.is_file():
+        return "skip", "no core contract test"
+    r = sh([sys.executable, "-m", "pytest", "-q", "-x", str(test)], root)
+    if r.returncode != 0:
+        return "fail", "python: " + ((r.stdout + r.stderr).strip().splitlines() or [""])[-1]
+    core = root / "tools" / "crow-core"
+    if not shutil.which("go") or not core.is_dir():
+        return "pass", "python schemas pass; go not installed, Go side skipped"
+    r = sh(["go", "test", "./contract/...", "./internal/api/...", "./internal/config/..."], core)
+    if r.returncode != 0:
+        lines = [x for x in (r.stdout + r.stderr).splitlines() if "FAIL" in x or "--- " in x]
+        return "fail", "go: " + "; ".join(lines[:3])
+    return "pass", "python schemas and Go contract tests pass"
+
+
+GROUPS = [("pytest", g_pytest, True), ("contract", g_contract, False), ("shellcheck", g_shellcheck, False), ("ruff", g_ruff, False),
           ("leak", g_leak, False), ("commits", g_commits, False), ("version", g_version, False)]
 
 

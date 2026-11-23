@@ -40,7 +40,11 @@ var fetchers = map[string]func() (any, error){
 	srcRelay:    func() (any, error) { return fetchRelStatus() },
 }
 
+// fetchCmd fetches one source, nil when its brick is off.
 func fetchCmd(src string) tea.Cmd {
+	if boxHidden(src) {
+		return nil
+	}
 	return func() tea.Msg {
 		v, err := fetchers[src]()
 		return srcMsg{src: src, val: v, err: err, at: time.Now()}

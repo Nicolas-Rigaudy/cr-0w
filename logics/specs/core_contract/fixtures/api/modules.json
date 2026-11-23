@@ -1,0 +1,111 @@
+{
+  "contract_version": 1,
+  "version": "1e3c886ca94b3567",
+  "modules": [
+    {
+      "name": "core-api",
+      "on": true,
+      "user": false,
+      "sections": [
+        "sessions"
+      ],
+      "nest": {
+        "sections": []
+      },
+      "deck": {
+        "pages": [],
+        "boxes": []
+      }
+    },
+    {
+      "name": "forge",
+      "on": true,
+      "user": false,
+      "sections": [
+        "mrs"
+      ],
+      "nest": {
+        "sections": [
+          {
+            "id": "mrs",
+            "page": "mrs",
+            "source": "mrs"
+          }
+        ]
+      },
+      "deck": {
+        "pages": [
+          "MRs"
+        ],
+        "boxes": []
+      }
+    },
+    {
+      "name": "mail",
+      "on": false,
+      "user": false,
+      "sections": [
+        "today"
+      ],
+      "nest": {
+        "sections": [
+          {
+            "id": "today",
+            "page": "home",
+            "source": "today"
+          }
+        ]
+      },
+      "deck": {
+        "pages": [],
+        "boxes": [
+          "today"
+        ]
+      }
+    },
+    {
+      "name": "notes",
+      "on": true,
+      "user": true,
+      "sections": [
+        "notes"
+      ],
+      "nest": {
+        "sections": [
+          {
+            "id": "notes",
+            "page": "desk",
+            "source": "notes",
+            "title": "Notes",
+            "view": "list",
+            "actions": [
+              {
+                "id": "done",
+                "label": "Done",
+                "confirm": true,
+                "row": true
+              },
+              {
+                "id": "sweep",
+                "label": "Sweep",
+                "confirm": false,
+                "row": false
+              }
+            ]
+          }
+        ]
+      },
+      "deck": {
+        "pages": [],
+        "boxes": []
+      }
+    }
+  ],
+  "errors": [
+    {
+      "file": "crow.yaml",
+      "key": "modules.ghost",
+      "error": "no brick named ghost"
+    }
+  ]
+}

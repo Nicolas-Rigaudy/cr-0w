@@ -39,15 +39,25 @@ func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 	} else {
 		defer bm.Close()
 	}
+	stateDir := filepath.Dir(env.Store.Root())
+	token, err := api.EnsureToken(stateDir)
+	if err != nil {
+		return fmt.Errorf("core token: %w", err)
+	}
+	mods := api.LoadModules(cfg.Home, cfg.Engine)
 	srv := api.New(api.Options{
 		Butler:    bm,
 		Env:       env,
 		Owner:     owner,
 		Nest:      cfg.Serve.Nest,
-		Sources:   sources(cfg),
+		Sources:   append(sources(cfg), brickSources(cfg)...),
+		Modules:   mods,
+		Home:      cfg.Home,
+		Engine:    cfg.Engine,
+		Token:     func() string { return token },
 		Script:    scriptRunner(cfg.Engine),
-		ActionLog: filepath.Join(filepath.Dir(env.Store.Root()), api.ActionLogName),
-		StateDir:  filepath.Dir(env.Store.Root()),
+		ActionLog: filepath.Join(stateDir, api.ActionLogName),
+		StateDir:  stateDir,
 	})
 	tcp, err := net.Listen("tcp", cfg.Serve.Listen)
 	if err != nil {
@@ -73,7 +83,7 @@ func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 		{Handler: srv.Handler(false), ReadHeaderTimeout: 10 * time.Second},
 		{Handler: srv.Handler(true), ReadHeaderTimeout: 10 * time.Second},
 	}
-	fmt.Fprintf(stdout, "crow-core serve: http://%s (owner %s), unix %s, nest %s\n",
+	fmt.Fprintf(stdout, "crow-core serve: http://%s (owner %s, or the `crow core url` link), unix %s, nest %s\n",
 		tcp.Addr(), orNone(owner()), cfg.Serve.Socket, orNone(cfg.Serve.Nest))
 	bg, stopBg := context.WithCancel(context.Background())
 	defer stopBg()
@@ -208,6 +218,48 @@ func sources(cfg config.Config) []api.Source {
 		out = append(out, api.Source{Name: sc.name, TTL: cfg.Serve.TTL[sc.name], Fetch: scriptFetch(cfg.Engine, sc)})
 	}
 	return append(out, api.Source{Name: "jobs", TTL: cfg.Serve.TTL["jobs"], Fetch: jobsFetch})
+}
+
+// brickSources serves the Nest sections user bricks declare with `run` (item_237): the
+// script lives in the brick's bin/. A name already served is skipped. A brick added
+// later needs a core restart; switching one on or off does not.
+func brickSources(cfg config.Config) []api.Source {
+	bricks, _, err := config.Bricks(cfg.Home, cfg.Engine)
+	if err != nil {
+		log.Printf("brick sections: %v", err)
+		return nil
+	}
+	taken := map[string]bool{"jobs": true}
+	for _, sc := range scripts {
+		taken[sc.name] = true
+	}
+	var out []api.Source
+	for _, b := range bricks {
+		if !b.User {
+			continue
+		}
+		for _, sec := range b.Nest.Sections {
+			name := api.SectionOf(sec)
+			if len(sec.Run) == 0 || taken[name] {
+				if len(sec.Run) > 0 {
+					log.Printf("brick %s: section %q already served, skipped", b.Name, name)
+				}
+				continue
+			}
+			if strings.ContainsAny(sec.Run[0], "/\\") || strings.HasPrefix(sec.Run[0], ".") {
+				log.Printf("brick %s: section %q: run must name a bin/ script, skipped", b.Name, name)
+				continue
+			}
+			taken[name] = true
+			ttl, _ := time.ParseDuration(sec.TTL)
+			if t := cfg.Serve.TTL[name]; t > 0 {
+				ttl = t
+			}
+			sc := script{name: name, timeout: 60 * time.Second, args: sec.Run}
+			out = append(out, api.Source{Name: name, TTL: ttl, Fetch: scriptFetch(b.Dir, sc)})
+		}
+	}
+	return out
 }
 
 // scriptFetch runs a bin/ script and parses its stdout. The error carries the end of
@@ -396,7 +448,7 @@ func status(cfg config.Config, stdout io.Writer) error {
 	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		fmt.Fprintln(stdout, "  "+l)
 	}
-	fmt.Fprintf(stdout, "listen  http://%s (owner header required)\n", cfg.Serve.Listen)
+	fmt.Fprintf(stdout, "listen  http://%s (tailnet owner login or core token; `crow core url`)\n", cfg.Serve.Listen)
 	fmt.Fprintf(stdout, "socket  %s\n", cfg.Serve.Socket)
 	fmt.Fprintf(stdout, "nest    %s\n", orNone(cfg.Serve.Nest))
 	ts, err := exec.Command("tailscale", "serve", "status").CombinedOutput()
@@ -426,6 +478,23 @@ func coreCmd(cmd string, env mission.Env, cfg config.Config, stdout io.Writer) e
 			return err
 		}
 		return status(cfg, stdout)
+	case "url":
+		return coreURL(env, cfg, stdout)
 	}
 	return fmt.Errorf("unknown command %q", cmd)
+}
+
+// coreURL prints the link that logs a browser in with the core token (item_237).
+// Opening it once sets the cookie; the link works until the token file is removed.
+func coreURL(env mission.Env, cfg config.Config, stdout io.Writer) error {
+	token, err := api.EnsureToken(filepath.Dir(env.Store.Root()))
+	if err != nil {
+		return err
+	}
+	host := cfg.Serve.Listen
+	if h, p, err := net.SplitHostPort(host); err == nil && (h == "" || h == "0.0.0.0" || h == "::") {
+		host = net.JoinHostPort("127.0.0.1", p)
+	}
+	fmt.Fprintf(stdout, "http://%s/?token=%s\n", host, token)
+	return nil
 }

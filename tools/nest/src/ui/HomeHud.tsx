@@ -67,7 +67,7 @@ export function HomeHud({ snap }: { snap: Snapshot }) {
         </div>
       </section>
       <div className="hh-duo">
-        <div className="hpn hh-next">
+        {!snap.sections.today?.off && <div className="hpn hh-next">
           <span className="lb">Next <Link href="/agenda">Agenda ›</Link></span>
           {nx ? (
             <>
@@ -76,7 +76,7 @@ export function HomeHud({ snap }: { snap: Snapshot }) {
               <span className="hh-bar"><i style={{ width: `${nx.fill}%` } as CSSProperties} /></span>
             </>
           ) : <span className="s">Nothing left today</span>}
-        </div>
+        </div>}
         <div className="hpn hh-run">
           <span className="lb">Running <Link href="/ops">Ops ›</Link></span>
           <span className="big c-w">{m.working} <small>{live}</small></span>

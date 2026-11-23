@@ -3,6 +3,7 @@ import { match } from '../router'
 import { BAR_KEYS, MORE_KEYS, barTab, hiddenTabs, screenTab } from './tabs'
 import type { Snapshot } from '../data/feed'
 import { TABS } from './icons'
+import { DEMO_BRICKS } from '../data/fixtures'
 
 const bar = (path: string) => barTab(screenTab(match(path)))
 
@@ -34,13 +35,13 @@ describe('phone tab bar B', () => {
 })
 
 describe('tabs of an off brick', () => {
-  const snap = (data: unknown) => ({ sections: { mrs: { data, stale: false, error: null, updated_at: null } } }) as unknown as Snapshot
+  const snap = (forgeOn: boolean) => ({ ...DEMO_BRICKS, modules: { ...DEMO_BRICKS.modules, modules: DEMO_BRICKS.modules.modules.map((m) => (m.name === 'forge' ? { ...m, on: forgeOn } : m)) } }) as unknown as Snapshot
   it('hides MRs while the forge brick is off', () => {
-    expect([...hiddenTabs(snap({ off: true, mrs: [] }))]).toEqual(['mrs'])
+    expect([...hiddenTabs(snap(false))]).toEqual(['mrs'])
   })
-  it('keeps every tab with forge on, no data or no snapshot', () => {
-    expect(hiddenTabs(snap({ mrs: [] })).size).toBe(0)
-    expect(hiddenTabs(snap(null)).size).toBe(0)
+  it('keeps every tab with forge on, no module list or no snapshot', () => {
+    expect(hiddenTabs(snap(true)).size).toBe(0)
+    expect(hiddenTabs({ modules: null } as unknown as Snapshot).size).toBe(0)
     expect(hiddenTabs(null).size).toBe(0)
   })
 })

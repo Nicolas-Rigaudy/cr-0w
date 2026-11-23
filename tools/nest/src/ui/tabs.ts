@@ -1,4 +1,5 @@
 import type { Snapshot } from '../data/feed'
+import { hiddenPages } from '../data/modules'
 import type { Route } from '../router'
 import type { TabKey } from './icons'
 
@@ -19,9 +20,8 @@ export function barTab(active: TabKey): BarKey {
   return (MORE_KEYS as readonly TabKey[]).includes(active) ? 'more' : (active as BarKey)
 }
 
-// Screens of a brick that is off (adr_002): the mrs section answers { off: true } while the
-// forge brick is off, so the MRs screen leaves the pills and the More sheet.
+// Screens of bricks that are off (adr_002, item_237): a brick page shows when at least one
+// of its sections is on, so MRs leaves the pills and the More sheet while forge is off.
 export function hiddenTabs(snap: Snapshot | null): ReadonlySet<TabKey> {
-  const mrs = snap?.sections.mrs?.data as { off?: boolean } | null | undefined
-  return new Set<TabKey>(mrs?.off ? ['mrs'] : [])
+  return hiddenPages(snap?.modules ?? null) as ReadonlySet<TabKey>
 }

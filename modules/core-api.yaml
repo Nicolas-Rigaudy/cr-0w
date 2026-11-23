@@ -35,6 +35,8 @@ core_routes:
   - POST /api/inbox/{id...}
   - GET /api/state
   - GET /api/state/{section}
+  - GET /api/modules
+  - POST /api/modules/{brick}/actions/{id}
   - GET /api/runs/{id}
   - GET /api/missions/{id}
   - GET /api/missions/{id}/artifacts/{path...}

@@ -43,7 +43,9 @@ def report(home=None, engine=None):
     rows = [{"name": n, "on": m["on"], "default": m["default"], "summary": man[n].get("summary", ""),
              "requires": man[n].get("requires") or [], "config": m["config"], "source": m["source"],
              "dir": man[n].get("_dir", ""), "lock": lock.get(n),
-             "deck_pages": (man[n].get("deck") or {}).get("pages") or []}
+             "deck_pages": (man[n].get("deck") or {}).get("pages") or [],
+             "deck_boxes": (man[n].get("deck") or {}).get("boxes") or [],
+             "nest_sections": [s.get("id") for s in (man[n].get("nest") or {}).get("sections") or [] if isinstance(s, dict)]}
             for n, m in sorted(st["modules"].items())]
     return {"file": st["file"], "exists": st["exists"], "modules": rows, "errors": st["errors"],
             "lock_problems": crow_lib.lock_problems(home, engine) if lock else []}

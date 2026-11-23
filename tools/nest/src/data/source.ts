@@ -1,6 +1,7 @@
 import type { ButlerApi } from './butler'
 import type { ChatTarget, ConversationPage, PageAsk } from './conversation'
 import type { Actions } from './live'
+import type { Modules } from './modules'
 import type { Ops, RunReport } from './ops'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName } from './types'
 
@@ -13,6 +14,10 @@ export interface DataSource {
   agenda(): Promise<AgendaEvent[]>
   // One script section. An unchanged section returns the same object.
   section(name: SectionName): Promise<SectionBody>
+  // Bricks and switches (item_237). Absent: every section is on, no generic sections.
+  modules?(): Promise<Modules>
+  // A generic brick section by source name (/api/state/<source>).
+  brickSection?(source: string): Promise<SectionBody>
   // A page of a session's or a mission's conversation (item_177).
   conversation(target: ChatTarget, page: PageAsk): Promise<ConversationPage>
   // Ops timeline for `day=YYYY-MM-DD` or `week=YYYY-Www` (item_190), and one run's report.

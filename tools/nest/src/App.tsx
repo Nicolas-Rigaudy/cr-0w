@@ -15,6 +15,8 @@ import { ButlerBadge, ButlerSheet } from './ui/ButlerSheet'
 import { ButlerProvider } from './data/useButler'
 import { LAPTOP, useMedia } from './ui/useMedia'
 import { screenTab } from './ui/tabs'
+import { BrickSections } from './ui/BrickSections'
+import { listSections } from './data/modules'
 
 const LATER: Record<string, [string, string]> = {
   mrs: ['MRs', 'Merge requests arrive with the live API.'],
@@ -40,6 +42,8 @@ export function App() {
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
     else body = <Placeholder name={LATER[route.tab][0]} note={LATER[route.tab][1]} />
+    // Generic brick sections go after the page's own panels (item_237).
+    if (route.tab !== 'chat' && route.tab !== 'missing') body = listSections(snap.modules ?? null, route.tab).length ? <div className="with-bricks">{body}<BrickSections snap={snap} page={route.tab} /></div> : body
   }
   // Butler rail on every laptop screen (item_176). Ops is a full page (item_190): no rail.
   // Home has its own rail (item_259): keyed apart so its fold and width never leak to other pages.

@@ -58,6 +58,8 @@ export type SectionName = (typeof SCRIPT_SECTIONS)[number]
 
 export interface SectionBody {
   data: unknown
+  // The section's brick is off in crow.yaml: Nest did not ask core for it.
+  off?: boolean
   // The last run failed (or none ran yet): data is the last good body, error says why.
   stale: boolean
   error?: string

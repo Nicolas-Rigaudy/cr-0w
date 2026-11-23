@@ -9,6 +9,7 @@ import { ApiError } from './api'
 import { fixtureButler, type ButlerMsg } from './butler'
 import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversation'
 import type { Actions, Dispatch, LiveReply } from './live'
+import type { Modules } from './modules'
 import type { Ops } from './ops'
 import type { DataSource } from './source'
 import { CANCELLABLE } from './state'
@@ -171,7 +172,42 @@ function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, n
       afkJobs.delete(id)
       return reply('afk_skip', id)
     },
+    async module(brick, action, item) {
+      return reply('module_action', `${brick}/${action}`, item ? { text: item } : {})
+    },
   }
+}
+
+// Demo bricks for dev (?bricks): mail, forge and team off, one user brick with a list
+// section and two actions on Desk.
+export interface FixtureBricks { modules: Modules; sections: Record<string, unknown> }
+
+export const DEMO_BRICKS: FixtureBricks = {
+  modules: {
+    contract_version: 1,
+    version: 'demo',
+    errors: [],
+    modules: [
+      { name: 'core-api', on: true, user: false, sections: ['sessions'], nest: {}, deck: { pages: [], boxes: [] } },
+      { name: 'forge', on: false, user: false, sections: ['mrs'], nest: { sections: [{ id: 'mrs', page: 'mrs', source: 'mrs' }] }, deck: { pages: ['MRs'], boxes: ['mrs'] } },
+      { name: 'mail', on: false, user: false, sections: ['today'], nest: { sections: [{ id: 'today', page: 'home', source: 'today' }] }, deck: { pages: [], boxes: ['today'] } },
+      { name: 'team', on: false, user: false, sections: ['checks'], nest: {}, deck: { pages: [], boxes: ['checks'] } },
+      {
+        name: 'notes', on: true, user: true, sections: ['notes'], deck: { pages: [], boxes: [] },
+        nest: { sections: [{ id: 'notes', page: 'desk', source: 'notes', title: 'Notes', view: 'list', actions: [
+          { id: 'done', label: 'Done', confirm: true, row: true },
+          { id: 'sweep', label: 'Sweep' },
+        ] }] },
+      },
+    ],
+  },
+  sections: {
+    notes: { items: [
+      { id: 'n-1', title: 'Renew the domain', detail: 'circle registrar, auto-renew off', meta: 'due 28/11' },
+      { id: 'n-2', title: 'Send the WSL notes to Paul', meta: 'today' },
+      { id: 'n-3', title: 'Read the brick ADR again' },
+    ] },
+  },
 }
 
 const afkJobs = new Map<string, string>()
@@ -236,7 +272,7 @@ const BUTLER_SEED: ButlerMsg[] = [
     chips: [{ label: 'Open prep', href: '/agenda' }, { label: 'Open reviews', href: '/mrs' }] },
 ]
 
-export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[] = INBOX, now: Date = NOW, agenda: AgendaEvent[] = AGENDA, live: LiveData = LIVE): DataSource {
+export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[] = INBOX, now: Date = NOW, agenda: AgendaEvent[] = AGENDA, live: LiveData = LIVE, bricks?: FixtureBricks): DataSource {
   const data: LiveData = structuredClone(live)
   // One body object per section version, so unchanged sections keep their reference.
   const bodies = new Map<SectionName, SectionBody>()
@@ -246,6 +282,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     if (!b) bodies.set(name, (b = { data: data[name], stale: false, updated_at: now.toISOString() }))
     return b
   }
+  const brickBodies = new Map(Object.entries(bricks?.sections ?? {}).map(([k, v]): [string, SectionBody] => [k, { data: v, stale: false, updated_at: now.toISOString() }]))
   const rec = { missions, inbox }
   const actions = { ...fixtureActions(data, bodies, now), ...missionActions(rec, now) }
   const chats = fixtureChats((t) => {
@@ -270,6 +307,10 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     actions,
     now: () => now,
     butler: fixtureButler(now, BUTLER_SEED),
+    ...(bricks && {
+      modules: async () => bricks.modules,
+      brickSection: async (source: string) => brickBodies.get(source) ?? NO_SECTION,
+    }),
   }
 }
 

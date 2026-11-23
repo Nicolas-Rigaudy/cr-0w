@@ -173,6 +173,8 @@ export interface Actions {
   afkRead(id: string): Promise<{ id: string; text: string }>
   afkSave(id: string, text: string): Promise<LiveReply>
   afkSkip(id: string): Promise<LiveReply>
+  // A manifest action of a brick section (item_237): item is the row id of a row action.
+  module(brick: string, action: string, item?: string): Promise<LiveReply>
 }
 
 const obj = (b: SectionBody | undefined) => (b?.data && typeof b.data === 'object' ? (b.data as Record<string, unknown>) : {})
