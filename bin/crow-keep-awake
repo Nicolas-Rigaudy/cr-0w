@@ -5,7 +5,8 @@
 # 2147483651 = ES_CONTINUOUS|ES_SYSTEM_REQUIRED|ES_DISPLAY_REQUIRED (0x80000003 overflows Int32 in PowerShell 5).
 # WSL uses -EncodedCommand: quotes inside -Command do not survive the bash -> powershell.exe hand-off.
 set -euo pipefail
-"$(dirname "$(readlink -f "$0")")/crow-modules" require scripts "$(basename "$0")" || exit 2  # off brick (adr_002)
+# off brick (adr_002): refuse; builtins only, the gate is skipped where python3 is missing
+! command -v python3 >/dev/null || "${0%/*}/crow-modules" require scripts "${0##*/}" || exit 2
 print=0
 [ "${1:-}" = --print ] && { print=1; shift; }
 secs=${1:-39600}

@@ -65,7 +65,9 @@ def user_env(tmp_path, extra):
 
 
 def install(env, *args):
-    return subprocess.run(["sh", str(REPO / "install.sh"), *args], check=False, capture_output=True, text=True, env=env)
+    # new session: no controlling terminal, so the brick prompt never waits
+    return subprocess.run(["sh", str(REPO / "install.sh"), *args], check=False, capture_output=True, text=True,
+                          env=env, start_new_session=True)
 
 
 def crow(env, *args):
@@ -244,3 +246,48 @@ def test_restore_clones_the_data_repo_and_lists_steps(tmp_path, release):
     assert "cdx add main && cdx login main" in out.stdout
     again = install(env, "--restore", str(data_src))
     assert again.returncode != 0 and "already has content" in again.stderr
+
+
+def on_bricks(env):
+    out = crow(env, "modules", "json")
+    assert out.returncode == 0, out.stderr
+    return sorted(m["name"] for m in json.loads(out.stdout)["modules"] if m["on"])
+
+
+def test_new_data_dir_gets_the_starter_bricks(tmp_path, release):
+    publish, renv = release
+    publish("0.1.0")
+    _home, env = user_env(tmp_path, renv)
+    assert install(env).returncode == 0
+    assert on_bricks(env) == ["core", "core-api", "deck", "git", "nest"]
+
+
+def test_install_modules_core_turns_every_other_brick_off(tmp_path, release):
+    publish, renv = release
+    publish("0.1.0")
+    _home, env = user_env(tmp_path, renv)
+    out = install(env, "--modules", "core")
+    assert out.returncode == 0, out.stderr
+    assert on_bricks(env) == ["core"]
+    doctor = crow(env, "modules")
+    assert "crow.yaml" not in doctor.stderr
+
+
+@pytest.mark.parametrize("mods,msg", [("core,bogus", "unknown brick 'bogus'"), ("nest", "nest requires core-api")])
+def test_install_modules_refuses_bad_lists(tmp_path, release, mods, msg):
+    publish, renv = release
+    publish("0.1.0")
+    home, env = user_env(tmp_path, renv)
+    out = install(env, "--modules", mods)
+    assert out.returncode != 0 and msg in out.stderr
+    assert not (home / ".config/crow/local/crow.yaml").exists()
+
+
+def test_existing_data_dir_without_crow_yaml_keeps_every_default(tmp_path, release):
+    publish, renv = release
+    publish("0.1.0")
+    home, env = user_env(tmp_path, renv)
+    (home / ".config/crow/local").mkdir(parents=True)
+    assert install(env).returncode == 0
+    assert not (home / ".config/crow/local/crow.yaml").exists()
+    assert "retro" in on_bricks(env)

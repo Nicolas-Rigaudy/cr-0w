@@ -16,12 +16,13 @@ To keep the engine and the data apart:
    `crow-precommit-check`) still expect it there: keep a symlink `<checkout>/local -> ~/.config/crow/local`.
 
 ## Install
-`sh install.sh [--version X.Y.Z] [--prefix DIR] [--bin-dir DIR]`
+`sh install.sh [--version X.Y.Z] [--prefix DIR] [--bin-dir DIR] [--modules a,b,c]`
 - Downloads `crow-<version>.tar.gz` and `SHA256SUMS` from the GitHub release (latest when no `--version`).
   A checksum mismatch aborts before anything is written.
 - Engine: `<prefix>/versions/<version>`, `<prefix>/current` points at it (prefix default `~/.local/share/crow`).
   `<bin-dir>/crow` (default `~/.local/bin`) links to `current/bin/crow`. `.crow-install` in the engine records the method.
 - Data: `local/` in the data dir gets the `docs/*.example.yaml` files that are missing. Existing files stay as they are.
+  A new data dir gets `local/crow.yaml` with the `--modules` bricks, the prompt answer, or `core,git,core-api,nest,deck`.
 - Release assets it expects (item_035 builds them): `crow-<version>.tar.gz` with a top dir `crow-<version>/`, no `local/`,
   and `SHA256SUMS` in `sha256sum` format.
 
@@ -51,6 +52,7 @@ To keep the engine and the data apart:
 - `crow.yaml` (CROW_HOME root, else `local/crow.yaml`) switches bricks on and off (adr_002, `crow modules`).
 - `crow modules link [account...]` regenerates the git-ignored hub `.claude/skills/` (hub skills of on
   bricks plus `local/hub-skills/*`) and each profile's skill links. `crow hub` runs it for the hub;
-  run it by hand after editing `crow.yaml`. With design off it also uninstalls the crow-design plugin.
+  run it by hand after editing `crow.yaml`, or use `crow modules on|off <brick>`, which edits and relinks.
+  A new data dir gets a starter `crow.yaml` from `install.sh` (docs/install-bricks.md). With design off it also uninstalls the crow-design plugin.
 - Off bricks: their Claude hooks and git hooks exit 0, `crow-gather` leaves their keys out, and their
   `crow` subcommands print `crow: module <name> is off (crow.yaml)` and exit 2.

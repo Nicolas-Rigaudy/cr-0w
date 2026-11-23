@@ -10,6 +10,38 @@ serves). Each one installs on its own. Nothing here needs a forge or Tailscale.
 - The engine checkout (`CROW_ENGINE`) and a home folder (`CROW_HOME`, which can be the same
   checkout). `install.sh` sets both and writes a starter `crow.yaml`.
 
+## Pick bricks
+
+`install.sh` asks which bricks to turn on for a new data dir. `--modules a,b,c` answers
+without a prompt. The default set is `core,git,core-api,nest,deck`. Every other brick is off.
+An existing data dir keeps its `crow.yaml`, or every default when it has none.
+
+| Brick | What it adds | Default |
+|---|---|---|
+| core | Dispatcher, runs, sessions, accounts, doctor, notes, brief and wrap. Always on. | on |
+| git | Commit and push hooks, git activity, worktrees, identity check. | on |
+| forge | Merge requests and reviews on GitLab or GitHub. Needs git. | off |
+| vault | Obsidian vault notes, tasks and the eod skill. | off |
+| mail | Calendar and mail counts, Today box, reply drafts. | off |
+| team | Sprint, 1:1s and mail to answer. | off |
+| afk | AFK and night runs: page, preflight, keep-awake. | off |
+| retro | Session retros, digest, cost audit, tool update watch. | off |
+| releases | Changelog, release proposals, releases view. | off |
+| core-api | crow-core: store, inbox, missions and the API. | on |
+| nest | Nest web front. Needs core-api. | on |
+| deck | crow-deck and crow-watch terminal front. | on |
+| design | Screenshot, crop and compare tools, design notes. | off |
+| integration-shell | Shell integration and its runbooks. | off |
+| office | Mail text, tracked-changes DOCX, simple A4 DOCX. | off |
+
+The Default column is the install starter set. Without a `crow.yaml`, the manifest default
+applies (`crow modules` shows both).
+
+Switch one later with `crow modules on <brick>` or `crow modules off <brick>`. It edits
+`crow.yaml`, keeps the other keys and config, and relinks the skills. It refuses to turn a
+brick on while its requires are off, and to turn off a brick that an on brick requires.
+An off brick's commands print `crow: module <name> is off (crow.yaml)` and exit 2.
+
 ## crow.yaml
 
 Turn off the bricks you do not use. Their sections, pages and boxes disappear from Nest and
