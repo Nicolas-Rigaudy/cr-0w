@@ -128,6 +128,14 @@ def test_wait_refuses_an_empty_id(cr, monkeypatch, ids):
         cr.notify(ids, poll=0)
 
 
+def test_wait_prints_each_finished_run(cr, monkeypatch, capsys):
+    cr.STATE.mkdir(parents=True, exist_ok=True)
+    cr.LEDGER.write_text('{"run_id": "first123", "project": "p", "label": "l"}\n')
+    monkeypatch.setattr(cr, "finished", lambda since, ttl=8: {"first123": {"exit_code": 0}})
+    cr.wait(["first"], poll=0)
+    assert capsys.readouterr().out.strip() == "done first123 p  l"
+
+
 def test_list_marks_a_run_whose_worktree_is_gone(cr, monkeypatch, tmp_path):
     from datetime import datetime
     now = datetime.now().astimezone().isoformat(timespec="seconds")

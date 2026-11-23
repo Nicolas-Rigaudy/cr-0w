@@ -112,8 +112,6 @@ def wait(run_ids, poll=20):
     Run it as a background command so the caller is notified when it exits."""
     if any(not i.strip() for i in run_ids):
         sys.exit("crow: wait needs a run id (got an empty one)")
-    if hook:
-        crow_lib.exit_if_off(__file__)
     recs = {r["run_id"]: r for r in ledger()}
     pending = {next((k for k in recs if k.startswith(i)), i) for i in run_ids}
     while pending:
@@ -267,6 +265,8 @@ def mark_seen(*run_ids):
 
 def inbox(hook=False, peek=False):
     """Finished runs dispatched by crow whose report nobody has read yet. Printed once, then marked seen."""
+    if hook:
+        crow_lib.exit_if_off(__file__)
     recs = {r["run_id"]: r for r in ledger()}
     done = finished("7d", ttl=0)
     seen = seen_ids()
