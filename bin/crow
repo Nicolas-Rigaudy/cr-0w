@@ -42,6 +42,7 @@
 #   crow release propose  draft the next version and notes from commits since the last tag (no tagging)
 #   crow doctor [--json] identity, accounts, profiles, stale worktrees (read only)
 #   crow modules [json]  which bricks are on: engine and user bricks plus crow.yaml (read only)
+#   crow modules add <git url> [--ref R] | update [<name>] | remove <name>   user bricks from git, pinned in modules.lock
 #   crow <cmd>           a bin/ script of an on user brick (bin/<cmd> or bin/crow-<cmd>)
 #   crow version         version, engine path and data dir (CROW_HOME)
 #   crow update [--check] [--to X.Y.Z]  update the engine the way it was installed (never the data dir)

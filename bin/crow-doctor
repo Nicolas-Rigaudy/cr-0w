@@ -227,6 +227,9 @@ def modules():
     if st["errors"]:
         return check("modules", "fail", f"{len(st['errors'])} problem(s) in crow.yaml",
                      [f"{e['file']}: {e['key'] or '(file)'}: {e['error']}" for e in st["errors"]])
+    locked = crow_lib.lock_problems()
+    if locked:
+        return check("modules", "fail", f"{len(locked)} user brick(s) out of step with modules.lock", locked)
     missing = []
     for name in on:
         need = (manifests[name].get("doctor") or {})

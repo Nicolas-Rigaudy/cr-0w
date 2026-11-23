@@ -1103,6 +1103,58 @@ def user_manifests(home=None, engine=None):
     return out, errors
 
 
+def modules_lock_path(home=None, engine=None):
+    """modules.lock next to the user modules dir: <CROW_HOME>/modules.lock, or local/modules.lock in a checkout."""
+    return os.path.join(os.path.dirname(user_modules_dir(home, engine)), "modules.lock")
+
+
+def read_modules_lock(home=None, engine=None):
+    """name -> {source, ref, commit} for user bricks installed from git; {} when there is no lock."""
+    import yaml
+    try:
+        with open(modules_lock_path(home, engine)) as f:
+            data = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return {}
+    return dict(data.get("modules") or {})
+
+
+def write_modules_lock(lock, home=None, engine=None):
+    import yaml
+    path = modules_lock_path(home, engine)
+    if not lock:
+        if os.path.exists(path):
+            os.unlink(path)
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("# User bricks installed by `crow modules add`. Written by crow; do not edit.\n")
+        yaml.safe_dump({"version": 1, "modules": dict(sorted(lock.items()))}, f, sort_keys=False)
+
+
+def _git(cwd, *args):
+    r = subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True, check=False)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def lock_problems(home=None, engine=None):
+    """Doctor findings for user bricks in modules.lock: clone missing, HEAD differs from the lock, dirty clone."""
+    root = user_modules_dir(home, engine)
+    out = []
+    for name, entry in sorted(read_modules_lock(home, engine).items()):
+        folder = os.path.join(root, name)
+        if not os.path.isdir(os.path.join(folder, ".git")):
+            out.append(f"{name}: in modules.lock but {folder} is not a git clone (crow modules add {entry.get('source', '')})")
+            continue
+        head = _git(folder, "rev-parse", "HEAD")
+        if head != entry.get("commit"):
+            out.append(f"{name}: HEAD {str(head)[:12]} differs from the lock {str(entry.get('commit'))[:12]} "
+                       f"(crow modules update {name} --ref {entry.get('ref')})")
+        if _git(folder, "status", "--porcelain"):
+            out.append(f"{name}: clone has local changes ({folder})")
+    return out
+
+
 def all_manifests(home=None, engine=None):
     """Engine and user manifests together, brick name -> manifest. User brick errors are dropped here;
     load_modules lists them."""

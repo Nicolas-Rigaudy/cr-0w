@@ -1,10 +1,10 @@
 ## item_265_user_modules_from_a_local_folder_or_a_git_url - User modules from a local folder or a git url
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 80
 > Confidence: 75
-> Progress: 50%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -58,3 +58,4 @@
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-23 | crow (hub) | - | Slice 1: local user bricks | Done | - | Python and Go loaders read `<CROW_HOME>/modules/<name>/module.yaml` (`local/modules` in a checkout); skills linked, `crow <cmd>` runs brick scripts, engine name clash refused, `requires` keeps a user brick off; shared fixture `user_bricks`, `tests/test_user_modules.py`, `docs/writing-a-brick.md`. AC1, AC3, AC5 met. Slice 2 left: `crow modules add/update/remove`, `modules.lock`, doctor lock check (AC2, AC4). |
+| 2026-11-23 | crow (hub) | - | Slice 2: user bricks from git | Done | - | `crow modules add <url> [--ref] [--name]` clones, checks the manifest, pins to the newest tag or the ref in `modules.lock`, turns the brick on and links skills; `update` moves the pin and rolls back a broken manifest; `remove` drops clone, lock entry and crow.yaml key (comments kept). `crow doctor` fails on a missing clone, a HEAD off the lock or local changes. AC2, AC4 met. |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""crow-modules: which bricks are on (adr_002). Read only.
+"""crow-modules: which bricks are on (adr_002), and user bricks installed from git (item_265).
 
   crow-modules         one line per brick: on/off, default, summary; crow.yaml problems on stderr
   crow-modules json    {file, exists, modules: [{name, on, default, summary, requires, config}], errors}
@@ -8,6 +8,14 @@
                        and link profile skills of on bricks into each account (default: every allowed account)
   crow-modules which <cmd>
                        print the bin/ script of an on user brick named <cmd> or crow-<cmd>; exit 1 when none
+  crow-modules add <git url> [--ref <tag|sha>] [--name <name>]
+                       clone a user brick into the user modules dir, check its manifest, pin the commit
+                       in modules.lock, turn it on in crow.yaml when it was off, link skills.
+                       Default ref: the newest tag, else the default branch.
+  crow-modules update [<name>] [--ref <tag|sha>]
+                       move one (or every locked) brick to the newest tag or the given ref; rewrite the lock
+  crow-modules remove <name>
+                       delete the clone, its lock entry and its crow.yaml key; unlink its skills
   crow-modules require <field> <name>
                        exit 0 when the brick listing <name> under <field> (scripts, apps, skills...) is on;
                        else print "crow: module <brick> is off (crow.yaml)" and exit 2
@@ -19,6 +27,9 @@ crow.yaml at the CROW_HOME root, else local/crow.yaml. A missing file or key kee
 """
 import json
 import os
+import re
+import shutil
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
@@ -28,11 +39,13 @@ import crow_lib  # noqa: E402
 def report(home=None, engine=None):
     st = crow_lib.load_modules(home, engine)
     man = crow_lib.all_manifests(home, engine)
+    lock = crow_lib.read_modules_lock(home, engine)
     rows = [{"name": n, "on": m["on"], "default": m["default"], "summary": man[n].get("summary", ""),
              "requires": man[n].get("requires") or [], "config": m["config"], "source": m["source"],
-             "dir": man[n].get("_dir", "")}
+             "dir": man[n].get("_dir", ""), "lock": lock.get(n)}
             for n, m in sorted(st["modules"].items())]
-    return {"file": st["file"], "exists": st["exists"], "modules": rows, "errors": st["errors"]}
+    return {"file": st["file"], "exists": st["exists"], "modules": rows, "errors": st["errors"],
+            "lock_problems": crow_lib.lock_problems(home, engine) if lock else []}
 
 
 def accounts():
@@ -71,6 +84,8 @@ def require(field, name):
 def main(argv):
     if argv[:1] == ["link"]:
         return link(argv[1:])
+    if argv[:1] in (["add"], ["update"], ["remove"]):
+        return {"add": add, "update": update, "remove": remove}[argv[0]](list(argv[1:]))
     if argv[:1] == ["which"] and len(argv) == 2:
         path = crow_lib.user_script(argv[1])
         if path:
@@ -89,10 +104,192 @@ def main(argv):
     for m in r["modules"]:
         flag = "on " if m["on"] else "off"
         note = "" if m["on"] == m["default"] else " (default " + ("on" if m["default"] else "off") + ")"
-        src = f" [user: {m['dir']}]" if m["source"] == "user" else ""
+        pin = f" @ {m['lock']['ref']} {m['lock']['commit'][:7]}" if m.get("lock") else ""
+        src = f" [user: {m['dir']}{pin}]" if m["source"] == "user" else ""
         print(f"{flag}  {m['name']:<18} {m['summary']}{note}{src}")
     for e in r["errors"]:
         print(f"crow-modules: {e['file']}: {e['key'] or '(file)'}: {e['error']}", file=sys.stderr)
+    for p in r["lock_problems"]:
+        print(f"crow-modules: modules.lock: {p}", file=sys.stderr)
+    return 0
+
+
+# --- user bricks from git (item_265) ---
+
+def die(msg, code=1):
+    print(f"crow-modules: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def git(cwd, *args, check=True):
+    r = subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True, check=False)
+    if check and r.returncode:
+        die(f"git {' '.join(args)}: {r.stderr.strip() or r.stdout.strip()}")
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def newest_tag(folder):
+    tags = (git(folder, "tag", "--sort=-v:refname", check=False) or "").split()
+    return tags[0] if tags else None
+
+
+def checkout(folder, ref):
+    """Detach HEAD at ref (fetched first); return (ref shown in the lock, commit sha)."""
+    git(folder, "fetch", "--quiet", "--tags", "--force", "origin", check=False)
+    ref = ref or newest_tag(folder)
+    if ref is None:  # no tag: the remote default branch
+        git(folder, "checkout", "--quiet", "--detach", "origin/HEAD", check=False)
+        return git(folder, "rev-parse", "--abbrev-ref", "origin/HEAD", check=False) or "HEAD", git(folder, "rev-parse", "HEAD")
+    sha = git(folder, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}", check=False) \
+        or git(folder, "rev-parse", "--verify", "--quiet", f"origin/{ref}^{{commit}}", check=False)
+    if not sha:
+        die(f"ref {ref} not found in {folder}")
+    git(folder, "checkout", "--quiet", "--detach", sha)
+    return ref, sha
+
+
+def manifest_errors(name):
+    st = crow_lib.load_modules()
+    return [e["error"] for e in st["errors"] if e["key"] == f"modules.{name}" and e["file"].endswith(crow_lib.USER_MANIFEST)]
+
+
+def yaml_key_span(lines, name):
+    """(start, end) line span of modules.<name> in crow.yaml text lines, else None. Block style only."""
+    in_mods = False
+    for i, line in enumerate(lines):
+        if re.match(r"^modules:\s*(#.*)?$", line):
+            in_mods = True
+            continue
+        if in_mods and line.strip() and not line[0].isspace():
+            in_mods = False
+        m = in_mods and re.match(r"^(\s+)" + re.escape(name) + r"\s*:", line)
+        if m:
+            indent, end = len(m.group(1)), i + 1
+            while end < len(lines) and (not lines[end].strip() or len(lines[end]) - len(lines[end].lstrip()) > indent):
+                end += 1
+            return i, end, m.group(1)
+    return None
+
+
+def crow_yaml_set(name, value):
+    """Set modules.<name> to `true` (value True) or drop it (value None), keeping the rest of the file."""
+    path = crow_lib.crow_yaml_path()
+    lines = open(path).read().splitlines() if os.path.exists(path) else []
+    span = yaml_key_span(lines, name)
+    if value is None:
+        if not span:
+            return
+        del lines[span[0]:span[1]]
+    else:
+        new = f"{span[2] if span else '  '}{name}: true"
+        if span:
+            lines[span[0]:span[1]] = [new]
+        elif any(re.match(r"^modules:\s*(#.*)?$", line) for line in lines):
+            at = next(i for i, line in enumerate(lines) if re.match(r"^modules:\s*(#.*)?$", line))
+            lines.insert(at + 1, new)
+        else:
+            lines += ([] if lines else ["version: 1"]) + ["modules:", new]
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def opt(args, flag):
+    if flag in args:
+        i = args.index(flag)
+        if i + 1 >= len(args):
+            die(f"{flag} needs a value")
+        val = args[i + 1]
+        del args[i:i + 2]
+        return val
+    return None
+
+
+def relink():
+    link([])
+
+
+def add(args):
+    ref, name = opt(args, "--ref"), opt(args, "--name")
+    if len(args) != 1:
+        sys.exit(__doc__)
+    url = args[0]
+    name = name or re.sub(r"\.git$", "", url.rstrip("/").rsplit("/", 1)[-1])
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", name):
+        die(f"brick name {name!r} must be lowercase letters, digits, - or _ (use --name)")
+    if name in crow_lib.engine_manifests():
+        die(f"user brick {name!r} clashes with the engine brick of the same name (use --name)", 2)
+    root = crow_lib.user_modules_dir()
+    folder = os.path.join(root, name)
+    if os.path.exists(folder):
+        die(f"{folder} already exists (crow modules update {name}, or remove it first)")
+    os.makedirs(root, exist_ok=True)
+    r = subprocess.run(["git", "clone", "--quiet", url, folder], capture_output=True, text=True, check=False)
+    if r.returncode:
+        die(f"git clone {url}: {r.stderr.strip()}")
+    try:
+        ref, sha = checkout(folder, ref)
+        problems = manifest_errors(name)
+        if problems:
+            die(f"{name}: {'; '.join(problems)}", 2)
+    except SystemExit:
+        shutil.rmtree(folder, ignore_errors=True)
+        raise
+    lock = crow_lib.read_modules_lock()
+    lock[name] = {"source": url, "ref": ref, "commit": sha}
+    crow_lib.write_modules_lock(lock)
+    if not crow_lib.load_modules()["modules"][name]["on"]:
+        crow_yaml_set(name, True)
+    print(f"{name}: added from {url} at {ref} ({sha[:12]})")
+    off = crow_lib.load_modules()["modules"][name]
+    if not off["on"]:
+        print(f"{name}: stays off: {'; '.join(e['error'] for e in crow_lib.load_modules()['errors'] if e['key'] == f'modules.{name}')}", file=sys.stderr)
+    relink()
+    return 0
+
+
+def update(args):
+    ref = opt(args, "--ref")
+    lock = crow_lib.read_modules_lock()
+    names = args or sorted(lock)
+    if ref and len(names) != 1:
+        die("--ref needs one brick name")
+    for name in names:
+        if name not in lock:
+            die(f"{name} is not in modules.lock (crow modules add <url>)")
+        folder = os.path.join(crow_lib.user_modules_dir(), name)
+        if git(folder, "status", "--porcelain", check=False):
+            die(f"{name}: clone has local changes, not updated ({folder})")
+        new_ref, sha = checkout(folder, ref)
+        problems = manifest_errors(name)
+        if problems:
+            git(folder, "checkout", "--quiet", "--detach", lock[name]["commit"])
+            die(f"{name}: {new_ref} refused, back at {lock[name]['ref']}: {'; '.join(problems)}", 2)
+        old = lock[name]
+        lock[name] = {**old, "ref": new_ref, "commit": sha}
+        same = old.get("commit") == sha
+        print(f"{name}: {'already at' if same else old.get('ref') + ' ->'} {new_ref} ({sha[:12]})")
+    crow_lib.write_modules_lock(lock)
+    relink()
+    return 0
+
+
+def remove(args):
+    if len(args) != 1:
+        sys.exit(__doc__)
+    name = args[0]
+    if name in crow_lib.engine_manifests():
+        die(f"{name} is an engine brick; turn it off in crow.yaml instead", 2)
+    folder = os.path.join(crow_lib.user_modules_dir(), name)
+    lock = crow_lib.read_modules_lock()
+    if not os.path.isdir(folder) and name not in lock:
+        die(f"no user brick {name}")
+    shutil.rmtree(folder, ignore_errors=True)
+    lock.pop(name, None)
+    crow_lib.write_modules_lock(lock)
+    crow_yaml_set(name, None)
+    print(f"{name}: removed")
+    relink()
     return 0
 
 
