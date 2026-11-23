@@ -9,7 +9,7 @@
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 > Owner: crow
-> Indicators reviewed: 2026-11-23 17:14:51
+> Indicators reviewed: 2026-11-23 17:40:02
 
 # AI Context
 - Summary: Split step 6 of adr_002: afk, retro, releases, design and the shell integration turn off cleanly, and `install.sh` asks which bricks to turn on and writes the starter crow.yaml.
