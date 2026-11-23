@@ -60,4 +60,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-23 | hub-session | 2026-11-23-hub | Optional tool bricks and install profiles | succeeded |  | 2945ac5, 32c5f0c |
+| 2026-11-23T16:39:53+00:00 | hub-session | 2026-11-23-hub | Optional tool bricks and install profiles | succeeded |  | 2945ac5, 32c5f0c |
