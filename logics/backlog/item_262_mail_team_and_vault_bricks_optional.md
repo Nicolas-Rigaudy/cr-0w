@@ -1,10 +1,10 @@
 ## item_262_mail_team_and_vault_bricks_optional - Mail, team and vault bricks optional
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 80
-> Confidence: 75
-> Progress: 0%
+> Status: Done
+> Understanding: 90
+> Confidence: 90
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -36,6 +36,9 @@
 
 # AC Traceability
 - req_064_paul_s_feedback_and_a_modular_public_crow-AC3 -> This backlog slice. Proof: brief, gather, doctor and Nest run with mail, team and vault off.
+- AC1 -> `tests/test_crow_gather.py::test_all_optional_bricks_off_still_gather` (brief, daily, weekly), `tests/test_crow_notes_mode.py::test_doctor_is_quiet_for_off_bricks`; core `TestModuleOffNoRefresh` (no script run for an off section); Nest `modules.test.ts` (today and checks off, never fetched); brief skill step 8 skips mail.
+- AC2 -> `tests/test_crow_notes_mode.py::test_note_and_log_round_trip_through_crow_home_notes`, `test_threads_path_points_to_crow_home_notes`, `tests/test_crow_gather.py::test_weekly_with_vault_off_reads_threads_from_crow_home_notes`; eod not linked (`test_eod_skill_is_not_linked_with_vault_off`).
+- AC3 -> `tests/test_crow_notes_mode.py::test_all_on_keeps_the_vault_daily`, `tests/test_crow_gather.py::test_without_crow_yaml_every_default_key_is_there`; full `bin/crow-check` green (commits bbf208c, 16249c9, 60c4d31).
 
 # Dependencies
 - `item_261_skills_hooks_and_gather_follow_the_module_switch`, `item_237_nest_and_crow_core_as_separate_front_and_back_bricks`.
