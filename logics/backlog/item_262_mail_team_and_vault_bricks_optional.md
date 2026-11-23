@@ -1,13 +1,15 @@
 ## item_262_mail_team_and_vault_bricks_optional - Mail, team and vault bricks optional
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 80
 > Confidence: 75
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-23 16:40:52
 
 # AI Context
 - Summary: Split step 5 of adr_002: mail (calendar and mail counts, Today box), team (management checks) and vault (notes, daily log, open threads) each turn off with one switch; with vault off, notes go to CROW_HOME.

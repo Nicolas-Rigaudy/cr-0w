@@ -1,6 +1,5 @@
 """Vault brick off: notes, activity lines and open threads live under CROW_HOME/notes (item_262)."""
 import datetime as dt
-import json
 
 from conftest import run
 
