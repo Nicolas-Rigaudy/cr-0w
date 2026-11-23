@@ -24,9 +24,9 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-REGISTRY = ROOT / "local" / "projects.yaml"
 sys.path.insert(0, str(ROOT / "bin"))
 import crow_lib  # noqa: E402
+REGISTRY = Path(crow_lib.data_home()) / "local" / "projects.yaml"
 import crow_pending  # noqa: E402
 
 
@@ -187,6 +187,8 @@ def main():
     for p in projects:
         if p["name"] in args.skip or p.get("tidy") == "skip" or p["path"] in seen:
             continue
+        if crow_lib.project_layout(p) == "folder":
+            continue  # no git to tidy (adr_002)
         if args.scope != "all" and p.get("scope") != args.scope:
             continue
         seen.add(p["path"])

@@ -1031,6 +1031,57 @@ def action_result(ok, action, target, message, code=None):
     return code
 
 
+# Project layouts (adr_002): a repo gets git steps, a folder gets file activity and no git step.
+LAYOUTS = ("repo", "folder")
+# Folders the file activity walk never enters (a folder project's own `ignore:` list adds to it).
+FOLDER_IGNORE = (".git", ".hg", ".svn", "node_modules", "__pycache__", ".venv", "venv", ".cache", ".mypy_cache",
+                 ".pytest_cache", ".ruff_cache", "dist", "build", "target", ".obsidian", ".trash")
+
+
+def project_layout(p):
+    """`layout` of a projects.yaml entry: as written when valid, else repo when its path holds .git, else folder."""
+    if p.get("layout") in LAYOUTS:
+        return p["layout"]
+    path = p.get("path") or ""
+    return "repo" if path and os.path.exists(os.path.join(path, ".git")) else "folder"
+
+
+def project_forge(p):
+    """The forge crow queries for this project: its `forge` key on a repo project while the forge brick is on,
+    else "none". A folder project never has one (doctor fails on it)."""
+    forge = p.get("forge") or "none"
+    if forge == "none" or project_layout(p) != "repo":
+        return "none"
+    return forge if brick_on("forge") else "none"
+
+
+def changed_files(path, since, ignore=(), limit=None):
+    """Files under path modified on or after the date `since` (a datetime.date), newest first, as
+    [(relative path, YYYY-MM-DD)]. Skips hidden entries, FOLDER_IGNORE and `ignore` (names or relative paths)."""
+    import datetime as _dt
+    cut = _dt.datetime.combine(since, _dt.time()).timestamp()
+    skip = set(FOLDER_IGNORE) | {str(i).strip("/") for i in ignore or ()}
+    out = []
+    for root, dirs, files in os.walk(path):
+        rel_root = os.path.relpath(root, path)
+        rel_root = "" if rel_root == "." else rel_root
+        dirs[:] = [d for d in dirs if not d.startswith(".") and d not in skip
+                   and os.path.join(rel_root, d) not in skip]
+        for f in files:
+            rel = os.path.join(rel_root, f)
+            if f.startswith(".") or f in skip or rel in skip:
+                continue
+            try:
+                mt = os.stat(os.path.join(root, f)).st_mtime
+            except OSError:
+                continue
+            if mt >= cut:
+                out.append((mt, rel))
+    out.sort(reverse=True)
+    out = out[:limit] if limit else out
+    return [(rel, _dt.date.fromtimestamp(mt).isoformat()) for mt, rel in out]
+
+
 # Bricks (adr_002): engine manifests in modules/<brick>.yaml, owner switches in crow.yaml.
 CORE_BRICK = "core"
 YAML11_BOOLS = {"y": True, "yes": True, "on": True, "true": True, "n": False, "no": False, "off": False,

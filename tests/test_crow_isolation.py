@@ -171,7 +171,7 @@ def test_continuing_an_isolated_run_stays_in_its_sandbox(tmp_path, monkeypatch):
     (wt / ".git").write_text("gitdir: /x\n")
     monkeypatch.setattr(cr, "ledger", lambda: [{"run_id": "par123", "isolated": True, "account": "acct",
                                                 "permission": "review", "kind": "review"}])
-    monkeypatch.setattr(cr, "REG", {"projects": [{"name": "proj", "path": str(tmp_path / "proj")}]})
+    monkeypatch.setattr(cr, "REG", {"projects": [{"name": "proj", "path": str(tmp_path / "proj"), "layout": "repo"}]})
     monkeypatch.setattr(crow_lib, "cdx_rows", lambda: [{"session_name": "acct", "auth_type": "setup-token"}])
     monkeypatch.setattr(crow_lib, "provider_of", lambda acct, status=None: "claude")
     monkeypatch.setattr(crow_lib, "isolation_preflight", lambda *a, **k: None)

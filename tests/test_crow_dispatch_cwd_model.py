@@ -22,7 +22,7 @@ def cr(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     (tmp_path / "repo.wt" / "x").mkdir(parents=True)
     (tmp_path / "elsewhere").mkdir()
-    repo.mkdir()
+    (repo / ".git").mkdir(parents=True)  # a repo project, not a folder one
     monkeypatch.setattr(mod, "project", lambda name: {"name": "repo", "path": str(repo)})
     monkeypatch.setattr(mod, "pick_account", lambda a: "main")
     monkeypatch.setattr(mod, "running_runs", list)

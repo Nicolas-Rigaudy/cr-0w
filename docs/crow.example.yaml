@@ -7,7 +7,7 @@ version: 1
 modules:
   # core is always on.
   git: true
-  forge:
+  forge:                    # off: no GitLab/GitHub calls, no MRs tab in the Nest or the deck
     on: true
     hosts: {}               # forge name -> host; empty means the public hosts
   vault: true

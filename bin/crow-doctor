@@ -4,10 +4,11 @@
   crow-doctor           identity, accounts, stale worktrees, one line each
   crow-doctor --json    the same checks as JSON: {ok, checks: [{area, level, summary, details}]}
 
-identity   git user.email of each registered repo against the registry identity of its scope
+identity   git user.email of each registered repo against the registry identity of its scope (repo layout only)
+layout     fail on a folder project with a forge, or a layout that is neither repo nor folder (adr_002)
 accounts   default account, accounts crow may target, cdx on PATH
 quota      warn when every `use` account is blocked or past 90% of its 5h window (cdx status --cached)
-worktrees  <repo>.wt/* trees already merged into the default branch (crow tidy --apply removes them)
+worktrees  <repo>.wt/* trees of repo projects already merged into the default branch (crow tidy --apply removes them)
 profiles   each claude `use` account with permanent memory: memory links into local/memory, crow env and hooks,
            empty commit/PR attribution, skills of on modules linked, none of off ones (fix: crow-memory link <account>, copy settings from the default)
 data       the data repo (<CROW_HOME>/local): warn when it is not a git repo, has no remote, uncommitted changes
@@ -83,6 +84,29 @@ def identity(reg):
     if bad:
         return check("identity", "fail", f"{len(bad)} of {checked} repos use another email", bad)
     return check("identity", "ok", f"{checked} repos match the registry")
+
+
+def layouts():
+    """Folder projects carry no forge; layout is repo or folder."""
+    import yaml
+    try:
+        raw = yaml.safe_load(open(os.path.join(crow_lib.data_home(), "local", "projects.yaml"))) or {}
+    except FileNotFoundError:
+        return check("layout", "ok", "no registry")
+    bad, folders = [], 0
+    for p in raw.get("projects") or []:
+        name = p.get("name", "?")
+        if "layout" in p and p["layout"] not in crow_lib.LAYOUTS:
+            bad.append(f"{name}: layout {p['layout']!r} (expected repo or folder)")
+            continue
+        if crow_lib.project_layout(p) == "folder":
+            folders += 1
+            if (p.get("forge") or "none") != "none":
+                bad.append(f"{name}: folder project with forge {p['forge']} (set forge: none, or make it a git repo)")
+    if bad:
+        return check("layout", "fail", f"{len(bad)} project(s) with a bad layout", bad)
+    total = len(raw.get("projects") or [])
+    return check("layout", "ok", f"{total - folders} repo and {folders} folder project(s)")
 
 
 def accounts(acc):
@@ -170,6 +194,8 @@ def profiles(acc):
 def stale_worktrees(reg, mod):
     found = []
     for p in reg["projects"]:
+        if p.get("layout") == "folder":
+            continue
         trees = Path(p["path"] + ".wt") if p["path"] else None
         if not trees or not trees.is_dir():
             continue
@@ -249,7 +275,7 @@ def main(argv):
     mod = load_registry()
     reg = mod.load()
     acc = accounts_json()
-    checks = [identity(reg), accounts(acc), quota((acc or {}).get("default")), profiles(acc),
+    checks = [identity(reg), layouts(), accounts(acc), quota((acc or {}).get("default")), profiles(acc),
               stale_worktrees(reg, mod), data_repo(), modules()]
     ok = all(c["level"] != "fail" for c in checks)
     if argv:

@@ -38,7 +38,8 @@
     "ahead": "ahead",
     "stale_trees": "stale_trees"
    },
-   "work": {}
+   "work": {},
+   "layout": "repo"
   }
  ]
 }

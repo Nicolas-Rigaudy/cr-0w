@@ -2,9 +2,11 @@
 """Collect the user's recent activity across registered projects, as Markdown.
 
 Cheap, deterministic input for the brief / daily / weekly workflows:
-  - local git commits (all branches) by the configured identities
+  - local git commits (all branches) by the configured identities, for `repo` projects
+  - files changed since the date, for `folder` projects (no git; adr_002)
   - GitLab: own MRs updated, MRs awaiting review, user events (approvals, comments, merges)
   - GitHub: own PRs updated, PRs awaiting review
+The forge sections run only while the forge brick is on (crow.yaml).
 
 Usage: crow-activity [--since YYYY-MM-DD|yesterday|Nd] [--scope work|personal|all]
 """
@@ -18,8 +20,11 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parent.parent
-REGISTRY = ROOT / "local" / "projects.yaml"
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
+REGISTRY = Path(crow_lib.data_home()) / "local" / "projects.yaml"
+FOLDER_LINES = 8  # changed files listed per folder project (the rest is a count)
 
 
 def parse_since(value):
@@ -64,6 +69,15 @@ def git_commits(project, emails, since):
         cmd += ["--", project["subdir"]]
     out, _ = run(cmd, cwd=path)
     return [line.split("|", 2) for line in (out or "").splitlines() if line]
+
+
+def folder_changes(project, since):
+    """[(date, relative path)] of files changed in a folder project since the date (its `ignore:` list skipped)."""
+    root = os.path.join(project.get("path") or "", project.get("subdir") or "")
+    if not project.get("path") or not os.path.isdir(root):
+        return []
+    files = crow_lib.changed_files(root, since, project.get("ignore") or ())
+    return [(day, rel) for rel, day in files]
 
 
 def gitlab_section(since):
@@ -165,24 +179,29 @@ def main():
     emails = [e for v in ids.values() for e in (v if isinstance(v, list) else [v])]
 
     print(f"# Activity since {since.isoformat()} (scope: {args.scope})\n")
-    print("## Commits")
+    print("## Commits and changed files")
     any_commit = False
     for proj in reg["projects"]:
         if proj.get("status") != "active" or (args.scope != "all" and proj["scope"] != args.scope):
             continue
-        commits = git_commits(proj, emails, since)
+        folder = crow_lib.project_layout(proj) == "folder"
+        if folder:
+            commits = [(day, "", f"changed {rel}") for day, rel in folder_changes(proj, since)]
+        else:
+            commits = git_commits(proj, emails, since)
+        shown = min(args.limit, FOLDER_LINES) if folder else args.limit
         if commits:
             any_commit = True
             print(f"### {proj['name']} ({proj['scope']})")
-            for date, refs, subject in commits[:args.limit]:
+            for date, refs, subject in commits[:shown]:
                 refs = f" [{refs}]" if refs else ""
                 print(f"- {date} {subject}{refs}")
-            if len(commits) > args.limit:
-                print(f"- … +{len(commits) - args.limit} more")
+            if len(commits) > shown:
+                print(f"- … +{len(commits) - shown} more")
     if not any_commit:
         print("- none")
 
-    forges = {p["forge"] for p in reg["projects"] if p.get("status") == "active"
+    forges = {crow_lib.project_forge(p) for p in reg["projects"] if p.get("status") == "active"
               and (args.scope == "all" or p["scope"] == args.scope)}
     if "gitlab" in forges:
         print("\n## GitLab (work)")

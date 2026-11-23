@@ -42,7 +42,8 @@ def report(home=None, engine=None):
     lock = crow_lib.read_modules_lock(home, engine)
     rows = [{"name": n, "on": m["on"], "default": m["default"], "summary": man[n].get("summary", ""),
              "requires": man[n].get("requires") or [], "config": m["config"], "source": m["source"],
-             "dir": man[n].get("_dir", ""), "lock": lock.get(n)}
+             "dir": man[n].get("_dir", ""), "lock": lock.get(n),
+             "deck_pages": (man[n].get("deck") or {}).get("pages") or []}
             for n, m in sorted(st["modules"].items())]
     return {"file": st["file"], "exists": st["exists"], "modules": rows, "errors": st["errors"],
             "lock_problems": crow_lib.lock_problems(home, engine) if lock else []}

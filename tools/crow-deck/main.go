@@ -356,7 +356,7 @@ func (m *model) exec(c string) tea.Cmd {
 	case "tab":
 		for i, n := range pageNames {
 			if strings.EqualFold(n, arg) {
-				m.page = i
+				m.goPage(i)
 			}
 		}
 	case "theme":
@@ -603,9 +603,9 @@ func (m model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q":
 		return m, tea.Quit
 	case "1", "2", "3", "4", "5":
-		m.page = int(k[0] - '1')
+		m.goPage(int(k[0] - '1'))
 	case "&", "é", "\"", "'", "(":
-		m.page = azertyTabs[k]
+		m.goPage(azertyTabs[k])
 	case "t":
 		m.cycleTheme(1)
 		m.overlay = ovTheme
@@ -1215,6 +1215,7 @@ func main() {
 		}
 		cfg.Mode = *modeFlag
 	}
+	loadHiddenPages()
 	m := newModel(cfg)
 	m.cfgPath = cfgPath
 	switch {

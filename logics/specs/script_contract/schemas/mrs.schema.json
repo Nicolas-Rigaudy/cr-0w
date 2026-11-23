@@ -2,7 +2,7 @@
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "crow/scripts/mrs.schema.json",
  "title": "mrs",
- "description": "crow-mrs json: open MRs and PRs of the registered projects, cached 60 s in <state>/mrs.json (-f refreshes).",
+ "description": "crow-mrs json: open MRs and PRs of the registered projects, cached 60 s in <state>/mrs.json (-f refreshes). With the forge brick off it adds \"off\": true and every list is empty.",
  "type": "object",
  "required": [
   "schema",

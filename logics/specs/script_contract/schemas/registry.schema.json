@@ -27,6 +27,7 @@
      "forge",
      "remote",
      "path",
+     "layout",
      "release",
      "status",
      "logics",

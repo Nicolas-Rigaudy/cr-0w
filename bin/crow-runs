@@ -1033,13 +1033,16 @@ def dispatch(a):
         a.continue_run = parent_run(a.continue_run).get("run_id") or a.continue_run
     if a.continue_run and parent_run(a.continue_run).get("isolated"):
         a.isolate = True  # cdx continues an isolated run only inside its sandbox, read-only for a review
+    p = project(a.project)
+    if crow_lib.project_layout(p) == "folder" and (a.cwd or a.isolate):
+        sys.exit(f"crow: {p['name']} is a folder project (no git): it runs in {p['path']} itself, "
+                 "without --cwd or --isolate")
     rows = crow_lib.cdx_rows() if a.isolate else []
     acct = pick_account(a)
     if a.isolate and not a.account and not a.continue_run:
         acct = crow_lib.isolation_account(acct, rows)
     if subprocess.run([str(HOME / "bin/crow-accounts"), "require", acct]).returncode:
         sys.exit(1)
-    p = project(a.project)
     cwd = p["path"]
     if a.cwd:  # a worktree of the project (<path>.wt/...), never another folder
         cwd = os.path.realpath(a.cwd)

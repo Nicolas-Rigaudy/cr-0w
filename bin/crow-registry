@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """crow-registry: the project registry (local/projects.yaml) plus cheap git state, as JSON for the deck.
 
-  crow-registry json   {identities, state_dir, projects: [{name, short, scope, nest_scope, kind, planet, forge, remote, path, release,
+  crow-registry json   {identities, state_dir, projects: [{name, short, scope, nest_scope, layout, kind, planet, forge, remote, path, release,
                         status, logics, road, git: {email, dirty, ahead, stale_trees}, work: {YYYY-MM-DD: commits}}]}
 
 scope (work or personal) picks the identity and the accounts. nest_scope (work, personal or both) files the project
 under the Nest scope filter; both shows it under work and perso. It defaults to scope when absent or unknown.
+layout (repo or folder, adr_002) is the projects.yaml key, else repo when the path holds .git, else folder. A folder
+project has no git state; its work counts files changed per day (mtime, the subdir only when set).
 kind (work, tool, world or notes) and planet (bands, terrain, rock or ice, an override) pick the Nest planet type;
 each is "" when absent or unknown. Nest derives the type from them and scope.
 
@@ -94,6 +96,18 @@ def work_days(path, email, subdir=""):
     return dict(sorted(out.items()))
 
 
+def folder_days(p):
+    """Files changed per day over the last WORK_DAYS days in a folder project."""
+    root = os.path.join(p.get("path") or "", p.get("subdir") or "")
+    if not p.get("path") or not os.path.isdir(root):
+        return {}
+    since = dt.date.today() - dt.timedelta(days=WORK_DAYS)
+    out = {}
+    for _, day in crow_lib.changed_files(root, since, p.get("ignore") or ()):
+        out[day] = out.get(day, 0) + 1
+    return dict(sorted(out.items()))
+
+
 def road_info(path, roadmap):
     """Milestone progress of a Logics roadmap doc, or None when there is none to read."""
     if not roadmap:
@@ -148,15 +162,16 @@ def load():
     ids = reg.get("identities") or {}
     for p in reg.get("projects") or []:
         aliases = p.get("aliases") or []
+        folder = crow_lib.project_layout(p) == "folder"
         out.append({
             "name": p["name"], "short": aliases[0] if aliases else p["name"],
-            "scope": p.get("scope", ""), "nest_scope": nest_scope(p),
+            "scope": p.get("scope", ""), "nest_scope": nest_scope(p), "layout": "folder" if folder else "repo",
             "kind": pick(p, "kind", KINDS), "planet": pick(p, "planet", PLANETS), "forge": p.get("forge", "none"), "remote": p.get("remote", ""),
             "path": p.get("path", ""), "release": p.get("release") or {}, "status": p.get("status", ""),
             "logics": bool(p.get("logics")),
             "system": p.get("system") or p["name"], "nest": p.get("nest", True) is not False,
-            "road": road_info(p.get("path", ""), (p.get("release") or {}).get("roadmap")), "git": git_state(p.get("path", "")),
-            "work": work_days(p.get("path", ""), ids.get(p.get("scope", ""), ""), p.get("subdir", "")),
+            "road": road_info(p.get("path", ""), (p.get("release") or {}).get("roadmap")), "git": git_state("" if folder else p.get("path", "")),
+            "work": folder_days(p) if folder else work_days(p.get("path", ""), ids.get(p.get("scope", ""), ""), p.get("subdir", "")),
         })
     state = str(crow_lib.machine_dir(HOME))
     return {"identities": reg.get("identities") or {}, "state_dir": state,

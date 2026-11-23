@@ -8,6 +8,8 @@ what it may do alone and what needs your OK. Hooks enforce it.
 | Accounts crow may use (`use`, `ask-first`, `never`) and how memory is shared | `local/accounts.yaml` (start from [`accounts.example.yaml`](accounts.example.yaml)) |
 | Your projects: path, scope (work or personal), forge, identity, status | `local/projects.yaml` |
 | Where a project shows in the Nest scope filter: `nest_scope` (work, personal or both; default `scope`). `scope` still picks identity and accounts | `local/projects.yaml` |
+| A project without git: `layout: folder` (default `repo` when the path has `.git`, else `folder`). A folder project has no forge, no hooks and no worktrees; its activity is the files changed, minus hidden entries and `ignore:` (names or relative paths) | `local/projects.yaml` |
+| Which bricks run (forge, git, nest, ...): turn one off and its scripts, skills, hooks and tabs go quiet | `crow.yaml` (start from [`crow.example.yaml`](crow.example.yaml), see `crow modules`) |
 | Words and patterns that must never reach a commit or a push | `local/commit-msg-deny.txt`, `local/prepush-deny.txt` |
 | What the hub may do alone: commit, push, merge, send mail, run infra, start runs | the autonomy table in [`CLAUDE.md`](../CLAUDE.md) |
 | Your commit format | the commit-msg hook, `bin/crow-commit-msg-check` |

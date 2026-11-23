@@ -8,6 +8,8 @@ An MR or PR is listed when the owner is its author, an assignee or a requested r
 gh) are queried with GET requests only: nothing is posted, resolved or pushed. forges holds "ok" or the error per
 forge. branches lists a main checkout on a branch ahead of the default branch with no open MR.
 REPO is the registry remote (group/name) and REF the MR number.
+With the forge brick off (crow.yaml), json answers {schema, off: true, forges: {}, mrs: [], branches: []} without a
+forge call, and show exits 2 with the module-off message. Folder projects are never queried.
 """
 import json, os, pwd, subprocess, sys, time
 from datetime import datetime, timezone
@@ -40,7 +42,8 @@ def projects():
         reg = yaml.safe_load(open(HOME / "local" / "projects.yaml")) or {}
     except FileNotFoundError:
         return []
-    return [p for p in reg.get("projects") or [] if p.get("forge") in ("gitlab", "github") and p.get("remote")]
+    return [p for p in reg.get("projects") or [] if p.get("forge") in ("gitlab", "github") and p.get("remote")
+            and crow_lib.project_layout(p) == "repo"]
 
 
 def short(p):
@@ -313,6 +316,13 @@ def cached_list(force=False, build=lambda: list_all(projects())):
 
 
 def main(argv):
+    if argv[:1] in (["json"], ["show"]) and not crow_lib.brick_on("forge"):
+        if argv[:1] == ["show"]:
+            print(crow_lib.off_message("forge"), file=sys.stderr)
+            sys.exit(2)
+        json.dump({"schema": crow_lib.SCRIPT_SCHEMA, "off": True, "forges": {}, "mrs": [], "branches": [],
+                   "now": datetime.now(timezone.utc).isoformat(timespec="seconds")}, sys.stdout)
+        return
     if argv[:1] == ["json"]:
         sys.stdout.write(cached_list("-f" in argv[1:]))
     elif argv[:1] == ["show"] and len(argv) == 3:

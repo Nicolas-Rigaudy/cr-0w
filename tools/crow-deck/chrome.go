@@ -171,6 +171,9 @@ func (lk *look) badge(page int, fx *fixtures) (int, bool) {
 func (lk *look) tabs(w int, cs chromeState) string {
 	var l line
 	for i, name := range pageNames {
+		if pageHidden(i) {
+			continue
+		}
 		on := i == cs.page
 		label := strconv.Itoa(i+1) + " " + lk.cap(name)
 		textStyle := lk.sub

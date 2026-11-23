@@ -1,4 +1,5 @@
-# Module manifest of the git brick (adr_002). Applies to repo projects only.
+# Module manifest of the git brick (adr_002). Applies to repo projects only; folder projects
+# (layout: folder in projects.yaml) report changed files instead of commits.
 name: git
 summary: Commit-msg, pre-commit and pre-push hooks, git activity, crow-tidy, identity check and worktrees.
 default: true

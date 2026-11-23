@@ -7,7 +7,7 @@ import { ago, headerClock, time } from '../format'
 import { Link } from '../router'
 import { Glyph } from './Glyph'
 import { MORE_ICON, SCOPE_ICONS, TABS, TabIcon, type TabKey } from './icons'
-import { BAR_KEYS, MORE_KEYS, barTab } from './tabs'
+import { BAR_KEYS, MORE_KEYS, barTab, hiddenTabs } from './tabs'
 import { nextScope, scopeChip, type ScopeMode } from '../data/scope'
 
 type Theme = 'modern' | 'cyber'
@@ -50,6 +50,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
   // Account gauges (laptop), allowed accounts only: 5h left as bar and number, week in the
   // title; the number turns red when the week runs low.
   const accts = snap ? quotaOf(snap) : []
+  const hidden = hiddenTabs(snap)
   return (
     <div className={`app${rail ? ' has-rail' : ''}`}>
       <header className="top">
@@ -58,7 +59,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
         <ScopeChip scope={scope} setScope={setScope} />
         <span className="hdr-sep" aria-hidden="true" />
         <nav className="pills" aria-label="Tabs">
-          {TABS.map((t, i) => (
+          {TABS.map((t, i) => hidden.has(t.key) ? null : (
             <Link key={t.key} href={t.path} className="pill" aria-current={t.key === active ? 'page' : undefined}>
               <span className="tn">{i + 1}</span>{t.label}
               {b[t.key]?.n ? <span className={`badge-t num${b[t.key]!.failed ? ' f' : ''}`}>{b[t.key]!.n}</span> : null}
@@ -97,7 +98,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
       </header>
       <main className="main" id="main">{children}</main>
       {rail}
-      <TabBar active={active} b={b} />
+      <TabBar active={active} b={b} hidden={hidden} />
     </div>
   )
 }
@@ -106,7 +107,7 @@ type Badges = ReturnType<typeof badges>
 
 // Phone tab bar B (item_206): Home, Desk, Missions, Inbox, More. More opens a sheet
 // with MRs, Agenda and Reports and stays highlighted while one of them is open.
-function TabBar({ active, b }: { active: TabKey; b: Badges }) {
+function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: ReadonlySet<TabKey> }) {
   const [open, setOpen] = useState(false)
   const btn = useRef<HTMLButtonElement>(null)
   const sheet = useRef<HTMLUListElement>(null)
@@ -137,7 +138,7 @@ function TabBar({ active, b }: { active: TabKey; b: Badges }) {
     if (to && !sheet.current?.contains(to) && to !== btn.current) close(false)
   }
   const tabs = TABS.filter((t) => (BAR_KEYS as readonly TabKey[]).includes(t.key))
-  const more = TABS.filter((t) => (MORE_KEYS as readonly TabKey[]).includes(t.key))
+  const more = TABS.filter((t) => (MORE_KEYS as readonly TabKey[]).includes(t.key) && !hidden.has(t.key))
   const openMore = more.find((t) => t.key === active)
   return (
     <nav className="tabbar" aria-label="Tabs">

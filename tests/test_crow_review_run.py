@@ -410,7 +410,7 @@ def test_dispatch_continue_run_pins_nothing_and_checks_the_worktree(tmp_path, mo
     (proj / ".." / "demo.wt" / "review-1").resolve().mkdir(parents=True)
     (tmp_path / "local").mkdir()
     (tmp_path / "local" / "projects.yaml").write_text(f"projects:\n  - {{name: demo, path: {proj}}}\n")
-    proj.mkdir()
+    (proj / ".git").mkdir(parents=True)
     (tmp_path / "bin").mkdir()
     monkeypatch.setenv("CROW_HOME", str(tmp_path))
     monkeypatch.setenv("CROW_ACCOUNT", "main")
