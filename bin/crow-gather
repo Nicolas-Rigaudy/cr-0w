@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from crow_vault import DAILY_DIR, INBOX, WORK, crow_lines, daily_path, vault_path  # noqa: E402
+from crow_vault import INBOX, WORK, crow_lines, daily_dir, daily_path, vault_path  # noqa: E402
 
 import yaml  # noqa: E402
 
@@ -151,8 +151,8 @@ def activity_days(state):
     """{date: text} of crow activity: the daily note's CR-0W section, plus legacy local/state/activity files."""
     days = {p.stem: read(p, 200000) or "" for p in (state / "activity").glob("*.md")}
     vault = vault_path()
-    if vault is not None and (vault / DAILY_DIR).is_dir():
-        for path in (vault / DAILY_DIR).glob("20??-??-??.md"):
+    if vault is not None and daily_dir(vault).is_dir():
+        for path in daily_dir(vault).glob("20??-??-??.md"):
             lines = crow_lines(vault, dt.date.fromisoformat(path.stem))
             if lines:
                 days[path.stem] = "\n".join(filter(None, [days.get(path.stem, "").rstrip(), *lines]))

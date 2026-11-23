@@ -1,6 +1,6 @@
 # Module manifest of the core brick (adr_002). Always on.
 name: core
-summary: Dispatcher, runs, sessions, accounts, registry, doctor, check, state, memory, usage, room, prompts, hub guard, gather, brief and wrap skills, install and update.
+summary: Dispatcher, runs, sessions, accounts, registry, doctor, check, state, notes and open threads, activity log, memory, usage, room, prompts, hub guard, gather, brief and wrap skills, install and update.
 default: true
 requires: []
 scripts:
@@ -15,8 +15,10 @@ scripts:
   - crow-hub-guard
   - crow-isolation-probe
   - crow_lib.py
+  - crow-log
   - crow-memory
   - crow-modules
+  - crow-note
   - crow-open
   - crow-pending
   - crow_pending.py
@@ -37,6 +39,7 @@ scripts:
   - crow_term.py
   - crow-update
   - crow-usage
+  - crow_vault.py
 skills: [wrap]
 hub_skills: [brief]
 skill_lists: []
@@ -52,6 +55,7 @@ runbooks:
   - long-sessions
   - memory
   - new-account
+  - open-threads
   - open-project-session
   - pending-items
   - own-routines
@@ -68,9 +72,9 @@ core_routes: []
 apps: []
 integrations: []
 gather:
-  brief: [today_priorities, fleet, long_sessions, accounts, usage_split, runs, pending]
-  daily: [tracker, activity_logs]
-  weekly: [tracker, activity_logs]
+  brief: [today_priorities, open_threads, status, fleet, long_sessions, accounts, usage_split, runs, pending]
+  daily: [tracker, activity_logs, open_threads_work]
+  weekly: [tracker, activity_logs, decisions, carry_over]
 doctor:
   checks: [accounts, quota, profiles, data, modules]
   needs: [cdx]

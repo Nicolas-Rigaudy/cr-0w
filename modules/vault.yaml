@@ -1,13 +1,13 @@
 # Module manifest of the vault brick (adr_002).
 name: vault
-summary: Vault notes, activity log, open threads and the eod skill.
+summary: Obsidian vault reads (crow-notes, vault tasks), migration and the eod skill. Off, notes and open threads go to CROW_HOME/notes.
 default: true
 requires: []
-scripts: [crow-log, crow-note, crow-notes, crow-vault-migrate, crow_vault.py]
+scripts: [crow-notes, crow-vault-migrate]
 skills: []
 hub_skills: [eod]
 skill_lists: []
-runbooks: [open-threads, vault-capture, vault-sync-new-device]
+runbooks: [vault-capture, vault-sync-new-device]
 claude_hooks: []
 git_hooks: []
 core_sections: []
@@ -15,9 +15,9 @@ core_routes: []
 apps: []
 integrations: []
 gather:
-  brief: [notes, vault_tasks, open_threads, status]
-  daily: [notes, open_threads_work]
-  weekly: [notes, decisions, carry_over]
+  brief: [notes, vault_tasks]
+  daily: [notes]
+  weekly: [notes]
 doctor: {}
 nest: {}
 deck: {}

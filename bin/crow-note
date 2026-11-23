@@ -3,14 +3,15 @@
 
 Usage: crow-note "text #tag" [--section capture|meetings|eod] [--date YYYY-MM-DD]
 
-Creates the daily from the vault's template when missing. Only the target
+Creates the daily from the vault's template when missing. With the vault brick off,
+dailies are plain Markdown in CROW_HOME/notes/daily. Only the target
 section changes. An empty bullet ("- ") in the section is filled first.
 """
 import argparse
 import datetime as dt
 import sys
 
-from crow_vault import SECTIONS, TEMPLATE, daily_path, render_template, section_bounds, vault_path
+from crow_vault import SECTIONS, TEMPLATE, daily_path, new_daily, notes_mode, section_bounds, vault_path
 
 
 def add_line(vault, day, entry, section):
@@ -18,10 +19,9 @@ def add_line(vault, day, entry, section):
     if path.exists():
         text = path.read_text()
     else:
-        tpl = vault / TEMPLATE
-        if not tpl.exists():
-            raise SystemExit(f"crow-note: no daily at {path} and no template at {tpl}")
-        text = render_template(tpl.read_text(), day)
+        text = new_daily(vault, day)
+        if text is None:
+            raise SystemExit(f"crow-note: no daily at {path} and no template at {vault / TEMPLATE}")
         path.parent.mkdir(parents=True, exist_ok=True)
     lines = text.split("\n")
     heading = SECTIONS[section]
@@ -49,6 +49,8 @@ def main():
     ap.add_argument("--date", default=None)
     args = ap.parse_args()
     vault = vault_path()
+    if vault is not None and notes_mode():
+        vault.mkdir(parents=True, exist_ok=True)
     if vault is None or not vault.is_dir():
         sys.exit("crow-note: vault.path is not set or missing")
     day = dt.date.fromisoformat(args.date) if args.date else dt.date.today()

@@ -4,9 +4,10 @@
   crow-state path <kind>      owner-facing note path: threads, status, decisions, rollups, drafts, research, retros
   crow-state path rollup <week>   weekly rollup file (week like 2026-W45)
   crow-state machine          machine state dir (always local/state)
-  crow-state notes            vault crow folder, or local/state while vault.crow_dir is unset
+  crow-state notes            vault crow folder, CROW_HOME/notes with the vault brick off, or local/state while vault.crow_dir is unset
 
-Owner-facing notes go to the vault crow folder once vault.crow_dir is set; machine state never moves.
+Owner-facing notes go to the vault crow folder once vault.crow_dir is set (CROW_HOME/notes with the vault
+brick off); machine state never moves.
 """
 import os
 import sys

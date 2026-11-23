@@ -5,8 +5,8 @@ Usage: crow-log "[tag] text" [--date YYYY-MM-DD]
 
 Writes '- HH:MM [tag] text' at the end of the CR-0W section (added before End of day
 when missing). A missing daily is created from the vault template when it only uses
-date calls. With no vault, or a template crow cannot fill, the line goes to
-local/state/activity/<date>.md instead. The rest of the note stays byte-identical.
+date calls. With the vault brick off, dailies live in CROW_HOME/notes/daily. With no vault,
+or a template crow cannot fill, the line goes to local/state/activity/<date>.md instead. The rest of the note stays byte-identical.
 """
 import argparse
 import datetime as dt
@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import crow_lib  # noqa: E402
-from crow_vault import CROW, EOD, TEMPLATE, daily_path, known_template, render_template, section_bounds, vault_path  # noqa: E402
+from crow_vault import CROW, EOD, daily_path, new_daily, notes_mode, section_bounds, vault_path  # noqa: E402
 
 
 def insert(text, entry):
@@ -57,17 +57,17 @@ def fallback(day, entry):
 
 def log(day, entry):
     vault = vault_path()
+    if vault is not None and notes_mode():
+        vault.mkdir(parents=True, exist_ok=True)
     if vault is None or not vault.is_dir():
         return fallback(day, entry)
     path = daily_path(vault, day)
     if path.exists():
         text = path.read_text()
     else:
-        tpl = vault / TEMPLATE
-        raw = tpl.read_text() if tpl.exists() else None
-        if raw is None or not known_template(raw):
+        text = new_daily(vault, day, strict=True)
+        if text is None:
             return fallback(day, entry)
-        text = render_template(raw, day)
         path.parent.mkdir(parents=True, exist_ok=True)
     write_atomic(path, insert(text, entry))
     return path

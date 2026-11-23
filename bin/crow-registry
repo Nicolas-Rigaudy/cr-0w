@@ -40,8 +40,11 @@ PLANETS = ("bands", "terrain", "rock", "ice")
 
 
 def daily_dir(reg):
-    """Vault daily notes folder: CROW_VAULT, else vault.path ("" without a vault)."""
-    from crow_vault import DAILY_DIR
+    """Vault daily notes folder: CROW_VAULT, else vault.path ("" without a vault), CROW_HOME/notes/daily
+    with the vault brick off."""
+    from crow_vault import DAILY_DIR, daily_dir as notes_daily, notes_mode, vault_path
+    if notes_mode():
+        return str(notes_daily(vault_path()))
     vault = os.environ.get("CROW_VAULT") or (reg.get("vault") or {}).get("path")
     return str(Path(vault) / DAILY_DIR) if vault else ""
 

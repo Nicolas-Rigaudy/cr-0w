@@ -61,8 +61,11 @@ def machine_dir(home=None):
 
 
 def crow_dir(reg=None, home=None):
-    """Vault folder for owner-facing notes (vault.path / vault.crow_dir), or None when unset."""
+    """Vault folder for owner-facing notes (vault.path / vault.crow_dir), or None when unset.
+    With the vault brick off: CROW_HOME/notes."""
     from pathlib import Path
+    if not brick_on("vault", home):
+        return Path(home or data_home()) / "notes"
     reg = registry(home) if reg is None else reg
     vault = reg.get("vault") or {}
     name = vault.get("crow_dir")

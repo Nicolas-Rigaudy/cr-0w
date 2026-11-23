@@ -128,10 +128,30 @@ def test_without_crow_yaml_every_default_key_is_there(hub):
     assert "afk" in data["modules"] and "design" not in data["modules"]
 
 
-def test_weekly_with_vault_off_has_no_vault_keys(hub):
+def test_weekly_with_vault_off_reads_threads_from_crow_home_notes(hub):
     home, _ = hub
     env = setup(hub)
     (home / "crow.yaml").write_text("version: 1\nmodules:\n  vault: false\n")
+    notes = home / "notes"
+    (notes / "Decisions").mkdir(parents=True)
+    (notes / "Open Threads.md").write_text(THREADS)
+    (notes / "Decisions" / f"{TODAY} new one.md").write_text("y\n")
     data = gather(hub, "weekly", env=env)
-    assert not {"notes", "decisions", "carry_over"} & set(data)
+    assert "notes" not in data
+    assert [d.splitlines()[0] for d in data["decisions"]] == [f"## {TODAY} new one"]
     assert data["activity_logs"]
+    assert data["targets"]["rollup"].startswith(str(notes / "Rollups"))
+
+
+def test_all_optional_bricks_off_still_gather(hub):
+    home, _ = hub
+    env = setup(hub)
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  mail: false\n  team: false\n  vault: false\n")
+    notes = home / "notes"
+    notes.mkdir()
+    (notes / "Open Threads.md").write_text(THREADS)
+    for routine in ("brief", "daily", "weekly"):
+        data = gather(hub, routine, env=env)
+        assert not {"mail", "team", "vault"} & set(data["modules"])
+        assert "checks" not in data and "notes" not in data and "vault_tasks" not in data
+    assert gather(hub, "brief", env=env)["open_threads"]["Me"][0] == "0d [backend] fix the seed"

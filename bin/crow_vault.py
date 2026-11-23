@@ -17,13 +17,24 @@ CROW = "CR-0W"  # crow's activity section in the daily note
 SECTIONS = {"capture": CAPTURE, "meetings": MEETINGS, "eod": EOD}
 
 DAILY_DIR = "40 Journal/Daily"
+NOTES_DAILY_DIR = "daily"  # dailies under CROW_HOME/notes while the vault brick is off
+NOTES_DIR = "notes"
+# Daily note of CROW_HOME/notes (vault off): the sections crow-note and crow-log write to.
+NOTES_DAILY = "# {day}\n\n## 📥 Capture\n- \n\n## 📆 Meetings & notes\n- \n\n## 🌙 End of day\n- \n"
 TEMPLATE = "90 Templates/Daily Note.md"
 INBOX = "00 Inbox"
 WORK = "10 Work"
 
 
+def notes_mode():
+    """True while the vault brick is off: notes live as plain Markdown under CROW_HOME/notes."""
+    return not crow_lib.brick_on("vault")
+
+
 def vault_path():
-    """Vault root: CROW_VAULT overrides the registry's vault.path."""
+    """Vault root: CROW_VAULT overrides the registry's vault.path. Vault brick off: CROW_HOME/notes."""
+    if notes_mode():
+        return Path(crow_lib.data_home()) / NOTES_DIR
     env = os.environ.get("CROW_VAULT")
     if env:
         return Path(env)
@@ -35,8 +46,23 @@ def vault_path():
     return Path(path) if path else None
 
 
+def daily_dir(vault):
+    """Folder of the daily notes: the vault journal, or CROW_HOME/notes/daily while the vault brick is off."""
+    return vault / (NOTES_DAILY_DIR if notes_mode() else DAILY_DIR)
+
+
 def daily_path(vault, day):
-    return vault / DAILY_DIR / f"{day.isoformat()}.md"
+    return daily_dir(vault) / f"{day.isoformat()}.md"
+
+
+def new_daily(vault, day, strict=False):
+    """Text of a missing daily: the vault template rendered for day, else the plain built-in daily while the
+    vault brick is off, else None. strict refuses a template with Templater calls crow cannot fill."""
+    tpl = vault / TEMPLATE
+    if tpl.exists():
+        raw = tpl.read_text()
+        return None if strict and not known_template(raw) else render_template(raw, day)
+    return NOTES_DAILY.format(day=day.isoformat()) if notes_mode() else None
 
 
 def _tp_date(match):
