@@ -41,7 +41,7 @@ Read-only except for one activity-log line. Target: **one screen, ≤ 40 lines**
    **Logics next moves**: from `fleet`, only moves that unblock work (blocked docs, a task at 100% in a repo in delivery); skip pure closeout chores unless nothing else is open.
 7. **Retros**: `retros.reports` (one line each: project, what was applied; open a report only when its name says nothing), `retros.pending_proposals`, and failures from `retros.status`.
    **Tool updates**: when `toolwatch` is set, one line: the note name and its open proposals count, then the proposals (at most 5). In the main session, ask which to take up in one `AskUserQuestion` (multi-select); each pick becomes a Logics item or a line in an existing one, then tick it in the note (`- [x]`). Declined ones get ticked too, with "(declined)".
-8. **Mail + calendar**: only if Microsoft 365 tools are available in this session. Today's meetings, and unread mail that needs a reply. If unavailable, print one line saying so and move on.
+8. **Mail + calendar**: only if `mail` is in `modules` and Microsoft 365 tools are available in this session; with `mail` off, skip the step without a line. Today's meetings, and unread mail that needs a reply. If unavailable, print one line saying so and move on.
 9. **Owner notes**: from `notes`, mention anything that changes the day (a #blocage, a #decision, a note for tomorrow) in one line each. Then pick at most three live topics (open threads, sprint tickets, release tracks) with no trace in the notes or activity for 3 days and ask them in one `AskUserQuestion` call, only in the main session; file answers with `bin/crow-note ... --section capture`. Nothing stale, nothing asked.
 
 Skip any source that errors and note it in one line at the bottom.

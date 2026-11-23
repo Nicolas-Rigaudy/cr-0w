@@ -43,7 +43,7 @@ flowchart LR
 | `core` | dispatcher `crow`, runs, sessions, accounts, registry, doctor, check, state, memory, usage, room, prompts, hub guard, gather, brief and wrap skills, install and update | always on |
 | `git` | commit-msg, pre-commit and pre-push hooks, `crow-activity` git reads, `crow-tidy`, identity check, worktrees | on (applies to `repo` projects only) |
 | `forge` | `crow-mrs`, `crow-forge-read`, review run and check, skills `mr`, `review`, `review-threads`, MRs section and deck page | on |
-| `vault` | `crow-note`, `crow-notes`, `crow-log`, vault helpers and migration, `eod` skill, open threads in the vault | on |
+| `vault` | `crow-notes`, vault migration, `eod` skill. Off, `crow-note`, `crow-log` and open threads write Markdown under `CROW_HOME/notes/` (core) | on |
 | `mail` | `crow-today` (calendar and mail counts), `/api/today` done and snooze, Today box | on |
 | `team` | `crow-checks` (sprint rituals, 1:1s, mail to answer), checks section | on |
 | `afk` | afk page and preflight, `afk` and `night` skills, afk runbook | on |
@@ -63,11 +63,11 @@ Source of truth: the engine module manifests `modules/<brick>.yaml` (bricks.tsv 
 
 | Brick | Pieces | Scripts | Skills | Runbooks | Hooks | Core routes and sections | Apps |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| core | 48 | crow, crow-accounts, crow-check, crow-ctx, crow-doctor, crow-focus, crow-gather, crow-hub-guard, crow-isolation-probe, crow_lib.py, crow-memory, crow-open, crow-project, crow-prompt, crow-ready, crow-registry, crow-relaunch, crow-room, crow-runs, crow_schema_lite.py, crow-screen, crow-secret, crow-sessions, crow_sidecar.py, crow-state, crow_term.py, crow-update, crow-usage | brief, wrap | agent-tooling, claude-and-codex, dispatch-background-runs, install-and-update, interrupted-sessions, live-claude-session-test, logics-task-closeout, long-sessions, memory, new-account, open-project-session, own-routines, remote-computer-use-windows, service-tokens, sub-project-work | crow-hub-guard, crow-runs inbox, crow-relaunch hook | | |
+| core | 52 | crow, crow-accounts, crow-check, crow-ctx, crow-doctor, crow-focus, crow-gather, crow-hub-guard, crow-isolation-probe, crow_lib.py, crow-log, crow-memory, crow-note, crow-open, crow-project, crow-prompt, crow-ready, crow-registry, crow-relaunch, crow-room, crow-runs, crow_schema_lite.py, crow-screen, crow-secret, crow-sessions, crow_sidecar.py, crow-state, crow_term.py, crow-update, crow-usage, crow_vault.py | brief, wrap | agent-tooling, claude-and-codex, dispatch-background-runs, install-and-update, interrupted-sessions, live-claude-session-test, logics-task-closeout, long-sessions, memory, new-account, open-project-session, open-threads, own-routines, remote-computer-use-windows, service-tokens, sub-project-work | crow-hub-guard, crow-runs inbox, crow-relaunch hook | | |
 | core-api | 39 | crow-contract, crow_contract.py | | core-service, mission-e2e-scratch | | 27 routes (state, events, missions, inbox, sessions, dispatch, butler, terminal); sections sessions, dispatch, usage, projects, accounts, ready, jobs | tools/crow-core |
 | git | 9 | crow-activity, crow-commit-msg-check, crow-precommit-check, crow-prepush-check, crow-tidy | | repo-tidy | commit-msg, pre-commit, pre-push | | |
 | forge | 10 | crow-forge-read, crow-mrs, crow-review-check, crow-review-run | mr, review, review-threads | ci-secrets, review-findings | | section mrs | |
-| vault | 9 | crow-log, crow-note, crow-notes, crow-vault-migrate, crow_vault.py | eod | open-threads, vault-capture, vault-sync-new-device | | | |
+| vault | 5 | crow-notes, crow-vault-migrate | eod | vault-capture, vault-sync-new-device | | | |
 | mail | 5 | crow-today | | graph-today | | routes today done and snooze; section today | |
 | team | 3 | crow-checks, crow_checks.py | | | | section checks | |
 | afk | 7 | crow-afk-page, crow-afk-preflight, crow-night-page, crow-night-preflight | afk, night | afk-runs | | | |
