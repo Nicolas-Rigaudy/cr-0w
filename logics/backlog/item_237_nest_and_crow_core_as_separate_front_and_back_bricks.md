@@ -4,7 +4,7 @@
 > Status: In progress
 > Understanding: 95
 > Confidence: 80
-> Progress: 0%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -60,3 +60,9 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Outcome (2026-11-23)
+- Built in 49730b1: `/api/modules`, off gating, token login (`crow core url`), Nest pages from modules, generic list sections with actions, deck hides off boxes, `docs/install-bricks.md`, brick section contract in `docs/writing-a-brick.md`.
+- AC1 and AC3 pass (Nest tests, crow-check contract). AC2 waits for Paul's run of `docs/install-bricks.md` on WSL.
+- Reload is polling: core re-reads crow.yaml within a second, Nest polls `/api/modules`. No SSE.
+- Agenda stays visible with mail off: it is a core page.
