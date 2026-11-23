@@ -119,12 +119,13 @@ func (s *Server) Refresh(name string) {
 	s.run(e)
 }
 
-// tick starts every due refresh.
+// tick starts every due refresh. Sections of off bricks never run their script.
 func (s *Server) tick() {
 	now := s.o.Now()
+	mods := s.mods()
 	for _, name := range s.order {
 		e := s.ext[name]
-		if e == nil {
+		if e == nil || mods.sectionOff(name) {
 			continue
 		}
 		e.mu.Lock()

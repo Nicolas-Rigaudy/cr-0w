@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -258,5 +259,43 @@ func TestModulesFixture(t *testing.T) {
 	}
 	if want := testfix.Read(t, p); !bytes.Equal(got, want) {
 		t.Errorf("modules differ from %s (go test -update to rewrite)\n%s", p, got)
+	}
+}
+
+// TestModuleOffNoRefresh stops a section's script once its brick is switched off (item_262).
+func TestModuleOffNoRefresh(t *testing.T) {
+	home := brickHome(t, "version: 1\nmodules:\n  forge: false\n")
+	engine, err := filepath.Abs(engineRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clk := &fakeClock{t: clock}
+	var n atomic.Int32
+	s := New(Options{Now: clk.Now, Modules: LoadModules(home, engine),
+		Sources: []Source{{Name: "today", TTL: 5 * time.Second, Fetch: func() (any, error) {
+			n.Add(1)
+			return []any{}, nil
+		}}}})
+	sectionOf(t, s, "today", nil)
+	idle(t, s, "today")
+	clk.Add(5 * time.Second)
+	s.tick()
+	idle(t, s, "today")
+	if n.Load() != 2 {
+		t.Fatalf("runs with mail on = %d, want 2", n.Load())
+	}
+	writeFile(t, filepath.Join(home, "crow.yaml"), []byte("version: 1\nmodules:\n  mail: false\n  forge: false\n"))
+	later := time.Now().Add(2 * time.Second)
+	if err := os.Chtimes(filepath.Join(home, "crow.yaml"), later, later); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(1100 * time.Millisecond)
+	for i := 0; i < 3; i++ {
+		clk.Add(5 * time.Second)
+		s.tick()
+		idle(t, s, "today")
+	}
+	if n.Load() != 2 {
+		t.Fatalf("runs with mail off = %d, want 2", n.Load())
 	}
 }
