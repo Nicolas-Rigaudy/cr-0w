@@ -7,7 +7,7 @@ Report only by default. --apply does the safe moves, never anything else:
   - remove clean worktrees whose branch is merged into the default branch, delete
     that branch, and delete merged branches with no worktree
   - git worktree prune
-  - purge settled pending rows older than pending_settled_days (crow-pending purge)
+  - purge settled rows of pending_files older than pending_settled_days (crow-pending purge; never Open Threads)
 It never commits, pushes, merges, switches branches or touches a dirty tree.
 Work-scope projects are report only.
 

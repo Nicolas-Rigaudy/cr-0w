@@ -133,8 +133,9 @@ def test_brief_and_inbox_rows(tmp_path):
         "9d late [threads/waiting] Person A: review of the schema",
         "2d late [pending/waiting] Contact A (Supplier A): Quote for half of the vehicle, **000,00 € HT**; answer to give.",
     ]
-    assert out["sources"] == [{"source": "threads", "items": 6, "waiting": 2, "to_purge": 1},
+    assert out["sources"] == [{"source": "threads", "items": 6, "waiting": 2, "to_purge": 0},
                               {"source": "pending", "items": 27, "waiting": 4, "to_purge": 2}]
+    assert out["done_to_log"] == ["Person C: settled long ago"]
     row = cp.to_inbox(next(it for it in cp.parse(THREADS, "threads", today=TODAY)["items"] if it["kind"] == "waiting"))
     assert row["kind"] == "followup" and row["group"] == "waiting"
     assert (row["who"], row["due"], row["overdue_days"], row["origin"]) == (
@@ -226,3 +227,14 @@ def test_tidy_step_purges_with_apply(tmp_path):
     assert ct.pending_lines(True, cfg, missing)[1].startswith("- ✔ purged 1")
     assert path.read_text() == "## Settled\n- 2999-01-01 kept\n"
     assert ct.pending_lines(True, cfg, missing) == []
+
+
+def test_purge_never_touches_open_threads(tmp_path):
+    """An old thread ticked today keeps its creation date: the purge must not delete it unlogged."""
+    threads = tmp_path / "threads.md"
+    threads.write_text(THREADS, encoding="utf-8")
+    pending = tmp_path / "pending.md"
+    pending.write_text("## Settled\n- 2000-01-01 gone\n", encoding="utf-8")
+    cfg = {"files": [str(pending)], "settled_days": 14, "sections": {}, "columns": {}}
+    assert cp.purge(cfg, threads, apply=True, today=TODAY) == [("pending", 1)]
+    assert threads.read_text(encoding="utf-8") == THREADS

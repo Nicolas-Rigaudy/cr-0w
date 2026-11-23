@@ -64,11 +64,11 @@
 - Left: the core Inbox `followup` adapter (item_223 owns the kind model).
 - Full suite: 764 passed, 4 failed; the same 4 fail on origin/main 1569e72 (isolation and sandbox tests need `pasta` and the default permission on this machine; `bin/crow-routine` is in no module manifest).
 
-# Questions for the owner
-- Inbox: should item_223's `followup` source run `crow-pending inbox` (JSON rows), or should core get a Go port of the parser?
-- Purge: `crow-gather brief` runs `crow-tidy --apply`, so the morning brief now edits pending files and Open Threads (`- [x]` lines only). Keep it there, or purge only on an explicit `crow-tidy --apply`?
-- Config: keep the `pending_*` keys in the core brick, or move them to a brick of their own?
-- Open Threads: is the optional `📅` due date acceptable?
+# Owner decisions (2026-11-23)
+- Inbox: item_223's `followup` source runs `crow-pending inbox` (JSON rows) for now.
+- Purge: the brief keeps running the purge, on `pending_files` only. Open Threads is never purged: a `- [x]` line keeps the date it was written, so an old thread ticked today would go at the next brief without its crow-log entry. Ticked lines show in the brief as `done_to_log` (`test_purge_never_touches_open_threads`).
+- Config: the `pending_*` keys stay in the core brick until item_262.
+- Open Threads: the optional `📅` due date is accepted.
 
 # Tasks
 - `task_026_pending_items_and_follow_ups_as_one_schema_read_by_brief_routines_and_inbox`

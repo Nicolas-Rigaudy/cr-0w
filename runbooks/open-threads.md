@@ -38,6 +38,6 @@ One note in the vault crow folder: `Open Threads.md` (`bin/crow-state path threa
 | `wrap`, `eod` | Write: add, update, move, remove done lines |
 | `brief` | Read: Me first, then Waiting with age in days, then stale lines |
 | `afk` | Read: the Crow section only |
-| `crow-pending` | Read: every section through the pending schema; `crow-tidy --apply` purges `- [x]` lines older than `pending_settled_days` |
+| `crow-pending` | Read: every section through the pending schema. Never purges this note: ticked `- [x]` lines show in the brief as `done_to_log` |
 
 Any new writer follows this runbook and does not add other sections.

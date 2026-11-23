@@ -10,7 +10,7 @@ Usage:
   crow-pending inbox [FILE ...]                       open follow-ups as Inbox `followup` rows (JSON)
   crow-pending brief [FILE ...]                       the summary crow-gather brief embeds (JSON)
   crow-pending purge [FILE ...] [--days N] [--apply]  drop settled rows older than N days
-                                                      (default pending_settled_days, 14); dry run without --apply
+                                                      (default pending_settled_days, 14), never Open Threads; dry run without --apply
 """
 import argparse
 import json

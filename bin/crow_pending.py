@@ -309,6 +309,8 @@ def load(cfg, threads=None, today=None):
             continue
         doc = parse(text, label, cfg["sections"], cfg["columns"], today)
         doc["path"] = str(path)
+        # Open Threads has its own rule: a done line is logged with crow-log, then removed by hand.
+        doc["purge"] = not (threads and path == Path(threads))
         docs.append(doc)
     return docs, errors
 
@@ -319,7 +321,8 @@ def overdue(docs):
 
 
 def brief(cfg, threads=None, today=None, width=160):
-    """Compact summary for crow-gather brief: counts, overdue follow-ups, settled rows to purge."""
+    """Compact summary for crow-gather brief: counts, overdue follow-ups, settled rows to purge,
+    and the ticked Open Threads lines still to log and remove."""
     docs, errors = load(cfg, threads, today)
     lines = []
     for it in overdue(docs):
@@ -329,18 +332,26 @@ def brief(cfg, threads=None, today=None, width=160):
                      + (text[:width] + "…" if len(text) > width else text))
     out = {"sources": [{"source": d["source"], "items": len(d["items"]),
                         "waiting": sum(1 for it in d["items"] if it["kind"] == "waiting"),
-                        "to_purge": len(purgeable(d, cfg["settled_days"], today))} for d in docs],
+                        "to_purge": len(purgeable(d, cfg["settled_days"], today)) if d["purge"] else 0}
+                       for d in docs],
            "overdue": lines}
+    done = [((f"{it['who']}: " if it["who"] else "") + (it["title"] or "")).replace("\n", " ")[:width]
+            for d in docs if not d["purge"] for it in d["items"] if it["kind"] == "settled"]
+    if done:
+        out["done_to_log"] = done
     if errors:
         out["errors"] = errors
     return out
 
 
 def purge(cfg, threads=None, apply=False, today=None):
-    """Drop settled rows older than settled_days from every source. Returns [(label, count)]."""
+    """Drop settled rows older than settled_days from the configured files. Never touches Open Threads.
+    Returns [(label, count)]."""
     docs, _ = load(cfg, threads, today)
     done = []
     for doc in docs:
+        if not doc["purge"]:
+            continue
         drop = purgeable(doc, cfg["settled_days"], today)
         if not drop:
             continue

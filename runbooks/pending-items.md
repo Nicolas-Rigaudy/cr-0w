@@ -9,7 +9,7 @@ One schema for everything that waits: the `Open Threads.md` note and any pending
 modules:
   core:
     pending_files: [/path/to/pending.md]   # or {path: ..., label: ...}
-    pending_settled_days: 14                # settled rows older than this are purged
+    pending_settled_days: 14                # settled rows of pending_files older than this are purged
     pending_sections: {Follow-ups: waiting} # heading prefix -> kind, added to the defaults
     pending_columns: {Owner: who}           # column name -> field, added to the defaults
 ```
@@ -42,5 +42,5 @@ Alias matching ignores case, accents and leading emoji. Headings and columns in 
 - `crow-pending check FILE...`: the loss check. The spans join back to the exact file. It prints counts only (lines, sections, spans, items per kind) and exits 1 on a loss.
 - `crow-pending list [--kind K] [--json]`: items of every source.
 - `crow-pending inbox`: open `waiting` items as Inbox `followup` rows (group `waiting`, most overdue first).
-- `crow-pending brief`: what `crow-gather brief` puts under `pending`: items, waiting and rows to purge per source, plus the overdue lines.
-- `crow-pending purge [--days N] [--apply]`: drop settled items older than N days. Dry run without `--apply`. Undated settled items stay. A file changed since the read is left for the next run. `crow-tidy --apply` runs the purge. `--skip pending` turns it off.
+- `crow-pending brief`: what `crow-gather brief` puts under `pending`: items, waiting and rows to purge per source, the overdue lines, and `done_to_log`: ticked Open Threads lines to log and remove.
+- `crow-pending purge [--days N] [--apply]`: drop settled items older than N days from `pending_files`. Open Threads is never purged: a `- [x]` line there carries the date it was written, not the date it was ticked, and done means logged with `bin/crow-log` first. Dry run without `--apply`. Undated settled items stay. A file changed since the read is left for the next run. `crow-tidy --apply` runs the purge. `--skip pending` turns it off.
