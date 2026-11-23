@@ -54,6 +54,10 @@ func (m model) histAction(k string) (model, tea.Cmd) {
 		}
 		return m, openTranscript(s.Path)
 	case "r":
+		if brickOff("retro") {
+			m.flash = "module retro is off (crow.yaml)"
+			return m, nil
+		}
 		if s.Path == "" {
 			m.flash = "no transcript recorded for this session"
 			return m, nil

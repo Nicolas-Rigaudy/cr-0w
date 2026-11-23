@@ -14,6 +14,11 @@ var hiddenPages = map[int]bool{}
 // fetched, so their boxes stay empty and hide as they do with no data.
 var hiddenBoxes = map[string]bool{}
 
+// offBricks names the bricks switched off, for actions owned by a brick (the retro key).
+var offBricks = map[string]bool{}
+
+func brickOff(name string) bool { return offBricks[name] }
+
 func pageHidden(i int) bool { return hiddenPages[i] }
 
 func boxHidden(src string) bool { return hiddenBoxes[src] }
@@ -38,11 +43,12 @@ func loadHiddenPages() {
 
 // setHiddenPages hides the pages and boxes of every brick that is off.
 func setHiddenPages(mods []brickPages) {
-	hiddenPages, hiddenBoxes = map[int]bool{}, map[string]bool{}
+	hiddenPages, hiddenBoxes, offBricks = map[int]bool{}, map[string]bool{}, map[string]bool{}
 	for _, b := range mods {
 		if b.On {
 			continue
 		}
+		offBricks[b.Name] = true
 		for _, src := range b.Boxes {
 			hiddenBoxes[src] = true
 		}

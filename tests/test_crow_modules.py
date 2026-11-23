@@ -130,3 +130,48 @@ def test_hooks_of_an_off_brick_are_no_ops(hub, tmp_path):
     assert run(hub, "crow-commit-msg-check", "-", input="not the format\n").returncode == 0
     (home / "crow.yaml").write_text("version: 1\nmodules:\n  design: true\n")
     assert run(hub, "crow-commit-msg-check", "-", input="not the format\n").returncode == 1
+
+
+def on_set(hub):
+    out = run(hub, "crow-modules", "json")
+    return sorted(m["name"] for m in json.loads(out.stdout)["modules"] if m["on"])
+
+
+def test_off_then_on_returns_the_same_installed_set(hub):
+    home, _ = hub
+    assert run(hub, "crow-modules", "link").returncode == 0
+    before = (on_set(hub), hub_skills(home))
+    off = run(hub, "crow-modules", "off", "retro")
+    assert off.returncode == 0, off.stderr
+    assert "retro" not in on_set(hub) and "retro" not in hub_skills(home)
+    on = run(hub, "crow-modules", "on", "retro")
+    assert on.returncode == 0, on.stderr
+    assert (on_set(hub), hub_skills(home)) == before
+
+
+def test_switch_keeps_config_and_comments(hub):
+    home, _ = hub
+    (home / "local" / "crow.yaml").write_text(
+        "version: 1\nmodules:\n  forge:   # mrs\n    on: true\n    hosts: {gl: gitlab.example}\n  design: false  # tools\n")
+    assert run(hub, "crow-modules", "off", "forge").returncode == 0
+    assert run(hub, "crow-modules", "on", "design").returncode == 0
+    text = (home / "local" / "crow.yaml").read_text()
+    assert "    on: false\n    hosts: {gl: gitlab.example}" in text and "design: true  # tools" in text
+    st = crow_lib.load_modules(str(home), str(ROOT))
+    assert st["errors"] == [] and not st["modules"]["forge"]["on"] and st["modules"]["design"]["on"]
+
+
+@pytest.mark.parametrize("args,msg", [(["off", "core"], "always on"), (["on", "bogus"], "unknown brick"),
+                                      (["off", "core-api"], "nest requires core-api")])
+def test_switch_refuses_core_unknown_and_broken_requires(hub, args, msg):
+    out = run(hub, "crow-modules", *args)
+    assert out.returncode != 0 and msg in out.stderr
+    assert not (hub[0] / "local" / "crow.yaml").exists()
+
+
+@pytest.mark.parametrize("script", ["crow-retro", "crow-releases", "crow-afk-preflight", "crow-compare"])
+def test_scripts_of_an_off_brick_refuse(hub, script):
+    home, _ = hub
+    (home / "local" / "crow.yaml").write_text("version: 1\nmodules:\n  retro: false\n  releases: false\n  afk: false\n")
+    out = run(hub, script, "--help")
+    assert out.returncode == 2 and "is off (crow.yaml)" in out.stderr

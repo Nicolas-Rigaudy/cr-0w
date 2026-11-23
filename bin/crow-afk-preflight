@@ -3,6 +3,8 @@
 # Usage: crow-afk-preflight [repo-path ...]
 # Prints one OK/WARN/FAIL line per check; exits 1 if any FAIL. Repo paths get the per-repo checks.
 set -u
+"$(dirname "$(readlink -f "$0")")/crow-modules" require scripts "$(basename "$0")" || exit 2  # off brick (adr_002)
+"$(dirname "$(readlink -f "$0")")/crow-modules" require scripts "$(basename "$0")" || exit 2  # off brick (adr_002)
 export HOME="${CROW_REAL_HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}"   # gh/glab/docker configs live in the real home
 fails=0
 ok()   { printf '  OK    %s\n' "$*"; }

@@ -112,4 +112,8 @@ def main():
 
 
 if __name__ == "__main__":
+    import os as _os, sys as _sys  # off brick: refuse before running (adr_002)
+    _sys.path.insert(0, _os.path.dirname(_os.path.realpath(__file__)))
+    import crow_lib as _crow_lib
+    _crow_lib.refuse_if_off(__file__)
     main()

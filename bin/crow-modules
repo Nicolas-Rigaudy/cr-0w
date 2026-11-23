@@ -16,6 +16,10 @@
                        move one (or every locked) brick to the newest tag or the given ref; rewrite the lock
   crow-modules remove <name>
                        delete the clone, its lock entry and its crow.yaml key; unlink its skills
+  crow-modules on <brick> | off <brick>
+                       switch a brick in crow.yaml (created when missing, other keys and config kept),
+                       then rerun the link step. Refuses core, unknown bricks, an on brick whose
+                       requires are off, and an off brick that an on brick requires.
   crow-modules require <field> <name>
                        exit 0 when the brick listing <name> under <field> (scripts, apps, skills...) is on;
                        else print "crow: module <brick> is off (crow.yaml)" and exit 2
@@ -94,6 +98,8 @@ def main(argv):
         if path:
             print(path)
         return 0 if path else 1
+    if argv[:1] in (["on"], ["off"]) and len(argv) == 2:
+        return switch(argv[1], argv[0] == "on")
     if argv[:1] == ["require"] and len(argv) == 3:
         return require(argv[1], argv[2])
     if argv not in ([], ["json"]):
@@ -195,6 +201,59 @@ def crow_yaml_set(name, value):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
+
+
+def crow_yaml_switch(name, on):
+    """Set modules.<name> on or off: the `on:` line of a mapping, else the scalar. Comments and config stay."""
+    path = crow_lib.crow_yaml_path()
+    lines = open(path).read().splitlines() if os.path.exists(path) else []
+    word = "true" if on else "false"
+    span = yaml_key_span(lines, name)
+    if span:
+        start, end, indent = span
+        sub = next((i for i in range(start + 1, end) if re.match(r"^\s+on\s*:", lines[i])), None)
+        if sub is not None:
+            lines[sub] = re.sub(r"^(\s+on\s*:\s*)[^#\s]*(\s*.*)$", lambda m: m.group(1) + word + m.group(2), lines[sub])
+        elif end > start + 1 and any(lines[i].strip() and not lines[i].lstrip().startswith("#") for i in range(start + 1, end)):
+            child = next(lines[i] for i in range(start + 1, end) if lines[i].strip())
+            lines.insert(start + 1, f"{child[:len(child) - len(child.lstrip())]}on: {word}")
+        else:
+            lines[start] = re.sub(r"^(\s+" + re.escape(name) + r"\s*:\s*)[^#\s]*(\s*.*)$",
+                                  lambda m: m.group(1) + word + m.group(2), lines[start])
+    else:
+        crow_yaml_set(name, True)
+        if not on:
+            return crow_yaml_switch(name, False)
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def switch(name, on):
+    man = crow_lib.all_manifests()
+    if name not in man:
+        die(f"unknown brick '{name}' (crow modules)")
+    if name == "core":
+        die("core is always on")
+    st = crow_lib.load_modules()["modules"]
+    if on:
+        missing = [r for r in man[name].get("requires") or [] if not st.get(r, {}).get("on")]
+        if missing:
+            die(f"{name} requires {', '.join(missing)}: turn {'them' if len(missing) > 1 else 'it'} on first", 2)
+    else:
+        users = [n for n, m in sorted(man.items()) if st.get(n, {}).get("on") and name in (m.get("requires") or [])]
+        if users:
+            die(f"{', '.join(users)} require{'s' if len(users) == 1 else ''} {name}: turn {'them' if len(users) > 1 else 'it'} off first", 2)
+    if st.get(name, {}).get("on") == on:
+        print(f"{name} already {'on' if on else 'off'}")
+        return 0
+    crow_yaml_switch(name, on)
+    if crow_lib.brick_on(name) != on:
+        die(f"{crow_lib.crow_yaml_path()}: could not switch {name}; edit modules.{name} by hand")
+    print(f"{name} {'on' if on else 'off'} ({crow_lib.crow_yaml_path()})")
+    relink()
+    return 0
 
 
 def opt(args, flag):

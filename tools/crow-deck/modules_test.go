@@ -49,3 +49,11 @@ func TestMailOffSkipsTodaySource(t *testing.T) {
 		t.Error("a box switch hid a page")
 	}
 }
+
+func TestOffBricksNamesOnlyOffBricks(t *testing.T) {
+	setHiddenPages([]brickPages{{Name: "retro"}, {Name: "afk", On: true}})
+	t.Cleanup(func() { setHiddenPages(nil) })
+	if !brickOff("retro") || brickOff("afk") || brickOff("unknown") {
+		t.Fatalf("offBricks = %v", offBricks)
+	}
+}

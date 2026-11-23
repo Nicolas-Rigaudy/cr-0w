@@ -31,6 +31,9 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import crow_lib  # noqa: E402
 
+if __name__ == "__main__":
+    crow_lib.refuse_if_off(__file__)  # retro off: refuse before any module-level work (adr_002)
+
 CROW_HOME = crow_lib.data_home()
 STATE = os.path.join(CROW_HOME, "local", "state", "retros")
 QUEUE = os.path.join(STATE, "queue")

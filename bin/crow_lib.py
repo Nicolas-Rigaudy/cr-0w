@@ -1344,6 +1344,19 @@ def exit_if_off(script, home=None, engine=None):
         sys.exit(0)
 
 
+def refuse_if_off(script, home=None, engine=None):
+    """Script entry of an optional brick: print the off message and exit 2 when its brick is off.
+    A broken loader lets the script run (doctor reports the crow.yaml error)."""
+    try:
+        brick = brick_of("scripts", os.path.basename(script), engine, home)
+        off = not brick_on(brick, home, engine)
+    except Exception:  # noqa: BLE001
+        off = False
+    if off:
+        print(off_message(brick), file=sys.stderr)
+        sys.exit(2)
+
+
 def on_skills(field="skills", home=None, engine=None):
     """Sorted skill names listed under `field` (skills: every profile, hub_skills: the hub only) by bricks that are on."""
     return sorted(skill_sources(field, home, engine))
