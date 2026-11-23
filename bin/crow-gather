@@ -279,7 +279,7 @@ def off_keys(routine):
     """Keys the manifests of off bricks list under gather.<routine>: never collected, absent from the JSON."""
     mods = crow_lib.load_modules()["modules"]
     keys = set()
-    for name, man in crow_lib.engine_manifests().items():
+    for name, man in crow_lib.all_manifests().items():
         if not mods.get(name, {}).get("on", True):
             keys.update((man.get("gather") or {}).get(routine) or [])
     return keys

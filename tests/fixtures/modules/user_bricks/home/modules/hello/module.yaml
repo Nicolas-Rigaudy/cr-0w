@@ -1,0 +1,6 @@
+# A user brick: one skill, one script.
+summary: Says hello.
+scripts: [crow-hello]
+skills: [hello]
+config:
+  greeting: hi

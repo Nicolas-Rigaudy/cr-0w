@@ -1048,6 +1048,72 @@ def engine_manifests(engine=None):
     return out
 
 
+USER_MANIFEST = "module.yaml"
+
+
+def user_modules_dir(home=None, engine=None):
+    """Where user bricks live: <CROW_HOME>/modules, or <checkout>/local/modules when CROW_HOME is the
+    engine checkout itself (its modules/ holds the engine manifests)."""
+    home, engine = home or data_home(), engine or ENGINE
+    if os.path.realpath(home) == os.path.realpath(engine):
+        return os.path.join(home, "local", "modules")
+    return os.path.join(home, "modules")
+
+
+def user_manifests(home=None, engine=None):
+    """User bricks (item_265): <user modules dir>/<name>/module.yaml, same schema as the engine manifests.
+
+    Returns (manifests, errors). Each manifest gets `_dir` (the brick folder) and `_source` ("user").
+    A folder with no manifest, a broken manifest, a name that differs from its folder or a name that
+    clashes with an engine brick is an error and the brick is left out."""
+    import yaml
+    root = user_modules_dir(home, engine)
+    engine_names = set(engine_manifests(engine))
+    out, errors = {}, []
+    for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+        folder = os.path.join(root, name)
+        if name.startswith(".") or not os.path.isdir(folder):
+            continue
+        path = os.path.join(folder, USER_MANIFEST)
+
+        def err(msg, path=path, name=name):
+            errors.append({"file": path, "key": f"modules.{name}", "error": msg})
+
+        if not os.path.isfile(path):
+            err(f"user brick has no {USER_MANIFEST}, ignored")
+            continue
+        try:
+            with open(path) as f:
+                m = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            err(f"manifest does not parse: {str(e).splitlines()[0]}")
+            continue
+        if not isinstance(m, dict):
+            err("manifest expects a mapping")
+            continue
+        if m.get("name") not in (None, name):
+            err(f"manifest name {m['name']!r} differs from its folder, ignored")
+            continue
+        if name in engine_names:
+            err(f"user brick {name!r} clashes with the engine brick of the same name, ignored (rename its folder)")
+            continue
+        m = dict(m, name=name, _dir=folder, _source="user")
+        m.setdefault("default", True)
+        out[name] = m
+    return out, errors
+
+
+def all_manifests(home=None, engine=None):
+    """Engine and user manifests together, brick name -> manifest. User brick errors are dropped here;
+    load_modules lists them."""
+    return {**engine_manifests(engine), **user_manifests(home, engine)[0]}
+
+
+def brick_dir(name, manifest, engine=None):
+    """The folder a brick's pieces live under: the engine checkout, or the user brick folder."""
+    return manifest.get("_dir") or engine or ENGINE
+
+
 def crow_yaml_path(home=None):
     """crow.yaml at the CROW_HOME root when present, else local/crow.yaml (a checkout)."""
     home = home or data_home()
@@ -1068,11 +1134,13 @@ def load_modules(home=None, engine=None):
     Returns {file, exists, modules: {brick: {on, default, config}}, errors: [{file, key, error}]}.
     A broken file or key is listed in errors and keeps the default; `core` stays on."""
     import yaml
-    manifests = engine_manifests(engine)
+    users, user_errors = user_manifests(home, engine)
+    manifests = {**engine_manifests(engine), **users}
     path = crow_yaml_path(home)
     mods = {n: {"on": bool(m.get("default")) or n == CORE_BRICK, "default": bool(m.get("default")),
-                "config": dict(m.get("config") or {})} for n, m in manifests.items()}
-    errors = []
+                "config": dict(m.get("config") or {}), "source": m.get("_source", "engine")}
+            for n, m in manifests.items()}
+    errors = list(user_errors)
 
     def err(key, msg):
         errors.append({"file": path, "key": key, "error": msg})
@@ -1129,6 +1197,8 @@ def load_modules(home=None, engine=None):
         for req in manifests[name].get("requires") or []:
             if mods[name]["on"] and not mods.get(req, {}).get("on"):
                 err(f"modules.{name}", f"requires {req}, which is off")
+                if name in users:
+                    mods[name]["on"] = False  # a user brick never runs without what it needs
     errors.sort(key=lambda e: (e["key"], e["error"]))
     return {"file": path, "exists": os.path.exists(path), "modules": mods, "errors": errors}
 
@@ -1138,9 +1208,9 @@ def modules(home=None, engine=None):
     return {n: m["config"] for n, m in load_modules(home, engine)["modules"].items() if m["on"]}
 
 
-def brick_of(field, name, engine=None):
+def brick_of(field, name, engine=None, home=None):
     """The brick whose manifest lists `name` under `field` (scripts, skills, hub_skills, apps...), else None."""
-    for brick, m in engine_manifests(engine).items():
+    for brick, m in all_manifests(home, engine).items():
         if name in (m.get(field) or []):
             return brick
     return None
@@ -1161,7 +1231,7 @@ def off_message(brick):
 def exit_if_off(script, home=None, engine=None):
     """Hook entry: exit 0 at once when the brick owning this bin/ script is off. A broken loader never blocks a hook."""
     try:
-        off = not brick_on(brick_of("scripts", os.path.basename(script), engine), home, engine)
+        off = not brick_on(brick_of("scripts", os.path.basename(script), engine, home), home, engine)
     except Exception:  # noqa: BLE001 - a broken crow.yaml or manifest leaves the hook running as before
         off = False
     if off:
@@ -1170,9 +1240,35 @@ def exit_if_off(script, home=None, engine=None):
 
 def on_skills(field="skills", home=None, engine=None):
     """Sorted skill names listed under `field` (skills: every profile, hub_skills: the hub only) by bricks that are on."""
-    man = engine_manifests(engine)
+    return sorted(skill_sources(field, home, engine))
+
+
+def skill_sources(field="skills", home=None, engine=None, only_on=True):
+    """Skill name -> its folder for the skills listed under `field` by bricks that are on (every brick
+    when only_on is False): <engine>/skills/<name>, or <user brick>/skills/<name>. Engine skills win a clash."""
+    engine = engine or ENGINE
+    man = all_manifests(home, engine)
+    st = load_modules(home, engine)["modules"] if only_on else {}
+    out = {}
+    for n, m in sorted(man.items(), key=lambda kv: "_dir" in kv[1]):
+        if only_on and not st.get(n, {}).get("on"):
+            continue
+        for s in m.get(field) or []:
+            out.setdefault(s, os.path.join(brick_dir(n, m, engine), "skills", s))
+    return out
+
+
+def user_script(cmd, home=None, engine=None):
+    """Path of a bin/ script of an on user brick named <cmd> or crow-<cmd>, else None (`crow <cmd>`)."""
     st = load_modules(home, engine)["modules"]
-    return sorted({s for n, m in man.items() if st.get(n, {}).get("on") for s in m.get(field) or []})
+    for n, m in sorted(user_manifests(home, engine)[0].items()):
+        if not st.get(n, {}).get("on"):
+            continue
+        for name in (cmd, f"crow-{cmd}"):
+            p = os.path.join(m["_dir"], "bin", name)
+            if name in (m.get("scripts") or []) and os.access(p, os.X_OK):
+                return p
+    return None
 
 
 def all_skills(field="skills", engine=None):
@@ -1212,13 +1308,12 @@ def link_hub_skills(home=None, engine=None):
     home, engine = home or data_home(), engine or ENGINE
     target = os.path.join(home, ".claude", "skills")
     eng, priv = os.path.join(engine, "skills"), os.path.join(home, "local", "hub-skills")
-    want = {s: os.path.join(eng, s) for s in on_skills("hub_skills", home, engine)
-            if os.path.isdir(os.path.join(eng, s))}
+    want = {s: src for s, src in skill_sources("hub_skills", home, engine).items() if os.path.isdir(src)}
     for s in sorted(os.listdir(priv)) if os.path.isdir(priv) else []:
         if os.path.isdir(os.path.join(priv, s)):
             want.setdefault(s, os.path.join(priv, s))
     want = {n: os.path.relpath(src, target) for n, src in want.items()}
-    return _sync_links(target, want, [eng, priv])
+    return _sync_links(target, want, [eng, priv, user_modules_dir(home, engine)])
 
 
 def link_profile_skills(claude_dir, home=None, engine=None):
@@ -1226,5 +1321,5 @@ def link_profile_skills(claude_dir, home=None, engine=None):
     drop links to skills of off bricks. Returns (added, removed)."""
     engine = engine or ENGINE
     eng = os.path.join(engine, "skills")
-    want = {s: os.path.join(eng, s) for s in on_skills("skills", home, engine) if os.path.isdir(os.path.join(eng, s))}
-    return _sync_links(os.path.join(claude_dir, "skills"), want, [eng])
+    want = {s: src for s, src in skill_sources("skills", home, engine).items() if os.path.isdir(src)}
+    return _sync_links(os.path.join(claude_dir, "skills"), want, [eng, user_modules_dir(home, engine)])

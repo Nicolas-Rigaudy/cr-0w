@@ -29,6 +29,7 @@ type Manifest struct {
 	Default  bool           `yaml:"default"`
 	Requires []string       `yaml:"requires"`
 	Config   map[string]any `yaml:"config"`
+	User     bool           `yaml:"-"`
 }
 
 // Module is the state of one brick after crow.yaml.
@@ -77,6 +78,74 @@ func EngineManifests(engine string) (map[string]Manifest, error) {
 	return out, nil
 }
 
+// UserManifest is the file name of a user brick manifest: <user modules dir>/<name>/module.yaml.
+const UserManifest = "module.yaml"
+
+// UserModulesDir is where user bricks live: <home>/modules, or <home>/local/modules when home
+// is the engine checkout itself (its modules/ holds the engine manifests).
+func UserModulesDir(home, engine string) string {
+	if sameDir(home, engine) {
+		return filepath.Join(home, "local", "modules")
+	}
+	return filepath.Join(home, "modules")
+}
+
+func sameDir(a, b string) bool {
+	ra, errA := filepath.EvalSymlinks(a)
+	rb, errB := filepath.EvalSymlinks(b)
+	if errA != nil || errB != nil {
+		return filepath.Clean(a) == filepath.Clean(b)
+	}
+	return ra == rb
+}
+
+// UserManifests reads the user bricks (item_265), as crow_lib.user_manifests does. A folder
+// with no manifest, a broken manifest, a name that differs from its folder or a clash with
+// an engine brick is listed in the errors and left out. Default is on when the manifest
+// does not say.
+func UserManifests(home, engine string, engineNames map[string]Manifest) (map[string]Manifest, []ModuleError) {
+	root := UserModulesDir(home, engine)
+	out, errs := map[string]Manifest{}, []ModuleError{}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return out, errs
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, ".") || !e.IsDir() {
+			continue
+		}
+		path := filepath.Join(root, name, UserManifest)
+		fail := func(msg string) { errs = append(errs, ModuleError{path, "modules." + name, msg}) }
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			fail("user brick has no " + UserManifest + ", ignored")
+			continue
+		}
+		var top map[string]any
+		if err := yaml.Unmarshal(raw, &top); err != nil {
+			fail("manifest does not parse: " + strings.SplitN(err.Error(), "\n", 2)[0])
+			continue
+		}
+		var m Manifest
+		_ = yaml.Unmarshal(raw, &m)
+		if m.Name != "" && m.Name != name {
+			fail(fmt.Sprintf("manifest name '%s' differs from its folder, ignored", m.Name))
+			continue
+		}
+		if _, clash := engineNames[name]; clash {
+			fail(fmt.Sprintf("user brick '%s' clashes with the engine brick of the same name, ignored (rename its folder)", name))
+			continue
+		}
+		if _, has := top["default"]; !has {
+			m.Default = true
+		}
+		m.Name, m.User = name, true
+		out[name] = m
+	}
+	return out, errs
+}
+
 // CrowYAMLPath is crow.yaml at the CROW_HOME root when present, else local/crow.yaml.
 func CrowYAMLPath(home string) string {
 	root := filepath.Join(home, "crow.yaml")
@@ -94,8 +163,12 @@ func LoadModules(home, engine string) (ModuleState, error) {
 	if err != nil {
 		return ModuleState{}, err
 	}
+	users, userErrs := UserManifests(home, engine, manifests)
+	for n, m := range users {
+		manifests[n] = m
+	}
 	path := CrowYAMLPath(home)
-	st := ModuleState{File: path, Modules: map[string]Module{}, Errors: []ModuleError{}}
+	st := ModuleState{File: path, Modules: map[string]Module{}, Errors: userErrs}
 	for n, m := range manifests {
 		conf := map[string]any{}
 		for k, v := range m.Config {
@@ -179,6 +252,11 @@ func LoadModules(home, engine string) (ModuleState, error) {
 		for _, req := range manifests[name].Requires {
 			if st.Modules[name].On && !st.Modules[req].On {
 				fail("modules."+name, "requires "+req+", which is off")
+				if manifests[name].User {
+					m := st.Modules[name]
+					m.On = false // a user brick never runs without what it needs
+					st.Modules[name] = m
+				}
 			}
 		}
 	}

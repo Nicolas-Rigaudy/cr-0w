@@ -1,0 +1,49 @@
+{
+ "on": [
+  "afk",
+  "core",
+  "core-api",
+  "deck",
+  "forge",
+  "git",
+  "hello",
+  "mail",
+  "nest",
+  "releases",
+  "retro",
+  "team",
+  "vault"
+ ],
+ "config": {
+  "afk": {},
+  "core": {
+   "pending_files": [],
+   "pending_settled_days": 14,
+   "pending_sections": {},
+   "pending_columns": {}
+  },
+  "core-api": {},
+  "deck": {},
+  "forge": {
+   "hosts": {}
+  },
+  "git": {},
+  "mail": {},
+  "nest": {
+   "core_url": "http://127.0.0.1:8787"
+  },
+  "releases": {},
+  "retro": {},
+  "team": {},
+  "vault": {},
+  "hello": {
+   "greeting": "salut"
+  }
+ },
+ "errors": [
+  "modules.empty",
+  "modules.forge",
+  "modules.needy",
+  "modules.renamed"
+ ]
+}

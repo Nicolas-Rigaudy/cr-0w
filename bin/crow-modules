@@ -6,11 +6,14 @@
   crow-modules link [<account>...]
                        generate the hub .claude/skills links (hub skills of on bricks, local/hub-skills)
                        and link profile skills of on bricks into each account (default: every allowed account)
+  crow-modules which <cmd>
+                       print the bin/ script of an on user brick named <cmd> or crow-<cmd>; exit 1 when none
   crow-modules require <field> <name>
                        exit 0 when the brick listing <name> under <field> (scripts, apps, skills...) is on;
                        else print "crow: module <brick> is off (crow.yaml)" and exit 2
 
-Bricks come from the engine manifests (modules/<brick>.yaml). Switches and config come from
+Bricks come from the engine manifests (modules/<brick>.yaml) and user bricks
+(<CROW_HOME>/modules/<name>/module.yaml, or local/modules/ in a checkout; see docs/writing-a-brick.md). Switches and config come from
 crow.yaml at the CROW_HOME root, else local/crow.yaml. A missing file or key keeps the default.
 `crow doctor` fails on the errors listed here.
 """
@@ -24,9 +27,10 @@ import crow_lib  # noqa: E402
 
 def report(home=None, engine=None):
     st = crow_lib.load_modules(home, engine)
-    man = crow_lib.engine_manifests(engine)
+    man = crow_lib.all_manifests(home, engine)
     rows = [{"name": n, "on": m["on"], "default": m["default"], "summary": man[n].get("summary", ""),
-             "requires": man[n].get("requires") or [], "config": m["config"]}
+             "requires": man[n].get("requires") or [], "config": m["config"], "source": m["source"],
+             "dir": man[n].get("_dir", "")}
             for n, m in sorted(st["modules"].items())]
     return {"file": st["file"], "exists": st["exists"], "modules": rows, "errors": st["errors"]}
 
@@ -67,6 +71,11 @@ def require(field, name):
 def main(argv):
     if argv[:1] == ["link"]:
         return link(argv[1:])
+    if argv[:1] == ["which"] and len(argv) == 2:
+        path = crow_lib.user_script(argv[1])
+        if path:
+            print(path)
+        return 0 if path else 1
     if argv[:1] == ["require"] and len(argv) == 3:
         return require(argv[1], argv[2])
     if argv not in ([], ["json"]):
@@ -80,7 +89,8 @@ def main(argv):
     for m in r["modules"]:
         flag = "on " if m["on"] else "off"
         note = "" if m["on"] == m["default"] else " (default " + ("on" if m["default"] else "off") + ")"
-        print(f"{flag}  {m['name']:<18} {m['summary']}{note}")
+        src = f" [user: {m['dir']}]" if m["source"] == "user" else ""
+        print(f"{flag}  {m['name']:<18} {m['summary']}{note}{src}")
     for e in r["errors"]:
         print(f"crow-modules: {e['file']}: {e['key'] or '(file)'}: {e['error']}", file=sys.stderr)
     return 0

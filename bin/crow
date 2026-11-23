@@ -41,7 +41,8 @@
 #   crow projects [...]  release tracks: roadmap progress toward public releases
 #   crow release propose  draft the next version and notes from commits since the last tag (no tagging)
 #   crow doctor [--json] identity, accounts, profiles, stale worktrees (read only)
-#   crow modules [json]  which bricks are on: engine manifests plus crow.yaml (read only)
+#   crow modules [json]  which bricks are on: engine and user bricks plus crow.yaml (read only)
+#   crow <cmd>           a bin/ script of an on user brick (bin/<cmd> or bin/crow-<cmd>)
 #   crow version         version, engine path and data dir (CROW_HOME)
 #   crow update [--check] [--to X.Y.Z]  update the engine the way it was installed (never the data dir)
 #   crow secret set|get|list|rm <service> [--user U]   service tokens in the keyring (see runbooks/service-tokens.md)
@@ -276,5 +277,9 @@ notes) exec "$CROW_ENGINE/bin/crow-notes" "$@" ;;
   doctor)   exec "$CROW_ENGINE/bin/crow-doctor" "$@" ;;
   secret)   exec "$CROW_ENGINE/bin/crow-secret" "$@" ;;
   -h|--help|help) sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;
-  *)        echo "crow: unknown command '$cmd' (crow help)" >&2; exit 1 ;;
+  *)        # a script of an on user brick (item_265): crow <cmd> runs its bin/<cmd> or bin/crow-<cmd>
+            if user_bin="$("$CROW_ENGINE/bin/crow-modules" which "$cmd" 2>/dev/null)"; then
+              export CROW_HOME CROW_ENGINE; exec "$user_bin" "$@"
+            fi
+            echo "crow: unknown command '$cmd' (crow help)" >&2; exit 1 ;;
 esac

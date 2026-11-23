@@ -133,15 +133,14 @@ def profile_gaps(account, home, profiles):
     if att.get("commit") != "" or att.get("pr") != "":
         gaps.append("attribution commit/pr not empty")
     # profile skills follow crow.yaml: every skill of an on brick linked, none of an off brick
-    skills = Path(crow_lib.ENGINE) / "skills"
-    on = crow_lib.on_skills("skills", home)
-    for sk in on:
+    on = crow_lib.skill_sources("skills", home)
+    for sk, src in on.items():
         link = claude / "skills" / sk
-        if (skills / sk).is_dir() and not (link.is_symlink() and link.resolve() == (skills / sk).resolve()):
+        if Path(src).is_dir() and not (link.is_symlink() and link.resolve() == Path(src).resolve()):
             gaps.append(f"skill {sk} not linked")
-    for sk in crow_lib.all_skills("skills"):
+    for sk, src in crow_lib.skill_sources("skills", home, only_on=False).items():
         link = claude / "skills" / sk
-        if sk not in on and link.is_symlink() and link.resolve() == (skills / sk).resolve():
+        if sk not in on and link.is_symlink() and link.resolve() == Path(src).resolve():
             gaps.append(f"skill {sk} linked but its module is off")
     return gaps
 
@@ -221,7 +220,7 @@ def modules():
     import crow_lib
     try:
         st = crow_lib.load_modules()
-        manifests = crow_lib.engine_manifests()
+        manifests = crow_lib.all_manifests()
     except Exception as e:  # noqa: BLE001 - a broken engine manifest is a finding, not a crash
         return check("modules", "fail", f"engine manifests do not load ({type(e).__name__}: {e})")
     on = sorted(n for n, m in st["modules"].items() if m["on"])

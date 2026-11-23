@@ -1,10 +1,10 @@
 ## item_265_user_modules_from_a_local_folder_or_a_git_url - User modules from a local folder or a git url
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 80
 > Confidence: 75
-> Progress: 0%
+> Progress: 50%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -57,3 +57,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-23 | crow (hub) | - | Slice 1: local user bricks | Done | - | Python and Go loaders read `<CROW_HOME>/modules/<name>/module.yaml` (`local/modules` in a checkout); skills linked, `crow <cmd>` runs brick scripts, engine name clash refused, `requires` keeps a user brick off; shared fixture `user_bricks`, `tests/test_user_modules.py`, `docs/writing-a-brick.md`. AC1, AC3, AC5 met. Slice 2 left: `crow modules add/update/remove`, `modules.lock`, doctor lock check (AC2, AC4). |
