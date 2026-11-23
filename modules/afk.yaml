@@ -4,13 +4,17 @@ summary: "AFK and night runs: page, preflight, keep-awake, afk and night skills.
 default: true
 requires: []
 scripts: [crow-afk-page, crow-afk-preflight, crow-keep-awake, crow-night-page, crow-night-preflight]
-skills: [afk, night]
+skills: []
+hub_skills: [afk, night]
 skill_lists: []
 runbooks: [afk-runs]
 claude_hooks: []
 git_hooks: []
 core_sections: []
-core_routes: []
+core_routes:
+  - GET /api/afk
+  - PUT /api/afk
+  - POST /api/afk/skip
 apps: []
 integrations: []
 gather:

@@ -5,6 +5,7 @@ default: true
 requires: []
 scripts: [crow-changelog, crow-release-propose, crow-releases]
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [readme-showcase, releases]
 claude_hooks: []

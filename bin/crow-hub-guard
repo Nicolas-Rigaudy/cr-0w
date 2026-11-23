@@ -126,6 +126,7 @@ def prompt_note(event, projs, state):
 def main():
     if os.environ.get("CROW_HUB_GUARD", "").lower() in ("off", "0", "no"):
         return
+    crow_lib.exit_if_off(__file__)
     try:
         event = json.load(sys.stdin)
         reg, projs = load()

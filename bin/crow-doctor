@@ -9,7 +9,7 @@ accounts   default account, accounts crow may target, cdx on PATH
 quota      warn when every `use` account is blocked or past 90% of its 5h window (cdx status --cached)
 worktrees  <repo>.wt/* trees already merged into the default branch (crow tidy --apply removes them)
 profiles   each claude `use` account with permanent memory: memory links into local/memory, crow env and hooks,
-           empty commit/PR attribution, crow skills/ linked (fix: crow-memory link <account>, copy settings from the default)
+           empty commit/PR attribution, skills of on modules linked, none of off ones (fix: crow-memory link <account>, copy settings from the default)
 data       the data repo (<CROW_HOME>/local): warn when it is not a git repo, has no remote, uncommitted changes
            or commits not pushed to its upstream (restore on a new machine needs it pushed)
 modules    crow.yaml (CROW_HOME root, else local/crow.yaml): fail on a parse error, unknown brick or key,
@@ -27,6 +27,8 @@ import sys
 from pathlib import Path
 
 HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, HERE)
+import crow_lib  # noqa: E402
 
 
 def load_registry():
@@ -51,7 +53,6 @@ def check(area, level, summary, details=()):
 
 def quota(default):
     sys.path.insert(0, HERE)
-    import crow_lib
     try:
         st = crow_lib.account_state(current=default, cached=True)
     except Exception as e:
@@ -131,11 +132,17 @@ def profile_gaps(account, home, profiles):
     att = settings.get("attribution") or {}
     if att.get("commit") != "" or att.get("pr") != "":
         gaps.append("attribution commit/pr not empty")
-    skills = Path(home) / "skills"
-    for sk in sorted(d.name for d in skills.iterdir() if d.is_dir()) if skills.is_dir() else []:
+    # profile skills follow crow.yaml: every skill of an on brick linked, none of an off brick
+    skills = Path(crow_lib.ENGINE) / "skills"
+    on = crow_lib.on_skills("skills", home)
+    for sk in on:
         link = claude / "skills" / sk
-        if not (link.is_symlink() and link.resolve() == (skills / sk).resolve()):
+        if (skills / sk).is_dir() and not (link.is_symlink() and link.resolve() == (skills / sk).resolve()):
             gaps.append(f"skill {sk} not linked")
+    for sk in crow_lib.all_skills("skills"):
+        link = claude / "skills" / sk
+        if sk not in on and link.is_symlink() and link.resolve() == (skills / sk).resolve():
+            gaps.append(f"skill {sk} linked but its module is off")
     return gaps
 
 

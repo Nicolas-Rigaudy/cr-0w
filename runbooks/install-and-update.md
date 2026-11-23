@@ -46,3 +46,11 @@ To keep the engine and the data apart:
 ## Test
 - `python3 -m pytest tests/test_install_update.py`: install, checksum mismatch, update per method, data byte for byte, restore.
 - `tests/smoke/install-in-docker.sh`: the same round trip in a clean container (default `python:3.13-alpine`).
+
+## Modules
+- `crow.yaml` (CROW_HOME root, else `local/crow.yaml`) switches bricks on and off (adr_002, `crow modules`).
+- `crow modules link [account...]` regenerates the git-ignored hub `.claude/skills/` (hub skills of on
+  bricks plus `local/hub-skills/*`) and each profile's skill links. `crow hub` runs it for the hub;
+  run it by hand after editing `crow.yaml`. With design off it also uninstalls the crow-design plugin.
+- Off bricks: their Claude hooks and git hooks exit 0, `crow-gather` leaves their keys out, and their
+  `crow` subcommands print `crow: module <name> is off (crow.yaml)` and exit 2.

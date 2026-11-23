@@ -300,6 +300,7 @@ def fallback_line(st):
 
 def hook(argv):
     """Print a warning for the model once per account, window and level. Never fails the prompt."""
+    crow_lib.exit_if_off(__file__)
     try:
         st = crow_lib.account_state(cached=True)
     except Exception:

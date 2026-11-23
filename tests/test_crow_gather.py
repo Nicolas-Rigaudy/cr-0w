@@ -110,3 +110,28 @@ def test_vault_notes_when_crow_dir_set(hub):
     weekly = gather(hub, "weekly", env=env)
     assert [d.splitlines()[0] for d in weekly["decisions"]] == [f"## {TODAY} new one"]
     assert weekly["targets"]["rollup"].startswith(str(notes / "Rollups"))
+
+
+def test_brief_drops_the_keys_of_an_off_brick(hub):
+    home, _ = hub
+    env = setup(hub)
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  afk: false\n  team: false\n")
+    data = gather(hub, "brief", env=env)
+    assert "afk" not in data and "checks" not in data
+    assert "afk" not in data["modules"] and "core" in data["modules"]
+    assert data["open_threads"]["Me"]  # the rest still renders
+
+
+def test_without_crow_yaml_every_default_key_is_there(hub):
+    data = gather(hub, "brief", env=setup(hub))
+    assert "afk" in data and "checks" in data and "retros" in data
+    assert "afk" in data["modules"] and "design" not in data["modules"]
+
+
+def test_weekly_with_vault_off_has_no_vault_keys(hub):
+    home, _ = hub
+    env = setup(hub)
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  vault: false\n")
+    data = gather(hub, "weekly", env=env)
+    assert not {"notes", "decisions", "carry_over"} & set(data)
+    assert data["activity_logs"]

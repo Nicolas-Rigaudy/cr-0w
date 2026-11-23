@@ -3,7 +3,9 @@ import json
 import shutil
 import subprocess
 
-from conftest import run
+from conftest import REPO, run
+
+PROFILE_SKILLS = ("mr", "review", "review-threads", "wrap")  # core and forge, on by default
 
 
 def git(*args):
@@ -79,14 +81,14 @@ def test_doctor_text_and_bad_argument(hub, tmp_path):
 def make_profile(home, profiles, name="main", complete=True):
     claude = profiles / name / "claude-home" / ".claude"
     (claude / "skills").mkdir(parents=True)
-    (home / "skills" / "wrap").mkdir(parents=True)
     (home / "local" / "memory" / "-proj").mkdir(parents=True)
     if not complete:
         (claude / "settings.json").write_text("{}")
         return
     (claude / "projects" / "-proj").mkdir(parents=True)
     (claude / "projects" / "-proj" / "memory").symlink_to(home / "local" / "memory" / "-proj")
-    (claude / "skills" / "wrap").symlink_to(home / "skills" / "wrap")
+    for sk in PROFILE_SKILLS:
+        (claude / "skills" / sk).symlink_to(REPO / "skills" / sk)
     (claude / "settings.json").write_text(json.dumps({
         "env": {"CROW_HOME": str(home), "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "150000"},
         "hooks": {"Stop": [{"hooks": [{"command": "crow-ctx idle-hook"}]}],
@@ -179,3 +181,13 @@ def test_doctor_modules_warns_on_a_missing_tool(hub, tmp_path):
     assert "core: cdx is not on PATH" in mods["details"]
     assert "forge: none of glab, gh is on PATH" in mods["details"]
     assert not any(d.startswith("git:") for d in mods["details"])
+
+
+def test_doctor_flags_a_skill_of_an_off_module(hub, tmp_path):
+    home, profiles = hub
+    registry(home, tmp_path / "missing")
+    make_profile(home, profiles)
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  forge: false\n")
+    prof = checks(run(hub, "crow-doctor", "--json"))["profiles"]
+    assert "main: skill review linked but its module is off" in prof["details"]
+    assert not any("wrap" in d for d in prof["details"])

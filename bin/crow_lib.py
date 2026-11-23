@@ -1136,3 +1136,95 @@ def load_modules(home=None, engine=None):
 def modules(home=None, engine=None):
     """The on set with config: brick -> config dict for every brick that is on."""
     return {n: m["config"] for n, m in load_modules(home, engine)["modules"].items() if m["on"]}
+
+
+def brick_of(field, name, engine=None):
+    """The brick whose manifest lists `name` under `field` (scripts, skills, hub_skills, apps...), else None."""
+    for brick, m in engine_manifests(engine).items():
+        if name in (m.get(field) or []):
+            return brick
+    return None
+
+
+def brick_on(brick, home=None, engine=None):
+    """True when the brick is on. An unknown brick (None, a private piece) counts as on."""
+    if not brick:
+        return True
+    m = load_modules(home, engine)["modules"].get(brick)
+    return m is None or m["on"]
+
+
+def off_message(brick):
+    return f"crow: module {brick} is off (crow.yaml)"
+
+
+def exit_if_off(script, home=None, engine=None):
+    """Hook entry: exit 0 at once when the brick owning this bin/ script is off. A broken loader never blocks a hook."""
+    try:
+        off = not brick_on(brick_of("scripts", os.path.basename(script), engine), home, engine)
+    except Exception:  # noqa: BLE001 - a broken crow.yaml or manifest leaves the hook running as before
+        off = False
+    if off:
+        sys.exit(0)
+
+
+def on_skills(field="skills", home=None, engine=None):
+    """Sorted skill names listed under `field` (skills: every profile, hub_skills: the hub only) by bricks that are on."""
+    man = engine_manifests(engine)
+    st = load_modules(home, engine)["modules"]
+    return sorted({s for n, m in man.items() if st.get(n, {}).get("on") for s in m.get(field) or []})
+
+
+def all_skills(field="skills", engine=None):
+    return sorted({s for m in engine_manifests(engine).values() for s in m.get(field) or []})
+
+
+def _sync_links(target_dir, want, owned):
+    """Make target_dir hold one symlink per name -> source in `want`; drop symlinks into `owned` roots
+    that are not wanted. Real files and foreign links are left alone. Returns (added, removed)."""
+    os.makedirs(target_dir, exist_ok=True)
+    added, removed = [], []
+    roots = [os.path.realpath(r) + os.sep for r in owned]
+    for name in sorted(os.listdir(target_dir)):
+        p = os.path.join(target_dir, name)
+        if not os.path.islink(p) or name in want:
+            continue
+        dest = os.path.realpath(p)
+        if any((dest + os.sep).startswith(r) for r in roots):
+            os.unlink(p)
+            removed.append(name)
+    for name, src in sorted(want.items()):
+        p = os.path.join(target_dir, name)
+        if os.path.islink(p) and os.path.realpath(p) == os.path.realpath(os.path.join(target_dir, src)):
+            continue
+        if os.path.islink(p):
+            os.unlink(p)
+        elif os.path.exists(p):
+            continue  # a real directory or file the owner put there
+        os.symlink(src, p)
+        added.append(name)
+    return added, removed
+
+
+def link_hub_skills(home=None, engine=None):
+    """Generate <hub>/.claude/skills (git-ignored): relative links to the hub skills of on bricks in
+    <engine>/skills, plus every private skill in <hub>/local/hub-skills. Returns (added, removed)."""
+    home, engine = home or data_home(), engine or ENGINE
+    target = os.path.join(home, ".claude", "skills")
+    eng, priv = os.path.join(engine, "skills"), os.path.join(home, "local", "hub-skills")
+    want = {s: os.path.join(eng, s) for s in on_skills("hub_skills", home, engine)
+            if os.path.isdir(os.path.join(eng, s))}
+    for s in sorted(os.listdir(priv)) if os.path.isdir(priv) else []:
+        if os.path.isdir(os.path.join(priv, s)):
+            want.setdefault(s, os.path.join(priv, s))
+    want = {n: os.path.relpath(src, target) for n, src in want.items()}
+    return _sync_links(target, want, [eng, priv])
+
+
+def link_profile_skills(claude_dir, home=None, engine=None):
+    """Link the profile skills of on bricks (<engine>/skills/<name>) into <profile>/.claude/skills and
+    drop links to skills of off bricks. Returns (added, removed)."""
+    engine = engine or ENGINE
+    eng = os.path.join(engine, "skills")
+    want = {s: os.path.join(eng, s) for s in on_skills("skills", home, engine) if os.path.isdir(os.path.join(eng, s))}
+    return _sync_links(os.path.join(claude_dir, "skills"), want, [eng])

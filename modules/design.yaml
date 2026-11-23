@@ -5,6 +5,7 @@ default: false
 requires: []
 scripts: [ansi-shot, crow-compare, crow-crop, crow-design-notes, crow-skills-ext]
 skills: []
+hub_skills: []
 skill_lists: [skills/ext.list]
 runbooks: [design-canvas, design-references-in-items, design-sessions, headless-webgl-render, visual-concepts]
 claude_hooks: [crow-design-notes hook]

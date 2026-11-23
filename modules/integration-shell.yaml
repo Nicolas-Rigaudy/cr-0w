@@ -5,6 +5,7 @@ default: false
 requires: []
 scripts: []
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [archeotech-crow-agents, archeotech-crow-usage]
 claude_hooks: []

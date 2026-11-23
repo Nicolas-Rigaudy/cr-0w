@@ -96,6 +96,8 @@ launch() {
   local run=(env -u CROW_ACCOUNT -u CROW_ACCOUNT_PICKED CROW_SESSION_ACCOUNT="$CROW_ACCOUNT" cdx)
   "$CROW_ENGINE/bin/crow-accounts" require "$CROW_ACCOUNT"
   [[ "$dir" == "$CROW_HOME" ]] && "$CROW_ENGINE/bin/crow-accounts" hub-session "$CROW_ACCOUNT"
+  # the hub's skills follow crow.yaml: regenerate .claude/skills and this profile's skill links
+  [[ "$dir" == "$CROW_HOME" ]] && { "$CROW_ENGINE/bin/crow-modules" link "$CROW_ACCOUNT" >/dev/null || true; }
   if [[ "$("$CROW_ENGINE/bin/crow-accounts" memory "$CROW_ACCOUNT")" == session ]]; then
     "$CROW_ENGINE/bin/crow-memory" link "$CROW_ACCOUNT"
     trap '"$CROW_ENGINE/bin/crow-memory" unlink "$CROW_ACCOUNT"; "$CROW_ENGINE/bin/crow-memory" commit' EXIT
@@ -180,6 +182,17 @@ hint() { echo "crow: '$1' is now '$2' (the old name still works)" >&2; }
 
 cmd="${1:-hub}"
 shift || true
+# Subcommands of an off brick refuse: "crow: module <name> is off (crow.yaml)", exit 2.
+need() { "$CROW_ENGINE/bin/crow-modules" require "$1" "$2" || exit 2; }
+case "$cmd" in
+  activity) need scripts crow-activity ;;
+  note|notes) need scripts "crow-$cmd" ;;
+  projects|releases) need scripts crow-releases ;;
+  release)  need scripts crow-release-propose ;;
+  focus|usage|secret) need scripts "crow-$cmd" ;;
+  deck|watch) need apps tools/crow-deck ;;
+  core|mission|inbox) need apps tools/crow-core ;;
+esac
 case "$cmd" in
   hub)      # With ranks in accounts.yaml the hub is routed like any scope; otherwise the default account.
             if [[ -z "$CROW_ACCOUNT_GIVEN" ]] && "$CROW_ENGINE/bin/crow-accounts" scoped 2>/dev/null; then pick_account hub; fi

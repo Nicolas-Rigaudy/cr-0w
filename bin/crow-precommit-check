@@ -4,6 +4,8 @@
 # Patterns come from local/prepush-deny.txt plus local/prepush-deny.<repo-dir-name>.txt (same as crow-prepush-check).
 # Install: ln -s <crow>/bin/crow-precommit-check <repo>/.git/hooks/pre-commit
 set -u
+# git brick off in crow.yaml: the hook passes (crow-modules require exits 2)
+"$(dirname "$(readlink -f "$0")")/crow-modules" require scripts "$(basename "$(readlink -f "$0")")" 2>/dev/null; [ $? -eq 2 ] && exit 0
 main="$(dirname "$(realpath "$(git rev-parse --git-common-dir)")")"   # main checkout, so a linked worktree finds local/
 repo="$(basename "$main")"
 CROW_HOME="$main"

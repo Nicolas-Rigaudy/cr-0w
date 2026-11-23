@@ -112,6 +112,8 @@ def wait(run_ids, poll=20):
     Run it as a background command so the caller is notified when it exits."""
     if any(not i.strip() for i in run_ids):
         sys.exit("crow: wait needs a run id (got an empty one)")
+    if hook:
+        crow_lib.exit_if_off(__file__)
     recs = {r["run_id"]: r for r in ledger()}
     pending = {next((k for k in recs if k.startswith(i)), i) for i in run_ids}
     while pending:

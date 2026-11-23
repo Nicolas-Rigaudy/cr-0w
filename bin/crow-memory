@@ -4,7 +4,8 @@
   crow-memory status                 per profile and project: real dir, symlink or missing
   crow-memory migrate <account>      move the account's memory dirs into local/memory, leave symlinks
                                      (the old dir is kept as <dir>.premigrate until you delete it)
-  crow-memory link <account>         symlink local/memory/* into the profile where no memory exists
+  crow-memory link <account>         symlink local/memory/* into the profile where no memory exists,
+                                     and link the skills of on bricks (crow-modules link <account>)
   crow-memory unlink <account>       remove those symlinks (never touches real directories)
   crow-memory commit                 commit pending changes in the local/ repo
 
@@ -92,6 +93,7 @@ def link(account):
         if os.path.isdir(m):
             os.rmdir(m)
         os.symlink(os.path.join(STORE, slug), m)
+    crow_lib.link_profile_skills(os.path.dirname(base))
 
 
 def unlink(account):

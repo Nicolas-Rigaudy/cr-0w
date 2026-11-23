@@ -3,7 +3,11 @@
 
 Usage: crow-skills-ext sync      clone missing repos, fast-forward existing ones
        crow-skills-ext link      build the crow-design plugin and register it in each Claude profile
+       crow-skills-ext unlink    uninstall the crow-design plugin from every profile that has it
        crow-skills-ext status    show what is cloned, bundled and registered
+
+`link` refuses (exit 2) while the design brick is off in crow.yaml; `crow-modules link` runs
+`unlink` when design is off and a profile still has the plugin.
 
 Clones live in vendor/skills/<owner>__<repo> (gitignored). The listed skills are design
 skills, so they do not load in every session: `link` bundles them, with the design MCP
@@ -123,7 +127,29 @@ def _claude(home, *args):
     return subprocess.run(["claude", "plugin", *args], capture_output=True, text=True, env=env)
 
 
+def installed_homes():
+    """Profile homes whose installed_plugins.json lists the plugin (no claude CLI call)."""
+    return [h for h in profile_homes()
+            if f'"{PLUGIN_ID}"' in _read(h / ".claude" / "plugins" / "installed_plugins.json")]
+
+
+def _read(path):
+    try:
+        return path.read_text()
+    except OSError:
+        return ""
+
+
+def unlink():
+    for home in installed_homes():
+        r = _claude(home, "uninstall", PLUGIN_ID, "--scope", "user")
+        print(f"{home.parent.name}: {PLUGIN_ID} " + ("uninstalled" if r.returncode == 0 else f"uninstall failed: {(r.stderr or r.stdout).strip()[:200]}"))
+
+
 def link():
+    if not crow_lib.brick_on("design"):
+        print(crow_lib.off_message("design"), file=sys.stderr)
+        sys.exit(2)
     names = build_plugin()
     print(f"crow-design: {len(names)} skills, MCP {', '.join(DESIGN_MCP)}")
     for home in profile_homes():
@@ -163,4 +189,4 @@ def status():
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
-    {"sync": sync, "link": link, "status": status}.get(cmd, lambda: sys.exit(__doc__))()
+    {"sync": sync, "link": link, "unlink": unlink, "status": status}.get(cmd, lambda: sys.exit(__doc__))()

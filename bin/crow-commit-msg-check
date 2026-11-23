@@ -5,6 +5,8 @@
 # Merge, Revert, fixup! and squash! messages pass. Install: ln -s <crow>/bin/crow-commit-msg-check <hooks dir>/commit-msg
 # Check a message by hand: crow-commit-msg-check <file>   or   echo "subject" | crow-commit-msg-check -
 set -u
+# git brick off in crow.yaml: the hook passes (crow-modules require exits 2)
+"$(dirname "$(readlink -f "$0")")/crow-modules" require scripts "$(basename "$(readlink -f "$0")")" 2>/dev/null; [ $? -eq 2 ] && exit 0
 CROW_HOME="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 file="${1:--}"
 msg=$(if [ "$file" = - ]; then cat; else cat "$file"; fi | grep -v '^#')

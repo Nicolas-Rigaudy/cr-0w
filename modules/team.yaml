@@ -5,6 +5,7 @@ default: true
 requires: []
 scripts: [crow-checks, crow_checks.py]
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: []
 claude_hooks: []

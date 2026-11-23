@@ -5,6 +5,7 @@ default: false
 requires: []
 scripts: [crow-docx-redline, crow-mailtxt, simpledoc.py]
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [office-documents]
 claude_hooks: []

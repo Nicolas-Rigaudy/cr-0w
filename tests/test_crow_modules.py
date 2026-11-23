@@ -80,3 +80,53 @@ def test_crow_modules_rejects_other_arguments(hub):
     out = run(hub, "crow", "modules", "yaml")
     assert out.returncode != 0
     assert "crow-modules json" in out.stderr
+
+
+def test_require_exits_2_with_the_message_when_the_brick_is_off(hub):
+    home, _ = hub
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  vault: false\n")
+    out = run(hub, "crow-modules", "require", "scripts", "crow-notes")
+    assert out.returncode == 2 and out.stderr.strip() == "crow: module vault is off (crow.yaml)"
+    assert run(hub, "crow-modules", "require", "scripts", "crow-activity").returncode == 0
+    assert run(hub, "crow-modules", "require", "scripts", "not-a-piece").returncode == 0
+
+
+def test_crow_dispatch_refuses_an_off_subcommand(hub):
+    home, _ = hub
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  vault: false\n")
+    out = run(hub, "crow", "notes")
+    assert out.returncode == 2 and "crow: module vault is off (crow.yaml)" in out.stderr
+
+
+def hub_skills(home):
+    d = home / ".claude" / "skills"
+    return sorted(p.name for p in d.iterdir()) if d.is_dir() else []
+
+
+def test_link_generates_hub_and_profile_skills_and_follows_the_switch(hub):
+    home, profiles = hub
+    priv = home / "local" / "hub-skills" / "daily"
+    priv.mkdir(parents=True)
+    (priv / "SKILL.md").write_text("x")
+    claude = profiles / "main" / "claude-home" / ".claude"
+    (claude / "skills" / "mine").mkdir(parents=True)  # a real dir the owner put there stays
+    assert run(hub, "crow-modules", "link", "main").returncode == 0
+    assert hub_skills(home) == ["afk", "brief", "daily", "eod", "night", "retro"]
+    assert (home / ".claude" / "skills" / "brief" / "SKILL.md").is_file()
+    prof = sorted(p.name for p in (claude / "skills").iterdir())
+    assert prof == ["mine", "mr", "review", "review-threads", "wrap"]
+
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  afk: false\n  forge: false\n")
+    assert run(hub, "crow-modules", "link", "main").returncode == 0
+    assert hub_skills(home) == ["brief", "daily", "eod", "retro"]
+    assert sorted(p.name for p in (claude / "skills").iterdir()) == ["mine", "wrap"]
+
+
+def test_hooks_of_an_off_brick_are_no_ops(hub, tmp_path):
+    home, _ = hub
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  design: false\n  git: false\n")
+    out = run(hub, "crow-design-notes", "hook", input='{"transcript_path": "/nope", "cwd": "/nope"}')
+    assert out.returncode == 0 and out.stdout == ""
+    assert run(hub, "crow-commit-msg-check", "-", input="not the format\n").returncode == 0
+    (home / "crow.yaml").write_text("version: 1\nmodules:\n  design: true\n")
+    assert run(hub, "crow-commit-msg-check", "-", input="not the format\n").returncode == 1

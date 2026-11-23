@@ -5,6 +5,7 @@ default: true
 requires: []
 scripts: [crow-today, crow-mail-draft, crow-mail-draft-com.ps1]
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [graph-today, mail-drafts]
 claude_hooks: []

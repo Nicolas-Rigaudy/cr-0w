@@ -5,6 +5,8 @@
 # --history audits everything already pushed (run by crow-afk-preflight).
 # Install: ln -s <crow>/bin/crow-prepush-check <repo>/.git/hooks/pre-push   (see runbooks/afk-runs.md)
 set -u
+# git brick off in crow.yaml: the hook passes (crow-modules require exits 2)
+"$(dirname "$(readlink -f "$0")")/crow-modules" require scripts "$(basename "$(readlink -f "$0")")" 2>/dev/null; [ $? -eq 2 ] && exit 0
 CROW_HOME="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 # name of the main checkout, so a linked worktree uses its repo's deny list
 repo="$(basename "$(dirname "$(realpath "$(git rev-parse --git-common-dir)")")")"

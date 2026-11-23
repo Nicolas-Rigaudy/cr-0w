@@ -26,6 +26,7 @@ scripts:
   - crow-registry
   - crow-relaunch
   - crow-room
+  - crow-routine
   - crow-runs
   - crow_schema_lite.py
   - crow-screen
@@ -36,7 +37,8 @@ scripts:
   - crow_term.py
   - crow-update
   - crow-usage
-skills: [brief, wrap]
+skills: [wrap]
+hub_skills: [brief]
 skill_lists: []
 runbooks:
   - agent-tooling

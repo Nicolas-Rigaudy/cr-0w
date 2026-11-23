@@ -5,6 +5,7 @@ default: true
 requires: []
 scripts: [crow-activity, crow-commit-msg-check, crow-precommit-check, crow-prepush-check, crow-tidy]
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [repo-tidy]
 claude_hooks: []

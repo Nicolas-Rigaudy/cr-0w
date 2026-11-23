@@ -20,7 +20,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 MODULES = ROOT / "modules"
 FIELDS = {
-    "script": "scripts", "skill": "skills", "skill-list": "skill_lists", "runbook": "runbooks",
+    "script": "scripts", "skill": ("skills", "hub_skills"), "skill-list": "skill_lists", "runbook": "runbooks",
     "claude-hook": "claude_hooks", "git-hook": "git_hooks", "core-route": "core_routes",
     "core-section": "core_sections", "app": "apps", "integration": "integrations",
 }
@@ -101,8 +101,8 @@ def tags():
         brick = m.get("name")
         if brick != f.stem:
             problems.append(f"modules/{f.name}: name {brick!r} differs from the file name")
-        for kind, field in FIELDS.items():
-            for name in m.get(field) or []:
+        for kind, fields in FIELDS.items():
+            for name in [n for f in ((fields,) if isinstance(fields, str) else fields) for n in m.get(f) or []]:
                 if (kind, name) in t:
                     problems.append(f"{kind}\t{name}: in {t[(kind, name)]} and {brick}")
                 t[(kind, name)] = brick

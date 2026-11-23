@@ -3,6 +3,12 @@
 
   crow-modules         one line per brick: on/off, default, summary; crow.yaml problems on stderr
   crow-modules json    {file, exists, modules: [{name, on, default, summary, requires, config}], errors}
+  crow-modules link [<account>...]
+                       generate the hub .claude/skills links (hub skills of on bricks, local/hub-skills)
+                       and link profile skills of on bricks into each account (default: every allowed account)
+  crow-modules require <field> <name>
+                       exit 0 when the brick listing <name> under <field> (scripts, apps, skills...) is on;
+                       else print "crow: module <brick> is off (crow.yaml)" and exit 2
 
 Bricks come from the engine manifests (modules/<brick>.yaml). Switches and config come from
 crow.yaml at the CROW_HOME root, else local/crow.yaml. A missing file or key keeps the default.
@@ -25,7 +31,44 @@ def report(home=None, engine=None):
     return {"file": st["file"], "exists": st["exists"], "modules": rows, "errors": st["errors"]}
 
 
+def accounts():
+    """Allowed accounts whose Claude profile exists on disk."""
+    import subprocess
+    out = subprocess.run([os.path.join(crow_lib.ENGINE, "bin", "crow-accounts"), "allowed"],
+                         capture_output=True, text=True).stdout
+    return [n for n in out.split() if os.path.isdir(claude_dir(n))]
+
+
+def claude_dir(account):
+    return os.path.dirname(crow_lib.account_transcripts_dir(account))
+
+
+def link(names):
+    added, removed = crow_lib.link_hub_skills()
+    print(f"hub: {len(added)} linked, {len(removed)} removed" + (f" ({', '.join(added + removed)})" if added or removed else ""))
+    for n in names or accounts():
+        added, removed = crow_lib.link_profile_skills(claude_dir(n))
+        print(f"{n}: {len(added)} linked, {len(removed)} removed" + (f" ({', '.join(added + removed)})" if added or removed else ""))
+    if not crow_lib.brick_on("design") and not names:
+        # third-party design skills ship as a plugin (crow-skills-ext); off removes it where installed
+        import subprocess
+        subprocess.run([os.path.join(crow_lib.ENGINE, "bin", "crow-skills-ext"), "unlink"])
+    return 0
+
+
+def require(field, name):
+    brick = crow_lib.brick_of(field, name)
+    if crow_lib.brick_on(brick):
+        return 0
+    print(crow_lib.off_message(brick), file=sys.stderr)
+    return 2
+
+
 def main(argv):
+    if argv[:1] == ["link"]:
+        return link(argv[1:])
+    if argv[:1] == ["require"] and len(argv) == 3:
+        return require(argv[1], argv[2])
     if argv not in ([], ["json"]):
         sys.exit(__doc__)
     r = report()

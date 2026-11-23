@@ -17,6 +17,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import crow_lib  # noqa: E402
+
 NAME = "design-notes.md"
 MAX_CHARS = 8000
 WINDOW = 400
@@ -83,6 +86,7 @@ def find(transcript, cwd=None, written_only=False):
 
 
 def hook():
+    crow_lib.exit_if_off(__file__)  # design off: the hook is a no-op
     try:
         data = json.load(sys.stdin)
     except Exception:

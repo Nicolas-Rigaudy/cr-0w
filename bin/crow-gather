@@ -6,6 +6,8 @@ Usage: crow-gather brief|daily|weekly [--json] [--since DATE]
 The brief, daily and weekly skills read this through one `!` block instead of spending
 tool turns on files and scripts. Tracker and mail calls (MCP) stay in the model.
 Every source is capped; a source that fails becomes {"error": "..."} and the rest still runs.
+Keys that an off brick lists under gather.<routine> in its manifest are not collected and
+are absent; "modules" lists the on bricks (crow.yaml).
 Side effects: `brief` runs `crow-tidy --apply --brief` (safe cleanups only, as the brief always did).
 """
 import argparse
@@ -270,7 +272,26 @@ def fit(data, budget):
     return sorted(set(cuts))
 
 
+OFF = set()  # gather keys owned by off bricks for this routine (main fills it)
+
+
+def off_keys(routine):
+    """Keys the manifests of off bricks list under gather.<routine>: never collected, absent from the JSON."""
+    mods = crow_lib.load_modules()["modules"]
+    keys = set()
+    for name, man in crow_lib.engine_manifests().items():
+        if not mods.get(name, {}).get("on", True):
+            keys.update((man.get("gather") or {}).get(routine) or [])
+    return keys
+
+
+def lazy(key, fn):
+    """fn() unless the key belongs to an off brick."""
+    return None if key in OFF else fn()
+
+
 def gather(jobs):
+    jobs = {k: fn for k, fn in jobs.items() if k not in OFF}
     with ThreadPoolExecutor(max_workers=8) as pool:
         futures = {k: pool.submit(fn) for k, fn in jobs.items()}
         return {k: f.result() for k, f in futures.items()}
@@ -299,10 +320,10 @@ def brief(state, vault, apply=True):
     })
     return {
         "today_priorities": today_md if dated else None,
-        "afk": afk(state),
-        "open_threads": threads(state, {"Me", "Waiting"}),
-        "pending": pending(),
-        "status": read(note("status"), 4000),
+        "afk": lazy("afk", lambda: afk(state)),
+        "open_threads": lazy("open_threads", lambda: threads(state, {"Me", "Waiting"})),
+        "pending": lazy("pending", pending),
+        "status": lazy("status", lambda: read(note("status"), 4000)),
         **sources,
         "targets": {"activity_log": "bin/crow-log '[tag] text'"},
     }
@@ -323,8 +344,8 @@ def daily(state, vault, since):
         "last_daily": last.strip() if last else None,
         "tracker": tracker_ids(),
         **sources,
-        "activity_logs": activity_logs(state, since),
-        "open_threads_work": threads(state, tags=work_tags(), width=300),
+        "activity_logs": lazy("activity_logs", lambda: activity_logs(state, since)),
+        "open_threads_work": lazy("open_threads_work", lambda: threads(state, tags=work_tags(), width=300)),
         "targets": {"daily_note": str(daily_path(vault, TODAY)) if vault else None,
                     "template": str(vault / "90 Templates" / "Daily Note.md") if vault else None,
                     "last_daily": str(state / "last-daily"),
@@ -346,9 +367,9 @@ def weekly(state, since):
         "iso_week": f"{year}-W{week:02d}",
         "tracker": tracker_ids(),
         **sources,
-        "activity_logs": activity_logs(state, monday, 3000),
-        "decisions": decisions_since(state, monday),
-        "carry_over": threads(state, width=200),
+        "activity_logs": lazy("activity_logs", lambda: activity_logs(state, monday, 3000)),
+        "decisions": lazy("decisions", lambda: decisions_since(state, monday)),
+        "carry_over": lazy("carry_over", lambda: threads(state, width=200)),
         "targets": {"rollup": str(crow_lib.rollup_path(f"{year}-W{week:02d}", registry(), ROOT)),
                     "previous_rollup": str(prev[-1]) if prev else None},
     }
@@ -362,6 +383,7 @@ def main():
     ap.add_argument("--no-apply", action="store_true", help="brief: report tidy only, no safe cleanups")
     args = ap.parse_args()
     state, vault = state_dir(), vault_path()
+    OFF.update(off_keys(args.routine))
     if args.routine == "brief":
         data = brief(state, vault, not args.no_apply)
     elif args.routine == "daily":
@@ -369,7 +391,9 @@ def main():
     else:
         data = weekly(state, args.since)
     data = {"routine": args.routine, "today": TODAY.isoformat(),
-            "weekday": TODAY.strftime("%A"), "state_dir": str(state), **data}
+            "weekday": TODAY.strftime("%A"), "state_dir": str(state),
+            "modules": sorted(n for n, m in crow_lib.load_modules()["modules"].items() if m["on"]),
+            **{k: v for k, v in data.items() if k not in OFF}}
     cuts = fit(data, BUDGET_CHARS)
     if cuts:
         data["_cut_to_fit"] = cuts

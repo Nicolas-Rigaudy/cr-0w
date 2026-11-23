@@ -5,6 +5,7 @@ default: true
 requires: []
 scripts: []
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [tui-agents-ux, tui-home-ux, tui-projects-ux, tui-render, tui-review-ux, tui-themes-ux, tui-usage-ux]
 claude_hooks: []

@@ -5,6 +5,7 @@ default: true
 requires: [core-api]
 scripts: []
 skills: []
+hub_skills: []
 skill_lists: []
 runbooks: [nest-phone-install, nest-screenshots]
 claude_hooks: []

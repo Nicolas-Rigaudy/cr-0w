@@ -5,6 +5,7 @@ default: true
 requires: [git]
 scripts: [crow-forge-read, crow-mrs, crow-review-check, crow-review-run]
 skills: [mr, review, review-threads]
+hub_skills: []
 skill_lists: []
 runbooks: [ci-secrets, review-findings]
 claude_hooks: []

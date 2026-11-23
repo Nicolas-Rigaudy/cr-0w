@@ -4,7 +4,8 @@ summary: Session retros, digest, cost audit and tool update watch.
 default: true
 requires: []
 scripts: [crow-cost-audit, crow-digest, crow-retro, crow-toolwatch]
-skills: [retro]
+skills: []
+hub_skills: [retro]
 skill_lists: []
 runbooks: [cost-audit, session-retros, tool-update-watch]
 claude_hooks: []
