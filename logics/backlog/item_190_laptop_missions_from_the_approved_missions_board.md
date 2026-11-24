@@ -39,7 +39,9 @@
 - Nest: tab and route are Ops (/ops); /missions and /missions/<id> redirect. Screen src/screens/Ops.tsx: day timeline grouped by project, live lanes hatched with a now line and OPEN to the chat, planned routines dashed, week strip, queue, totals by project or kind, lane sheet with the run report and cost.
 - Queue actions (commits 9e5ba22, 0d7ced9): routines PAUSE/RESUME and RUN NOW (bin/crow-routine via POST /api/routines/{unit}/{verb}), AFK EDIT and skip (GET/PUT /api/afk, POST /api/afk/skip), mission cancel. Routines show their unit description; the queue lists only pending AFK jobs.
 - Week view uses the day graph: one 22px row per day on the same axis and scale toggle. Day/week switch keeps the old view until the new data lands, then fades in.
-- Not built, needs a design: mission run now and reorder (the tick starts by creation order, no priority or slot override). Also missing: worktree and diff stat, AFK stop times.
+- Not built: mission run now and reorder (the tick starts by creation order, no priority or slot override). Also missing: worktree and diff stat, AFK stop times.
+- Queue design decided 2026-11-24 (vault item_190/queue/compare.html, option A): RUN on a queued mission opens a two-line menu, 'Next in line' (default, moves to the head) or 'Start now, over cap' (3rd run). Every mission row has a drag handle and up/down arrows, laptop and phone.
+- Core for it: a stored queue position on missions; tick admits by position, then Created; routes to move (up, down, to index), run next (to head) and start now over cap.
 - Past waiting spans: item_264. The state log records them from now on.
 - Left: owner review on live data (AC1, AC3), then the missing actions as core routes.
 
