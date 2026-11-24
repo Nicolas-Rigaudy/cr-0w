@@ -1,10 +1,10 @@
 ## item_267_nest_themes_hero_and_module_pages_built_from_the_user_s_modules - Nest themes, hero and module pages built from the user's modules
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 75
-> Confidence: 70
-> Progress: 0%
+> Status: Done
+> Understanding: 95
+> Confidence: 90
+> Progress: 100%
 > Complexity: Large
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -59,3 +59,4 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24T09:13:13+00:00 | hub | nest-modules-2026-11-24 | Build-time Nest modules | succeeded |  | `tools/nest/nest-modules.ts` Vite plugin reads `crow-modules json` and on bricks' `nest/{themes,hero,pages,sections}`, serves `virtual:nest-modules` and `virtual:nest-themes`. Tokens moved to `src/themes/{modern,cyber}.css`. `modules.nest.{theme,hero,pages}` in the manifest; nav and phone bar follow `pages` (first four in the bar), unlisted routes land on Home. `crow nest build`; `crow modules` switches print a rebuild hint. Deviation: built-in heroes are `holotable` (droid head plus planets, one canvas) and `none`; splitting droid and planets was not cheap. AC1, AC2 checked in a browser with test brick `tools/nest/fixtures/bricks/garden`; AC3 Home/Desk shots differ from baseline less than two same-code runs (hero canvas noise); AC4 build error starts `brick garden: ... does not build`; AC5 266 Nest tests, typecheck, crow-check green. |
