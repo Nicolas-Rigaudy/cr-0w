@@ -40,7 +40,7 @@ export function App() {
   let body = null
   if (snap && raw) {
     if (route.tab === 'home') body = <Home snap={snap} />
-    else if (route.tab === 'ops') body = <Ops snap={snap} />
+    else if (route.tab === 'ops') body = <Ops snap={snap} refresh={refresh} />
     else if (route.tab === 'inbox') body = <Inbox snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />

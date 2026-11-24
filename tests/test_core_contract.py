@@ -283,7 +283,7 @@ def test_api_error_fixture(path):
 
 # HTTP actions (item_147): request fixtures feed the Go tests; the replies they write
 # must match the record schemas.
-ACTION_MISSIONS = ("action-dispatch", "action-stop", "action-cancel")
+ACTION_MISSIONS = ("action-dispatch", "action-stop", "action-cancel", "action-start")
 
 
 def test_api_action_fixture_set():
@@ -291,7 +291,16 @@ def test_api_action_fixture_set():
     for want in (*ACTION_MISSIONS, "action-answer", "action-hide", "error-answer-stale"):
         assert want in names, want
     assert {p.stem for p in (API / "requests").glob("*.json")} == {
-        "dispatch", "answer", "answer-stale", "cancel", "send", "run", "session", "prompt-answer"}
+        "dispatch", "answer", "answer-stale", "cancel", "send", "run", "session", "prompt-answer", "move"}
+
+
+# Queue moves (item_272) reply with the queue in tick order, positions 1..n.
+def test_api_action_move_fixture():
+    q = load(API / "action-move.json")
+    for m in q:
+        assert not errors("mission.schema.json", m)
+    assert [m["position"] for m in q] == list(range(1, len(q) + 1))
+    assert load(API / "error-move-not-queued.json")["error"]
 
 
 @pytest.mark.parametrize("name", ACTION_MISSIONS)

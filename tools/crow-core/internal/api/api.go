@@ -72,7 +72,12 @@ type Server struct {
 	order []string // every section, in response order
 	// opsLog is the ops state log under StateDir, nil without one.
 	opsLog *ops.Log
+	// tickNow runs a tick now (start now); nil when serve runs no tick.
+	tickNow func()
 }
+
+// SetKick sets what start now calls to run a tick at once. Set it before serving.
+func (s *Server) SetKick(f func()) { s.tickNow = f }
 
 // Section is one part of the state with its change marks.
 type Section struct {

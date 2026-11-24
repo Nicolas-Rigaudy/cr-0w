@@ -32,6 +32,9 @@ core_routes:
   - POST /api/missions/{id}/answer
   - POST /api/missions/{id}/stop
   - POST /api/missions/{id}/cancel
+  - POST /api/missions/{id}/move
+  - POST /api/missions/{id}/next
+  - POST /api/missions/{id}/start
   - POST /api/inbox/{id...}
   - GET /api/state
   - GET /api/state/{section}

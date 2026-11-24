@@ -1,10 +1,10 @@
 ## item_272_ops_queue_missions_keep_a_position_reorder_and_run_now - Ops queue: missions keep a position, reorder and run now
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -55,7 +55,12 @@
 # Notes
 - Read the vault design notes and the compare page before building; build from the chosen option only.
 
+- Proof AC1: `internal/mission/queue_test.go` TestQueueCompare, TestTickFollowsQueueOrder.
+- Proof AC2: scratch core on live routes (24/11): ▼ at 1440, long-press drag and Next in line at 368 reordered Alpha/Beta/Gamma; `crow-core tick` with max 1 started the head. Fixture checks: `tools/nest/scripts/queue-shots.mjs` (36 checks, both themes).
+- Proof AC3: start now on the scratch core dispatched `--over-cap` (2 of 1 busy); TestTickStartNowOverCap; slots 3/2 shown in queue-shots `built-overcap-*`.
+- Proof AC4: shots in vault `item_190/queue/built/` next to queue-A.png; cyber check noted in design-notes.md.
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
+| 2026-11-24T10:48:30.883207+00:00 | hub-session | 20261124-item272 | Queue position, reorder, run now | succeeded |  | Go 302 pass, pytest 848 pass, vitest 270 pass, queue-shots 36 checks; live scratch core: arrows/drag/next reorder, tick follows, start now dispatched over cap |

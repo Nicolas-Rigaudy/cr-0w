@@ -431,9 +431,12 @@ func routineNames(jobs any) map[string]bool {
 // queue lists queued missions, routines by next start, then AFK jobs.
 func queue(in Input, reg Names) []contract.OpsQueued {
 	out := []contract.OpsQueued{}
-	for _, m := range in.Missions {
+	// Missions in the order the tick admits them: by position, then oldest first (item_272).
+	ms := slices.Clone(in.Missions)
+	slices.SortStableFunc(ms, contract.QueueCompare)
+	for _, m := range ms {
 		if m.State == "queued" || m.State == "preflight" {
-			out = append(out, contract.OpsQueued{Kind: "mission", ID: m.ID, Project: reg.ShortName(m.Project), Title: m.Goal})
+			out = append(out, contract.OpsQueued{Kind: "mission", ID: m.ID, Project: reg.ShortName(m.Project), Title: m.Goal, OverCap: m.OverCap})
 		}
 	}
 	var rs []contract.OpsQueued

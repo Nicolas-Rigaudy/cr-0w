@@ -10,7 +10,7 @@ import { fixtureButler, type ButlerMsg } from './butler'
 import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversation'
 import type { Actions, Dispatch, LiveReply } from './live'
 import type { Modules } from './modules'
-import type { Ops } from './ops'
+import type { Ops, OpsQueued } from './ops'
 import type { DataSource } from './source'
 import { CANCELLABLE } from './state'
 import type { AgendaEvent, InboxItem, InboxVerb, Mission, SectionBody, SectionName } from './types'
@@ -29,8 +29,9 @@ const LIVE: LiveData = { ...stateLive, work: stateWork }
 // In-memory live actions over the fixture sections: they check targets like core
 // (404 unknown, 409 full slots) and change the section so a refetch shows the result.
 type MissionActions = 'missionAnswer' | 'missionStop' | 'missionCancel' | 'inboxHide'
+type QueueActions = 'missionMove' | 'missionNext' | 'missionStart'
 
-function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, now: Date): Omit<Actions, MissionActions> {
+function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, now: Date): Omit<Actions, MissionActions | QueueActions> {
   const set = (name: SectionName, v: unknown) => {
     data[name] = v
     bodies.delete(name)
@@ -284,7 +285,13 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
   }
   const brickBodies = new Map(Object.entries(bricks?.sections ?? {}).map(([k, v]): [string, SectionBody] => [k, { data: v, stale: false, updated_at: now.toISOString() }]))
   const rec = { missions, inbox }
-  const actions = { ...fixtureActions(data, bodies, now), ...missionActions(rec, now) }
+  const ops = { queue: structuredClone((stateOps as unknown as Ops).queue) }
+  const busy = (n: number) => {
+    const d = data.dispatch as Dispatch
+    data.dispatch = { ...d, slots: { ...d.slots, busy: d.slots.busy + n } }
+    bodies.delete('dispatch')
+  }
+  const actions = { ...fixtureActions(data, bodies, now), ...missionActions(rec, now), ...queueActions(ops, busy) }
   const chats = fixtureChats((t) => {
     if ('pid' in t && !(data.dispatch as Dispatch | undefined)?.agents.some((a) => a.pid === t.pid)) throw new ApiError(404, `no live session with pid ${t.pid}`)
     if ('mission' in t && !rec.missions.some((m) => m.id === t.mission)) throw new ApiError(404, 'no mission')
@@ -302,7 +309,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     agenda: async () => agenda,
     section,
     conversation: chats.page,
-    ops: async (query) => fixtureOps(query),
+    ops: async (query) => fixtureOps(query, ops.queue),
     run: async (id) => fixtureRun(id),
     actions,
     now: () => now,
@@ -363,9 +370,41 @@ function missionActions(rec: { missions: Mission[]; inbox: InboxItem[] }, now: D
   }
 }
 
+// Queue order over the ops fixture (item_272), with the checks of core (internal/mission/queue.go):
+// exact ids, missions only, place 1 or more. Start now runs the mission at once (busy + 1).
+function queueActions(ops: { queue: OpsQueued[] }, busy: (n: number) => void): Pick<Actions, QueueActions> {
+  const missions = () => ops.queue.filter((q) => q.kind === 'mission')
+  const at = (id: string) => {
+    const i = missions().findIndex((q) => q.id === id)
+    if (i < 0) throw new ApiError(ops.queue.some((q) => q.id === id) ? 409 : 404, `${id} is not a queued mission`)
+    return i
+  }
+  const place = (id: string, to: number) => {
+    const ms = missions()
+    const i = at(id)
+    if (to < 1) throw new ApiError(400, `place ${to}: want 1 or more`)
+    const [m] = ms.splice(i, 1)
+    ms.splice(Math.min(to, ms.length + 1) - 1, 0, m)
+    ops.queue = [...ms, ...ops.queue.filter((q) => q.kind !== 'mission')]
+    return ms
+  }
+  return {
+    async missionMove(mission, to) {
+      return place(mission, typeof to === 'number' ? to : Math.max(1, at(mission) + 1 + (to === 'up' ? -1 : 1)))
+    },
+    async missionNext(mission) { return place(mission, 1) },
+    async missionStart(mission) {
+      at(mission)
+      ops.queue = ops.queue.filter((q) => q.id !== mission)
+      busy(1)
+      return { id: mission, state: 'running' }
+    },
+  }
+}
+
 // Ops fixture (item_190): one day. A week answer repeats its lanes on each past day of the week.
-function fixtureOps(query: string): Ops {
-  const day = stateOps as unknown as Ops
+function fixtureOps(query: string, queue: OpsQueued[]): Ops {
+  const day = { ...(stateOps as unknown as Ops), queue }
   const week = /^week=(.+)$/.exec(query)?.[1]
   if (week) {
     const days = ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']

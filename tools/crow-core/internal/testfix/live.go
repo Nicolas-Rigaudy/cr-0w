@@ -13,7 +13,22 @@ const (
 	Waiting = "20261110-research-waiting-on-owner" // parked on q1 of the example questions
 	Running = "20261110-research-running-now"      // run f6a7b8c9 live
 	LiveRun = "f6a7b8c9"
+	// Queued missions for the queue actions (item_272), oldest first.
+	QueuedFirst  = "20261110-research-queued-first"
+	QueuedSecond = "20261110-research-queued-second"
 )
+
+// Queued adds two queued missions to a missions root, created a minute apart.
+func Queued(t testing.TB, root string) {
+	t.Helper()
+	for i, id := range []string{QueuedFirst, QueuedSecond} {
+		ls := strings.Split(string(log(id, strings.TrimPrefix(id, "20261110-research-"), "")), "\n")[:2]
+		for j := range ls {
+			ls[j] = strings.Replace(ls[j], "T08:00:0", fmt.Sprintf("T09:0%d:0", i), 1)
+		}
+		write(t, filepath.Join(root, id, "events.jsonl"), []byte(strings.Join(ls, "\n")+"\n"))
+	}
+}
 
 // Registry is a project registry with the demo project the fixtures use.
 func Registry(t testing.TB) string {

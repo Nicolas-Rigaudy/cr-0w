@@ -42,6 +42,13 @@ type Answer struct {
 	Version int    `json:"version"`
 }
 
+// Move is the body of POST /api/missions/{id}/move: To is the new place (1 = next), or
+// Dir is up or down for one step.
+type Move struct {
+	To  int    `json:"to,omitempty"`
+	Dir string `json:"dir,omitempty"`
+}
+
 // Cancel is the optional body of POST /api/missions/{id}/cancel.
 type Cancel struct {
 	Reason string `json:"reason,omitempty"`
@@ -52,6 +59,9 @@ func (s *Server) routeActions(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/missions/{id}/answer", s.answer)
 	mux.HandleFunc("POST /api/missions/{id}/stop", s.stop)
 	mux.HandleFunc("POST /api/missions/{id}/cancel", s.cancel)
+	mux.HandleFunc("POST /api/missions/{id}/move", s.move)
+	mux.HandleFunc("POST /api/missions/{id}/next", s.next)
+	mux.HandleFunc("POST /api/missions/{id}/start", s.startNow)
 	mux.HandleFunc("POST /api/inbox/{id...}", s.hide)
 }
 
@@ -118,6 +128,48 @@ func (s *Server) cancel(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// move places a queued mission (item_272). It answers the queue in its new order.
+func (s *Server) move(w http.ResponseWriter, r *http.Request) {
+	var b Move
+	if !decode(w, r, &b, false) {
+		return
+	}
+	step := map[string]int{"up": -1, "down": 1}[b.Dir]
+	if (b.Dir != "" && step == 0) || (b.Dir == "") == (b.To == 0) {
+		fail(w, http.StatusBadRequest, `want "to" (a place, 1 = next) or "dir" (up or down)`)
+		return
+	}
+	id := r.PathValue("id")
+	s.act(w, http.StatusOK, func(env mission.Env) (any, error) {
+		if b.Dir != "" {
+			return env.Step(id, step, Surface)
+		}
+		return env.Move(id, b.To, Surface)
+	})
+}
+
+// next moves a queued mission to the head of the queue: it starts when a slot frees.
+func (s *Server) next(w http.ResponseWriter, r *http.Request) {
+	if !decode(w, r, &struct{}{}, true) {
+		return
+	}
+	id := r.PathValue("id")
+	s.act(w, http.StatusOK, func(env mission.Env) (any, error) { return env.Move(id, 1, Surface) })
+}
+
+// startNow starts a queued mission at once, past the run cap when it is reached, then
+// runs a tick.
+func (s *Server) startNow(w http.ResponseWriter, r *http.Request) {
+	if !decode(w, r, &struct{}{}, true) {
+		return
+	}
+	id := r.PathValue("id")
+	ok := s.act(w, http.StatusOK, func(env mission.Env) (any, error) { return env.StartNow(id, Surface) })
+	if ok && s.tickNow != nil {
+		s.tickNow()
+	}
+}
+
 // hide serves POST /api/inbox/<row id>/hide. Row ids hold slashes, so the route takes
 // the rest of the path and checks the last part.
 func (s *Server) hide(w http.ResponseWriter, r *http.Request) {
@@ -156,17 +208,17 @@ func exact(env mission.Env, id string) error {
 }
 
 // act runs one action under the store lock, then folds its events into the store.
-func (s *Server) act(w http.ResponseWriter, code int, do func(mission.Env) (any, error)) {
+func (s *Server) act(w http.ResponseWriter, code int, do func(mission.Env) (any, error)) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	v, err := do(s.o.Env)
 	if err != nil {
 		fail(w, status(err), err.Error())
-		return
+		return false
 	}
 	if err := s.syncStore(); err != nil {
 		fail(w, http.StatusInternalServerError, err.Error())
-		return
+		return false
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
@@ -174,6 +226,7 @@ func (s *Server) act(w http.ResponseWriter, code int, do func(mission.Env) (any,
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
+	return true
 }
 
 func status(err error) int {

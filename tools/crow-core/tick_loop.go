@@ -119,6 +119,21 @@ func (t *ticker) once() (rep mission.TickReport, err error) {
 	return rep, nil
 }
 
+// kick runs a pass now, for start now. A pass already running holds the lock: kick
+// retries for a while, then leaves it to the next scheduled pass.
+func (t *ticker) kick(ctx context.Context) {
+	for range 10 {
+		if _, err := t.once(); !errors.Is(err, errTickBusy) {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(3 * time.Second):
+		}
+	}
+}
+
 // firstTickDelay lets serve finish starting before the first pass after a restart.
 const firstTickDelay = 30 * time.Second
 

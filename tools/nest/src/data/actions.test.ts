@@ -20,12 +20,20 @@ describe('mission actions', () => {
     await act.missionStop('m1')
     await act.missionCancel('m1')
     await act.missionCancel('m1', 'not needed')
+    await act.missionMove('m1', 2)
+    await act.missionMove('m1', 'up')
+    await act.missionNext('m1')
+    await act.missionStart('m1')
     expect(sent).toEqual([
       { url: '/api/missions/20261109-a%20b/answer', body: { item: '20261109-a b/v2/q1', verb: 'approve', version: 2 }, csrf: '1' },
       { url: '/api/missions/m1/answer', body: { item: 'm1/v1', verb: 'answer', text: 'use plan B', version: 1 }, csrf: '1' },
       { url: '/api/missions/m1/stop', body: undefined, csrf: '1' },
       { url: '/api/missions/m1/cancel', body: undefined, csrf: '1' },
       { url: '/api/missions/m1/cancel', body: { reason: 'not needed' }, csrf: '1' },
+      { url: '/api/missions/m1/move', body: { to: 2 }, csrf: '1' },
+      { url: '/api/missions/m1/move', body: { dir: 'up' }, csrf: '1' },
+      { url: '/api/missions/m1/next', body: undefined, csrf: '1' },
+      { url: '/api/missions/m1/start', body: undefined, csrf: '1' },
     ])
   })
 

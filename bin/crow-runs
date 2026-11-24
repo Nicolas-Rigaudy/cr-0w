@@ -1101,7 +1101,8 @@ def dispatch(a):
                "CDX_HOME": os.environ.get("CDX_HOME") or os.path.join(crow_lib.real_home(), ".cdx")}
     cmd = ["cdx", "run", acct, "--cwd", cwd, *src, *(["--continue-run", a.continue_run] if a.continue_run else []), *flags,
            "--permission", a.permission or crow_lib.permission(provider), "--detach", "--json",
-           "--label", f"{p['name']}/{a.label}", *([] if a.force else ["--max-parallel", str(MAX_PARALLEL)]),
+           "--label", f"{p['name']}/{a.label}",
+           *([] if a.force or getattr(a, "over_cap", False) else ["--max-parallel", str(MAX_PARALLEL)]),
            *(["--isolate-workspace"] if a.isolate else [])]
     if a.dry_run:
         print(" ".join(f"{k}={v}" for k, v in env.items()), " ".join(cmd))
@@ -1301,6 +1302,7 @@ def main():
     d.add_argument("--dry-run", action="store_true", help="print the cdx command and env, start nothing")
     d.add_argument("--permission", choices=("review",), help="review: read only (Claude plan mode, Codex read-only sandbox)")
     d.add_argument("--force", action="store_true")
+    d.add_argument("--over-cap", action="store_true", help="start past the run cap (--max-parallel); the cwd guard still applies")
     d.add_argument("--logics", metavar="REF", help="Logics doc (item_074, req_019...) to record the run in; work repos record in their local logics/")
     d.add_argument("--resumes", metavar="RUN_ID", help="this run continues an interrupted one (hides it from the listing)")
     d.add_argument("--cwd", help="run in this worktree of the project (<path>.wt/...) instead of the main checkout")

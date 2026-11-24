@@ -61,7 +61,7 @@ func lastRunStart(t *testing.T, root, id string) contract.RunStartData {
 func TestResumeContinuesTheLastRun(t *testing.T) {
 	env, root, id, m, k := answered(t)
 	r := &seqRunner{}
-	line, err := env.resume(r, m, k, false)
+	line, err := env.resume(r, m, k, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestResumeFallsBackColdWhenContinueIsRefused(t *testing.T) {
 		t.Run(code, func(t *testing.T) {
 			env, root, id, m, k := answered(t)
 			r := &seqRunner{refuse: map[int]*DispatchError{1: {Code: code, Message: "start a normal run"}}}
-			line, err := env.resume(r, m, k, false)
+			line, err := env.resume(r, m, k, false, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -128,7 +128,7 @@ func TestResumeFallsBackColdWhenContinueIsRefused(t *testing.T) {
 func TestResumeColdWhenTheMissionMovesAccount(t *testing.T) {
 	env, root, id, m, k := answered(t)
 	r := &seqRunner{}
-	if _, err := env.resume(r, m, k, true); err != nil {
+	if _, err := env.resume(r, m, k, true, false); err != nil {
 		t.Fatal(err)
 	}
 	if r.calls != 1 || r.dispatched[0].ContinueRun != "" || r.dispatched[0].Resumes != "r1" {
@@ -147,7 +147,7 @@ func TestResumeOtherRefusalStartsNothing(t *testing.T) {
 	env, root, id, m, k := answered(t)
 	before := len(events(t, root, id))
 	r := &seqRunner{refuse: map[int]*DispatchError{1: {Code: "too_many_runs", Message: "2 runs already running"}}}
-	line, err := env.resume(r, m, k, false)
+	line, err := env.resume(r, m, k, false, false)
 	if err == nil || line != nil || r.calls != 1 {
 		t.Fatalf("line = %+v, err = %v, calls = %d", line, err, r.calls)
 	}

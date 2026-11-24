@@ -39,7 +39,9 @@
     "mr": {"type": ["string", "null"]},
     "created": {"type": "string", "format": "date-time"},
     "updated": {"type": "string", "format": "date-time"},
-    "linked": {"type": "boolean", "description": "Set in the missions section: the mission groups a handoff or a dispatch and has no core run. Absent otherwise."}
+    "linked": {"type": "boolean", "description": "Set in the missions section: the mission groups a handoff or a dispatch and has no core run. Absent otherwise."},
+    "position": {"type": "integer", "minimum": 1, "description": "Queue place the owner gave (1 = next). Absent for a mission never moved: it queues after the placed ones, oldest first."},
+    "over_cap": {"type": "boolean", "description": "The owner started this queued mission now: the tick starts it past the run cap. Absent otherwise."}
   },
   "$defs": {
     "gates": {"type": "array", "items": {"enum": ["plan", "report", "mockup"]}, "uniqueItems": true},

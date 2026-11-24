@@ -37,6 +37,7 @@ type Dispatch struct {
 	BudgetUSD                           float64
 	TimeoutMin                          int
 	ContinueRun                         string // cdx --continue-run of this run (same account and sandbox)
+	OverCap                             bool   // the owner started it now: past the run cap
 	Resumes                             string // a cold run that resumes this run (crow-runs ledger chain)
 }
 
@@ -94,8 +95,9 @@ var causes = map[string]string{
 	"stuck": "timeout", "stopped": "stopped", "failed": "error",
 }
 
-// Tick finishes the mission runs that ended, then admits queued missions oldest first
-// while fewer than maxRuns missions run. A dispatch crow-runs refuses leaves the mission
+// Tick finishes the mission runs that ended, then admits queued missions in queue order
+// (started-now ones first, then by position, then oldest first) while fewer than maxRuns
+// missions run. A mission the owner started now runs past the cap. A dispatch crow-runs refuses leaves the mission
 // queued and ends admission for this tick.
 func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 	rep := TickReport{Finished: []TickLine{}, Started: []TickLine{}, Held: []TickLine{}}
@@ -120,10 +122,13 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 	}
 	queued := slices.DeleteFunc(slices.Clone(ms), func(m contract.Mission) bool { return m.State != "queued" })
 	slices.SortStableFunc(queued, func(a, b contract.Mission) int {
-		if c := strings.Compare(a.Created, b.Created); c != 0 {
-			return c
+		if a.OverCap != b.OverCap { // started now by the owner: ahead of the queue
+			if a.OverCap {
+				return -1
+			}
+			return 1
 		}
-		return strings.Compare(a.ID, b.ID)
+		return contract.QueueCompare(a, b)
 	})
 	full := ""
 	for _, m := range queued {
@@ -148,12 +153,17 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 				continue
 			}
 		}
-		if full == "" && running >= maxRuns {
-			full = fmt.Sprintf("%d of %d runs busy", running, maxRuns)
-		}
-		if full != "" {
-			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: full})
-			continue
+		overCap := false
+		if m.OverCap && running >= maxRuns {
+			overCap = true // the owner asked for it: past the cap, never held by it
+		} else {
+			if full == "" && running >= maxRuns {
+				full = fmt.Sprintf("%d of %d runs busy", running, maxRuns)
+			}
+			if full != "" {
+				rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: full})
+				continue
+			}
 		}
 		var line *TickLine
 		if resuming {
@@ -161,14 +171,17 @@ func (env Env) Tick(r Runner, maxRuns int) (TickReport, error) {
 			// its session does not carry over, so it starts cold from the brief.
 			prev := lastRun(m)
 			cold := prev != nil && prev.Cause != nil && *prev.Cause == "usage_limit"
-			line, err = env.resume(r, m, k, cold)
+			line, err = env.resume(r, m, k, cold, overCap)
 		} else {
-			line, err = env.start(r, m, k)
+			line, err = env.start(r, m, k, overCap)
 		}
 		var de *DispatchError
 		if errors.As(err, &de) || (err != nil && line == nil) {
-			full = "dispatch refused: " + err.Error()
-			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: full})
+			why := "dispatch refused: " + err.Error()
+			if !overCap {
+				full = why
+			}
+			rep.Held = append(rep.Held, TickLine{Mission: m.ID, State: m.State, Detail: why})
 			continue
 		}
 		if err != nil {
@@ -197,7 +210,7 @@ func dispatchFor(m contract.Mission, k *contract.Kind, dir, label, prompt string
 
 // start writes the brief, dispatches the run, then records running and run_start. A nil
 // line with an error means nothing started.
-func (env Env) start(r Runner, m contract.Mission, k *contract.Kind) (*TickLine, error) {
+func (env Env) start(r Runner, m contract.Mission, k *contract.Kind, overCap bool) (*TickLine, error) {
 	dir, in, err := env.Brief(m.ID)
 	if err != nil {
 		return nil, err
@@ -209,7 +222,9 @@ func (env Env) start(r Runner, m contract.Mission, k *contract.Kind) (*TickLine,
 	if label == "" {
 		label = brief.Key(m)
 	}
-	s, err := r.Dispatch(dispatchFor(m, k, dir, label, filepath.Join(dir, "brief.md")))
+	d := dispatchFor(m, k, dir, label, filepath.Join(dir, "brief.md"))
+	d.OverCap = overCap
+	s, err := r.Dispatch(d)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +239,14 @@ func (env Env) start(r Runner, m contract.Mission, k *contract.Kind) (*TickLine,
 	if err := env.append(m.ID, "core", "run_start", ts, sd); err != nil {
 		return &TickLine{Mission: m.ID, Run: s.RunID}, err
 	}
-	return &TickLine{Mission: m.ID, Run: s.RunID, State: "running", Detail: "on " + s.Account}, nil
+	return &TickLine{Mission: m.ID, Run: s.RunID, State: "running", Detail: "on " + s.Account + overCapNote(overCap)}, nil
+}
+
+func overCapNote(over bool) string {
+	if over {
+		return ", over cap"
+	}
+	return ""
 }
 
 // finish records the end of the live run of a running mission. live is true while the

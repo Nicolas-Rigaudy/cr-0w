@@ -1,8 +1,10 @@
 package contract
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Mission is the mission record of adr_001, as printed by crow mission list/show --json.
@@ -31,6 +33,31 @@ type Mission struct {
 	// Linked marks a mission grouping a handoff or a dispatch, with no core run of its
 	// own. Only the missions section sets it.
 	Linked bool `json:"linked,omitempty"`
+	// Position is the place the owner gave a queued mission (1 = next). A mission the
+	// owner never moved has none and queues after every placed one, oldest first.
+	Position *int `json:"position,omitempty"`
+	// OverCap marks a queued mission the owner started now: the tick starts it past
+	// the run cap.
+	OverCap bool `json:"over_cap,omitempty"`
+}
+
+// QueueCompare orders the missions of the queue: placed ones by position, then the
+// rest by age (created, then id).
+func QueueCompare(a, b Mission) int {
+	switch {
+	case a.Position != nil && b.Position != nil:
+		if c := cmp.Compare(*a.Position, *b.Position); c != 0 {
+			return c
+		}
+	case a.Position != nil:
+		return -1
+	case b.Position != nil:
+		return 1
+	}
+	if c := strings.Compare(a.Created, b.Created); c != 0 {
+		return c
+	}
+	return strings.Compare(a.ID, b.ID)
 }
 
 // Mission states, in lifecycle order.
@@ -194,6 +221,8 @@ type ActionData struct {
 	Item    *string `json:"item,omitempty"`
 	Run     *string `json:"run,omitempty"`
 	Reason  *string `json:"reason,omitempty"`
+	// Position is the new queue place of a queue action (1 = next).
+	Position *int `json:"position,omitempty"`
 }
 
 type IncidentData struct {

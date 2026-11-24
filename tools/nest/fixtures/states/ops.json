@@ -275,6 +275,18 @@
    "title": "Refresh the docs index"
   },
   {
+   "kind": "mission",
+   "id": "20261109-mail-team-bricks",
+   "project": "crow",
+   "title": "Mail, team and vault bricks"
+  },
+  {
+   "kind": "mission",
+   "id": "20261109-optional-tool-bricks",
+   "project": "crow",
+   "title": "Optional tool bricks"
+  },
+  {
    "kind": "routine",
    "id": "crow-retro.timer",
    "title": "crow-retro.service",

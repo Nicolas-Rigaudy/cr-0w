@@ -166,6 +166,10 @@ export interface Actions {
   missionAnswer(mission: string, item: string, verb: InboxVerb, text: string, version: number): Promise<unknown>
   missionStop(mission: string): Promise<unknown>
   missionCancel(mission: string, reason?: string): Promise<unknown>
+  // Queue order (item_272): a place (1 = head) or one step; next = place 1; start = now, past the run cap.
+  missionMove(mission: string, to: number | 'up' | 'down'): Promise<unknown>
+  missionNext(mission: string): Promise<unknown>
+  missionStart(mission: string): Promise<unknown>
   inboxHide(item: string): Promise<unknown>
   // Ops queue (item_190, core internal/api/queue.go): routines through crow-routine,
   // AFK job files under local/state/afk (id "job-x.md" or "queued/job-x.md").

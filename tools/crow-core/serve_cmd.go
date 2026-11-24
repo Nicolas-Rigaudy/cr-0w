@@ -136,6 +136,7 @@ func startTicker(ctx context.Context, srv *api.Server, env mission.Env, engine s
 		observe: srv.ObserveOps,
 		logf:    log.Printf,
 	}
+	srv.SetKick(func() { go t.kick(ctx) })
 	log.Printf("tick every %s, first in %s", every, min(firstTickDelay, every))
 	go t.loop(ctx, firstTickDelay, every)
 }

@@ -111,6 +111,9 @@ export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, ini
       post<unknown>(`/missions/${id(mission)}/answer`, { item, verb, ...(text.trim() ? { text } : {}), version }),
     missionStop: (mission) => post<unknown>(`/missions/${id(mission)}/stop`),
     missionCancel: (mission, reason) => post<unknown>(`/missions/${id(mission)}/cancel`, reason ? { reason } : undefined),
+    missionMove: (mission, to) => post<unknown>(`/missions/${id(mission)}/move`, typeof to === 'number' ? { to } : { dir: to }),
+    missionNext: (mission) => post<unknown>(`/missions/${id(mission)}/next`),
+    missionStart: (mission) => post<unknown>(`/missions/${id(mission)}/start`),
     // Row ids hold slashes (<mission>/v<N>/<question>): each part is escaped, the slashes stay.
     inboxHide: (item) => post<unknown>(`/inbox/${item.split('/').map(id).join('/')}/hide`),
     routine: (unit, verb) => post(`/routines/${id(unit)}/${verb}`),

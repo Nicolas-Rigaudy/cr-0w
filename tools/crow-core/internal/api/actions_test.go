@@ -20,6 +20,7 @@ func actionServer(t *testing.T) (*Server, string, *[]string) {
 	t.Helper()
 	s, root := newServer(t)
 	testfix.Live(t, root)
+	testfix.Queued(t, root)
 	var stopped []string
 	s.o.Env.Projects = testfix.Registry(t)
 	s.o.Env.KindDirs = []string{testfix.KindsDir}
@@ -53,6 +54,9 @@ func TestActionFixtures(t *testing.T) {
 		"error-cancel-prefix":     {post("/api/missions/20261110-research-run/cancel", ""), 404},
 		"error-hide-unknown":      {post("/api/inbox/20261109-build-nothing/v1/hide", ""), 404},
 		"error-dispatch-bad-kind": {post("/api/missions", `{"kind":"nope","project":"demo","goal":"g","end_state":"e"}`), 400},
+		"action-move":             {post("/api/missions/"+testfix.QueuedSecond+"/move", request(t, "move")), 200},
+		"action-start":            {post("/api/missions/"+testfix.QueuedSecond+"/start", ""), 200},
+		"error-move-not-queued":   {post("/api/missions/"+testfix.Waiting+"/move", request(t, "move")), 409},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -159,5 +163,66 @@ func TestActionEvents(t *testing.T) {
 	// Hidden rows leave the open inbox.
 	if w := do(t, s, call{path: "/api/state/inbox"}); strings.Contains(w.Body.String(), "android-push-options/v1") {
 		t.Errorf("hidden row still open: %s", w.Body)
+	}
+}
+
+// item_272: up, down, a place and next reorder the queue; a bad body is refused.
+func TestQueueRoutes(t *testing.T) {
+	s, _, _ := actionServer(t)
+	first, second := testfix.QueuedFirst, testfix.QueuedSecond
+	order := func() string {
+		q, err := s.o.Env.Queue()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var ids []string
+		for _, m := range q {
+			ids = append(ids, m.ID)
+		}
+		return strings.Join(ids, " ")
+	}
+	steps := []struct {
+		path, body string
+		code       int
+		want       string
+	}{
+		{"/api/missions/" + second + "/move", `{"dir":"up"}`, 200, second + " " + first},
+		{"/api/missions/" + second + "/move", `{"dir":"down"}`, 200, first + " " + second},
+		{"/api/missions/" + second + "/next", "", 200, second + " " + first},
+		{"/api/missions/" + second + "/move", `{"to":2}`, 200, first + " " + second},
+		{"/api/missions/" + second + "/move", `{"dir":"left"}`, 400, first + " " + second},
+		{"/api/missions/" + second + "/move", `{"dir":"up","to":1}`, 400, first + " " + second},
+		{"/api/missions/" + second + "/move", `{}`, 400, first + " " + second},
+		{"/api/missions/20261110-research-queued-firs/next", "", 404, first + " " + second},
+	}
+	for _, st := range steps {
+		if w := do(t, s, post(st.path, st.body)); w.Code != st.code {
+			t.Fatalf("%s %s: %d %s", st.path, st.body, w.Code, w.Body)
+		}
+		if got := order(); got != st.want {
+			t.Fatalf("%s %s: order %s", st.path, st.body, got)
+		}
+	}
+	// The ops queue lists missions in the same order.
+	w := do(t, s, call{path: "/api/state/ops"})
+	if i, j := strings.Index(w.Body.String(), first), strings.Index(w.Body.String(), second); i < 0 || j < i {
+		t.Errorf("ops queue order: %s", w.Body)
+	}
+}
+
+// AC3: start now marks the mission over cap and runs a tick at once.
+func TestStartNowKicksATick(t *testing.T) {
+	s, _, _ := actionServer(t)
+	kicks := 0
+	s.SetKick(func() { kicks++ })
+	if w := do(t, s, post("/api/missions/"+testfix.QueuedSecond+"/start", "")); w.Code != 200 || kicks != 1 {
+		t.Fatalf("start: %d %s, kicks %d", w.Code, w.Body, kicks)
+	}
+	if w := do(t, s, post("/api/missions/"+testfix.Running+"/start", "")); w.Code != 409 || kicks != 1 {
+		t.Errorf("start running: %d, kicks %d", w.Code, kicks)
+	}
+	m, err := s.o.Env.Show(testfix.QueuedSecond)
+	if err != nil || !m.OverCap || m.Position == nil || *m.Position != 1 {
+		t.Errorf("mission = %+v, %v", m, err)
 	}
 }

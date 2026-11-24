@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dispatchOf } from '../data/live'
 import {
   axis, clock, groups, hours, isLive, isoWeek, parisDay, parisHour, runId, shiftDay, stats, usd,
@@ -32,7 +32,7 @@ function age(from: string, now: Date) {
   return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
 }
 
-export function Ops({ snap }: { snap: Snapshot }) {
+export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise<void> }) {
   const src = useSource()
   const now = snap.now
   const today = parisDay(now)
@@ -107,12 +107,11 @@ export function Ops({ snap }: { snap: Snapshot }) {
   const [scale, setScale] = useState<Scale>('work')
   const kinds = (k: OpsQueued['kind']) => queue.filter((q) => q.kind === k).length
   const qsum = ([['mission', 'missions'], ['routine', 'routines'], ['afk', 'afk']] as const)
-    .filter(([k]) => kinds(k)).map(([k, t]) => `${kinds(k)} ${t}`).join(' · ')
+    .filter(([k]) => kinds(k)).map(([k, t]) => `${kinds(k)} ${kinds(k) === 1 && k !== 'afk' ? k : t}`).join(' · ')
   const scope = lanes.filter((l) => mode === 'week' || l.day === day)
   const sess = scope.filter((l) => l.kind === 'interactive'), runs = scope.filter((l) => l.kind !== 'interactive')
   const sum = (ls: OpsLane[], f: (l: OpsLane) => number) => ls.reduce((x, l) => x + f(l), 0)
   const maxA = Math.max(1, ...totals.map((t) => t.active_s))
-  let qn = 0
 
   return (
     <>
@@ -164,29 +163,9 @@ export function Ops({ snap }: { snap: Snapshot }) {
         </section>
 
         <div className="ops-low">
-          <section className="pn" aria-labelledby="oq">
-            <h2 className="ph" id="oq"><span>Queue</span><span className="sm num">{qsum || 'empty'} · slots {dispatch.slots.busy}/{dispatch.slots.max}</span></h2>
-            {queue.length === 0 && <div className="sub">Nothing waits to run.</div>}
-            <div className="sub ops-qhelp">What starts next: missions take the next free slot, routines start on their timer, AFK jobs run at the next AFK go.</div>
-            {queue.map((q) => (
-              <div key={`${q.kind}-${q.id}`} className={`ops-q k-${q.kind}${q.paused ? ' paused' : ''}`}>
-                <span className="ops-qi num">{q.kind === 'mission' ? ++qn : q.kind === 'routine' ? '↻' : '☾'}</span>
-                <span className="ops-qt">{q.kind === 'afk' ? 'afk · ' : ''}{q.title}</span>
-                <span className="sm num">{queueWhen(q, now)}</span>
-                <span className="ops-qa">
-                  {q.kind === 'mission' && <button type="button" className="btn sm" aria-label={`Cancel ${q.title}`} onClick={() => cancel(q)}>✕</button>}
-                  {q.kind === 'routine' && <>
-                    <button type="button" className="btn sm" onClick={() => routine(q, q.paused ? 'resume' : 'pause')}>{q.paused ? 'RESUME' : 'PAUSE'}</button>
-                    <button type="button" className="btn sm" onClick={() => routine(q, 'run')}>RUN NOW</button>
-                  </>}
-                  {q.kind === 'afk' && <>
-                    <button type="button" className="btn sm" onClick={() => setEdit(q)}>EDIT</button>
-                    <button type="button" className="btn sm" aria-label={`Skip ${q.title}`} onClick={() => skip(q)}>✕</button>
-                  </>}
-                </span>
-              </div>
-            ))}
-          </section>
+          <Queue queue={queue} qsum={qsum} now={now} slots={dispatch.slots} src={src}
+            reload={async () => { await load(); await refresh?.() }}
+            onCancel={cancel} onRoutine={routine} onEdit={setEdit} onSkip={skip} />
 
           <section className="pn" aria-labelledby="ot">
             <h2 className="ph" id="ot">
@@ -225,10 +204,194 @@ export function Ops({ snap }: { snap: Snapshot }) {
   )
 }
 
+type Src = ReturnType<typeof useSource>
+type Drag = { id: string; to: number; y: number; dy: number }
+const ORD = ['1st', '2nd', '3rd']
+const ordinal = (n: number) => ORD[n - 1] ?? `${n}th`
+
+// The queue (item_190, order item_272): missions start by position when a slot frees.
+// Missions reorder with ⠿ drag (long press on touch), ▲ ▼, or RUN ▾ (next in line, start now).
+export function Queue({ queue, qsum, now, slots, src, reload, onCancel, onRoutine, onEdit, onSkip }: {
+  queue: OpsQueued[]; qsum: string; now: Date; slots: { busy: number; max: number }; src: Src; reload: () => Promise<void>
+  onCancel: (q: OpsQueued) => void; onRoutine: (q: OpsQueued, verb: 'run' | 'pause' | 'resume') => void
+  onEdit: (q: OpsQueued) => void; onSkip: (q: OpsQueued) => void
+}) {
+  const [menu, setMenu] = useState<string | null>(null)
+  const [drag, setDrag] = useState<Drag | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const rows = useRef(new Map<string, HTMLDivElement>())
+  const box = useRef<HTMLDivElement>(null)
+  const missions = queue.filter((q) => q.kind === 'mission')
+  const over = slots.max > 0 && slots.busy > slots.max
+  const full = slots.max > 0 && slots.busy >= slots.max
+
+  const act = async (f: () => Promise<unknown>) => {
+    setMenu(null)
+    setBusy(true)
+    setErr('')
+    try {
+      await f()
+      await reload()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!menu) return
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !(e.target as Element).closest?.('.ops-menu, .ops-run')) setMenu(null)
+    }
+    addEventListener('keydown', close)
+    addEventListener('pointerdown', close)
+    return () => { removeEventListener('keydown', close); removeEventListener('pointerdown', close) }
+  }, [menu])
+
+  // Place (1-based, among the other missions) under pointer y.
+  const placeAt = (id: string, y: number) => {
+    let to = 1
+    for (const m of missions) {
+      const el = rows.current.get(m.id)
+      if (m.id === id || !el) continue
+      const r = el.getBoundingClientRect()
+      if (y > r.top + r.height / 2) to++
+    }
+    return to
+  }
+  const grab = (e: React.PointerEvent<HTMLSpanElement>, id: string) => {
+    if (busy || e.button !== 0) return
+    const el = rows.current.get(id)
+    if (!el) return
+    const handle = e.currentTarget
+    const pid = e.pointerId
+    const y0 = e.clientY
+    const dy = y0 - el.getBoundingClientRect().top
+    const begin = () => {
+      try { handle.setPointerCapture(pid) } catch { /* pointer already gone */ }
+      setMenu(null)
+      setDrag({ id, to: missions.findIndex((m) => m.id === id) + 1, y: y0, dy })
+    }
+    if (e.pointerType === 'mouse') { e.preventDefault(); begin(); return }
+    // Touch and pen: a long press starts the drag; moving first leaves the page to scroll.
+    const t = setTimeout(begin, 350)
+    const cancel = (ev: PointerEvent) => { if (ev.type !== 'pointermove' || Math.abs(ev.clientY - y0) > 8) stop() }
+    const stop = () => { clearTimeout(t); handle.removeEventListener('pointermove', cancel); handle.removeEventListener('pointerup', cancel); handle.removeEventListener('pointercancel', cancel) }
+    handle.addEventListener('pointermove', cancel)
+    handle.addEventListener('pointerup', cancel)
+    handle.addEventListener('pointercancel', cancel)
+  }
+  const move = (e: React.PointerEvent) => {
+    if (!drag) return
+    e.preventDefault()
+    setDrag({ ...drag, y: e.clientY, to: placeAt(drag.id, e.clientY) })
+  }
+  const drop = () => {
+    if (!drag) return
+    const { id, to } = drag
+    setDrag(null)
+    if (to !== missions.findIndex((m) => m.id === id) + 1) void act(() => src.actions.missionMove(id, to))
+  }
+
+  // The drop line sits before the mission at place `to` among the others, or after the last one.
+  const others = drag ? missions.filter((m) => m.id !== drag.id) : []
+  const lineBefore = drag ? (others[drag.to - 1]?.id ?? null) : null
+  const lineAfter = drag && drag.to > others.length ? others.at(-1)?.id ?? null : null
+  const dragged = drag && missions.find((m) => m.id === drag.id)
+  const top = drag && box.current ? drag.y - drag.dy - box.current.getBoundingClientRect().top : 0
+  let qn = 0
+
+  const row = (q: OpsQueued, ghost = false) => {
+    const n = q.kind === 'mission' ? (ghost ? drag!.to : ++qn) : 0
+    const mission = q.kind === 'mission'
+    const last = mission && n === missions.length
+    return (
+      <div key={`${q.kind}-${q.id}${ghost ? '-ghost' : ''}`} ref={ghost || !mission ? undefined : (el) => { if (el) rows.current.set(q.id, el); else rows.current.delete(q.id) }}
+        className={`ops-q k-${q.kind}${q.paused ? ' paused' : ''}${ghost ? ' ghost' : ''}${drag?.id === q.id && !ghost ? ' lifted' : ''}`}
+        style={ghost ? { top } : undefined} aria-hidden={ghost || undefined}>
+        {mission
+          ? <span className="ops-grip" title="Drag to reorder" aria-hidden="true" onPointerDown={(e) => grab(e, q.id)} onPointerMove={move} onPointerUp={drop} onPointerCancel={() => setDrag(null)}>⠿</span>
+          : <span />}
+        <span className="ops-qi num">{mission ? n : q.kind === 'routine' ? '↻' : '☾'}</span>
+        <span className="ops-qb">
+          <span className="ops-qt">{q.kind === 'afk' ? 'afk · ' : ''}{q.title}</span>
+          <span className="sm num">{queueWhen(q, now)}</span>
+        </span>
+        <span className="ops-qa">
+          {mission && <>
+            <button type="button" className="btn sm" aria-label={`Move ${q.title} up`} disabled={busy || n === 1} onClick={() => act(() => src.actions.missionMove(q.id, 'up'))}>▲</button>
+            <button type="button" className="btn sm" aria-label={`Move ${q.title} down`} disabled={busy || last} onClick={() => act(() => src.actions.missionMove(q.id, 'down'))}>▼</button>
+            <span className="ops-runw">
+              <button type="button" className="btn sm p ops-run" aria-haspopup="menu" aria-expanded={menu === q.id} disabled={busy}
+                onClick={() => setMenu(menu === q.id ? null : q.id)}>RUN ▾</button>
+              {menu === q.id && !ghost && <RunMenu slots={slots} full={full}
+                onNext={() => act(() => src.actions.missionNext(q.id))} onStart={() => act(() => src.actions.missionStart(q.id))} />}
+            </span>
+            <button type="button" className="btn sm" aria-label={`Cancel ${q.title}`} disabled={busy} onClick={() => onCancel(q)}>✕</button>
+          </>}
+          {q.kind === 'routine' && <>
+            <button type="button" className="btn sm" onClick={() => onRoutine(q, q.paused ? 'resume' : 'pause')}>{q.paused ? 'RESUME' : 'PAUSE'}</button>
+            <button type="button" className="btn sm" onClick={() => onRoutine(q, 'run')}>RUN NOW</button>
+          </>}
+          {q.kind === 'afk' && <>
+            <button type="button" className="btn sm" onClick={() => onEdit(q)}>EDIT</button>
+            <button type="button" className="btn sm" aria-label={`Skip ${q.title}`} onClick={() => onSkip(q)}>✕</button>
+          </>}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <section className="pn" aria-labelledby="oq">
+      <h2 className="ph" id="oq">
+        <span>Queue</span>
+        <span className="sm num">{qsum || 'empty'}<span className="ops-sep"> · </span>
+          <span className={`ops-slots${over ? ' over' : full ? ' full' : ''}`}>slots {slots.busy}/{slots.max}<span className="ops-busy">{over ? ' over cap' : full ? ' busy' : ''}</span></span>
+        </span>
+      </h2>
+      {queue.length === 0 && <div className="sub">Nothing waits to run.</div>}
+      {missions.length > 0 && <div className="sub ops-qhelp">Missions start by position when a slot frees. Drag ⠿ or use ▲ ▼ to reorder.</div>}
+      {err && <div className="err" role="alert">{err}</div>}
+      <div className={`ops-ql${drag ? ' dragging' : ''}`} ref={box}>
+        {queue.map((q) => (
+          <Fragment key={`${q.kind}-${q.id}`}>
+            {lineBefore === q.id && <i className="ops-qdrop" aria-hidden="true" />}
+            {row(q)}
+            {lineAfter === q.id && <i className="ops-qdrop" aria-hidden="true" />}
+          </Fragment>
+        ))}
+        {dragged && row(dragged, true)}
+      </div>
+    </section>
+  )
+}
+
+// RUN ▾ (item_272, queue/compare.html option A): next in line is the default; start now
+// runs past the run cap when every slot is busy.
+function RunMenu({ slots, full, onNext, onStart }: { slots: { busy: number; max: number }; full: boolean; onNext: () => void; onStart: () => void }) {
+  const first = useRef<HTMLButtonElement>(null)
+  useEffect(() => { first.current?.focus() }, [])
+  const n = slots.busy + 1
+  return (
+    <div className="ops-menu" role="menu">
+      <button type="button" role="menuitem" ref={first} className="on" onClick={onNext}>
+        <b>Next in line</b><span>Moves to position 1, starts when a slot frees</span>
+      </button>
+      <button type="button" role="menuitem" className={full ? 'warn' : ''} onClick={onStart}>
+        <b>{full ? 'Start now · over cap' : 'Start now'}</b>
+        <span>{full ? `Runs now as a ${ordinal(n)} run (slots ${n}/${slots.max})` : `Takes the free slot (slots ${n}/${slots.max})`}</span>
+      </button>
+    </div>
+  )
+}
+
 // The when column of a queue row: what kind of entry and when it starts.
 function queueWhen(q: OpsQueued, now: Date): string {
   const at = q.project ? ` · ${q.project}` : ''
-  if (q.kind === 'mission') return `mission${at} · when a slot frees`
+  if (q.kind === 'mission') return `mission${at} · ${q.over_cap ? 'starting now, over cap' : 'when a slot frees'}`
   if (q.kind === 'routine') return q.paused ? 'routine · paused' : `routine · ${q.next ? when(q.next, now) : 'no next start'}`
   return `job${at} · next afk go`
 }

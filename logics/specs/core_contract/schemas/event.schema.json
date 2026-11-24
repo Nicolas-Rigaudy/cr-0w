@@ -142,11 +142,12 @@
       "required": ["action", "surface"],
       "description": "An owner action without a file of its own (item_147).",
       "properties": {
-        "action": {"enum": ["stop", "cancel", "hide"]},
+        "action": {"enum": ["stop", "cancel", "hide", "queue", "start_now"]},
         "surface": {"$ref": "#/$defs/surface"},
         "item": {"type": "string", "description": "Inbox row id, for hide."},
         "run": {"type": "string", "description": "cdx run id, for stop."},
-        "reason": {"type": "string"}
+        "reason": {"type": "string"},
+        "position": {"type": "integer", "minimum": 1, "description": "New queue place, for queue (1 = next)."}
       }
     },
     "incident": {

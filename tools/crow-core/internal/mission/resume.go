@@ -46,10 +46,10 @@ func lastRun(m contract.Mission) *contract.Run {
 // refuses with a coldFallback code becomes a cold run, logged as an incident. Either way
 // brief.md is rewritten first, so a cold run on any account restarts from files alone.
 // A nil line with an error means nothing started.
-func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold bool) (*TickLine, error) {
+func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold, overCap bool) (*TickLine, error) {
 	prev := lastRun(m)
 	if prev == nil {
-		return env.start(r, m, k)
+		return env.start(r, m, k, overCap)
 	}
 	dir, in, err := env.Brief(m.ID)
 	if err != nil {
@@ -71,7 +71,7 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold bool)
 			return nil, err
 		}
 		d := dispatchFor(m, k, dir, label, note)
-		d.ContinueRun = prev.Run
+		d.ContinueRun, d.OverCap = prev.Run, overCap
 		s, err = r.Dispatch(d)
 		var de *DispatchError
 		switch {
@@ -85,7 +85,7 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold bool)
 	}
 	if mode == ResumeCold {
 		d := dispatchFor(m, k, dir, label, filepath.Join(dir, "brief.md"))
-		d.Resumes = prev.Run
+		d.Resumes, d.OverCap = prev.Run, overCap
 		if s, err = r.Dispatch(d); err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold bool)
 	if err := env.append(m.ID, "core", "run_start", ts, sd); err != nil {
 		return out, err
 	}
-	out.State, out.Detail = "running", fmt.Sprintf("%s resume of %s on %s", mode, prev.Run, s.Account)
+	out.State, out.Detail = "running", fmt.Sprintf("%s resume of %s on %s", mode, prev.Run, s.Account)+overCapNote(overCap)
 	return out, nil
 }
 

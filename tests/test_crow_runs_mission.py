@@ -200,3 +200,18 @@ def test_session_branch_comes_from_its_transcript(tmp_path):
     t.write_text("".join(json.dumps(e) + "\n" for e in events))
     assert cr.read_transcript(t)["branch"] == "missions-auto"  # the latest event's branch
     assert cr.read_transcript(tmp_path / "missing.jsonl")["branch"] is None
+
+
+def test_over_cap_drops_max_parallel_and_keeps_the_cwd_guard(fake, capsys, monkeypatch):
+    """item_272: a mission the owner starts now runs past the cap, never over a busy tree."""
+    cr.dispatch(args())
+    cdx = next(c for c in fake.calls if c["cmd"][:2] == ["cdx", "run"])["cmd"]
+    assert "--max-parallel" in cdx
+    fake.calls.clear()
+    cr.dispatch(args(over_cap=True))
+    cdx = next(c for c in fake.calls if c["cmd"][:2] == ["cdx", "run"])["cmd"]
+    assert "--max-parallel" not in cdx
+    monkeypatch.setattr(cr, "running_runs", lambda: [{"cwd": str(fake.tmp)}])
+    with pytest.raises(SystemExit):
+        cr.dispatch(args(over_cap=True, kind="task", permission=None))
+    assert "cwd_busy" in capsys.readouterr().out

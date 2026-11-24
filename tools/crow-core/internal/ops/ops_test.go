@@ -202,6 +202,30 @@ func TestQueue(t *testing.T) {
 	}
 }
 
+// item_272: missions follow the tick order, by position then oldest first.
+func TestQueueMissionOrder(t *testing.T) {
+	in := input(t, "2026-11-10")
+	one := 1
+	in.Missions = []contract.Mission{
+		{ID: "old", State: "queued", Goal: "old", Created: "2026-11-01T09:00:00Z"},
+		{ID: "placed", State: "queued", Goal: "placed", Created: "2026-11-09T09:00:00Z", Position: &one, OverCap: true},
+		{ID: "pre", State: "preflight", Goal: "pre", Created: "2026-11-02T09:00:00Z"},
+		{ID: "run", State: "running", Goal: "run", Created: "2026-10-01T09:00:00Z"},
+	}
+	var got []string
+	for _, q := range Build(in).Queue {
+		if q.Kind == "mission" {
+			got = append(got, q.ID)
+			if q.OverCap != (q.ID == "placed") {
+				t.Errorf("over_cap %+v", q)
+			}
+		}
+	}
+	if !slices.Equal(got, []string{"placed", "old", "pre"}) {
+		t.Errorf("missions %v", got)
+	}
+}
+
 // AC3: week totals are the sums of the day lanes.
 func TestWeekTotalsAddUp(t *testing.T) {
 	days := []string{"2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15"}

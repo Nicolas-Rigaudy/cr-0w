@@ -42,6 +42,9 @@ func (c crowRuns) Dispatch(d mission.Dispatch) (mission.Started, error) {
 	if d.Resumes != "" {
 		args = append(args, "--resumes", d.Resumes)
 	}
+	if d.OverCap {
+		args = append(args, "--over-cap")
+	}
 	if d.TimeoutMin > 0 {
 		args = append(args, "--timeout-min", strconv.Itoa(d.TimeoutMin))
 	}

@@ -120,6 +120,9 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 			return fmt.Errorf("%s: illegal move %s -> %s (from %s: %v)", e.Mission, d.From, d.To, d.From, contract.Moves[d.From])
 		}
 		m.State = d.To
+		if d.To != "queued" && d.To != "preflight" {
+			m.Position, m.OverCap = nil, false // out of the queue
+		}
 	case *contract.RunStartData:
 		for _, r := range m.Runs {
 			if r.Run == d.Run {
@@ -176,11 +179,21 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 			it.State, it.Answered = "answered", &ts
 		}
 	case *contract.ActionData:
-		// stop and cancel act through the run and state events; hide drops the row.
-		if d.Action == "hide" {
+		// stop and cancel act through the run and state events; hide drops the row; queue
+		// places a mission in the queue; start_now lets the tick start it past the cap.
+		switch d.Action {
+		case "hide":
 			if it := v.find(deref(d.Item)); it != nil {
 				it.State = "dropped"
 			}
+		case "queue":
+			if d.Position == nil || *d.Position < 1 {
+				return fmt.Errorf("%s: queue action without a position", e.Mission)
+			}
+			p := *d.Position
+			m.Position = &p
+		case "start_now":
+			m.OverCap = true
 		}
 	case *contract.ValidationData:
 		// The record chain is checked before each publish (mission.Verify, item_108).
