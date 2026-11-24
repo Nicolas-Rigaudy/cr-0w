@@ -57,4 +57,5 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24T17:14:02.549530+00:00 | afk | afk-ops-phone | Ops phone Now card and totals | cancelled |  | Built on branch afk/ops-phone (5bb1e9d), not on main. Unverified: node, npm ci and the node_modules symlink were refused, so no typecheck or screenshots; AC1-AC3 unchecked. |
 
