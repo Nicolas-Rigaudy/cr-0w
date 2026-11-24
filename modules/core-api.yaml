@@ -41,6 +41,7 @@ core_routes:
   - GET /api/modules
   - POST /api/modules/{brick}/actions/{id}
   - GET /api/runs/{id}
+  - GET /api/changes
   - GET /api/missions/{id}
   - GET /api/missions/{id}/artifacts/{path...}
   - GET /api/events
