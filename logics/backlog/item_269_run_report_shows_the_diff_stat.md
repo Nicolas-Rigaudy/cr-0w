@@ -1,10 +1,10 @@
 ## item_269_run_report_shows_the_diff_stat - Run report shows the diff stat
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 80
-> Confidence: 80
-> Progress: 0%
+> Status: Done
+> Understanding: 95
+> Confidence: 90
+> Progress: 100%
 > Complexity: Small
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -33,7 +33,7 @@
 - AC3: A run with no git cwd has no stat and no error.
 
 # AC Traceability
-- req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits-AC1 -> This backlog slice. Proof: run report shows what changed.
+- req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits-AC1 -> This backlog slice. Proof: implemented in 9d3f83d (tests/test_crow_runs_diffstat.py covers AC1 and AC3, TestResponseFixtures and TestTypesMatchSchemas cover AC2).
 
 # Dependencies
 - `item_257_core_serves_the_ops_timeline_lanes_and_run_history`.
