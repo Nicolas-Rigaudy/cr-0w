@@ -6,6 +6,7 @@
  "lanes": [
   {
    "id": "s-hub",
+   "cwd": "/work/cr-0w",
    "day": "2026-11-09",
    "project": "crow",
    "account": "personal",
@@ -47,6 +48,7 @@
   },
   {
    "id": "s-ops",
+   "cwd": "/work/cr-0w",
    "day": "2026-11-09",
    "project": "crow",
    "account": "personal",
@@ -83,6 +85,7 @@
   },
   {
    "id": "w-ops",
+   "cwd": "/work/cr-0w.wt/item-90-ops",
    "day": "2026-11-09",
    "project": "crow",
    "account": "personal",

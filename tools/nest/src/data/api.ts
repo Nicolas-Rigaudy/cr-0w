@@ -2,7 +2,7 @@ import { apiButler } from './butler'
 import { conversationPath, pageQuery, type ConversationPage } from './conversation'
 import type { Actions, LiveReply, Screen } from './live'
 import type { Modules } from './modules'
-import type { Ops, RunReport } from './ops'
+import type { Changes, Ops, RunReport } from './ops'
 import type { DataSource } from './source'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
 
@@ -179,6 +179,12 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
       if (res.status === 404) return undefined
       if (!res.ok) throw await failure(res)
       return (await res.json()) as RunReport
+    },
+    async changes(cwd) {
+      const res = await get(`${base}/changes?cwd=${encodeURIComponent(cwd)}`, { cache: 'no-store' })
+      if (res.status === 404 || res.status === 400) return undefined
+      if (!res.ok) throw await failure(res)
+      return (await res.json()) as Changes
     },
     // The agenda follows the today section; a failure (mail off, script error) keeps the
     // last one, so only missions and inbox decide that core is down.

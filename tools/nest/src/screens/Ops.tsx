@@ -1,8 +1,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dispatchOf } from '../data/live'
 import {
-  axis, clock, groups, hours, isLive, isoWeek, parisDay, parisHour, runId, shiftDay, stats, usd,
-  type Ops as OpsData, type Scale, type OpsLane, type OpsQueued, type RunReport,
+  axis, clock, groups, hours, isLive, isoWeek, oneline, parisDay, parisHour, runId, shiftDay, shortPath, stats, usd,
+  type Changes, type DiffStat, type Ops as OpsData, type Scale, type OpsLane, type OpsQueued, type RunReport,
 } from '../data/ops'
 import { useSource, type Snapshot } from '../data/useData'
 import { Link, navigate, useQuery } from '../router'
@@ -197,7 +197,7 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
           </section>
         </div>
       </div>
-      {open && <LaneSheet lane={open} now={now} onClose={() => setOpen(null)} />}
+      {open && <LaneSheet lane={open} now={now} pid={agentOf(open, dispatch)?.pid} onClose={() => setOpen(null)} />}
       {sheet && <Sheet c={sheet} onClose={() => setSheet(null)} />}
       {edit && <AfkSheet job={edit} src={src} onClose={() => setEdit(null)} />}
     </>
@@ -565,31 +565,53 @@ function Week({ days, lanes, today, now, scale, onDay }: { days: string[]; lanes
   )
 }
 
-// Lane detail: what the lane is, its times and cost, and the run report when it is a run.
-function LaneSheet({ lane, now, onClose }: { lane: OpsLane; now: Date; onClose: () => void }) {
+// Lane detail (item_273, lane option C): a header card with the checkout and its diff, then
+// tabs. Run holds the props and the run report; Changes and Commits show the git work, read
+// live from GET /api/changes for a live lane and from the stored run report once it ended.
+type LaneTab = 'run' | 'changes' | 'commits'
+
+function LaneSheet({ lane, now, pid, onClose }: { lane: OpsLane; now: Date; pid?: number; onClose: () => void }) {
   const src = useSource()
   const rid = runId(lane)
+  const live = isLive(lane)
   const [rep, setRep] = useState<RunReport | null | undefined>(rid ? undefined : null)
+  const [chg, setChg] = useState<Changes | null>(null)
+  const [tab, setTab] = useState<LaneTab>('run')
+  const [copied, setCopied] = useState(false)
   useEffect(() => {
     if (!rid) return
-    let live = true
-    src.run(rid).then((r) => { if (live) setRep(r ?? null) }, () => { if (live) setRep(null) })
-    return () => { live = false }
+    let on = true
+    src.run(rid).then((r) => { if (on) setRep(r ?? null) }, () => { if (on) setRep(null) })
+    return () => { on = false }
   }, [src, rid])
+  useEffect(() => {
+    if (!live || !lane.cwd) return
+    let on = true
+    src.changes(lane.cwd).then((c) => { if (on) setChg(c ?? null) }, () => { if (on) setChg(null) })
+    return () => { on = false }
+  }, [src, live, lane.cwd])
   useEffect(() => {
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     addEventListener('keydown', key)
     return () => removeEventListener('keydown', key)
   }, [onClose])
+  const path = chg?.cwd ?? lane.cwd ?? rep?.worktree ?? ''
+  const diff = chg?.diffstat ?? rep?.diffstat ?? null
+  const commits = chg ? chg.commits : (rep?.commits ?? []).map(oneline)
+  const branch = chg ? chg.branch : rep?.branch ?? ''
+  const git = Boolean(chg || diff || commits.length)
+  const shown: LaneTab = git ? tab : 'run'
   const props: Array<[string, string]> = [
     ['Project', lane.project], ['Kind', lane.kind], ['State', lane.state], ['Account', lane.account],
     ...(lane.model ? [['Model', lane.model] as [string, string]] : []),
-    ['Span', lane.spans.length ? `${clock(lane.spans[0].start)}–${isLive(lane) ? clock(now) : clock(lane.spans.at(-1)!.end)}` : '—'],
+    ['Span', lane.spans.length ? `${clock(lane.spans[0].start)}–${live ? clock(now) : clock(lane.spans.at(-1)!.end)}` : '—'],
     ['Active', `${hours(lane.active_s)}h`], ['Waiting on you', `${hours(lane.wait_s)}h`],
     ['Cost', usd(rep?.cost_usd ?? lane.cost_usd)], ['Tokens', lane.tokens.toLocaleString('en-GB')], ['Commits', String(lane.commits)],
     ...(rid ? [['Run', rid] as [string, string]] : []),
-    ...(rep?.branch ? [['Branch', rep.branch] as [string, string]] : []),
   ]
+  const copy = () => {
+    void navigator.clipboard?.writeText(path).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }, () => {})
+  }
   return (
     <>
       <div className="scrim" onClick={onClose} aria-hidden="true" />
@@ -599,12 +621,65 @@ function LaneSheet({ lane, now, onClose }: { lane: OpsLane; now: Date; onClose: 
         <div className="ops-strip">
           {lane.spans.map((sp, i) => <i key={i} className={`st-${sp.state}`} style={{ flex: Math.max(1, Date.parse(sp.end) - Date.parse(sp.start)) }} title={sp.state} />)}
         </div>
-        <dl className="props">{props.map(([k, v]) => [<dt key={`${k}-t`}>{k}</dt>, <dd key={`${k}-d`}>{v}</dd>])}</dl>
-        {rid && rep === undefined && <div className="sub">Loading the run report…</div>}
-        {rep && <><div className="sub">Run report · {rep.status}</div><div className="quote">{rep.report || 'No report.'}</div></>}
-        {rid && rep === null && <div className="sub">No run report for this run.</div>}
-        <div className="btns"><button type="button" className="btn" onClick={onClose}>Close</button></div>
+        {path && (
+          <div className="ls-head num">
+            <span className="ls-path" title={path}>{shortPath(path)}</span>
+            {diff && <span className="ls-tot">{diff.files} {diff.files === 1 ? 'file' : 'files'} · <b className="ls-add">+{diff.insertions}</b> <b className="ls-del">-{diff.deletions}</b></span>}
+          </div>
+        )}
+        {git && (
+          <div className="ls-tabs" role="tablist" aria-label="Lane">
+            {(['run', 'changes', 'commits'] as const).map((t) => (
+              <button key={t} type="button" role="tab" aria-selected={shown === t} className={shown === t ? 'on' : ''} onClick={() => setTab(t)}>
+                {t === 'commits' ? `COMMITS ${commits.length}${chg?.more ? '+' : ''}` : t.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
+        {shown === 'run' && <>
+          <dl className="props">{props.map(([k, v]) => [<dt key={`${k}-t`}>{k}</dt>, <dd key={`${k}-d`}>{v}</dd>])}</dl>
+          {rid && rep === undefined && <div className="sub">Loading the run report…</div>}
+          {rep && <><div className="sub">Run report · {rep.status}</div><div className="quote">{rep.report || 'No report.'}</div></>}
+          {rid && rep === null && <div className="sub">No run report for this run.</div>}
+        </>}
+        {shown === 'changes' && <>
+          <div className="ls-card num">
+            <div className="ls-br"><span className="ls-bn">{branch || 'detached HEAD'}</span>{chg && <span className="sub">↑{chg.ahead} ↓{chg.behind} {chg.base}</span>}</div>
+            {chg && chg.uncommitted > 0 && <div className="ls-dirty">● {chg.uncommitted} uncommitted</div>}
+          </div>
+          {diff ? <Files d={diff} /> : <div className="empty">No diff stat for this run.</div>}
+        </>}
+        {shown === 'commits' && (
+          commits.length ? (
+            <ul className="ls-commits num">
+              {commits.map((c) => <li key={c.sha}><span className="ls-sha">{c.sha}</span><span className="ls-subj" title={c.subject}>{c.subject}</span>{c.time && <span className="sub">{clock(c.time)}</span>}</li>)}
+              {chg?.more && <li className="sub">More commits on the branch.</li>}
+            </ul>
+          ) : <div className="empty">No commits on this branch.</div>
+        )}
+        <div className="btns">
+          {pid !== undefined && <Link href={`/desk/${pid}`} className="btn p">OPEN</Link>}
+          {path && <button type="button" className="btn" onClick={copy}>{copied ? 'COPIED' : 'COPY PATH'}</button>}
+          <button type="button" className="btn" onClick={onClose}>CLOSE</button>
+        </div>
       </div>
     </>
+  )
+}
+
+// Per-file rows: the path cut at the start, the counts, and a bar scaled to the largest file.
+function Files({ d }: { d: DiffStat }) {
+  const max = Math.max(1, ...d.per_file.map((f) => f.insertions + f.deletions))
+  return (
+    <ul className="ls-files num">
+      {d.per_file.map((f) => (
+        <li key={f.path}>
+          <span className="ls-fp" title={f.path}>{`\u200e${f.path}\u200e`}</span>
+          <span className="ls-fn"><b className="ls-add">+{f.insertions}</b> <b className="ls-del">-{f.deletions}</b></span>
+          <span className="ls-bar" aria-hidden="true"><i className="add" style={{ width: `${(f.insertions / max) * 100}%` }} /><i className="del" style={{ width: `${(f.deletions / max) * 100}%` }} /></span>
+        </li>
+      ))}
+      {d.truncated && <li className="sub">{d.files - d.per_file.length} more files.</li>}
+    </ul>
   )
 }

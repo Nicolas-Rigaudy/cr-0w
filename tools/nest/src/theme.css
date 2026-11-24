@@ -1399,6 +1399,34 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 @keyframes ops-in { from { opacity: 0; transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .ops-view { animation: none; transition: none; } }
 .ops-strip { display: flex; height: 10px; border-radius: 3px; overflow: hidden; gap: 1px; }
+/* Lane sheet (item_273, option C): checkout header, tabs, branch card, file rows. */
+.ls-head, .ls-card { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: var(--r-row); background: var(--row); font-size: 12px; }
+.ls-head { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ls-path { color: var(--c-b); }
+.ls-path, .ls-bn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ls-tot { flex: none; color: var(--sub); }
+.ls-add, .ls-del { font-weight: 400; }
+.ls-add { color: var(--c-d); }
+.ls-del { color: var(--c-f); }
+.ls-tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); }
+.ls-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 6px 0; font: 11px var(--font-head); letter-spacing: 0.06em; color: var(--sub); cursor: pointer; }
+.ls-tabs button.on { color: var(--fg); border-bottom-color: var(--accent); }
+.ls-br { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ls-br .sub { flex: none; font-size: 12px; }
+.ls-dirty { color: var(--c-n); align-self: flex-end; }
+.ls-files, .ls-commits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-size: 12px; }
+.ls-files li { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; align-items: center; gap: 10px; padding: 3px 0; }
+.ls-fp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.ls-fn { white-space: nowrap; }
+.ls-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; background: color-mix(in srgb, var(--line) 70%, transparent); }
+.ls-bar .add { background: var(--c-d); }
+.ls-bar .del { background: var(--c-f); }
+.ls-commits li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
+.ls-commits li.sub { display: block; border: 0; }
+.ls-sha { color: var(--accent); }
+.ls-subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-sheet .btns .btn { flex: none; padding-inline: 18px; }
+.btns a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 @media (max-width: 599.98px) {
   .ops-row { grid-template-columns: 110px 1fr; }
   .ops-stats { margin-left: 0; white-space: normal; }

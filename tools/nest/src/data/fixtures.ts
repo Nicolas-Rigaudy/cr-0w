@@ -10,7 +10,7 @@ import { fixtureButler, type ButlerMsg } from './butler'
 import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversation'
 import type { Actions, Dispatch, LiveReply } from './live'
 import type { Modules } from './modules'
-import type { Ops, OpsQueued } from './ops'
+import { isLive, shortPath, type Changes, type Ops, type OpsQueued } from './ops'
 import type { DataSource } from './source'
 import { CANCELLABLE } from './state'
 import type { AgendaEvent, InboxItem, InboxVerb, Mission, SectionBody, SectionName } from './types'
@@ -311,6 +311,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     conversation: chats.page,
     ops: async (query) => fixtureOps(query, ops.queue),
     run: async (id) => fixtureRun(id),
+    changes: async (cwd) => fixtureChanges(cwd),
     actions,
     now: () => now,
     butler: fixtureButler(now, BUTLER_SEED),
@@ -422,5 +423,33 @@ function fixtureRun(id: string) {
     started: l.spans[0]?.start ?? null, ended: l.spans.at(-1)?.end ?? null, cost_usd: l.cost_usd, commits: [],
     branch: l.title, worktree: `/work/${l.project}.wt/${l.title}`, item: null, mission: null,
     report: `## ${l.title}\n\nFixture report: what the run did and what is left.`,
+    ...(isLive(l) ? {} : {
+      commits: ['4e1a9c2 chg[MD]: ops docs name the lane sheet tabs', '91b0d3e new[MD]: runbook for the ops page'],
+      diffstat: { base: '0f3c2a1', files: 2, insertions: 64, deletions: 9, truncated: false, per_file: [
+        { path: 'runbooks/ops-page.md', insertions: 58, deletions: 0 }, { path: 'docs/ops.md', insertions: 6, deletions: 9 },
+      ] },
+    }),
+  }
+}
+
+// Changes fixture (item_273): the live lanes of the ops fixture have a cwd.
+function fixtureChanges(cwd: string): Changes | undefined {
+  if (!(stateOps as unknown as Ops).lanes.some((l) => l.cwd === cwd)) return undefined
+  const t = (m: number) => new Date(Date.parse('2026-11-12T11:00:00Z') - m * 60e3).toISOString()
+  return {
+    cwd, branch: shortPath(cwd).split('/').pop() === 'cr-0w' ? 'main' : 'item-90-ops', base: 'main', ahead: 3, behind: 0, uncommitted: 2,
+    diffstat: { base: '0f3c2a1', files: 5, insertions: 233, deletions: 38, truncated: false, per_file: [
+      { path: 'tools/nest/src/screens/Ops.tsx', insertions: 142, deletions: 0 },
+      { path: 'tools/nest/src/theme.css', insertions: 61, deletions: 12 },
+      { path: 'tools/crow-core/internal/api/changes.go', insertions: 18, deletions: 4 },
+      { path: 'tools/nest/src/data/ops.ts', insertions: 9, deletions: 2 },
+      { path: 'logics/backlog/item_90_ops_page.md', insertions: 3, deletions: 20 },
+    ] },
+    commits: [
+      { sha: 'a41c9e0', subject: 'new[TS/CSS]: lane sheet tabs', time: t(12) },
+      { sha: '7d02b5f', subject: 'chg[GO]: core serves lane changes', time: t(48) },
+      { sha: 'c9e13aa', subject: 'chg[MD]: ops page item scope', time: t(95) },
+    ],
+    more: false,
   }
 }

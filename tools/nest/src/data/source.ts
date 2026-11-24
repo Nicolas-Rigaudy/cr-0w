@@ -2,7 +2,7 @@ import type { ButlerApi } from './butler'
 import type { ChatTarget, ConversationPage, PageAsk } from './conversation'
 import type { Actions } from './live'
 import type { Modules } from './modules'
-import type { Ops, RunReport } from './ops'
+import type { Changes, Ops, RunReport } from './ops'
 import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName } from './types'
 
 // The only door between screens and data. Fixtures (fixtures.ts) and the core
@@ -23,6 +23,8 @@ export interface DataSource {
   // Ops timeline for `day=YYYY-MM-DD` or `week=YYYY-Www` (item_190), and one run's report.
   ops(query: string): Promise<Ops>
   run(id: string): Promise<RunReport | undefined>
+  // The git changes of a live lane's checkout (item_273). Undefined outside a registered repo.
+  changes(cwd: string): Promise<Changes | undefined>
   // Live actions (item_170). Callers refetch after each one; nothing is optimistic.
   actions: Actions
   // Reference time for "today" and elapsed clocks. Fixtures pin it, the API uses the wall clock.

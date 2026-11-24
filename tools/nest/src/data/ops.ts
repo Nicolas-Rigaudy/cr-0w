@@ -19,6 +19,8 @@ export interface OpsLane {
   tokens: number
   commits: number
   runs: number
+  // The lane's working directory when known (item_273).
+  cwd?: string
 }
 export interface OpsQueued { kind: 'mission' | 'routine' | 'afk'; id: string; project?: string; title: string; next?: string; paused?: boolean; over_cap?: boolean }
 export interface OpsTotal { by: 'project' | 'kind'; name: string; lanes: number; active_s: number; wait_s: number; stuck: number; failed: number; cost_usd: number; tokens: number }
@@ -58,6 +60,29 @@ export interface DiffStat {
   deletions: number
   per_file: FileStat[]
   truncated: boolean
+}
+
+// GET /api/changes?cwd= (item_273): the git state of a live lane's checkout.
+export interface Commit { sha: string; subject: string; time: string }
+export interface Changes {
+  cwd: string
+  branch: string
+  base: string
+  ahead: number
+  behind: number
+  uncommitted: number
+  diffstat: DiffStat
+  commits: Commit[]
+  more: boolean
+}
+
+// The last two segments of a path: "cr-0w.wt/item_262".
+export const shortPath = (p: string) => p.replace(/\/+$/, '').split('/').slice(-2).join('/')
+
+// A run report commit line "sha subject" as a Commit without a time.
+export function oneline(l: string): Commit {
+  const i = l.indexOf(' ')
+  return i < 0 ? { sha: l, subject: '', time: '' } : { sha: l.slice(0, i), subject: l.slice(i + 1), time: '' }
 }
 
 // Lane states that are live right now (lanes package glyph states).
