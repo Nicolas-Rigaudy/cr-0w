@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { nestModules } from './nest-modules.ts'
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -12,6 +13,7 @@ const ID = 'virtual:core-records'
 const API_ID = 'virtual:core-api'
 // npm run dev proxies /api to the core over its unix socket, which the core
 // trusts as the owner. The TCP port would need the tailnet identity header.
+const ENGINE = fileURLToPath(new URL('../../', import.meta.url))
 const CORE_SOCK = fileURLToPath(new URL('../../local/state/core.sock', import.meta.url))
 
 function coreRecords(): Plugin {
@@ -32,7 +34,9 @@ function coreRecords(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), coreRecords()],
+  plugins: [react(), coreRecords(), nestModules(ENGINE)],
+  // Brick files live outside the package: they share Nest's React and import Nest code as @nest/.
+  resolve: { dedupe: ['react', 'react-dom'], alias: { '@nest': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: {
     host: true,
     proxy: { '/api': { target: { socketPath: CORE_SOCK } as never } },

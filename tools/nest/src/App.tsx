@@ -3,6 +3,8 @@ import { scopeSnapshot } from './data/scope'
 import { useFeed } from './data/useData'
 import { useScope } from './data/useScope'
 import { match, usePath } from './router'
+import { pages as brickPages } from 'virtual:nest-modules'
+import { BrickModuleSections } from './modules/Sections'
 import { Home, INNER } from './screens/Home'
 import { Inbox } from './screens/Inbox'
 import { Chat } from './screens/Chat'
@@ -14,7 +16,7 @@ import { ButlerRail } from './ui/ButlerRail'
 import { ButlerBadge, ButlerSheet } from './ui/ButlerSheet'
 import { ButlerProvider } from './data/useButler'
 import { LAPTOP, useMedia } from './ui/useMedia'
-import { screenTab } from './ui/tabs'
+import { screenTab, shownRoute } from './ui/tabs'
 import { BrickSections } from './ui/BrickSections'
 import { listSections } from './data/modules'
 
@@ -26,7 +28,8 @@ const LATER: Record<string, [string, string]> = {
 }
 
 export function App() {
-  const route = match(usePath())
+  // A page left out of crow.yaml modules.nest.pages falls back to Home (item_267).
+  const route = shownRoute(match(usePath()))
   const [raw, refresh] = useFeed()
   const [scope, setScope] = useScope()
   // Every screen reads the scoped snapshot; Chat reads the whole one so a link to any session opens.
@@ -41,9 +44,14 @@ export function App() {
     else if (route.tab === 'inbox') body = <Inbox snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
-    else body = <Placeholder name={LATER[route.tab][0]} note={LATER[route.tab][1]} />
+    else if (route.tab === 'brick') {
+      const Page = brickPages.find((p) => p.key === route.key)!.mod.default
+      body = <Page snap={snap} />
+    } else body = <Placeholder name={LATER[route.tab][0]} note={LATER[route.tab][1]} />
+    // Brick TSX sections (item_267) go after the page's own panels, before the generic ones.
+    if (route.tab === 'home' || route.tab === 'desk') body = <BrickModuleSections snap={snap} page={route.tab}>{body}</BrickModuleSections>
     // Generic brick sections go after the page's own panels (item_237).
-    if (route.tab !== 'chat' && route.tab !== 'missing') body = listSections(snap.modules ?? null, route.tab).length ? <div className="with-bricks">{body}<BrickSections snap={snap} page={route.tab} /></div> : body
+    if (route.tab !== 'chat' && route.tab !== 'missing' && route.tab !== 'brick') body = listSections(snap.modules ?? null, route.tab).length ? <div className="with-bricks">{body}<BrickSections snap={snap} page={route.tab} /></div> : body
   }
   // Butler rail on every laptop screen (item_176). Ops is a full page (item_190): no rail.
   // Home has its own rail (item_259): keyed apart so its fold and width never leak to other pages.

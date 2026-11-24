@@ -20,3 +20,6 @@ nest: {}
 deck: {}
 config:
   core_url: http://127.0.0.1:8787  # crow-core address Nest talks to
+  theme: modern     # first-paint theme: modern, cyber, or a brick theme (nest/themes/<name>.css)
+  hero: holotable   # Home hero: holotable, none, or a brick name with nest/hero/index.tsx
+  pages: []         # nav order; listed pages only (Home always kept). Empty = every page

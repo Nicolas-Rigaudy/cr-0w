@@ -269,6 +269,8 @@ def opt(args, flag):
 
 def relink():
     link([])
+    if crow_lib.brick_on("nest"):
+        print("Nest builds brick themes, heroes and pages in: run crow nest build")
 
 
 def add(args):

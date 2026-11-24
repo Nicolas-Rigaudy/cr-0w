@@ -92,6 +92,43 @@ Actions:
 `/api/modules` never shows `run`, `script` or `args`. When the brick is off, the section is
 not served and its actions answer 404 `module off`.
 
+## Nest themes, hero, pages and sections (built)
+
+A brick can also ship Nest code. Nest picks it up at build time, so run `crow nest build`
+after a brick change or a switch. Files go in the brick's `nest/` folder:
+
+```
+nest/
+  themes/<name>.css      a theme: one [data-theme='<name>'] block of tokens
+  hero/index.tsx         a Home hero, named after the brick
+  pages/<name>.tsx       a page at /<name>
+  sections/<name>.tsx    a section after the Home or Desk panels
+```
+
+- **Theme:** override only the tokens you change; the rest come from `modern`
+  (`tools/nest/src/themes/modern.css`). The file name is the theme name. It joins the switcher.
+- **Hero:** `export default function (props: HeroProps)` with `{snap, say}`. Pick it with
+  `modules.nest.hero: <brick>`. The built-in heroes are `holotable` and `none`.
+- **Page:** default export `({snap}) => JSX`. Optional `export const label` (nav text) and
+  `export const icon` (an SVG child of a 22x22 viewBox). The name must not clash with a Nest
+  page.
+- **Section:** default export `({snap}) => JSX` and `export const page = 'home' | 'desk'`.
+
+Import Nest code with `@nest/` (for example `@nest/modules/types`, `@nest/data/useData`).
+React comes from Nest. A file that fails to compile fails the build with the brick name.
+
+Nest config in `crow.yaml`:
+
+```yaml
+modules:
+  nest:
+    theme: modern            # first paint; a saved pick wins while it exists
+    hero: holotable          # holotable, none or a brick name
+    pages: [home, inbox]     # nav order; only these show, other routes land on Home
+```
+
+An empty `pages` keeps every page. The phone bar shows the first four, the rest go in More.
+
 ## Script contract
 
 - `crow <cmd>` runs `bin/<cmd>` or `bin/crow-<cmd>` from an on user brick when no engine command has that name. Engine commands always win.

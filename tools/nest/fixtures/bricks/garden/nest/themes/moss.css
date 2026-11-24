@@ -1,0 +1,6 @@
+/* Test brick theme (item_267): only the tokens it changes. */
+[data-theme='moss'] {
+  --bg: #0f1a12;
+  --surface: #16241a;
+  --accent: #7fd69a;
+}

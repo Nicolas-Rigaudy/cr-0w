@@ -30,7 +30,10 @@
   "git": {},
   "mail": {},
   "nest": {
-   "core_url": "http://127.0.0.1:8787"
+   "core_url": "http://127.0.0.1:8787",
+   "theme": "modern",
+   "hero": "holotable",
+   "pages": []
   },
   "releases": {},
   "retro": {},

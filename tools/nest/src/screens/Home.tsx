@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { homeCounts, homeModel, quotaCls as cls, type HomeModel } from '../data/home'
 import type { Snapshot } from '../data/useData'
 import { time } from '../format'
-import { Hero } from '../hero/Hero'
+import { HERO, HeroSlot } from '../hero/Slot'
 import { Link } from '../router'
 import { AskBar } from '../ui/AskBar'
 import { Glyph } from '../ui/Glyph'
@@ -119,7 +119,7 @@ function HomeCompact({ snap }: { snap: Snapshot }) {
     ? `${c.needs} need you, Sir. ${c.working} working.`
     : c.working ? `Nothing needs you, Sir. ${c.working} working.` : 'All quiet, Sir.'
   if (inner) return <HomeFold snap={snap} say={say} />
-  const holo = <div className="hwrap"><Hero missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} /></div>
+  const holo = HERO === 'none' ? null : <div className="hwrap"><HeroSlot snap={snap} missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} /></div>
   return (
     <div className="screen home-ph col">
       <HudRow m={m} />
@@ -140,7 +140,7 @@ function HomeFold({ snap, say }: { snap: Snapshot; say: string }) {
   return (
     <div className="screen home-f1">
       <section className="f1-hero" aria-label="CR-0W overview">
-        <Hero missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} />
+        <HeroSlot snap={snap} missions={missions} inbox={inbox} now={now} say={say} sections={snap.sections} />
       </section>
       <aside className="f1-side" aria-label="CR-0W">
         <div className="f1-hdr">

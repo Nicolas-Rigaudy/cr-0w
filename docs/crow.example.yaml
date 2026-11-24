@@ -20,6 +20,9 @@ modules:
   nest:
     on: true                # requires core-api
     core_url: http://127.0.0.1:8787
+    theme: modern           # modern, cyber or a brick theme (crow nest build after a change)
+    hero: holotable         # holotable, none or a brick with nest/hero/index.tsx
+    pages: []               # nav order, e.g. [home, inbox, desk]; empty = every page
   deck: true
   design: false
   office: false

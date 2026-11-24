@@ -1,0 +1,48 @@
+/* Built-in theme modern: the default tokens (:root). Other themes override what they change. */
+
+:root,
+[data-theme='modern'] {
+  --bg: #24273a;
+  --bg-image: none;
+  --scan: none;
+  --fg: #cad3f5;
+  --dim: #a5adcb;
+  --sub: #939ab7;
+  --panel: rgba(30, 32, 48, 0.78);
+  --panel-solid: rgba(30, 32, 48, 0.95);
+  --line: #494d64;
+  --row: rgba(54, 58, 79, 0.55);
+  --btn: rgba(54, 58, 79, 0.7);
+  --well: rgba(24, 25, 38, 0.6);
+  --r-pn: 10px;
+  --r-card: 14px;
+  --r-row: 7px;
+  --r-btn: 8px;
+  --clip-pn: none;
+  --clip-btn: none;
+  --ph: #cad3f5;
+  --ph-line: transparent;
+  --row-edge: transparent;
+  --glow: none;
+  --dots: radial-gradient(color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1.2px) 0 0 / 18px 18px;
+  --accent: #c6a0f6;
+  --accent-ink: #181926;
+  --accent-soft: rgba(198, 160, 246, 0.14);
+  --logo: #8aadf4;
+  --logo-lp: #c6a0f6;
+  --hdr: rgba(24, 25, 38, 0.85);
+  --c-w: #7dc4e4;
+  --c-n: #eed49f;
+  --c-f: #ed8796;
+  --c-d: #a6da95;
+  --c-b: #8aadf4;
+  --c-q: #8087a2;
+  --c-s: #8087a2;
+  --focus: #8aadf4;
+  --font-display: 'Michroma', sans-serif;
+  --font-head: 'Fira Code', ui-monospace, monospace;
+  --font-body: 'Fira Code', ui-monospace, monospace;
+  --body-size: 12px;
+  --display-case: uppercase;
+  color-scheme: dark;
+}

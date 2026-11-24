@@ -44,6 +44,7 @@
 #   crow modules [json]  which bricks are on: engine and user bricks plus crow.yaml (read only)
 #   crow modules on <brick> | off <brick>   switch a brick in crow.yaml and relink skills
 #   crow modules add <git url> [--ref R] | update [<name>] | remove <name>   user bricks from git, pinned in modules.lock
+#   crow nest build      rebuild Nest with the themes, hero, pages and sections of on bricks
 #   crow <cmd>           a bin/ script of an on user brick (bin/<cmd> or bin/crow-<cmd>)
 #   crow version         version, engine path and data dir (CROW_HOME)
 #   crow update [--check] [--to X.Y.Z]  update the engine the way it was installed (never the data dir)
@@ -65,6 +66,9 @@ case "${1:-}" in
                      echo "engine: $CROW_ENGINE"; echo "data:   $CROW_HOME"; exit 0 ;;
   update) shift; exec "$CROW_ENGINE/bin/crow-update" "$@" ;;
   modules) shift; export CROW_HOME; exec "$CROW_ENGINE/bin/crow-modules" "$@" ;;
+nest)    shift
+         [ "${1:-}" = build ] || { echo "usage: crow nest build" >&2; exit 2; }
+         export CROW_HOME; cd "$CROW_ENGINE/tools/nest" && exec npm run build ;;
 esac
 # launch() gives a session its account as CROW_SESSION_ACCOUNT, so a CROW_ACCOUNT seen here is a choice.
 # Sessions started before that inherit CROW_ACCOUNT: there it is dropped when it names the session's own

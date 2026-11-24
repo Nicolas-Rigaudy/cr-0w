@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 
-export type TabKey = 'home' | 'desk' | 'ops' | 'inbox' | 'mrs' | 'agenda' | 'reports'
+// Engine pages; brick pages add their own keys (src/modules/nav.ts).
+export type TabKey = string
+export interface Tab { key: TabKey; label: string; path: string; icon: ReactNode }
 
-export const TABS: Array<{ key: TabKey; label: string; path: string; icon: ReactNode }> = [
+export const TABS: Tab[] = [
   { key: 'home', label: 'Home', path: '/', icon: <path d="M3 10 11 3l8 7v9h-5v-6H8v6H3Z" /> },
   { key: 'desk', label: 'Desk', path: '/desk', icon: <><rect x="2.5" y="4" width="17" height="13" rx="2" /><path d="M6 9l3 2-3 2M11 14h5" /></> },
   { key: 'ops', label: 'Ops', path: '/ops', icon: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="12" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="12" width="7" height="7" rx="1.5" /><rect x="12" y="12" width="7" height="7" rx="1.5" /></> },

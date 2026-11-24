@@ -6,20 +6,30 @@ import type { Snapshot } from '../data/useData'
 import { ago, headerClock, time } from '../format'
 import { Link } from '../router'
 import { Glyph } from './Glyph'
-import { MORE_ICON, SCOPE_ICONS, TABS, TabIcon, type TabKey } from './icons'
-import { BAR_KEYS, MORE_KEYS, barTab, hiddenTabs } from './tabs'
+import { MORE_ICON, SCOPE_ICONS, TabIcon, type Tab, type TabKey } from './icons'
+import { barTab, hiddenTabs } from './tabs'
+import { ALL_TABS, NAV, splitBar } from '../modules/nav'
+import { config, themes } from 'virtual:nest-modules'
 import { nextScope, scopeChip, type ScopeMode } from '../data/scope'
 
-type Theme = 'modern' | 'cyber'
+// Themes are token files (item_267): the built-in ones and those of on bricks, in that order.
+// The switcher cycles them; crow.yaml modules.nest.theme is the first paint.
+export function nextTheme(t: string, list: readonly string[] = themes): string {
+  return list[(list.indexOf(t) + 1) % list.length]
+}
 
-function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme === 'cyber' ? 'cyber' : 'modern'))
+function useTheme(): [string, () => void] {
+  const [theme, setTheme] = useState(() => {
+    const t = document.documentElement.dataset.theme
+    return t && themes.includes(t) ? t : config.theme
+  })
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'cyber' ? '#05070c' : '#24273a')
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+    if (bg) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg)
     try { localStorage.setItem('nest.theme', theme) } catch { /* storage blocked: theme stays per visit */ }
   }, [theme])
-  return [theme, () => setTheme((t) => (t === 'modern' ? 'cyber' : 'modern'))]
+  return [theme, () => setTheme((t) => nextTheme(t))]
 }
 
 function badges(snap: Snapshot | null): Partial<Record<TabKey, { n: number; failed?: boolean }>> {
@@ -51,6 +61,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
   // title; the number turns red when the week runs low.
   const accts = snap ? quotaOf(snap) : []
   const hidden = hiddenTabs(snap)
+  const pills = NAV.map((k) => TAB_OF.get(k)!).filter((t) => !hidden.has(t.key))
   return (
     <div className={`app${rail ? ' has-rail' : ''}`}>
       <header className="top">
@@ -59,7 +70,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
         <ScopeChip scope={scope} setScope={setScope} />
         <span className="hdr-sep" aria-hidden="true" />
         <nav className="pills" aria-label="Tabs">
-          {TABS.map((t, i) => hidden.has(t.key) ? null : (
+          {pills.map((t, i) => (
             <Link key={t.key} href={t.path} className="pill" aria-current={t.key === active ? 'page' : undefined}>
               <span className="tn">{i + 1}</span>{t.label}
               {b[t.key]?.n ? <span className={`badge-t num${b[t.key]!.failed ? ' f' : ''}`}>{b[t.key]!.n}</span> : null}
@@ -90,7 +101,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
           </span>
         )}
         {snap && <span className="clock"><span className="short">{time(snap.now)}</span><span className="long">{headerClock(snap.now, theme === 'cyber')}</span></span>}
-        <button type="button" className="icon-btn" onClick={toggle} aria-label={`Theme: ${theme}. Switch to ${theme === 'modern' ? 'cyber' : 'modern'}`} title="Switch theme">
+        <button type="button" className="icon-btn" onClick={toggle} aria-label={`Theme: ${theme}. Switch to ${nextTheme(theme)}`} title="Switch theme">
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
           </svg>
@@ -105,6 +116,8 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
 
 type Badges = ReturnType<typeof badges>
 
+const TAB_OF = new Map<string, Tab>(ALL_TABS.map((t) => [t.key, t]))
+
 // Phone tab bar B (item_206): Home, Desk, Missions, Inbox, More. More opens a sheet
 // with MRs, Agenda and Reports and stays highlighted while one of them is open.
 function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: ReadonlySet<TabKey> }) {
@@ -112,7 +125,7 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
   const btn = useRef<HTMLButtonElement>(null)
   const sheet = useRef<HTMLUListElement>(null)
   const id = useId()
-  const cur = barTab(active)
+  const cur = barTab(active, NAV, hidden)
   const close = useCallback((refocus: boolean) => {
     setOpen(false)
     if (refocus) btn.current?.focus()
@@ -137,8 +150,9 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
     const to = e.relatedTarget as Node | null
     if (to && !sheet.current?.contains(to) && to !== btn.current) close(false)
   }
-  const tabs = TABS.filter((t) => (BAR_KEYS as readonly TabKey[]).includes(t.key))
-  const more = TABS.filter((t) => (MORE_KEYS as readonly TabKey[]).includes(t.key) && !hidden.has(t.key))
+  const split = splitBar(NAV, hidden)
+  const tabs = split.bar.map((k) => TAB_OF.get(k)!)
+  const more = split.more.map((k) => TAB_OF.get(k)!)
   const openMore = more.find((t) => t.key === active)
   return (
     <nav className="tabbar" aria-label="Tabs">
@@ -151,7 +165,7 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
           ) : null}
         </Link>
       ))}
-      <button
+      {more.length > 0 && <button
         ref={btn}
         type="button"
         className="tab"
@@ -162,7 +176,7 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
       >
         <TabIcon>{MORE_ICON}</TabIcon>
         More{openMore && <span className="sr-only">, {openMore.label} open</span>}
-      </button>
+      </button>}
       {open && (
         <ul ref={sheet} id={id} className="more-sheet" aria-label="More screens" onBlur={blur}>
           {more.map((t) => (

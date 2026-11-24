@@ -33,7 +33,7 @@ def test_shared_fixture_cases(case):
 def test_modules_returns_the_config_of_on_bricks(tmp_path):
     on = crow_lib.modules(str(tmp_path), str(ROOT))
     assert "design" not in on and "office" not in on
-    assert on["nest"] == {"core_url": "http://127.0.0.1:8787"}
+    assert on["nest"] == {"core_url": "http://127.0.0.1:8787", "theme": "modern", "hero": "holotable", "pages": []}
 
 
 def test_the_example_crow_yaml_loads_clean_and_matches_the_defaults(tmp_path):

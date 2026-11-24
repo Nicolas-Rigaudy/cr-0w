@@ -1,3 +1,7 @@
+// Tokens first: built-in themes, then brick themes, so a brick theme wins over :root (item_267).
+import './themes/modern.css'
+import './themes/cyber.css'
+import 'virtual:nest-themes'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'

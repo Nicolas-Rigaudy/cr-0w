@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { match } from '../router'
-import { BAR_KEYS, MORE_KEYS, barTab, hiddenTabs, screenTab } from './tabs'
+import { barTab, hiddenTabs, screenTab, shownRoute } from './tabs'
+import { NAV, navKeys, splitBar } from '../modules/nav'
 import type { Snapshot } from '../data/feed'
 import { TABS } from './icons'
 import { DEMO_BRICKS } from '../data/fixtures'
@@ -29,8 +30,9 @@ describe('phone tab bar B', () => {
     expect(bar('/nope')).toBe('home')
   })
 
-  it('splits every tab once between the bar and More', () => {
-    expect([...BAR_KEYS, ...MORE_KEYS].sort()).toEqual(TABS.map((t) => t.key).sort())
+  it('keeps today\'s bar and More with no nest config', () => {
+    expect(splitBar(NAV)).toEqual({ bar: ['home', 'desk', 'ops', 'inbox'], more: ['mrs', 'agenda', 'reports'] })
+    expect([...NAV].sort()).toEqual(TABS.map((t) => t.key).sort())
   })
 })
 
@@ -43,5 +45,33 @@ describe('tabs of an off brick', () => {
     expect(hiddenTabs(snap(true)).size).toBe(0)
     expect(hiddenTabs({ modules: null } as unknown as Snapshot).size).toBe(0)
     expect(hiddenTabs(null).size).toBe(0)
+  })
+})
+
+describe('nest.pages (item_267)', () => {
+  const all = ['home', 'desk', 'ops', 'inbox', 'mrs', 'agenda', 'reports', 'garden']
+  it('keeps every page in default order when the list is empty', () => {
+    expect(navKeys([], all)).toEqual(all)
+  })
+  it('shows only the listed pages, in list order, Home always kept', () => {
+    expect(navKeys(['home', 'inbox'], all)).toEqual(['home', 'inbox'])
+    expect(navKeys(['garden', 'desk'], all)).toEqual(['home', 'garden', 'desk'])
+  })
+  it('fills the bar with the first four shown pages and skips hidden ones', () => {
+    const nav = ['home', 'garden', 'mrs', 'desk', 'inbox', 'ops']
+    expect(splitBar(nav)).toEqual({ bar: ['home', 'garden', 'mrs', 'desk'], more: ['inbox', 'ops'] })
+    expect(splitBar(nav, new Set(['mrs']))).toEqual({ bar: ['home', 'garden', 'desk', 'inbox'], more: ['ops'] })
+    expect(splitBar(['home', 'inbox'])).toEqual({ bar: ['home', 'inbox'], more: [] })
+  })
+  it('sends an unlisted page to Home and keeps chats with Desk', () => {
+    const nav = ['home', 'inbox', 'desk']
+    expect(shownRoute(match('/ops'), nav)).toEqual({ tab: 'home' })
+    expect(shownRoute(match('/inbox'), nav)).toEqual(match('/inbox'))
+    expect(shownRoute(match('/desk/4242'), nav)).toEqual(match('/desk/4242'))
+    expect(shownRoute(match('/nope'), nav)).toEqual(match('/nope'))
+  })
+  it('routes a brick page key', () => {
+    expect(match('/garden', ['garden'])).toEqual({ tab: 'brick', key: 'garden' })
+    expect(barTab(screenTab(match('/garden', ['garden'])), ['home', 'garden'])).toBe('garden')
   })
 })

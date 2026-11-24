@@ -1,4 +1,5 @@
 import type { ChatTarget } from './data/conversation'
+import { BRICK_PAGE_KEYS } from './modules/nav'
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type MouseEvent } from 'react'
 
 const PathContext = createContext('/')
@@ -54,17 +55,20 @@ export function Link({ href, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchor
 export type Route =
   | { tab: 'home' | 'desk' | 'ops' | 'inbox' | 'mrs' | 'agenda' | 'reports' }
   | { tab: 'chat'; target: ChatTarget }
+  // A brick page (nest/pages/<key>.tsx, item_267).
+  | { tab: 'brick'; key: string }
   | { tab: 'missing' }
 
-export function match(path: string): Route {
+export function match(path: string, brickPages: readonly string[] = BRICK_PAGE_KEYS): Route {
   const p = path.replace(/\/+$/, '') || '/'
   if (p === '/') return { tab: 'home' }
   const old = redirect(p)
-  if (old) return match(old)
+  if (old) return match(old, brickPages)
   // The chat of a live session or run (/desk/<pid>) or of a mission's last run (/desk/m/<id>).
   const c = /^\/desk\/(?:(\d+)|m\/([^/]+))$/.exec(p)
   if (c) return { tab: 'chat', target: c[1] ? { pid: Number(c[1]) } : { mission: decodeURIComponent(c[2]) } }
   const key = p.slice(1)
   if (['desk', 'ops', 'inbox', 'mrs', 'agenda', 'reports'].includes(key)) return { tab: key as 'desk' }
+  if (brickPages.includes(key)) return { tab: 'brick', key }
   return { tab: 'missing' }
 }
