@@ -634,6 +634,10 @@ RUN_SANDBOX = {
                                                 "bin/crow-check", "ruff check", "ruff format",
                                                 "node scripts/hero-table.mjs", "node tools/nest/scripts/hero-table.mjs",
                                                 "npx tsc", "npx vitest",
+                                                # Nest render and check scripts, mockup generators (AFK 2026-11-24)
+                                                "node scripts/", "node tools/nest/scripts/",
+                                                "python3 scripts/", "python3 -I scripts/",
+                                                "git config user.email",
                                                 # load check before a bench (owner OK 2026-11-17)
                                                 "ps", "top -b", "uptime"] + _FORGE_READ,
              "mcp": []},
@@ -763,6 +767,7 @@ RUN_FOOTER = ("\n\n---\nRun budget: one scope per run (one bug or one acceptance
 def run_brief(kind, text):
     """The prompt a run gets: the brief plus the kind's stop-and-report footer (kinds with a call_cap)."""
     cap = RUN_KINDS.get(kind, {}).get("call_cap")
+    cap = int(os.environ.get(f"CROW_{kind.upper()}_CALL_CAP") or 0) or cap  # AFK nights raise it
     return text.rstrip() + RUN_FOOTER.format(cap=cap) if cap else text
 
 

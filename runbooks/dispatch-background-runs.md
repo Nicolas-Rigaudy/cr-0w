@@ -111,7 +111,7 @@ Config lives in `bin/crow_lib.py` next to `RUN_KINDS`: `RUN_SANDBOX` (per kind),
 | Kind | Tools | Bash prefixes (each also as `rtk <prefix>`) | MCP |
 |---|---|---|---|
 | review | Read, Grep, Glob, TodoWrite | git read (status, log, diff, show, branch, rev-parse, ls-files, blame, merge-base, remote -v), shell read (ls, cat, head, tail, wc, grep, rg, sort, uniq, cut, jq, pwd, echo, date, diff), git fetch, gh pr view/diff/checks, glab mr view/diff, logics-manager | none |
-| task | review's file tools + Edit, Write, NotebookEdit | git read, shell read, git add/commit/switch/checkout/restore/stash/rebase/mv/rm, mkdir, touch, cp, mv, pytest, go test/build/vet, gofmt, make, npm test/run, logics-manager | none |
+| task | review's file tools + Edit, Write, NotebookEdit | git read, shell read, git add/commit/switch/checkout/restore/stash/rebase/mv/rm, mkdir, touch, cp, mv, pytest, go test/build/vet, gofmt, make, npm test/run, logics-manager, `node scripts/`, `node tools/nest/scripts/`, `python3 scripts/`, git config user.email | none |
 | retro | Read, Grep, Glob, Edit, Write, TodoWrite, Skill | shell read, bin/crow-log, bin/crow-note, bin/crow-state, bin/crow-digest, git status/diff/add/check-ignore | none |
 | oneshot | Read, Grep, Glob, Edit, Write, TodoWrite, Skill | shell read, git read, git fetch, bin/crow-log, bin/crow-note, bin/crow-state (brief, daily, weekly skills add their own `allowed-tools`) | none |
 

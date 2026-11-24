@@ -53,3 +53,9 @@ Since cdx 0.24.2 it forces the default permission mode: allow tools with `cdx se
 Probe: `cdx set A --scrub-env on`, `cdx run A --cwd <scratch dir> --prompt-file <probe> --permission auto`, then `cdx unset A --scrub-env`.
 Headless probes started in the hub folder are blocked by the hub guard whatever the setting: run them from a scratch folder.
 Crow's own sandbox for runs (credential-free env, per-kind allowlists, denials) is in dispatch-background-runs.md "Run sandbox".
+
+## Sandbox facts for AFK jobs (2026-11-24)
+- Runs never push (`git push` is denied for every kind). The orchestrator lands each finished branch: rebase on origin/main, run bin/crow-check, push from the hub.
+- The hub links `tools/nest/node_modules` and `.claude/skills` into each new worktree; runs cannot `npm ci` or `ln`.
+- Runs write only inside their worktree plus `--write-dir`: dispatch with `--write-dir local/state/afk/shots/<job>` for renders. Render scripts live under `tools/nest/scripts/` (`node scripts/...` from tools/nest) or `scripts/`.
+- Raise the 60-call cap for long jobs with `CROW_TASK_CALL_CAP=150 bin/crow dispatch ...`.
