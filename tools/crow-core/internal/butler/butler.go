@@ -74,6 +74,8 @@ type Options struct {
 	Idle   time.Duration          // stop an idle process after this (default 30 min)
 	Now    func() time.Time
 	Seed   int // transcript turns replayed into a fresh session (default 10)
+	// LoginHint is the command that signs an account in again, shown when a turn fails on login.
+	LoginHint func(account string) string
 }
 
 // Manager owns every conversation.
@@ -103,19 +105,20 @@ var convID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,39}$`)
 var ErrConv = errors.New("conversation: want 1-40 chars of a-z, 0-9 and -")
 
 type conv struct {
-	id      string
-	dir     string
-	mu      sync.Mutex
-	meta    Meta
-	want    string // account the owner chose; empty = auto
-	msgs    []Msg
-	partial strings.Builder
-	busy    bool
-	queue   []turn
-	proc    *proc
-	timer   *time.Timer
-	chips   []Chip // gathered from tool results during the turn
-	seed    bool   // next turn starts a fresh session: prefix the last turns
+	id       string
+	dir      string
+	mu       sync.Mutex
+	meta     Meta
+	want     string // account the owner chose; empty = auto
+	msgs     []Msg
+	partial  strings.Builder
+	busy     bool
+	queue    []turn
+	proc     *proc
+	timer    *time.Timer
+	chips    []Chip // gathered from tool results during the turn
+	seed     bool   // next turn starts a fresh session: prefix the last turns
+	authFail bool   // the current turn failed on login
 }
 
 type turn struct{ text, surface string }
@@ -389,7 +392,9 @@ type event struct {
 	SessionID string          `json:"session_id"`
 	Tools     []string        `json:"tools"`
 	Event     json.RawMessage `json:"event"`
+	Error     string          `json:"error"` // set on claude's own error replies (authentication_failed, ...)
 	Message   struct {
+		Model   string          `json:"model"`
 		Content json.RawMessage `json:"content"`
 	} `json:"message"`
 	Result  string `json:"result"`
@@ -438,6 +443,14 @@ func (m *Manager) handle(c *conv, ev event) {
 			c.partial.WriteString(se.Delta.Text)
 		}
 	case "assistant":
+		if ev.Error != "" || ev.Message.Model == "<synthetic>" {
+			// claude's own error text, not a reply: the result event reports it once as a note.
+			if ev.Error == "authentication_failed" {
+				c.authFail = true
+			}
+			c.partial.Reset()
+			return
+		}
 		var blocks []block
 		if json.Unmarshal(ev.Message.Content, &blocks) != nil {
 			return
@@ -466,7 +479,16 @@ func (m *Manager) handle(c *conv, ev event) {
 	case "result":
 		c.partial.Reset()
 		if ev.IsError {
-			c.note(now, "butler error: "+orDefault(ev.Result, ev.Subtype))
+			c.note(now, m.errorNote(c, ev.Result, ev.Subtype))
+		}
+		if c.authFail {
+			// Every queued turn would fail the same way, and a fresh process reads the new login.
+			c.authFail = false
+			c.chips = nil
+			c.busy = false
+			c.queue = nil
+			c.stop()
+			return
 		}
 		if len(c.chips) > 0 {
 			for i := len(c.msgs) - 1; i >= 0; i-- {
@@ -493,6 +515,19 @@ func (m *Manager) handle(c *conv, ev event) {
 		}
 		c.arm(m.o.Idle)
 	}
+}
+
+// errorNote is the note for a failed turn. A login failure names the account and the command
+// that signs it in again, since the owner cannot fix it from the chat. c.mu is held.
+func (m *Manager) errorNote(c *conv, result, subtype string) string {
+	if c.authFail || strings.HasPrefix(result, "Failed to authenticate") {
+		msg := "butler login failed on account " + orDefault(c.meta.Account, "?") + ". Sign in again from a terminal"
+		if m.o.LoginHint != nil && c.meta.Account != "" {
+			return msg + ": `" + m.o.LoginHint(c.meta.Account) + "`, then resend."
+		}
+		return msg + " with `claude auth login`, then resend."
+	}
+	return "butler error: " + orDefault(result, subtype)
 }
 
 // arm stops the process after d without a turn. c.mu is held.

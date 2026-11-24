@@ -1131,6 +1131,8 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .rl-msg.cr p { background: var(--panel); }
   .rl-msg.typing p { color: var(--sub); }
   .rl-msg.tool, .rl-msg.note { align-self: center; font-size: 11px; color: var(--sub); }
+  .rl-msg.note { overflow-wrap: anywhere; }
+  .rl-code { display: block; margin-top: 4px; padding: 4px 6px; border-radius: 4px; background: rgba(127, 127, 127, 0.14); color: inherit; font: 11px/1.4 'Fira Code', ui-monospace, monospace; text-align: left; user-select: all; }
   .rl-who { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font: 600 10.5px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); }
   .rl-who .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-d); }
   .rl-chips { display: flex; flex-wrap: wrap; gap: 6px; }

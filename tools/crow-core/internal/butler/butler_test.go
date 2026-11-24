@@ -230,3 +230,39 @@ func TestClearStartsFreshAndHidesHistory(t *testing.T) {
 		t.Fatalf("bad id %v", err)
 	}
 }
+
+// A login failure is one note naming the account and the sign-in command, not a crow reply;
+// the process stops so the next turn starts on the new login.
+func TestLoginFailureIsOneNoteWithTheCommand(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "claude.sh")
+	script := `#!/bin/sh
+echo '{"type":"system","subtype":"init","session_id":"S1","tools":[]}'
+while IFS= read -r line; do
+  echo '{"type":"assistant","message":{"model":"<synthetic>","content":[{"type":"text","text":"Failed to authenticate: expired"}]},"error":"authentication_failed"}'
+  echo '{"type":"result","subtype":"success","is_error":true,"result":"Failed to authenticate: expired","session_id":"S1"}'
+done
+`
+	if err := os.WriteFile(p, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var calls []launch
+	m := New(Options{Dir: t.TempDir(), Pick: func() (string, error) { return "acct", nil },
+		LoginHint: func(a string) string { return "login " + a },
+		Launch: func(account, resume string) (*exec.Cmd, error) {
+			calls = append(calls, launch{account, resume})
+			return exec.Command(p), nil
+		}})
+	defer m.Close()
+	m.Say("main", "hi", "")
+	m.Say("main", "again", "")
+	v := wait(t, m, "main", func(v View) bool { return !v.Busy && !v.Running && len(v.Messages) >= 3 })
+	if len(crow(v)) != 0 || len(v.Messages) != 3 || v.Messages[2].Role != "note" ||
+		!strings.Contains(v.Messages[2].Text, "account acct") || !strings.Contains(v.Messages[2].Text, "`login acct`") {
+		t.Fatalf("view %+v", v)
+	}
+	m.Say("main", "after login", "")
+	wait(t, m, "main", func(v View) bool { return !v.Busy && len(v.Messages) >= 5 })
+	if len(calls) != 2 {
+		t.Fatalf("want a fresh launch after the failure, got %+v", calls)
+	}
+}

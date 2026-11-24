@@ -5,7 +5,9 @@ package main
 // folder outside every repo, with the core MCP server as its only tools.
 
 import (
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,16 +63,24 @@ func butlerManager(cfg config.Config) (*butler.Manager, error) {
 			return nil, err
 		}
 	}
-	persona := filepath.Join(state, "persona.md")
-	if err := os.WriteFile(persona, butlerPersona, 0o600); err != nil {
-		return nil, err
-	}
+	// Every core that shares this state folder (the service, a test build) launches its own
+	// binary as the MCP server: the files are named after the binary and rewritten at each
+	// launch, so one core never points another's butler at a binary that may be gone.
+	sum := sha256.Sum256([]byte(self))
+	tag := hex.EncodeToString(sum[:4])
+	persona := filepath.Join(state, "persona-"+tag+".md")
+	mcpFile := filepath.Join(state, "core-mcp-"+tag+".json")
 	mcp, _ := json.Marshal(map[string]any{"mcpServers": map[string]any{"core": map[string]any{
 		"command": self, "args": []string{"mcp"},
 		"env": map[string]string{"CROW_HOME": cfg.Home, "CROW_ENGINE": cfg.Engine},
 	}}})
-	mcpFile := filepath.Join(state, "core-mcp.json")
-	if err := os.WriteFile(mcpFile, mcp, 0o600); err != nil {
+	writeLaunchFiles := func() error {
+		if err := os.WriteFile(persona, butlerPersona, 0o600); err != nil {
+			return err
+		}
+		return os.WriteFile(mcpFile, mcp, 0o600)
+	}
+	if err := writeLaunchFiles(); err != nil {
 		return nil, err
 	}
 	model := os.Getenv("CROW_BUTLER_MODEL")
@@ -85,12 +95,24 @@ func butlerManager(cfg config.Config) (*butler.Manager, error) {
 		if _, err := os.Stat(profile); err != nil {
 			return nil, fmt.Errorf("no cdx profile for account %s", account)
 		}
+		if err := writeLaunchFiles(); err != nil {
+			return nil, err
+		}
 		args := butlerArgs(claude, profile, model, mcpFile, persona, resume)
 		cmd := exec.Command("env", args...)
 		cmd.Dir = cwd
 		return cmd, nil
 	}
-	return butler.New(butler.Options{Dir: state, Launch: launch, Pick: butlerPick(cfg.Engine)}), nil
+	hint := func(account string) string {
+		return butlerLoginCmd(claude, filepath.Join(profiles, account, "claude-home"))
+	}
+	return butler.New(butler.Options{Dir: state, Launch: launch, Pick: butlerPick(cfg.Engine), LoginHint: hint}), nil
+}
+
+// butlerLoginCmd signs an account's profile in again with the same environment the butler
+// runs under, so the login lands where the butler reads it.
+func butlerLoginCmd(claude, profile string) string {
+	return "env -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_OAUTH_TOKEN HOME=" + profile + " " + claude + " auth login"
 }
 
 // butlerPick returns the auto account picker: the last word crow-accounts prints, or an

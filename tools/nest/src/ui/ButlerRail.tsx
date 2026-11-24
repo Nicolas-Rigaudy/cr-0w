@@ -52,8 +52,14 @@ export function railLabel(m: HeroModel): string {
 
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
+// Note text with `code` spans: a login failure carries the command to copy.
+function noteText(t: string) {
+  return t.split('`').map((part, i) => (i % 2 ? <code key={i} className="rl-code">{part}</code> : part))
+}
+
 function Msg({ m }: { m: ButlerMsg }) {
-  if (m.role === 'tool' || m.role === 'note') return <li className={`rl-msg ${m.role}`}>{m.text}</li>
+  if (m.role === 'tool') return <li className="rl-msg tool">{m.text}</li>
+  if (m.role === 'note') return <li className="rl-msg note">{noteText(m.text)}</li>
   const you = m.role === 'you'
   return (
     <li className={`rl-msg ${you ? 'you' : 'cr'}`}>
