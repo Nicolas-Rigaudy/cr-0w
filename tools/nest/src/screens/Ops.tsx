@@ -329,8 +329,8 @@ function Day({ lanes, queue, day, today, now, scale, dispatch, onOpen }: { lanes
                   {nowLine}
                   {live && isToday && (
                     <span className="ops-live num" style={{ left: `calc(${pct(nowH, ax)} + 8px)` }}>
-                      {[tag, (rid ?? l.id).slice(0, 8), l.spans[0] ? age(l.spans[0].start, now) : '', usd(l.cost_usd)].filter(Boolean).join(' · ')}
                       {a && <Link href={`/desk/${a.pid}`} className="ops-open" onClick={(e) => e.stopPropagation()}>OPEN</Link>}
+                      <span className="ops-lm">{[tag, (rid ?? l.id).slice(0, 8), l.spans[0] ? age(l.spans[0].start, now) : '', usd(l.cost_usd)].filter(Boolean).join(' · ')}</span>
                     </span>
                   )}
                 </div>

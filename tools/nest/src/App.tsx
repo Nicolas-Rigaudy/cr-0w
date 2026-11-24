@@ -53,10 +53,10 @@ export function App() {
     // Generic brick sections go after the page's own panels (item_237).
     if (route.tab !== 'chat' && route.tab !== 'missing' && route.tab !== 'brick') body = listSections(snap.modules ?? null, route.tab).length ? <div className="with-bricks">{body}<BrickSections snap={snap} page={route.tab} /></div> : body
   }
-  // Butler rail on every laptop screen (item_176). Ops is a full page (item_190): no rail.
+  // Butler rail on every laptop screen (item_176).
   // Home has its own rail (item_259): keyed apart so its fold and width never leak to other pages.
   const home = route.tab === 'home'
-  const rail = laptop && snap && route.tab !== 'ops' ? <ButlerRail key={home ? 'home' : 'page'} snap={snap} home={home} /> : null
+  const rail = laptop && snap ? <ButlerRail key={home ? 'home' : 'page'} snap={snap} home={home} /> : null
   // Phone and Fold: a header badge and a chat sheet instead of the rail.
   // Fold inner Home shows the chat in its side (item_259): no badge there.
   const badge = !laptop && snap && !(home && inner) ? <ButlerBadge snap={snap} /> : null
