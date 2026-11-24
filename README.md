@@ -115,10 +115,10 @@ which is ignored by this repo and meant to be its own private repo.
 | `bin/ansi-shot` | render any terminal output to a PNG in your own theme or the bundled one (how the screenshots here are made) |
 | `tools/crow-deck` | the terminal deck (Go, Bubble Tea), `crow deck` or `crow watch` |
 | `tools/crow-watch` | the previous board, kept as a fallback (not built by `crow`) |
-| `integrations/` | optional desktop-shell widgets |
 | `skills/` (linked by `crow modules link`) | brief, review, review-threads, mr, wrap, afk, retro |
 | `examples/skills/` | starting points for your own routines (daily, weekly) |
 | `runbooks/` | short tested procedures |
+| [cr-0w-archeotech](https://github.com/Nicolas-Rigaudy/cr-0w-archeotech) | desktop-shell widgets, an optional brick in its own repo |
 | `logics/` | the project's own requests, backlog and tasks (Logics workflow) |
 
 </details>

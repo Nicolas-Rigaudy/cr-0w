@@ -32,7 +32,7 @@ def test_shared_fixture_cases(case):
 
 def test_modules_returns_the_config_of_on_bricks(tmp_path):
     on = crow_lib.modules(str(tmp_path), str(ROOT))
-    assert "design" not in on and "integration-shell" not in on
+    assert "design" not in on and "office" not in on
     assert on["nest"] == {"core_url": "http://127.0.0.1:8787"}
 
 
@@ -62,7 +62,7 @@ def test_crow_modules_json_lists_the_defaults_without_crow_yaml(hub):
     assert r["exists"] is False and r["errors"] == []
     assert r["file"].endswith(os.path.join("local", "crow.yaml"))
     state = {m["name"]: m["on"] for m in r["modules"]}
-    assert state["core"] and state["git"] and not state["design"] and not state["integration-shell"]
+    assert state["core"] and state["git"] and not state["design"] and not state["office"]
 
 
 def test_crow_modules_text_marks_a_switched_brick(hub):

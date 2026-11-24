@@ -15,8 +15,6 @@ want to trigger it by name.
 - [dispatch-background-runs](dispatch-background-runs.md): start, track and recover cdx background runs in project repos; isolated runs (`--isolate`) and `crow-isolation-probe`
 - [review-findings](review-findings.md): read-only review run of one MR, its findings JSON schema, resume for the apply phase
 - [cost-audit](cost-audit.md): measure token spend by context size, model, project and skill; re-measure after a change
-- [archeotech-crow-agents](archeotech-crow-agents.md): test the crow agents bar/panel module with fixtures and headless renders
-- [archeotech-crow-usage](archeotech-crow-usage.md): test the crow usage bar/panel module (fixtures, render script, sandbox gotchas)
 - [sub-project-work](sub-project-work.md): hand repo work off with `crow handoff`, or `crow work` for lookups; the hub guard hook
 - [open-project-session](open-project-session.md): open a project session in a new kitty window from the hub (HOME + inherited Claude markers)
 - [session-retros](session-retros.md): daily retro batch (Mon–Fri timer → no-model pre-filter → one /retro run → dated report with skipped list)

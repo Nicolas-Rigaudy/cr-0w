@@ -87,7 +87,7 @@ def pieces():
     for p in sorted((ROOT / "tools").iterdir()):
         if p.is_dir():
             out.append(("app", f"tools/{p.name}", ""))
-    for p in sorted((ROOT / "integrations").iterdir()):
+    for p in sorted((ROOT / "integrations").iterdir()) if (ROOT / "integrations").is_dir() else []:
         if p.is_dir():
             out.append(("integration", f"integrations/{p.name}", ""))
     return out

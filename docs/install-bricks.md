@@ -31,8 +31,14 @@ An existing data dir keeps its `crow.yaml`, or every default when it has none.
 | nest | Nest web front. Needs core-api. | on |
 | deck | crow-deck and crow-watch terminal front. | on |
 | design | Screenshot, crop and compare tools, design notes. | off |
-| integration-shell | Shell integration and its runbooks. | off |
 | office | Mail text, tracked-changes DOCX, simple A4 DOCX. | off |
+
+Optional bricks from their own repo install with `crow modules add <git url>`
+(see [writing-a-brick.md](writing-a-brick.md)):
+
+| Brick | What it adds | Install |
+|---|---|---|
+| cr-0w-archeotech | Crow agents and usage panels for the archeotech desktop shell. | `crow modules add https://github.com/Nicolas-Rigaudy/cr-0w-archeotech`, then `crow archeotech link` |
 
 The Default column is the install starter set. Without a `crow.yaml`, the manifest default
 applies (`crow modules` shows both).

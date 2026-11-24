@@ -22,5 +22,4 @@ modules:
     core_url: http://127.0.0.1:8787
   deck: true
   design: false
-  integration-shell: false
   office: false
