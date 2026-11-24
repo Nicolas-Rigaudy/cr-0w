@@ -7,6 +7,7 @@ import {
 import { useSource, type Snapshot } from '../data/useData'
 import { Link, navigate, useQuery } from '../router'
 import { Sheet, type Confirm } from '../ui/Sheet'
+import { LAPTOP, useMedia } from '../ui/useMedia'
 
 // Ops (item_190): everything the owner or crow worked on, by day or by week, what waits
 // to run, and the totals. Reads GET /api/state/ops; a lane opens its run report.
@@ -112,6 +113,86 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
   const sess = scope.filter((l) => l.kind === 'interactive'), runs = scope.filter((l) => l.kind !== 'interactive')
   const sum = (ls: OpsLane[], f: (l: OpsLane) => number) => ls.reduce((x, l) => x + f(l), 0)
   const maxA = Math.max(1, ...totals.map((t) => t.active_s))
+  // Phone and tablet (item_274, phone/compare.html option B): Now card, queue, timeline, totals.
+  const laptop = useMedia(LAPTOP)
+  const [row, setRow] = useState<string | null>(null)
+  const current = mode === 'day' ? day === today : isoWeek(day) === isoWeek(today)
+  const scaleSeg = (
+    <span className={`seg${laptop ? '' : ' sm'}`} role="tablist" aria-label="Time scale">
+      {([['work', '08–20'], ['full', '24H']] as const).map(([k, t]) => (
+        <button key={k} type="button" role="tab" aria-selected={scale === k} className={scale === k ? 'on' : ''} onClick={() => setScale(k)}>{t}</button>
+      ))}
+    </span>
+  )
+
+  const timeline = (
+    <section className="pn ops-tlp" aria-label="Timeline">
+      {!laptop && <h2 className="ph"><span>Timeline</span>{scaleSeg}</h2>}
+      {error && <div className="err" role="alert">{error}</div>}
+      {!data && !error && <div className="sub">Loading…</div>}
+      {view && (
+        <div key={view.mode} className={`ops-view${view.query !== query ? ' ops-stale' : ''}`}>
+          {view.mode === 'day'
+            ? <Day lanes={lanes} queue={queue} day={view.day} today={today} now={now} scale={scale} dispatch={dispatch} onOpen={setOpen} />
+            : <Week days={view.data.days} lanes={lanes} today={today} now={now} scale={scale} onDay={(d) => { setDay(d); setMode('day') }} />}
+        </div>
+      )}
+      <div className="ops-legend" aria-label="Legend">
+        {LEGEND.map(([k, t]) => <span key={k}><i className={`sw st-${k}`} />{t}</span>)}
+        <span><i className="sw st-working live" />live</span>
+        <span><i className="sw planned" />planned</span>
+        <span>x axis: Paris time · ▷ run · ◉ session</span>
+      </div>
+    </section>
+  )
+
+  const queuePanel = (
+    <Queue queue={queue} qsum={qsum} now={now} slots={dispatch.slots} src={src}
+      reload={async () => { await load(); await refresh?.() }}
+      onCancel={cancel} onRoutine={routine} onEdit={setEdit} onSkip={skip} />
+  )
+
+  const totalsHead = (
+    <h2 className="ph" id="ot">
+      <span>{laptop ? `${mode === 'day' ? dayLabel(day) : `Week ${isoWeek(day).slice(6)}`} totals` : 'Totals'}</span>
+      <span className="seg sm" role="tablist" aria-label="Group by">
+        {(['project', 'kind'] as const).map((b) => (
+          <button key={b} type="button" role="tab" aria-selected={by === b} className={by === b ? 'on' : ''} onClick={() => setBy(b)}>{b.toUpperCase()}</button>
+        ))}
+      </span>
+    </h2>
+  )
+
+  // Phone totals: four columns; a tap on a row shows its lanes, wait and stuck.
+  const totalsPhone = (
+    <section className="pn" aria-labelledby="ot">
+      {totalsHead}
+      <table className="ops-tot ops-tot4 num">
+        <thead><tr><th>{by}</th><th>active</th><th title="failed or stuck">!</th><th>cost</th></tr></thead>
+        <tbody>
+          {totals.map((t) => {
+            const on = row === t.name
+            const toggle = () => setRow(on ? null : t.name)
+            return (
+              <Fragment key={t.name}>
+                <tr className={`ops-tr${on ? ' on' : ''}`} tabIndex={0} aria-expanded={on} onClick={toggle}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } }}>
+                  <td>{t.name}</td><td>{hours(t.active_s)}h</td>
+                  <td className={t.failed ? 'c-f' : t.stuck ? 'c-stuck' : 'ops-zero'}>{t.failed + t.stuck}</td><td>{usd(t.cost_usd)}</td>
+                </tr>
+                {on && (
+                  <tr className="ops-tx"><td colSpan={4}>
+                    {t.lanes} {t.lanes === 1 ? 'lane' : 'lanes'} · wait {hours(t.wait_s)}h · <span className={t.stuck ? 'c-stuck' : ''}>{t.stuck} stuck</span> · <span className={t.failed ? 'c-f' : ''}>{t.failed} failed</span>
+                  </td></tr>
+                )}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+      {totals.length > 0 && <div className="sub ops-thelp">Tap a row for lanes, wait, stuck.</div>}
+    </section>
+  )
 
   return (
     <>
@@ -129,11 +210,7 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
             <button type="button" className="icon-btn" aria-label="Later" disabled={shiftDay(day, step) > today && (mode === 'day' || isoWeek(shiftDay(day, step)) > isoWeek(today))}
               onClick={() => setDay(shiftDay(day, step) > today ? today : shiftDay(day, step))}>▶</button>
           </div>
-          <div className="seg" role="tablist" aria-label="Time scale">
-              {([['work', '08–20'], ['full', '24H']] as const).map(([k, t]) => (
-                <button key={k} type="button" role="tab" aria-selected={scale === k} className={scale === k ? 'on' : ''} onClick={() => setScale(k)}>{t}</button>
-              ))}
-            </div>
+          {laptop && scaleSeg}
           {project && (
             <button type="button" className="chip-f" onClick={() => navigate('/ops')} aria-label={`Clear filter ${project}`}>
               {project.toUpperCase()} <span aria-hidden="true">×</span>
@@ -144,38 +221,16 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
           </span>
         </div>
 
-        <section className="pn ops-tlp" aria-label="Timeline">
-          {error && <div className="err" role="alert">{error}</div>}
-          {!data && !error && <div className="sub">Loading…</div>}
-          {view && (
-            <div key={view.mode} className={`ops-view${view.query !== query ? ' ops-stale' : ''}`}>
-              {view.mode === 'day'
-                ? <Day lanes={lanes} queue={queue} day={view.day} today={today} now={now} scale={scale} dispatch={dispatch} onOpen={setOpen} />
-                : <Week days={view.data.days} lanes={lanes} today={today} now={now} scale={scale} onDay={(d) => { setDay(d); setMode('day') }} />}
-            </div>
-          )}
-          <div className="ops-legend" aria-label="Legend">
-            {LEGEND.map(([k, t]) => <span key={k}><i className={`sw st-${k}`} />{t}</span>)}
-            <span><i className="sw st-working live" />live</span>
-            <span><i className="sw planned" />planned</span>
-            <span>x axis: Paris time · ▷ run · ◉ session</span>
-          </div>
-        </section>
+        {!laptop && current && data && <Now lanes={lanes} queue={queue} dispatch={dispatch} now={now} onOpen={setOpen} />}
+        {!laptop && queuePanel}
+        {timeline}
+        {!laptop && totalsPhone}
 
-        <div className="ops-low">
-          <Queue queue={queue} qsum={qsum} now={now} slots={dispatch.slots} src={src}
-            reload={async () => { await load(); await refresh?.() }}
-            onCancel={cancel} onRoutine={routine} onEdit={setEdit} onSkip={skip} />
+        {laptop && <div className="ops-low">
+          {queuePanel}
 
           <section className="pn" aria-labelledby="ot">
-            <h2 className="ph" id="ot">
-              <span>{mode === 'day' ? dayLabel(day) : `Week ${isoWeek(day).slice(6)}`} totals</span>
-              <span className="seg sm" role="tablist" aria-label="Group by">
-                {(['project', 'kind'] as const).map((b) => (
-                  <button key={b} type="button" role="tab" aria-selected={by === b} className={by === b ? 'on' : ''} onClick={() => setBy(b)}>{b.toUpperCase()}</button>
-                ))}
-              </span>
-            </h2>
+            {totalsHead}
             <table className="ops-tot num">
               <thead><tr><th>{by}</th><th>lanes</th><th>active h</th><th>wait</th><th>stuck</th><th>failed</th><th>cost</th></tr></thead>
               <tbody>
@@ -195,7 +250,7 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
               </tfoot>
             </table>
           </section>
-        </div>
+        </div>}
       </div>
       {open && <LaneSheet lane={open} now={now} pid={agentOf(open, dispatch)?.pid} onClose={() => setOpen(null)} />}
       {sheet && <Sheet c={sheet} onClose={() => setSheet(null)} />}
@@ -445,6 +500,47 @@ type Dispatch = ReturnType<typeof dispatchOf>
 // The live agent of a lane: its session or run id among the lane keys.
 const agentOf = (l: OpsLane, d: Dispatch) =>
   isLive(l) ? d.agents.find((a) => (a.session_id && l.keys.includes(a.session_id)) || (a.run_id && l.keys.includes(a.run_id))) : undefined
+
+// Now card (item_274, phone): live runs then live sessions, each with OPEN to its chat, then
+// one row per free run slot; the first names the mission that takes it.
+function Now({ lanes, queue, dispatch, now, onOpen }: { lanes: OpsLane[]; queue: OpsQueued[]; dispatch: Dispatch; now: Date; onOpen: (l: OpsLane) => void }) {
+  const live = lanes.filter(isLive)
+  const runs = live.filter((l) => l.kind !== 'interactive')
+  const sess = live.filter((l) => l.kind === 'interactive')
+  const { busy, max } = dispatch.slots
+  const free = Math.max(0, max - busy)
+  const head = queue.find((q) => q.kind === 'mission')
+  return (
+    <section className="pn ops-nowc" aria-labelledby="on">
+      <h2 className="ph" id="on">
+        <span>Now</span>
+        <span className="sm num">slots {busy}/{max}{sess.length > 0 && ` · ${sess.length === 1 ? 'session' : `${sess.length} sessions`} live`}</span>
+      </h2>
+      {!live.length && !free && <div className="sub">Nothing runs now.</div>}
+      {[...runs, ...sess].map((l) => {
+        const a = agentOf(l, dispatch)
+        const s = l.kind === 'interactive'
+        const meta = [
+          s ? `${l.title === 'hub' ? 'hub ' : ''}session` : `run ${(runId(l) ?? l.id).slice(0, 8)}`,
+          l.spans[0] ? age(l.spans[0].start, now) : '',
+          usd(l.cost_usd),
+        ].filter(Boolean).join(' · ')
+        return (
+          <div key={l.id} className={`ops-nl${s ? ' k-s' : ''}`}>
+            <button type="button" className="ops-nb" onClick={() => onOpen(l)} title={l.title}>
+              <span className="ops-nt"><span className="ops-glyph" aria-label={s ? 'session' : 'run'}>{GLYPH[l.kind]}</span>{l.title}</span>
+              <span className="sm num">{meta}</span>
+            </button>
+            {a && <Link href={`/desk/${a.pid}`} className="btn sm p">OPEN</Link>}
+          </div>
+        )
+      })}
+      {Array.from({ length: free }, (_, i) => (
+        <div key={i} className="ops-free num">slot {busy + i + 1} free{i === 0 && ` · next: ${head ? head.title : 'queue empty'}`}</div>
+      ))}
+    </section>
+  )
+}
 
 function Day({ lanes, queue, day, today, now, scale, dispatch, onOpen }: { lanes: OpsLane[]; queue: OpsQueued[]; day: string; today: string; now: Date; scale: Scale; dispatch: Dispatch; onOpen: (l: OpsLane) => void }) {
   const isToday = day === today

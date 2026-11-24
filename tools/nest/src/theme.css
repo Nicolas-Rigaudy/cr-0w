@@ -1398,6 +1398,29 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .ops-view.ops-stale { opacity: 0.5; }
 @keyframes ops-in { from { opacity: 0; transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .ops-view { animation: none; transition: none; } }
+/* Phone Now card and four-column totals (item_274, phone option B). */
+.ops-nl { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px 9px 6px 10px; border-radius: 7px; background: var(--row); border-left: 3px solid var(--st-working); }
+.ops-nl.k-s { border-left-color: var(--accent); }
+.ops-nb { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 0; background: none; border: 0; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.ops-nt { display: flex; gap: 8px; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-nl .ops-glyph { color: var(--st-working); }
+.ops-nl.k-s .ops-glyph { color: var(--accent); }
+.ops-nb > .sm { color: var(--dim); overflow: hidden; text-overflow: ellipsis; }
+.ops-nl .btn.sm { flex: none; display: inline-flex; align-items: center; text-decoration: none; }
+.ops-free { padding: 6px 10px; border: 1px dashed var(--line); border-radius: 7px; color: var(--dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-tot4 { table-layout: fixed; }
+.ops-tot4 th:nth-child(2), .ops-tot4 td:nth-child(2) { width: 58px; }
+.ops-tot4 th:nth-child(3), .ops-tot4 td:nth-child(3) { width: 26px; }
+.ops-tot4 th:nth-child(4), .ops-tot4 td:nth-child(4) { width: 64px; }
+.ops-tot4 td:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-tr { cursor: pointer; }
+.ops-tr.on td { border-bottom: 0; }
+.ops-tr.on td:first-child { color: var(--accent); }
+.ops-tr:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.ops-zero { color: var(--sub); }
+.ops-tx td { text-align: left; font-size: 11.5px; color: var(--dim); padding-top: 0; white-space: normal; }
+.ops-thelp { font-size: 11px; }
+[data-theme='cyber'] .ops-nl, [data-theme='cyber'] .ops-free { border-radius: 0; }
 .ops-strip { display: flex; height: 10px; border-radius: 3px; overflow: hidden; gap: 1px; }
 /* Lane sheet (item_273, option C): checkout header, tabs, branch card, file rows. */
 .ls-head, .ls-card { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: var(--r-row); background: var(--row); font-size: 12px; }
