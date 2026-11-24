@@ -1,10 +1,10 @@
 ## item_273_ops_lane_sheet_run_changes_and_commits_tabs_from_the_worktree - Ops lane sheet: Run, Changes and Commits tabs from the worktree
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -34,7 +34,7 @@
 - AC3: Sheet matches lane/compare.html option C on laptop and 368x812, both themes.
 
 # AC Traceability
-- request-AC5 -> This backlog slice. Proof: owner-approved Ops design, built and checked on live data.
+- request-AC5 -> This backlog slice. Proof: implemented in 31b13ed (core GET /api/changes) and 7744c01 (Nest lane sheet). TestChanges compares the route with git diff --numstat main... and git log main.. in a worktree (AC1). The sheet hides the tabs when no git data exists (AC2). The owner approved built-273.png against lane-C on 2026-11-24 (AC3).
 
 # Decision framing
 - Product framing: Not needed
