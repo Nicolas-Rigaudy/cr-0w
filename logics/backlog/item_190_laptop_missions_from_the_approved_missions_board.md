@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-19 10:59:19
+> Indicators reviewed: 2026-11-24 11:16:29
 
 # AI Context
 - Summary: Rename the Missions tab to Ops and build it as the Nest view of the deck Agents tab: a day and week timeline of every session and run (owner and crow), what runs now, the queue, run detail and week totals. Phone and laptop, live data.
@@ -44,7 +44,7 @@
 - Core for it: a stored queue position on missions; tick admits by position, then Created; routes to move (up, down, to index), run next (to head) and start now over cap.
 - Lane sheet design decided 2026-11-24 (vault item_190/lane/compare.html, option C): tabs Run / Changes / Commits; header shows worktree path and diff total. Core for it: a changes route per lane (git in the lane cwd: branch, ahead/behind main, numstat per file, uncommitted count, commits on top of main), read on demand when the sheet opens.
 - Past waiting spans: item_264. The state log records them from now on.
-- Left: owner review on live data (AC1, AC3), then the missing actions as core routes.
+- Left: owner review on live data (AC1, AC3). The decided pieces are split out: item_272 (queue order and run now), item_273 (lane sheet tabs), item_274 (phone layout). AFK stop times wait for data.
 
 # Acceptance criteria
 - AC1: Owner approved the Ops board before the build.
