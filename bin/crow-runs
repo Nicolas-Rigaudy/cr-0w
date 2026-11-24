@@ -76,9 +76,19 @@ def project_name(cwd):
 
 
 def ledger():
+    """One record per run, in dispatch order. A later record with the same run id (the diff
+    stat notify appends at the end) merges into the first one."""
     if not LEDGER.exists():
         return []
-    return [json.loads(l) for l in LEDGER.read_text().splitlines() if l.strip()]
+    runs = {}
+    for l in LEDGER.read_text().splitlines():
+        try:
+            r = json.loads(l) if l.strip() else None
+        except ValueError:
+            continue
+        if isinstance(r, dict) and r.get("run_id"):
+            runs.setdefault(r["run_id"], {}).update(r)
+    return list(runs.values())
 
 
 _finished_cache = {}
@@ -364,6 +374,8 @@ def notify(run_ids, poll=20, max_hours=12):
                 st = run_state(done[rid])
                 if rec.get("isolated") and rec.get("permission") != "review":
                     commit_isolated(rec)
+                if rec:
+                    record_diff_stat(rec)
                 record_run(rec, st)
                 msg = requeue(rec, deadline) if st == "limit" and rec else ""
                 subprocess.run(["notify-send", "-a", "crow", "-u", "normal" if st == "done" else "critical",
@@ -771,6 +783,47 @@ def read_transcript(path):
     if sub.is_dir():
         info["subagents_active"] = sum(1 for s in sub.glob("*.jsonl") if time.time() - s.stat().st_mtime < 60)
     return info
+
+
+DIFF_FILES_MAX = 50
+
+
+def diff_stat(cwd, base):
+    """`git diff --numstat <base>...HEAD` in the run's cwd: totals and the first DIFF_FILES_MAX
+    files. None when the cwd is not a git checkout or the base is unknown. Binary files count 0."""
+    if not base or not os.path.isdir(cwd or "") or not sh("git", "rev-parse", "--git-dir", cwd=cwd):
+        return None
+    try:
+        r = subprocess.run(["git", "diff", "--numstat", f"{base}...HEAD"], cwd=cwd,
+                           capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if r.returncode:
+        return None
+    files = []
+    for line in r.stdout.splitlines():
+        parts = line.split("\t", 2)
+        if len(parts) == 3:
+            ins, dels, path = parts
+            files.append({"path": path, "insertions": int(ins) if ins.isdigit() else 0,
+                          "deletions": int(dels) if dels.isdigit() else 0})
+    return {"base": base, "files": len(files), "insertions": sum(f["insertions"] for f in files),
+            "deletions": sum(f["deletions"] for f in files), "per_file": files[:DIFF_FILES_MAX],
+            "truncated": len(files) > DIFF_FILES_MAX}
+
+
+def record_diff_stat(rec):
+    """Store the run's diff stat on its ledger row (an appended record ledger() merges), so the
+    run report keeps it once the worktree is gone. Nothing for a run with no git cwd."""
+    stat = diff_stat(rec.get("cwd"), rec.get("start_sha"))
+    if stat is None:
+        return None
+    try:
+        with LEDGER.open("a") as f:
+            f.write(json.dumps({"run_id": rec["run_id"], "diffstat": stat}) + "\n")
+    except OSError:
+        return None
+    return stat
 
 
 def commits_since(cwd, sha, until=None):

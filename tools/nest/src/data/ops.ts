@@ -40,6 +40,24 @@ export interface RunReport {
   item: string | null
   mission: string | null
   report: string
+  // Older cores omit it; null for live, mission and non-git runs.
+  diffstat?: DiffStat | null
+}
+
+export interface FileStat {
+  path: string
+  insertions: number
+  deletions: number
+}
+
+// git diff --numstat <start>...HEAD stored when a crow-runs run ends (item_269).
+export interface DiffStat {
+  base: string
+  files: number
+  insertions: number
+  deletions: number
+  per_file: FileStat[]
+  truncated: boolean
 }
 
 // Lane states that are live right now (lanes package glyph states).

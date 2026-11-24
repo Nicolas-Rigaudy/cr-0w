@@ -5,7 +5,7 @@
   "description": "Data of GET /api/runs/{id}: one crow-runs run from its ledger, or a mission run from the core store.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["run", "source", "project", "label", "account", "status", "started", "ended", "cost_usd", "commits", "branch", "worktree", "item", "mission", "report"],
+  "required": ["run", "source", "project", "label", "account", "status", "started", "ended", "cost_usd", "commits", "branch", "worktree", "item", "mission", "report", "diffstat"],
   "properties": {
     "run": {"type": "string", "minLength": 1, "description": "Full run id."},
     "source": {"enum": ["dispatch", "mission"]},
@@ -21,6 +21,28 @@
     "worktree": {"type": ["string", "null"]},
     "item": {"type": ["string", "null"], "description": "Logics ref of the run."},
     "mission": {"type": ["string", "null"]},
-    "report": {"type": "string", "description": "The run's final message, empty when unknown."}
+    "report": {"type": "string", "description": "The run's final message, empty when unknown."},
+    "diffstat": {
+      "description": "git diff --numstat <start sha>...HEAD in the run's cwd, stored when a crow-runs run ends. Null for live runs, mission runs and runs without a git cwd.",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["base", "files", "insertions", "deletions", "per_file", "truncated"],
+      "properties": {
+        "base": {"type": "string", "description": "Start sha of the run."},
+        "files": {"type": "integer", "minimum": 0},
+        "insertions": {"type": "integer", "minimum": 0},
+        "deletions": {"type": "integer", "minimum": 0},
+        "per_file": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "insertions", "deletions"],
+            "properties": {"path": {"type": "string"}, "insertions": {"type": "integer", "minimum": 0}, "deletions": {"type": "integer", "minimum": 0}}
+          }
+        },
+        "truncated": {"type": "boolean", "description": "More files than per_file lists (capped at 50)."}
+      }
+    }
   }
 }

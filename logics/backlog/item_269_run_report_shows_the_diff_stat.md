@@ -1,13 +1,15 @@
 ## item_269_run_report_shows_the_diff_stat - Run report shows the diff stat
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 80
 > Confidence: 80
 > Progress: 0%
 > Complexity: Small
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-24 17:18:35
 
 # AI Context
 - Summary: When a background run finishes, crow-runs saves the diff stat of its branch against its base on the ledger row; `GET /api/runs/{id}` returns it and the Nest run report shows files and lines changed.

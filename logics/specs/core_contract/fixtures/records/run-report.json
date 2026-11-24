@@ -16,5 +16,17 @@
   "worktree": "/work/crow.wt/item-257-ops",
   "item": "item_257_core_serves_the_ops_timeline_lanes_and_run_history",
   "mission": null,
-  "report": "Both steps committed, tests green."
+  "report": "Both steps committed, tests green.",
+  "diffstat": {
+    "base": "9c41d2e",
+    "files": 3,
+    "insertions": 214,
+    "deletions": 18,
+    "per_file": [
+      {"path": "tools/crow-core/internal/ops/lanes.go", "insertions": 168, "deletions": 0},
+      {"path": "tools/crow-core/internal/ops/lanes_test.go", "insertions": 41, "deletions": 0},
+      {"path": "tools/crow-core/internal/api/api.go", "insertions": 5, "deletions": 18}
+    ],
+    "truncated": false
+  }
 }

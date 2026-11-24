@@ -29,6 +29,24 @@ type ledgerRecord struct {
 	Account   string `json:"account"`
 	LogicsRef string `json:"logics_ref"`
 	Mission   string `json:"mission"`
+	// DiffStat comes from a later record with the same run id that crow-runs appends
+	// when the run ends.
+	DiffStat *contract.DiffStat `json:"diffstat"`
+}
+
+// merge folds a later record of the same run into x: a diff stat record only adds its
+// stat, a full record replaces x and keeps a stat x already has.
+func (x *ledgerRecord) merge(y ledgerRecord) {
+	if y.Project == "" && y.StartedAt == "" {
+		if y.DiffStat != nil {
+			x.DiffStat = y.DiffStat
+		}
+		return
+	}
+	if y.DiffStat == nil {
+		y.DiffStat = x.DiffStat
+	}
+	*x = y
 }
 
 var errAmbiguous = errors.New("run id prefix matches more than one run")
@@ -63,8 +81,8 @@ func (s *Server) runReport(w http.ResponseWriter, r *http.Request) {
 	reply(w, r, hash(d), d)
 }
 
-// ledgerRun is the last ledger record of the run id, or of the one run whose id starts
-// with it. nil when none matches or there is no ledger.
+// ledgerRun is the ledger record of the run id, or of the one run whose id starts with
+// it, merged with its later records. nil when none matches or there is no ledger.
 func (s *Server) ledgerRun(id string) (*ledgerRecord, error) {
 	if s.o.StateDir == "" || id == "" {
 		return nil, nil
@@ -78,7 +96,7 @@ func (s *Server) ledgerRun(id string) (*ledgerRecord, error) {
 	}
 	defer f.Close()
 	var exact *ledgerRecord
-	byPrefix := map[string]ledgerRecord{}
+	byPrefix := map[string]*ledgerRecord{}
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 64<<10), 1<<20)
 	for sc.Scan() {
@@ -87,10 +105,14 @@ func (s *Server) ledgerRun(id string) (*ledgerRecord, error) {
 			continue
 		}
 		switch {
-		case x.RunID == id:
+		case x.RunID == id && exact == nil:
 			exact = &x
+		case x.RunID == id:
+			exact.merge(x)
+		case len(id) >= minPrefix && strings.HasPrefix(x.RunID, id) && byPrefix[x.RunID] == nil:
+			byPrefix[x.RunID] = &x
 		case len(id) >= minPrefix && strings.HasPrefix(x.RunID, id):
-			byPrefix[x.RunID] = x
+			byPrefix[x.RunID].merge(x)
 		}
 	}
 	if err := sc.Err(); err != nil {
@@ -103,7 +125,7 @@ func (s *Server) ledgerRun(id string) (*ledgerRecord, error) {
 		return nil, errAmbiguous
 	}
 	for _, x := range byPrefix {
-		return &x, nil
+		return x, nil
 	}
 	return nil, nil
 }
@@ -113,7 +135,7 @@ func (s *Server) ledgerRun(id string) (*ledgerRecord, error) {
 func (s *Server) dispatchReport(x ledgerRecord) contract.RunReport {
 	d := contract.RunReport{Run: x.RunID, Source: "dispatch", Project: x.Project, Label: x.Label, Account: x.Account,
 		Status: "unknown", Started: x.StartedAt, Commits: []string{}, Branch: ptr(x.Branch), Worktree: ptr(x.Cwd),
-		Item: ptr(x.LogicsRef), Mission: ptr(x.Mission)}
+		Item: ptr(x.LogicsRef), Mission: ptr(x.Mission), DiffStat: x.DiffStat}
 	if e := s.ext["dispatch"]; e != nil {
 		m, _ := s.extSection(e, true).Data.(map[string]any)
 		for _, a := range rows(m, "agents") {

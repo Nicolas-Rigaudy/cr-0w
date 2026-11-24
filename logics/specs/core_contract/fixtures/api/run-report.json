@@ -13,5 +13,24 @@
   "worktree": "/work/project.wt/label",
   "item": "item_001_x",
   "mission": null,
-  "report": ""
+  "report": "",
+  "diffstat": {
+    "base": "abc1234",
+    "files": 2,
+    "insertions": 7,
+    "deletions": 1,
+    "per_file": [
+      {
+        "path": "a.go",
+        "insertions": 6,
+        "deletions": 1
+      },
+      {
+        "path": "b.png",
+        "insertions": 0,
+        "deletions": 0
+      }
+    ],
+    "truncated": false
+  }
 }

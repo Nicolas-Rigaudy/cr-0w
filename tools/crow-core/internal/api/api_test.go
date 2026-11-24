@@ -39,6 +39,7 @@ func stateDir(t *testing.T) string {
 	writeFile(t, filepath.Join(dir, RunsLedger), []byte(
 		`{"run_id":"run_id","project":"project","label":"label","cwd":"/work/project.wt/label","started_at":"2026-01-01T08:00:00+00:00","start_sha":"abc1234","branch":"label","account":"account","prompt_file":"p.md","power":"normal","model":"opus","permission":"auto","kind":"build","context":"","logics_ref":"item_001_x"}
 not json
+{"run_id":"run_id","diffstat":{"base":"abc1234","files":2,"insertions":7,"deletions":1,"per_file":[{"path":"a.go","insertions":6,"deletions":1},{"path":"b.png","insertions":0,"deletions":0}],"truncated":false}}
 {"run_id":"9f8e7d6c5b4a","project":"crow","label":"older run","cwd":"","started_at":"2026-01-01T07:00:00+00:00","account":"work"}
 `))
 	return dir
