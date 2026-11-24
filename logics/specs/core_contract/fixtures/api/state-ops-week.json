@@ -1,6 +1,6 @@
 {
   "section": "ops",
-  "version": "cada1403ec962084",
+  "version": "a9c01a270433e331",
   "updated_at": "2026-11-10T09:00:00Z",
   "data": {
     "week": "2026-W46",
@@ -31,7 +31,8 @@
         "cost_usd": 0,
         "tokens": 0,
         "commits": 0,
-        "runs": 1
+        "runs": 1,
+        "cwd": "cwd"
       }
     ],
     "queue": [

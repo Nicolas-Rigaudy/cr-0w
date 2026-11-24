@@ -28,7 +28,8 @@ type OpsLane struct {
 	CostUSD float64   `json:"cost_usd"`
 	Tokens  int       `json:"tokens"`
 	Commits int       `json:"commits"`
-	Runs    int       `json:"runs"` // runs or sessions folded into the lane
+	Runs    int       `json:"runs"`          // runs or sessions folded into the lane
+	Cwd     string    `json:"cwd,omitempty"` // checkout of the live agent, when known
 }
 
 // OpsSpan is one stretch of a lane in one state.

@@ -1,13 +1,15 @@
 ## item_273_ops_lane_sheet_run_changes_and_commits_tabs_from_the_worktree - Ops lane sheet: Run, Changes and Commits tabs from the worktree
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Owner: crow
+> Indicators reviewed: 2026-11-24 17:24:23
 
 # AI Context
 - Summary: The Ops lane sheet gets tabs Run / Changes / Commits. The header shows the worktree path and diff total; Changes lists branch, ahead/behind main, uncommitted count and per-file +/−.
@@ -55,4 +57,3 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-

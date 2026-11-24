@@ -1,0 +1,24 @@
+{
+  "cwd": "/home/owner/Projects/demo.wt/item-273",
+  "branch": "item-273",
+  "base": "main",
+  "ahead": 2,
+  "behind": 1,
+  "uncommitted": 3,
+  "diffstat": {
+    "base": "9c41d2e",
+    "files": 2,
+    "insertions": 128,
+    "deletions": 14,
+    "per_file": [
+      {"path": "tools/nest/src/screens/Ops.tsx", "insertions": 112, "deletions": 14},
+      {"path": "tools/nest/src/assets/lane.png", "insertions": 0, "deletions": 0}
+    ],
+    "truncated": false
+  },
+  "commits": [
+    {"sha": "4be19a0", "subject": "new[TS]: lane sheet tabs", "time": "2026-11-24T15:02:11+01:00"},
+    {"sha": "1f03c7d", "subject": "new[GO]: changes route", "time": "2026-11-24T14:40:53+01:00"}
+  ],
+  "more": false
+}

@@ -41,7 +41,7 @@ def test_every_schema_has_fixtures():
     assert {p.name for p in SCHEMAS.glob("*.json")} == {
         "request.schema.json", "reply.schema.json", "event.schema.json",
         "mission.schema.json", "run.schema.json", "inbox.schema.json", "live-action.schema.json",
-        "work-item.schema.json", "ops.schema.json", "run-report.schema.json", "modules.schema.json"}
+        "work-item.schema.json", "ops.schema.json", "run-report.schema.json", "modules.schema.json", "changes.schema.json"}
 
 
 def test_modules_fixture_valid():
@@ -63,6 +63,14 @@ def test_run_report_fixtures_valid():
     doc = load(FIX / "records" / "run-report.json")
     doc["source"] = "cron"
     assert errors("run-report.schema.json", doc)
+
+
+def test_changes_fixture_valid():
+    doc = load(FIX / "records" / "changes.json")
+    errs = errors("changes.schema.json", doc)
+    assert not errs, "; ".join(errs)
+    doc["base"] = "develop"
+    assert errors("changes.schema.json", doc)
 
 
 def test_ops_fixtures_valid():

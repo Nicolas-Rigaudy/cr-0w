@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crow/core/changes.schema.json",
+  "title": "changes",
+  "description": "Data of GET /api/changes?cwd=<path> (item_273): the git state of a live lane's checkout against the repo's main branch. The cwd must sit in a registered project or its .wt worktrees.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cwd", "branch", "base", "ahead", "behind", "uncommitted", "diffstat", "commits", "more"],
+  "properties": {
+    "cwd": {"type": "string", "minLength": 1},
+    "branch": {"type": "string", "description": "Current branch, empty on a detached HEAD."},
+    "base": {"enum": ["main", "master"]},
+    "ahead": {"type": "integer", "minimum": 0, "description": "Commits on HEAD not on base."},
+    "behind": {"type": "integer", "minimum": 0, "description": "Commits on base not on HEAD."},
+    "uncommitted": {"type": "integer", "minimum": 0, "description": "git status --porcelain lines."},
+    "diffstat": {
+      "description": "git diff --numstat <base>...HEAD.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "files", "insertions", "deletions", "per_file", "truncated"],
+      "properties": {
+        "base": {"type": "string", "description": "Merge base sha."},
+        "files": {"type": "integer", "minimum": 0},
+        "insertions": {"type": "integer", "minimum": 0},
+        "deletions": {"type": "integer", "minimum": 0},
+        "per_file": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "insertions", "deletions"],
+            "properties": {"path": {"type": "string"}, "insertions": {"type": "integer", "minimum": 0}, "deletions": {"type": "integer", "minimum": 0}}
+          }
+        },
+        "truncated": {"type": "boolean", "description": "More files than per_file lists (capped at 50)."}
+      }
+    },
+    "commits": {
+      "type": "array",
+      "description": "git log <base>..HEAD, newest first, capped at 50.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sha", "subject", "time"],
+        "properties": {"sha": {"type": "string"}, "subject": {"type": "string"}, "time": {"type": "string", "format": "date-time"}}
+      }
+    },
+    "more": {"type": "boolean", "description": "More commits than commits lists."}
+  }
+}

@@ -300,7 +300,7 @@ func lane(in Input, start time.Time, l lanes.Lane, agents []lanes.Agent, fin map
 		end = in.Now
 	}
 	out := contract.OpsLane{ID: l.Key, Day: day, Project: l.Project, Account: l.Account, Title: l.Title, Model: l.Model,
-		State: l.State, Keys: slices.Clone(l.Keys), CostUSD: round(l.Cost), Tokens: l.Tokens, Runs: l.Runs}
+		State: l.State, Keys: slices.Clone(l.Keys), CostUSD: round(l.Cost), Tokens: l.Tokens, Runs: l.Runs, Cwd: l.Cwd}
 	if out.Keys == nil {
 		out.Keys = []string{}
 	}
