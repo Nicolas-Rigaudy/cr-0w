@@ -42,6 +42,7 @@
 - Not built: mission run now and reorder (the tick starts by creation order, no priority or slot override). Also missing: worktree and diff stat, AFK stop times.
 - Queue design decided 2026-11-24 (vault item_190/queue/compare.html, option A): RUN on a queued mission opens a two-line menu, 'Next in line' (default, moves to the head) or 'Start now, over cap' (3rd run). Every mission row has a drag handle and up/down arrows, laptop and phone.
 - Core for it: a stored queue position on missions; tick admits by position, then Created; routes to move (up, down, to index), run next (to head) and start now over cap.
+- Lane sheet design decided 2026-11-24 (vault item_190/lane/compare.html, option C): tabs Run / Changes / Commits; header shows worktree path and diff total. Core for it: a changes route per lane (git in the lane cwd: branch, ahead/behind main, numstat per file, uncommitted count, commits on top of main), read on demand when the sheet opens.
 - Past waiting spans: item_264. The state log records them from now on.
 - Left: owner review on live data (AC1, AC3), then the missing actions as core routes.
 
