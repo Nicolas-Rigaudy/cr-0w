@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p .",
     "shots": "node scripts/shots.mjs",
+    "shots:ops-phone": "node scripts/ops-phone-shots.mjs",
     "reel:boot": "node scripts/boot-reel.mjs"
   },
   "dependencies": {
