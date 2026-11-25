@@ -59,3 +59,6 @@ Crow's own sandbox for runs (credential-free env, per-kind allowlists, denials) 
 - The hub links `tools/nest/node_modules` and `.claude/skills` into each new worktree; runs cannot `npm ci` or `ln`.
 - Runs write only inside their worktree plus `--write-dir`: dispatch with `--write-dir local/state/afk/shots/<job>` for renders. Render scripts live under `tools/nest/scripts/` (`node scripts/...` from tools/nest) or `scripts/`.
 - Raise the 60-call cap for long jobs with `CROW_TASK_CALL_CAP=150 bin/crow dispatch ...`.
+
+## Unattended hub: no command that can prompt (2026-11-24)
+The wait until the 19:52 reset fired on time. The hub's next command (a `journalctl` check) asked for approval and sat unanswered until 09:52, so jobs 3-8 never launched. Once the owner leaves, the hub runs only commands it already ran without a prompt that night (`bin/crow ...`, `bin/crow-runs ...`, `cdx status`, git in the worktrees). No diagnostics or new tools. Better still, launch every row that fits the floors before going idle.
