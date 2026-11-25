@@ -3,13 +3,15 @@ import type { ChatTarget, ConversationPage, PageAsk } from './conversation'
 import type { Actions } from './live'
 import type { Modules } from './modules'
 import type { Changes, Ops, RunReport } from './ops'
-import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName } from './types'
+import type { AgendaEvent, GateQuestion, InboxItem, Mission, SectionBody, SectionName } from './types'
 
 // The only door between screens and data. Fixtures (fixtures.ts) and the core
 // API (api.ts) implement it; main.tsx picks one.
 export interface DataSource {
   missions(): Promise<Mission[]>
   mission(id: string): Promise<Mission | undefined>
+  // The questions and options of one mission version (Inbox decisions, item_223).
+  questions?(mission: string, version: number): Promise<GateQuestion[]>
   inbox(): Promise<InboxItem[]>
   agenda(): Promise<AgendaEvent[]>
   // One script section. An unchanged section returns the same object.

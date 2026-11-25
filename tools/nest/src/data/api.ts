@@ -4,7 +4,7 @@ import type { Actions, LiveReply, Screen } from './live'
 import type { Modules } from './modules'
 import type { Changes, Ops, RunReport } from './ops'
 import type { DataSource } from './source'
-import type { AgendaEvent, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
+import type { AgendaEvent, GateQuestion, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
 
 // Live adapter over the core read API (item_144). Same origin, no CORS. Records in
 // `data` already follow the core contract types, so the mapping is a type cast.
@@ -20,6 +20,7 @@ interface Section<T> {
 
 interface MissionDetail {
   mission: Mission
+  versions?: Array<{ version: number; questions?: GateQuestion[] | null }>
 }
 
 export class ApiError extends Error {
@@ -163,6 +164,12 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
       if (res.status === 404) return undefined
       if (!res.ok) throw await failure(res)
       return ((await res.json()) as MissionDetail).mission
+    },
+    async questions(id, version) {
+      const res = await get(`${base}/missions/${encodeURIComponent(id)}`, { cache: 'no-store' })
+      if (!res.ok) return []
+      const d = (await res.json()) as MissionDetail
+      return d.versions?.find((v) => v.version === version)?.questions ?? []
     },
     async conversation(target, page) {
       const res = await get(`${base}${conversationPath(target)}${pageQuery(page)}`, { cache: 'no-store' })

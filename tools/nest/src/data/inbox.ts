@@ -44,6 +44,49 @@ export function toAnswer(inbox: InboxItem[], work: WorkItem[] | null, mail: Mail
 
 export const answerOf = (s: Snapshot) => toAnswer(s.inbox, workOf(s.sections.work), mailOf(s.sections.today), s.now)
 
+// Inbox kinds (item_223, board 223-B): the kind rail on the laptop and the chips on the phone.
+// Follow-ups wait on someone else and never count in the badge.
+export type InboxKind = 'decision' | 'review' | 'approval' | 'ask' | 'mail' | 'followup'
+export const KINDS: Array<[InboxKind, string]> = [
+  ['decision', 'Decisions'], ['review', 'Reviews'], ['approval', 'Approvals'], ['ask', 'Asks'], ['mail', 'Mail'], ['followup', 'Follow-ups'],
+]
+export const KIND_WORD: Record<InboxKind, string> = {
+  decision: 'decision', review: 'review', approval: 'approval', ask: 'ask', mail: 'mail', followup: 'follow-up',
+}
+
+const IMAGE = /\.(png|jpe?g|webp|gif|svg)$/i
+export const images = (r: InboxItem) => r.artifacts.filter((a) => IMAGE.test(a))
+// A review with images is a design review (item_211); without, a doc review.
+export const isDesign = (r: InboxItem) => r.source === 'mockup' || ((r.type === 'review' || r.type === 'choice') && images(r).length > 1)
+
+export function kindOfItem(r: InboxItem): InboxKind {
+  if (isDesign(r) || r.type === 'review') return 'review'
+  if (r.type === 'approval') return 'approval'
+  if (r.type === 'choice') return 'decision'
+  return 'ask'
+}
+
+export function kindOf(r: AnswerRow): InboxKind {
+  if (r.kind === 'mail') return 'mail'
+  if (r.kind === 'prompt') return 'ask'
+  return kindOfItem(r.item)
+}
+
+// What the row is, in words: "design review", "doc review", or the kind.
+export function kindWord(r: AnswerRow): string {
+  const k = kindOf(r)
+  if (k !== 'review' || r.kind !== 'ask') return KIND_WORD[k]
+  return isDesign(r.item) ? 'design review' : 'doc review'
+}
+
+const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+// Done today: rows answered or hidden since midnight, newest first.
+export function doneToday(inbox: InboxItem[], now: Date): InboxItem[] {
+  return inbox
+    .filter((r) => r.state !== 'open' && r.type !== 'fyi' && valid(r.answered ?? undefined) && sameDay(new Date(r.answered!), now))
+    .sort((a, b) => b.answered!.localeCompare(a.answered!))
+}
+
 // Inbox tab badge (owner 2026-11-16): the number of rows in "To answer", so the badge
 // and the list always agree.
 export function inboxBadge(s: Snapshot): { n: number } {

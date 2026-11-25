@@ -35,12 +35,14 @@ export function useAnswer(asked: InboxItem | undefined, inbox: InboxItem[], miss
   const m = asked && missions.find((x) => x.id === asked.mission)
   const newer = moved && !!item && !!asked && item.id !== asked.id
 
-  const send = async (verb: InboxVerb) => {
+  // lead names a picked option ("q1: url"); the note follows it.
+  const send = async (verb: InboxVerb, lead?: string) => {
     if (!item || !m) return
     setBusy(true)
     setError('')
+    const body = lead ? [lead, text.trim()].filter(Boolean).join('. ') : text
     try {
-      await act.missionAnswer(m.id, item.id, verb, text, m.version)
+      await act.missionAnswer(m.id, item.id, verb, body, m.version)
       setText('')
       await refresh()
     } catch (e) {

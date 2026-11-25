@@ -305,6 +305,11 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
   return {
     missions: async () => rec.missions,
     mission: async (id) => rec.missions.find((m) => m.id === id),
+    // The filters plan asks one choice; other missions carry no options.
+    questions: async (id, version) => id === '20261109-build-inbox-filters' && version === 1 ? [{
+      id: 'q1', text: 'Keep the filter in the URL?', blocking: true, recommended: 'url',
+      choices: [{ id: 'url', label: 'In the URL. A shared link opens the same filter.' }, { id: 'local', label: 'In local storage. URLs stay short.' }],
+    }] : [],
     inbox: async () => rec.inbox,
     agenda: async () => agenda,
     section,

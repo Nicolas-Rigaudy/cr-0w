@@ -78,6 +78,10 @@ export interface TodayEvent {
 export type InboxVerb =
   | 'go' | 'dig' | 'no' | 'ok' | 'msg' | 'abandon' | 'pick' | 'change' | 'approve' | 'answer'
 
+// One question of a mission version, with its options (core contract Question).
+export interface GateChoice { id: string; label: string; note?: string; preview?: string }
+export interface GateQuestion { id: string; text: string; blocking: boolean; choices?: GateChoice[]; default?: string; recommended?: string }
+
 export interface InboxItem {
   id: string
   mission: string

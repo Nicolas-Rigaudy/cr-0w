@@ -1,46 +1,51 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../data/api'
-import { answerOf, isFyi, type AnswerRow } from '../data/inbox'
+import { answerOf, doneToday, isFyi, kindOf, kindWord, KINDS, type AnswerRow, type InboxKind } from '../data/inbox'
 import type { Mail } from '../data/live'
-import { LABEL, type UiState } from '../data/state'
-import type { InboxItem, Mission } from '../data/types'
+import type { GateChoice, GateQuestion, InboxItem, InboxVerb, Mission } from '../data/types'
 import { useSource, type Snapshot } from '../data/useData'
-import { workWhen, type WorkItem } from '../data/work'
-import { ago, time, title } from '../format'
+import type { WorkItem } from '../data/work'
+import { time, title } from '../format'
 import { Link } from '../router'
 import { REJECT, useAnswer, verbLabel } from '../ui/answer'
-import { stateClass } from '../ui/Glyph'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { useMedia } from '../ui/useMedia'
-import { KindIcon, KindTag, TAG_LABEL, type TagKind } from '../ui/WorkList'
+import { TAG_ICON } from '../ui/WorkList'
 
-// Inbox (item_138 boards fold-inbox-inner, fold-inbox-cover) on the mission inbox of
-// item_168. "To answer" merges questions and flagged or important mail (item_204, owner
-// 2026-11-16) in the board row. Failed work stays on Desk. The reading pane answers a
-// question inline, flags a mail done or snoozed, and opens a waiting session or run.
+// Inbox (item_223 and item_191, board 223-B approved 2026-11-25): everything that waits on
+// the owner, by kind. Laptop: kind rail with the Reports log, list, reading pane. Fold and
+// phone: kind chips over the list. On the phone a row opens a sheet; swiping it left or
+// right moves to the next or previous row. FYI reports live in the read-only Reports log.
+const LAPTOP = '(min-width: 1100px)'
 const INNER = '(min-width: 600px)'
-const LATER = 'Arrives with the live API'
 const short = (id: string) => id.replace(/^\d{8}-/, '')
-const day = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: '2-digit' })
-const stamp = (iso: string) => `${day.format(new Date(iso))} · ${time(iso)}`
-const newest = (a: InboxItem, b: InboxItem) => b.created.localeCompare(a.created)
-const initials = (p: string) => p.split(/[^a-z0-9]+/i).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?'
-const valid = (iso?: string) => !!iso && !isNaN(Date.parse(iso))
+const valid = (iso?: string | null) => !!iso && !isNaN(Date.parse(iso))
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-type Seg = 'all' | 'answer' | 'drafts' | 'fyi'
+type Filter = 'all' | InboxKind
 
-// ---- icons (board paths) ----
-const Diamond = ({ s = 13 }: { s?: number }) => (
-  <svg width={s} height={s} viewBox="0 0 16 16" style={{ flex: 'none' }} aria-hidden="true"><path d="M8 1 15 8 8 15 1 8Z" fill="var(--c-n)" /></svg>
-)
-const Env = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#8087a2" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
-)
-const Unfold = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <rect x="3" y="4" width="8" height="16" rx="2" /><path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M14 12h4m-2-2 2 2-2 2" />
-  </svg>
-)
+// ---- kind icons (board 223-B) ----
+const ICON: Record<InboxKind | 'design' | 'doc' | 'done', ReactNode> = {
+  decision: <><circle cx="11" cy="4.5" r="2" /><circle cx="5" cy="17.5" r="2" /><circle cx="17" cy="17.5" r="2" /><path d="M11 6.5v4l-6 5M11 10.5l6 5" /></>,
+  review: <><rect x="3" y="4" width="7" height="14" rx="1.5" /><rect x="12" y="4" width="7" height="14" rx="1.5" /></>,
+  design: <><rect x="3" y="4" width="7" height="14" rx="1.5" /><rect x="12" y="4" width="7" height="14" rx="1.5" /></>,
+  doc: <><path d="M5.5 2.5h7l4 4v13h-11z" /><path d="M12.5 2.5v4h4M8 11h6M8 14h6M8 17h3.5" /></>,
+  approval: <path d="m5 11.5 4 4 8-9" />,
+  done: <path d="m5 11.5 4 4 8-9" />,
+  ask: TAG_ICON.question,
+  mail: TAG_ICON.mail,
+  followup: <><circle cx="11" cy="11" r="8.5" /><path d="M11 6.5V11l3 2" /></>,
+}
+function Icon({ k }: { k: keyof typeof ICON }) {
+  return (
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round">{ICON[k]}</svg>
+  )
+}
+const iconOf = (r: AnswerRow): keyof typeof ICON => {
+  const k = kindOf(r)
+  if (k === 'review') return kindWord(r) === 'design review' ? 'design' : 'doc'
+  return k
+}
 
 // Where a waiting work item opens: its mission, the MRs, or the Desk for live work.
 export function workHref(w: WorkItem) {
@@ -50,39 +55,74 @@ export function workHref(w: WorkItem) {
   return '/desk'
 }
 
-// One board row per answer row (owner 2026-11-16): title and clock time over source and
-// status. A question's source line names what asks it. `when` and `why` feed the cover hero.
-interface Line { state: UiState; title: string; src: string; status?: string; kind: TagKind; at?: string; when: string; why?: string }
-function lineOf(r: AnswerRow, missions: Mission[], now: Date): Line {
+// Row text: title and clock time over kind · source · status (board 223-B).
+interface Line { title: string; sub: string[]; at?: string }
+function lineOf(r: AnswerRow, missions: Mission[]): Line {
   const at = valid(r.at) ? time(r.at!) : undefined
-  // Line 2 names what the session or run asks (owner 2026-11-16): "session · lambda · asks Bash".
+  const k = kindWord(r)
   if (r.kind === 'prompt') {
     const w = r.item
-    return { state: 'needs', title: w.title, src: `${w.kind} · ${w.project}`, status: w.why, kind: 'question', at, when: workWhen(w, now), why: w.why }
+    return { title: w.title, sub: [k, w.kind, w.project, ...(w.why ? [w.why] : [])], at }
   }
   if (r.kind === 'mail') {
     const m = r.item
-    return { state: 'needs', title: m.subject, src: m.from ?? 'Outlook', status: m.flag ?? 'flagged', kind: 'mail', when: '', why: m.scope }
+    return { title: m.subject, sub: [k, m.from ?? 'Outlook', m.flag ?? 'flagged'] }
   }
   const q = r.item
   const m = missions.find((x) => x.id === q.mission)
-  return { state: 'needs', title: q.ask, src: `mission · ${m ? title(m) : short(q.mission)}`, kind: 'question', at, when: valid(q.created) ? `waits ${ago(q.created, now)}` : '', why: q.ask }
+  return { title: q.ask, sub: [k, m ? title(m) : short(q.mission), q.project], at }
+}
+
+// The options of a row: the question it asks, else the first question of its version
+// that has choices.
+function optionsOf(qs: GateQuestion[], r: InboxItem): { q?: GateQuestion; choices: GateChoice[] } {
+  const qid = r.source === 'questions' ? r.id.slice(r.id.lastIndexOf('/') + 1) : undefined
+  const q = qid ? qs.find((x) => x.id === qid) : qs.find((x) => x.choices?.length)
+  return { q, choices: q?.choices ?? [] }
+}
+// A pick answers the row with its own pick verb, else the verb that resumes the asker.
+const pickVerb = (verbs: InboxVerb[]): InboxVerb | undefined =>
+  (['pick', 'answer', 'msg', 'go', 'ok', 'approve'] as InboxVerb[]).find((v) => verbs.includes(v))
+
+function useQuestions(r: InboxItem | undefined) {
+  const src = useSource()
+  const [qs, setQs] = useState<{ key: string; list: GateQuestion[] }>({ key: '', list: [] })
+  const key = r ? `${r.mission}/v${r.version}` : ''
+  useEffect(() => {
+    if (!r || !src.questions || key === qs.key) return
+    let live = true
+    src.questions(r.mission, r.version).then((list) => { if (live) setQs({ key, list }) }, () => { if (live) setQs({ key, list: [] }) })
+    return () => { live = false }
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+  return qs.key === key ? qs.list : []
 }
 
 function useInbox(snap: Snapshot, refresh: () => Promise<void>) {
   const { inbox, missions } = snap
   const act = useSource().actions
-  const [seg, setSeg] = useState<Seg>('all')
+  const [filter, setFilter] = useState<Filter>('all')
   const [sheet, setSheet] = useState<Confirm | null>(null)
+  const [open, setOpen] = useState(false)
+  const [choice, setChoice] = useState<string | undefined>()
   const rows = answerOf(snap)
-  const fyis = inbox.filter(isFyi).sort(newest)
-  const fyiRows: AnswerRow[] = fyis.map((r) => ({ key: `q:${r.id}`, kind: 'ask', at: r.created, item: r }))
-  const [sel, setSel] = useState<string | undefined>(rows[0]?.key ?? fyiRows[0]?.key)
-  const picked = [...rows, ...fyiRows].find((r) => r.key === sel) ?? rows[0] ?? fyiRows[0]
+  const shown = filter === 'all' ? rows : rows.filter((r) => kindOf(r) === filter)
+  const done = filter === 'all' ? doneToday(inbox, snap.now) : []
+  const fyis = inbox.filter(isFyi)
+  const count = (k: InboxKind) => rows.filter((r) => kindOf(r) === k).length
+  const [sel, setSelRaw] = useState<string | undefined>(shown[0]?.key)
+  const picked = shown.find((r) => r.key === sel) ?? shown[0]
   const q = picked?.kind === 'ask' ? picked.item : undefined
   const a = useAnswer(q, inbox, missions, refresh)
-  const missionOf = (r: InboxItem) => missions.find((m) => m.id === r.mission)
-  const line = (r: AnswerRow) => lineOf(r, missions, snap.now)
+  const qs = useQuestions(q)
+  const opts = q ? optionsOf(qs, q) : { choices: [] }
+  const chosen = opts.choices.find((c) => c.id === choice) ?? opts.choices.find((c) => c.id === opts.q?.recommended) ?? opts.choices[0]
+  const setSel = (k: string) => { setSelRaw(k); setChoice(undefined) }
+  const step = (d: 1 | -1) => {
+    const n = shown.findIndex((r) => r.key === picked?.key)
+    const to = shown[n + d]
+    if (to) setSel(to.key)
+  }
+  const line = (r: AnswerRow) => lineOf(r, missions)
 
   const hide = (r: InboxItem) => setSheet({
     title: 'Hide this item?', lead: 'It leaves the inbox without a reply.',
@@ -104,250 +144,230 @@ function useInbox(snap: Snapshot, refresh: () => Promise<void>) {
     target: [['mail', m.subject]], note: 'Changes the Outlook flag only; nothing is sent.', ok: verb === 'done' ? 'Done' : 'Snooze',
     run: async () => { await act.mail(m.id, verb); await refresh() },
   })
-  return { seg, setSeg, sel: picked?.key, setSel, picked, q, rows, fyis, a, missionOf, line, hide, flag, sheet, setSheet }
+  return { filter, setFilter, rows, shown, done, fyis, count, sel: picked?.key, setSel, picked, q, a, opts, chosen, setChoice, open, setOpen, step, missions, line, hide, flag, sheet, setSheet }
 }
 type I = ReturnType<typeof useInbox>
 
-// ---- shared pieces ----
-function From({ r, m }: { r: InboxItem; m?: Mission }) {
-  return <>from {m ? title(m) : short(r.mission)} · {r.project} · {r.source} v{r.version}</>
-}
-
-function Stale({ i }: { i: I }) {
-  if (!i.a.newer) return i.a.error ? <div className="err" role="alert">{i.a.error}</div> : null
-  return (
-    <div className="stale" role="alert">
-      <b>THE MISSION MOVED ON · NOW V{i.a.mission?.version}</b>
-      <div className="sm">You answered v{i.q?.version}. This is the newer question. Your text is kept.</div>
-    </div>
-  )
-}
-
-function Note({ i, big }: { i: I; big?: boolean }) {
-  const r = i.q!
-  return (
-    <div className={`well${big ? ' big' : ''}`}>
-      <div className="wh"><span className="lb">Note to the mission</span><span className="sm">{r.type} · v{i.a.mission?.version ?? r.version}</span></div>
-      <textarea className="note" placeholder="Optional. Sent with the reply." aria-label="Note to the mission"
-        value={i.a.text} onChange={(e) => i.a.setText(e.target.value)} disabled={i.a.busy} rows={3} />
-      {!big && r.artifacts.map((f) => (
-        <div className="row" key={f}><span className="f1">{f.split('/').pop()}</span><span className="sm">artifact</span></div>
-      ))}
-    </div>
-  )
-}
-
-// The bottom row of the picked item: mission verbs, mail flag verbs, or an open link.
-function Verbs({ i, hide, cls }: { i: I; hide?: boolean; cls: string }) {
-  const p = i.picked!
-  if (p.kind === 'mail') {
-    return (
-      <div className={`btnrow ${cls}`}>
-        <button type="button" className="btn p" onClick={() => i.flag(p.item, 'done')}>Done</button>
-        <button type="button" className="btn" onClick={() => i.flag(p.item, 'snooze')}>Snooze</button>
-      </div>
-    )
-  }
-  if (p.kind === 'prompt') {
-    return <div className={`btnrow ${cls}`}><Link className="btn p" href={workHref(p.item)}>Open</Link></div>
-  }
-  const item = i.a.item
-  const r = p.item
-  return (
-    <div className={`btnrow ${cls}`}>
-      {item && i.a.mission && item.verbs.map((v, n) => (
-        <button key={v} type="button" className={`btn${n === 0 ? ' p' : REJECT.includes(v) ? ' x' : ''}`}
-          onClick={() => i.a.send(v)} disabled={i.a.busy} aria-busy={i.a.busy}>{n === 0 && i.a.busy ? 'Sending…' : verbLabel(v)}</button>
-      ))}
-      {hide && r.state === 'open' && <button type="button" className="btn x hide" onClick={() => i.hide(r)} disabled={i.a.busy}>Hide</button>}
-    </div>
-  )
-}
-
-const hasVerbs = (p: AnswerRow) => p.kind !== 'ask' || (p.item.state === 'open' && p.item.type !== 'fyi')
-
-// Board row (fold-inbox-inner, owner 2026-11-16): the kind icon on the left in the state
-// colour, title and time over source · status. No kind pill, no state column. Desk keeps row A.
-function AnsRow({ i, r, cover }: { i: I; r: AnswerRow; cover?: boolean }) {
+// ---- list ----
+function Row({ i, r }: { i: I; r: AnswerRow }) {
   const l = i.line(r)
   const on = r.key === i.sel
-  const sub = l.status ? `${l.src} · ${l.status}` : l.src
   return (
-    <button type="button" className={`row irow${cover ? ' r2' : ''}${on ? ' on' : ''}`} aria-pressed={on} onClick={() => i.setSel(r.key)}
-      aria-label={`${TAG_LABEL[l.kind]} ${l.title}, ${sub}, ${LABEL[l.state]}${l.at ? `, ${l.at}` : ''}`}>
-      <span className={`ic ${stateClass(l.state)}`}><KindIcon kind={l.kind} size={16} /></span>
-      <span className="t">
-        <b>{l.title}</b>
-        <span>{l.src}{l.status && <> · <span>{l.status}</span></>}</span>
-      </span>
+    <button type="button" className={`irow${on ? ' on' : ''}`} aria-pressed={on} onClick={() => { i.setSel(r.key); i.setOpen(true) }}
+      aria-label={`${l.title}, ${l.sub.join(', ')}${l.at ? `, ${l.at}` : ''}`}>
+      <span className={`ic k-${kindOf(r)}`}><Icon k={iconOf(r)} /></span>
+      <span className="t"><b>{l.title}</b><span>{l.sub.join(' · ')}</span></span>
       {l.at && <span className="tm num">{l.at}</span>}
     </button>
   )
 }
 
-// FYI keeps its one-line row.
-function FyiRow({ i, r }: { i: I; r: InboxItem }) {
-  const on = `q:${r.id}` === i.sel
+function DoneRow({ r }: { r: InboxItem }) {
+  const at = time(r.answered!)
   return (
-    <button type="button" className={`row${on ? ' on' : ''}`} aria-pressed={on} onClick={() => i.setSel(`q:${r.id}`)}>
-      <span className="sm num">{time(r.created)}</span><span className="f1">{r.project} · {r.ask}</span>
-    </button>
-  )
-}
-
-// ---- reading pane (inner and laptop) ----
-function Read({ i }: { i: I }) {
-  const p = i.picked
-  if (!p) return <section className="pn grow read"><div className="sm">Inbox is empty.</div></section>
-  if (p.kind === 'mail') {
-    const m = p.item
-    return (
-      <section className="pn grow read" aria-labelledby="rt" aria-live="polite">
-        <h2 className="ph" id="rt"><span className="rt">{m.subject}</span></h2>
-        <div className="sm">from {m.from ?? 'unknown'}{m.scope && <> · {m.scope} mailbox</>} · flagged or important in Outlook</div>
-        <div className="body">Crow does not read the body yet. Open it in Outlook.</div>
-        <Verbs i={i} cls="end act" />
-      </section>
-    )
-  }
-  if (p.kind === 'prompt') {
-    const w = p.item
-    return (
-      <section className="pn grow read" aria-labelledby="rt" aria-live="polite">
-        <h2 className="ph" id="rt"><span className="rt">{w.title}</span>{valid(w.since) && <span className="sm num">{stamp(w.since!)}</span>}</h2>
-        <div className="sm">{w.project} · <KindTag kind={w.kind} /></div>
-        <div className="body">{w.why ?? 'Waiting on you.'}</div>
-        <Verbs i={i} cls="end act" />
-      </section>
-    )
-  }
-  const r = p.item
-  const m = i.missionOf(r)
-  return (
-    <section className="pn grow read" aria-labelledby="rt" aria-live="polite">
-      <h2 className="ph" id="rt"><span className="rt">{m ? title(m) : short(r.mission)}</span><span className="sm num">{stamp(r.created)}</span></h2>
-      <div className="sm"><From r={r} m={m} /> · <Link className="lk" href={`/missions/${r.mission}`}>Mission ›</Link></div>
-      <div className="body">{(i.a.item ?? r).ask}</div>
-      <Stale i={i} />
-      {r.state === 'open' && r.type !== 'fyi' && <Note i={i} />}
-      <div className="sm">source: {r.file}</div>
-      {r.state === 'open' && <Verbs i={i} hide cls="end act" />}
-    </section>
-  )
-}
-
-// ---- fold inner and laptop (board fold-inbox-inner) ----
-function InboxInner({ i }: { i: I }) {
-  const all = i.rows.length + i.fyis.length
-  const segs: Array<[Seg, string]> = [['all', `All ${all}`], ['answer', 'Answer'], ['drafts', 'Drafts'], ['fyi', 'FYI']]
-  const show = (s: Seg) => i.seg === 'all' || i.seg === s
-  return (
-    <div className="desk desk-in ibx">
-      <div className="col">
-        <div className="segs" role="group" aria-label="Filter">
-          {segs.map(([k, l]) => (
-            <button key={k} type="button" className={`seg${i.seg === k ? ' on' : ''}`} aria-pressed={i.seg === k} onClick={() => i.setSeg(k)}>{l}</button>
-          ))}
-        </div>
-        <section className="pn grow list-pn" aria-label="Inbox">
-          {show('answer') && (
-            <>
-              <div className="grp c-n"><span>To answer</span><span className="num">{i.rows.length}</span></div>
-              <div className="alist">{i.rows.map((r) => <AnsRow key={r.key} i={i} r={r} />)}</div>
-            </>
-          )}
-          {show('drafts') && (
-            <>
-              <div className="grp c-m"><span>Drafts ready</span><span className="num" /></div>
-              <div className="sm later">{LATER}</div>
-            </>
-          )}
-          {show('fyi') && (
-            <>
-              <div className="grp c-q"><span>FYI</span><span className="num">{i.fyis.length}</span></div>
-              {i.fyis.map((r) => <FyiRow key={r.id} i={i} r={r} />)}
-            </>
-          )}
-        </section>
-        <section className="pn none" aria-labelledby="tr">
-          <h2 className="ph" id="tr"><span>Triage</span></h2>
-          <div className="row"><Diamond /><span className="f1">Rules</span><Link className="lk" href="/reports">Reports ›</Link></div>
-          <div className="sm">{LATER} · crow never sends</div>
-        </section>
-      </div>
-      <Read i={i} />
+    <div className="irow done">
+      <span className="ic k-done"><Icon k="done" /></span>
+      <span className="t"><b>{r.ask}</b><span>{r.state === 'dropped' ? 'hidden' : 'answered'} {at} · {r.project}</span></span>
+      <span className="tm num">{at}</span>
     </div>
   )
 }
 
-// ---- fold cover (board fold-inbox-cover) ----
-function Hero({ i }: { i: I }) {
-  const p = i.picked
-  if (!p) return <section className="gcard dhero"><div className="gt"><span>Inbox</span></div><div className="gs">Nothing to answer.</div></section>
-  const count = `To answer · ${i.rows.length}`
-  if (p.kind !== 'ask') {
-    const l = i.line(p)
-    return (
-      <section className="gcard dhero ask" aria-labelledby="ct">
-        <div className="gt"><span className="c-n">{count}</span><span className="num">{l.when}</span></div>
-        <div className="who">
-          <span className="av" aria-hidden="true">{initials(l.src)}</span>
-          <div className="hm"><h2 className="gh" id="ct">{l.title}</h2><span className="gs">{l.src} · <KindTag kind={l.kind} /></span></div>
-        </div>
-        {l.why && <div className="body">{p.kind === 'mail' ? `${l.why} mailbox` : l.why}</div>}
-      </section>
-    )
-  }
-  const r = p.item
-  const m = i.missionOf(r)
+function List({ i }: { i: I }) {
+  const show = (k: InboxKind) => i.filter === 'all' || i.filter === k
   return (
-    <section className="gcard dhero ask" aria-labelledby="ct">
-      <div className="gt"><span className={r.type === 'fyi' ? 'c-q' : 'c-n'}>{r.type === 'fyi' ? 'FYI' : count}</span><span className="num">{time(r.created)}</span></div>
-      <div className="who">
-        <span className="av" aria-hidden="true">{initials(r.project)}</span>
-        <div className="hm"><h2 className="gh" id="ct">{m ? title(m) : short(r.mission)}</h2><span className="gs"><From r={r} m={m} /></span></div>
+    <section className="pn ilist" aria-label="Inbox">
+      <div className="grp c-n"><span>To answer</span><span className="num">{i.shown.length}</span></div>
+      <div className="alist">
+        {i.shown.map((r) => <Row key={r.key} i={i} r={r} />)}
+        {i.shown.length === 0 && <div className="sm empty">Nothing to answer.</div>}
       </div>
-      <div className="body">{(i.a.item ?? r).ask}</div>
-      <Stale i={i} />
-      {r.state === 'open' && r.type !== 'fyi' && <Note i={i} big />}
+      {show('followup') && (
+        <>
+          <div className="grp c-q"><span>Waiting on others</span><span className="num">0</span></div>
+          <div className="sm empty">No follow-up tracked yet.</div>
+        </>
+      )}
+      {i.done.length > 0 && (
+        <>
+          <div className="grp c-d"><span>Done today</span><span className="num">{i.done.length}</span></div>
+          <div className="alist">{i.done.map((r) => <DoneRow key={r.id} r={r} />)}</div>
+        </>
+      )}
     </section>
   )
 }
 
-function InboxCover({ i }: { i: I }) {
-  const p = i.picked
-  const rest = i.rows.filter((x) => x.key !== p?.key)
+function Rail({ i }: { i: I }) {
+  const item = (k: Filter, label: string, n: number) => (
+    <button key={k} type="button" className={`kind${i.filter === k ? ' on' : ''}`} aria-pressed={i.filter === k} onClick={() => i.setFilter(k)}>
+      <span>{label}</span><span className="num">{n}</span>
+    </button>
+  )
   return (
-    <div className="desk desk-cv ibx">
-      <Hero i={i} />
-      <div className="gl">
-        <div className="gls"><span>Also today</span><span className="num">{rest.length + i.fyis.length}</span></div>
-        {rest.slice(0, 3).map((x) => <AnsRow key={x.key} i={i} r={x} cover />)}
-        {i.fyis.length > 0 && (
-          <button type="button" className="row r2" onClick={() => i.setSel(`q:${i.fyis[0].id}`)}>
-            <span className="ic"><Env /></span>
-            <span className="t"><b>{i.fyis.length} FYI</b><span>{[...new Set(i.fyis.map((x) => x.project))].join(', ')}</span></span>
-            <span className="chev">›</span>
+    <nav className="pn rail" aria-label="Kinds">
+      <div className="grp"><span>Kinds</span></div>
+      {item('all', 'All', i.rows.length)}
+      {KINDS.map(([k, l]) => item(k, l, i.count(k)))}
+      <div className="grp"><span>Log</span></div>
+      <Link className="kind log" href="/reports"><span><b>Reports</b><span className="sm">read-only, {i.fyis.length}</span></span><span className="chev">›</span></Link>
+    </nav>
+  )
+}
+
+function Chips({ i }: { i: I }) {
+  const chip = (k: Filter, label: string, n: number) => (
+    <button key={k} type="button" className={`ichip${i.filter === k ? ' on' : ''}`} aria-pressed={i.filter === k} onClick={() => i.setFilter(k)}>{label} {n}</button>
+  )
+  return (
+    <div className="ichips" role="group" aria-label="Kinds">
+      {chip('all', 'All', i.rows.length)}
+      {KINDS.map(([k, l]) => chip(k, l, i.count(k)))}
+    </div>
+  )
+}
+
+// ---- reader ----
+function Route({ i }: { i: I }) {
+  const p = i.picked!
+  if (p.kind === 'mail') return <div className="route">→ changes the Outlook flag only · nothing is sent</div>
+  if (p.kind === 'prompt') return <div className="route">→ opens the waiting {p.item.kind}</div>
+  const m = i.missions.find((x) => x.id === p.item.mission)
+  return <div className="route">→ answer goes to mission {m ? title(m) : short(p.item.mission)} · it resumes</div>
+}
+
+function Answer({ i }: { i: I }) {
+  const p = i.picked!
+  if (p.kind === 'mail') {
+    return (
+      <div className="btnrow">
+        <button type="button" className="btn p" onClick={() => i.flag(p.item, 'done')}>Done</button>
+        <button type="button" className="btn" onClick={() => i.flag(p.item, 'snooze')}>Snooze</button>
+      </div>
+    )
+  }
+  if (p.kind === 'prompt') return <div className="btnrow"><Link className="btn p" href={workHref(p.item)}>Open</Link></div>
+  const item = i.a.item
+  const r = p.item
+  if (!item || !i.a.mission) return null
+  const pv = i.opts.choices.length ? pickVerb(item.verbs) : undefined
+  const lead = (c: GateChoice) => `${i.opts.q?.id ?? 'pick'}: ${c.id}`
+  const letter = (c: GateChoice) => LETTERS[i.opts.choices.indexOf(c)]
+  const rest = item.verbs.filter((v) => v !== pv)
+  return (
+    <>
+      <input className="inote" placeholder="Change or note (optional)" aria-label="Change or note"
+        value={i.a.text} onChange={(e) => i.a.setText(e.target.value)} disabled={i.a.busy} />
+      <div className="btnrow">
+        {pv && i.chosen && (
+          <button type="button" className="btn p" onClick={() => i.a.send(pv, lead(i.chosen!))} disabled={i.a.busy} aria-busy={i.a.busy}>
+            {i.a.busy ? 'Sending…' : `Pick ${letter(i.chosen)}`}
           </button>
         )}
-        <Link className="row r2" href="/reports">
-          <span className="ic tri"><Diamond /></span>
-          <span className="t"><b>Triage rules</b><span>{LATER}</span></span>
-          <span className="chev">›</span>
-        </Link>
+        {pv && i.opts.choices.filter((c) => c !== i.chosen).map((c) => (
+          <button key={c.id} type="button" className="btn" onClick={() => i.setChoice(c.id)} disabled={i.a.busy}>{letter(c)}</button>
+        ))}
+        {rest.map((v, n) => (
+          <button key={v} type="button" className={`btn${!pv && n === 0 ? ' p' : REJECT.includes(v) ? ' x' : ''}`}
+            onClick={() => i.a.send(v)} disabled={i.a.busy} aria-busy={i.a.busy}>{!pv && n === 0 && i.a.busy ? 'Sending…' : verbLabel(v)}</button>
+        ))}
+        {r.state === 'open' && <button type="button" className="btn x hide" onClick={() => i.hide(r)} disabled={i.a.busy}>Hide</button>}
       </div>
-      <div className="uf"><Unfold />unfold to read and hide</div>
-      {p && hasVerbs(p) && <div className="dock"><Verbs i={i} cls="gbtns" /></div>}
+    </>
+  )
+}
+
+function Reader({ i }: { i: I }) {
+  const p = i.picked
+  if (!p) return <section className="pn read"><div className="sm">Inbox is empty.</div></section>
+  const l = i.line(p)
+  const meta = p.kind === 'ask' ? [...l.sub, `v${p.item.version}`, p.item.file] : l.sub
+  return (
+    <section className="pn read" aria-labelledby="rt" aria-live="polite">
+      <h2 id="rt" className="rt">{l.title}</h2>
+      <div className="meta">{meta.join(' · ')}</div>
+      <Body i={i} />
+      <div className="foot">
+        {i.a.error && <div className="err" role="alert">{i.a.error}</div>}
+        {i.a.newer && <div className="stale" role="alert"><b>THE MISSION MOVED ON · NOW V{i.a.mission?.version}</b><span className="sm">Your text is kept.</span></div>}
+        <Answer i={i} />
+        <Route i={i} />
+      </div>
+    </section>
+  )
+}
+
+function Body({ i }: { i: I }) {
+  const p = i.picked!
+  if (p.kind === 'mail') return <div className="body">from {p.item.from ?? 'unknown'}{p.item.scope && <> · {p.item.scope} mailbox</>}. Crow does not read the body yet. Open it in Outlook.</div>
+  if (p.kind === 'prompt') return <div className="body">{p.item.why ?? 'Waiting on you.'}</div>
+  const r = i.a.item ?? p.item
+  const { q, choices } = i.opts
+  return (
+    <>
+      <h3 className="sh">Context</h3>
+      <div className="body">{q && q.text !== r.ask ? `${r.ask}\n\n${q.text}` : r.ask}</div>
+      {choices.length > 0 && (
+        <>
+          <h3 className="sh">Options</h3>
+          <div className="opts" role="radiogroup" aria-label="Options">
+            {choices.map((c, n) => (
+              <button key={c.id} type="button" role="radio" aria-checked={c === i.chosen}
+                className={`opt${c === i.chosen ? ' on' : ''}${c.id === q?.recommended ? ' rec' : ''}`} onClick={() => i.setChoice(c.id)}>
+                <b>{LETTERS[n]}</b><span className="f1">{c.label}{c.note && <span className="sm"> {c.note}</span>}</span>
+                {c.id === q?.recommended && <span className="tag">recommended</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
+// ---- phone sheet: swipe left for the next row, right for the previous ----
+function PhoneSheet({ i }: { i: I }) {
+  const start = useRef<{ x: number; y: number } | null>(null)
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') i.setOpen(false) }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  })
+  if (!i.open || !i.picked) return null
+  const n = i.shown.findIndex((r) => r.key === i.picked!.key)
+  return (
+    <div className="iscrim" onClick={(e) => { if (e.target === e.currentTarget) i.setOpen(false) }}>
+      <div className="isheet" role="dialog" aria-modal="true" aria-labelledby="rt"
+        onTouchStart={(e) => { start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }}
+        onTouchEnd={(e) => {
+          const s = start.current
+          start.current = null
+          if (!s) return
+          const dx = e.changedTouches[0].clientX - s.x
+          const dy = e.changedTouches[0].clientY - s.y
+          if (Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) i.step(dx < 0 ? 1 : -1)
+        }}>
+        <button type="button" className="handle" aria-label="Close" onClick={() => i.setOpen(false)}><span /></button>
+        <div className="pos sm num" aria-label={`Item ${n + 1} of ${i.shown.length}, swipe for the next`}>{n + 1} / {i.shown.length}</div>
+        <Reader i={i} />
+      </div>
     </div>
   )
 }
 
 export function Inbox({ snap, refresh }: { snap: Snapshot; refresh: () => Promise<void> }) {
   const i = useInbox(snap, refresh)
+  const laptop = useMedia(LAPTOP)
   const inner = useMedia(INNER)
   return (
     <>
-      {inner ? <InboxInner i={i} /> : <InboxCover i={i} />}
+      {laptop ? (
+        <div className="desk ibx ib-lp"><Rail i={i} /><List i={i} /><Reader i={i} /></div>
+      ) : inner ? (
+        <div className="desk ibx ib-in"><div className="col"><Chips i={i} /><List i={i} /></div><Reader i={i} /></div>
+      ) : (
+        <div className="desk ibx ib-ph"><Chips i={i} /><List i={i} /><PhoneSheet i={i} /></div>
+      )}
       {i.sheet && <Sheet c={i.sheet} onClose={() => i.setSheet(null)} />}
     </>
   )
