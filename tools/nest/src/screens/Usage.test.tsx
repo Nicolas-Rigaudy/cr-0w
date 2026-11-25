@@ -156,6 +156,14 @@ describe('Usage page, phone', () => {
     expect(h).toMatch(/class="sub">api · opus \+ sonnet · /)
   })
 
+  it('marks the active session without the global live hatch class', () => {
+    for (const tab of ['session', 'runs']) {
+      const h = page(1280, { account: 'acct1', search: `?tab=${tab}` })
+      expect(h).toContain('utr uact')
+      expect(h).not.toMatch(/class="[^"]*\blive\b/)
+    }
+  })
+
   it('draws a cost bar on each session and run row, the top cost at full width', () => {
     for (const tab of ['session', 'runs']) {
       for (const w of [368, 1280]) {

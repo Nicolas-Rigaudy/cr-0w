@@ -153,7 +153,7 @@ function Sessions({ rows, period, phone, runs }: { rows: UsageSession[]; period:
     <div className={`utbl${runs ? ' runs' : ''}`} role="table" aria-label={head}>
       <div className="utr uth" role="row">{cols.map((c, i) => <span key={c} role="columnheader" className={i >= 4 ? 'rt' : undefined}>{c}</span>)}</div>
       {rows.map((s) => (
-        <div key={s.id} className={`utr${s.active ? ' live' : ''}`} role="row">
+        <div key={s.id} className={`utr${s.active ? ' uact' : ''}`} role="row">
           <span role="cell" className="ti" title={s.title}>{s.title ?? s.id}</span>
           <span role="cell" className="dim">{s.project ?? '–'}</span>
           <span role="cell" className="dim">{runs ? s.kind ?? '–' : models(s)}</span>

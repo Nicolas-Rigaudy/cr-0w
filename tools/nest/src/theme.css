@@ -1696,7 +1696,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .usage .utr { display: contents; }
 .usage .utr > span { padding: 5px 6px; border-bottom: 1px solid var(--u-grid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage .utr.uth > span { font: 10.5px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); }
-.usage .utr.live > span:first-child { color: var(--accent); }
+.usage .utr.uact > span:first-child { color: var(--accent); }
 .usage .utbl .rt { text-align: right; }
 .usage .utr > .ucost { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .usage .ucb { flex: 1; max-width: 64px; height: 4px; background: var(--well); border-radius: 2px; overflow: hidden; }
