@@ -34,6 +34,7 @@ const SCREENS = {
   missions: '/missions',
   detail: '/missions/20261109-build-inbox-filters',
   inbox: '/inbox',
+  review: '/inbox?item=20261109-fix-push-token-refresh/v1', // design review on the flip stage (item_211)
   desk: '/desk',
 }
 const unknown = (only ?? []).filter((n) => !(n in SCREENS))

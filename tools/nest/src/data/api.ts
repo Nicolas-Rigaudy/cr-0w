@@ -171,6 +171,7 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
       const d = (await res.json()) as MissionDetail
       return d.versions?.find((v) => v.version === version)?.questions ?? []
     },
+    artifact: (id, path) => `${base}/missions/${encodeURIComponent(id)}/artifacts/${path.split('/').map(encodeURIComponent).join('/')}`,
     async conversation(target, page) {
       const res = await get(`${base}${conversationPath(target)}${pageQuery(page)}`, { cache: 'no-store' })
       if (!res.ok) throw await failure(res)

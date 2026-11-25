@@ -273,6 +273,22 @@ const BUTLER_SEED: ButlerMsg[] = [
     chips: [{ label: 'Open prep', href: '/agenda' }, { label: 'Open reviews', href: '/mrs' }] },
 ]
 
+// A drawn stand-in for a mockup image: one hue per option, the file name as caption.
+const HUE: Record<string, number> = { A: 200, B: 150, C: 30 }
+export function fixtureImage(path: string): string {
+  const name = (path.split('/').pop() ?? path).replace(/\.[a-z]+$/i, '')
+  const letter = /(?:^|[-_])([A-Z])(?:[-_]|$)/.exec(name)?.[1] ?? 'A'
+  const h = HUE[letter] ?? 280
+  const dark = /dark/.test(name)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">`
+    + `<rect width="640" height="400" fill="hsl(${h} 35% ${dark ? 10 : 22}%)"/>`
+    + `<rect x="40" y="40" width="560" height="56" rx="8" fill="hsl(${h} 60% ${dark ? 30 : 45}%)"/>`
+    + `<rect x="40" y="120" width="340" height="240" rx="8" fill="hsl(${h} 40% ${dark ? 16 : 30}%)"/>`
+    + `<rect x="400" y="120" width="200" height="110" rx="8" fill="hsl(${h} 50% ${dark ? 22 : 38}%)"/>`
+    + `<text x="400" y="290" font-family="sans-serif" font-size="22" fill="hsl(${h} 30% 85%)">${name}</text></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
 export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[] = INBOX, now: Date = NOW, agenda: AgendaEvent[] = AGENDA, live: LiveData = LIVE, bricks?: FixtureBricks): DataSource {
   const data: LiveData = structuredClone(live)
   // One body object per section version, so unchanged sections keep their reference.
@@ -310,6 +326,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
       id: 'q1', text: 'Keep the filter in the URL?', blocking: true, recommended: 'url',
       choices: [{ id: 'url', label: 'In the URL. A shared link opens the same filter.' }, { id: 'local', label: 'In local storage. URLs stay short.' }],
     }] : [],
+    artifact: (_id, path) => fixtureImage(path),
     inbox: async () => rec.inbox,
     agenda: async () => agenda,
     section,

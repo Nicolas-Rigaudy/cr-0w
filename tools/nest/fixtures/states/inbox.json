@@ -62,5 +62,32 @@
     "state": "open",
     "created": "2026-11-09T14:47:00+01:00",
     "answered": null
+  },
+  {
+    "id": "20261109-fix-push-token-refresh/v1",
+    "mission": "20261109-fix-push-token-refresh",
+    "kind": "fix",
+    "project": "cr-0w",
+    "type": "choice",
+    "source": "mockup",
+    "version": 1,
+    "file": "outbox/compare.json",
+    "ask": "Retry banner on the boot screen: three options, two scenarios. Pick one.",
+    "verbs": [
+      "pick",
+      "change"
+    ],
+    "blocking": false,
+    "artifacts": [
+      "outbox/boot-A-boot-frame.png",
+      "outbox/boot-B-boot-frame.png",
+      "outbox/boot-C-boot-frame.png",
+      "outbox/boot-A-dark-room.png",
+      "outbox/boot-B-dark-room.png",
+      "outbox/boot-C-dark-room.png"
+    ],
+    "state": "open",
+    "created": "2026-11-09T15:10:00+01:00",
+    "answered": null
   }
 ]

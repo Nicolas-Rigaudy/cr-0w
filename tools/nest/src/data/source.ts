@@ -12,6 +12,8 @@ export interface DataSource {
   mission(id: string): Promise<Mission | undefined>
   // The questions and options of one mission version (Inbox decisions, item_223).
   questions?(mission: string, version: number): Promise<GateQuestion[]>
+  // The URL of one mission artifact, an image to compare in a design review (item_211).
+  artifact?(mission: string, path: string): string
   inbox(): Promise<InboxItem[]>
   agenda(): Promise<AgendaEvent[]>
   // One script section. An unchanged section returns the same object.

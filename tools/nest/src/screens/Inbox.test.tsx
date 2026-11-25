@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { feed, type Snapshot } from '../data/feed'
 import { fixtureSource } from '../data/fixtures'
-import { doneToday, kindOf, kindWord, type AnswerRow } from '../data/inbox'
+import { designOf, doneToday, kindOf, kindWord, type AnswerRow } from '../data/inbox'
 import type { InboxItem } from '../data/types'
 import { DataContext } from '../data/useData'
 import { Desk } from './Desk'
@@ -98,6 +98,42 @@ describe('Inbox layout B (item_223, item_191)', () => {
     expect(html).toContain('class="desk ibx ib-in"')
     expect(html).toContain('placeholder="Change or note (optional)"')
     expect(html).toContain('>Hide</button>')
+  })
+})
+
+describe('Inbox flip stage (item_211, board 211-B)', () => {
+  it('opens a design review on its first option with thumbnails, scenarios and Pick', async () => {
+    at(1440)
+    const s = await snapshot()
+    // Make the design review the oldest row, so the reading pane opens on it.
+    const inbox = s.inbox.map((r) => (r.source === 'mockup' ? { ...r, created: '2026-11-01T08:00:00+01:00' } : r))
+    const html = render(<Inbox snap={{ ...s, inbox }} refresh={refresh} />)
+    expect(html).toContain('design review · ')
+    expect(html).toContain('3 options × 2 scenarios')
+    expect(html).toContain('class="stage"')
+    expect(html).toContain('Space flips · Z zooms')
+    expect(html).toContain('<b class="lt">A</b>')
+    expect(html).toMatch(/<img src="data:image\/svg\+xml,/)
+    for (const s of ['boot frame', 'dark room']) expect(html).toContain(`<span>${s}</span>`)
+    expect(html).toContain('>Pick A</button>')
+  })
+
+  it('opens a linked design review in the phone sheet with letter chips', async () => {
+    at(368)
+    vi.stubGlobal('location', { search: '?item=20261109-fix-push-token-refresh/v1', pathname: '/inbox' })
+    const html = render(<Inbox snap={await snapshot()} refresh={refresh} />)
+    expect(html).toContain('role="dialog"')
+    expect(html).toContain('tap image to flip')
+    expect(html).toContain('class="thumb on"')
+    expect(html).toContain('>Pick A</button>')
+  })
+
+  it('reads option letters and scenarios from the file names', () => {
+    const d = designOf({ artifacts: ['o/x-A-day.png', 'o/x-B-day.png', 'o/x-A-night.png', 'o/notes.md'] } as InboxItem)
+    expect(d.letters).toEqual(['A', 'B'])
+    expect(d.scenarios).toEqual(['day', 'night'])
+    expect(d.file('B', 'night')).toBe('o/x-B-day.png')
+    expect(designOf({ artifacts: ['one.png', 'two.png'] } as InboxItem).letters).toEqual(['A', 'B'])
   })
 })
 

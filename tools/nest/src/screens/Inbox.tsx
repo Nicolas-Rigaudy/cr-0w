@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../data/api'
-import { answerOf, doneToday, isFyi, kindOf, kindWord, KINDS, type AnswerRow, type InboxKind } from '../data/inbox'
+import { answerOf, designOf, doneToday, isDesign, isFyi, kindOf, kindWord, KINDS, type AnswerRow, type Design, type InboxKind } from '../data/inbox'
 import type { Mail } from '../data/live'
 import type { GateChoice, GateQuestion, InboxItem, InboxVerb, Mission } from '../data/types'
 import { useSource, type Snapshot } from '../data/useData'
@@ -102,19 +102,28 @@ function useInbox(snap: Snapshot, refresh: () => Promise<void>) {
   const act = useSource().actions
   const [filter, setFilter] = useState<Filter>('all')
   const [sheet, setSheet] = useState<Confirm | null>(null)
-  const [open, setOpen] = useState(false)
-  const [choice, setChoice] = useState<string | undefined>()
   const rows = answerOf(snap)
+  // `?item=<inbox id>` opens that row (a link from a notification or a report).
+  const [linked] = useState(() => {
+    const id = new URLSearchParams(globalThis.location?.search ?? '').get('item')
+    return id ? rows.find((r) => r.kind === 'ask' && r.item.id === id)?.key : undefined
+  })
+  const [open, setOpen] = useState(!!linked)
+  const [choice, setChoice] = useState<string | undefined>()
   const shown = filter === 'all' ? rows : rows.filter((r) => kindOf(r) === filter)
   const done = filter === 'all' ? doneToday(inbox, snap.now) : []
   const fyis = inbox.filter(isFyi)
   const count = (k: InboxKind) => rows.filter((r) => kindOf(r) === k).length
-  const [sel, setSelRaw] = useState<string | undefined>(shown[0]?.key)
+  const [sel, setSelRaw] = useState<string | undefined>(linked ?? shown[0]?.key)
   const picked = shown.find((r) => r.key === sel) ?? shown[0]
   const q = picked?.kind === 'ask' ? picked.item : undefined
   const a = useAnswer(q, inbox, missions, refresh)
   const qs = useQuestions(q)
-  const opts = q ? optionsOf(qs, q) : { choices: [] }
+  // A design review offers its option letters (item_211); other rows their version questions.
+  const design = q && isDesign(q) ? designOf(q) : undefined
+  const opts: { q?: GateQuestion; choices: GateChoice[] } = design
+    ? { choices: design.letters.map((l) => ({ id: l, label: `Option ${l}` })) }
+    : q ? optionsOf(qs, q) : { choices: [] }
   const chosen = opts.choices.find((c) => c.id === choice) ?? opts.choices.find((c) => c.id === opts.q?.recommended) ?? opts.choices[0]
   const setSel = (k: string) => { setSelRaw(k); setChoice(undefined) }
   const step = (d: 1 | -1) => {
@@ -144,7 +153,7 @@ function useInbox(snap: Snapshot, refresh: () => Promise<void>) {
     target: [['mail', m.subject]], note: 'Changes the Outlook flag only; nothing is sent.', ok: verb === 'done' ? 'Done' : 'Snooze',
     run: async () => { await act.mail(m.id, verb); await refresh() },
   })
-  return { filter, setFilter, rows, shown, done, fyis, count, sel: picked?.key, setSel, picked, q, a, opts, chosen, setChoice, open, setOpen, step, missions, line, hide, flag, sheet, setSheet }
+  return { filter, setFilter, rows, shown, done, fyis, count, sel: picked?.key, setSel, picked, q, a, design, opts, chosen, setChoice, open, setOpen, step, missions, line, hide, flag, sheet, setSheet }
 }
 type I = ReturnType<typeof useInbox>
 
@@ -264,7 +273,7 @@ function Answer({ i }: { i: I }) {
             {i.a.busy ? 'Sending…' : `Pick ${letter(i.chosen)}`}
           </button>
         )}
-        {pv && i.opts.choices.filter((c) => c !== i.chosen).map((c) => (
+        {pv && !i.design && i.opts.choices.filter((c) => c !== i.chosen).map((c) => (
           <button key={c.id} type="button" className="btn" onClick={() => i.setChoice(c.id)} disabled={i.a.busy}>{letter(c)}</button>
         ))}
         {rest.map((v, n) => (
@@ -281,7 +290,9 @@ function Reader({ i }: { i: I }) {
   const p = i.picked
   if (!p) return <section className="pn read"><div className="sm">Inbox is empty.</div></section>
   const l = i.line(p)
-  const meta = p.kind === 'ask' ? [...l.sub, `v${p.item.version}`, p.item.file] : l.sub
+  const d = i.design
+  const meta = d ? [...l.sub, `${d.letters.length} options × ${d.scenarios.length} scenario${d.scenarios.length > 1 ? 's' : ''}`]
+    : p.kind === 'ask' ? [...l.sub, `v${p.item.version}`, p.item.file] : l.sub
   return (
     <section className="pn read" aria-labelledby="rt" aria-live="polite">
       <h2 id="rt" className="rt">{l.title}</h2>
@@ -303,6 +314,7 @@ function Body({ i }: { i: I }) {
   if (p.kind === 'prompt') return <div className="body">{p.item.why ?? 'Waiting on you.'}</div>
   const r = i.a.item ?? p.item
   const { q, choices } = i.opts
+  if (i.design) return <><Stage i={i} r={r} d={i.design} /><div className="body">{r.ask}</div></>
   return (
     <>
       <h3 className="sh">Context</h3>
@@ -322,6 +334,60 @@ function Body({ i }: { i: I }) {
         </>
       )}
     </>
+  )
+}
+
+// ---- flip stage (item_211, board 211-B): one option at a time, flip through the letters ----
+function Stage({ i, r, d }: { i: I; r: InboxItem; d: Design }) {
+  const src = useSource()
+  const [scenario, setScenario] = useState(d.scenarios[0] ?? '')
+  const [zoom, setZoom] = useState(false)
+  const on = i.chosen?.id ?? d.letters[0]
+  const flip = () => i.setChoice(d.letters[(d.letters.indexOf(on) + 1) % d.letters.length])
+  const url = (l: string) => {
+    const f = d.file(l, scenario)
+    return f ? src.artifact?.(r.mission, f) : undefined
+  }
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|BUTTON)$/.test(e.target.tagName)) return
+      if (e.key === ' ') { e.preventDefault(); flip() }
+      if (e.key === 'z' || e.key === 'Z') setZoom((z) => !z)
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  })
+  const img = url(on)
+  return (
+    <div className={`stage${zoom ? ' zoom' : ''}`}>
+      <button type="button" className="shot" onClick={flip} aria-label={`Option ${on}${scenario ? `, ${scenario}` : ''}. Flip to the next option`}>
+        {img ? <img src={img} alt="" /> : <span className="sm">No image for this option.</span>}
+        <b className="lt">{on}</b>
+        <span className="hint lp">Space flips · Z zooms</span>
+      </button>
+      <div className="side">
+        <div className="thumbs" role="radiogroup" aria-label="Options">
+          {d.letters.map((l) => (
+            <button key={l} type="button" role="radio" aria-checked={l === on} className={`thumb${l === on ? ' on' : ''}`} onClick={() => i.setChoice(l)}>
+              {url(l) && <img src={url(l)} alt="" />}<b>{l}</b>
+            </button>
+          ))}
+          <span className="hint ph">tap image to flip</span>
+        </div>
+        {d.scenarios.length > 1 && (
+          <>
+            <h3 className="sh">Scenario</h3>
+            <div className="scen">
+              {d.scenarios.map((s, n) => (
+                <button key={s} type="button" aria-pressed={s === scenario} className={`kind${s === scenario ? ' on' : ''}`} onClick={() => setScenario(s)}>
+                  <span className="num">{n + 1}</span><span>{s || 'default'}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 

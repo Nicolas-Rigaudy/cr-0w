@@ -59,6 +59,26 @@ export const images = (r: InboxItem) => r.artifacts.filter((a) => IMAGE.test(a))
 // A review with images is a design review (item_211); without, a doc review.
 export const isDesign = (r: InboxItem) => r.source === 'mockup' || ((r.type === 'review' || r.type === 'choice') && images(r).length > 1)
 
+// The options and scenarios of a design review (item_211, board 211-B). A one-letter token
+// in the file name is the option, the words after it the scenario (`boot-A-dark-room.png`);
+// files without a letter become options A, B, C in order.
+export type Design = { letters: string[]; scenarios: string[]; file: (letter: string, scenario: string) => string | undefined }
+export function designOf(r: InboxItem): Design {
+  const files = images(r).map((path, n) => {
+    const words = (path.split('/').pop() ?? path).replace(IMAGE, '').split(/[-_ .]+/).filter(Boolean)
+    const at = words.findIndex((w) => /^[A-Z]$/.test(w))
+    if (at < 0) return { path, letter: String.fromCharCode(65 + n), scenario: '' }
+    const after = words.slice(at + 1)
+    return { path, letter: words[at], scenario: (after.length ? after : words.slice(0, at)).join(' ') }
+  })
+  const uniq = (xs: string[]) => [...new Set(xs)]
+  return {
+    letters: uniq(files.map((f) => f.letter)),
+    scenarios: uniq(files.map((f) => f.scenario)),
+    file: (letter, scenario) => (files.find((f) => f.letter === letter && f.scenario === scenario) ?? files.find((f) => f.letter === letter))?.path,
+  }
+}
+
 export function kindOfItem(r: InboxItem): InboxKind {
   if (isDesign(r) || r.type === 'review') return 'review'
   if (r.type === 'approval') return 'approval'
