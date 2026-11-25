@@ -60,3 +60,7 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+## Owner pick: units per day (2026-11-25)
+- PER DAY gets a $ / tokens / limits toggle. Limits = % of weekly used per day by account, plus 5h windows as filled cells ("3 full + 10%").
+- Core derives these from limit-samples.jsonl (history from 2026-11-24).
