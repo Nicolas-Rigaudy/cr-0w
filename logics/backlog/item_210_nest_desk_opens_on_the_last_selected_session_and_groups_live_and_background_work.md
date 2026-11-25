@@ -1,13 +1,14 @@
 ## item_210_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work - Nest Desk opens on the last selected session and groups live and background work
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90
 > Confidence: 80
-> Progress: 0%
+> Progress: 10%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 10:46:33
 
 # AI Context
 - Summary: Returning to Desk jumps to the first background run. Desk forgets the pick on every tab change and its default puts runs first. Remember the last pick per device; else open the top interactive session; never default to a background run.
@@ -50,3 +51,8 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25T09:46:18.243154+00:00 | cdx | dcfbfb5d257a441a9de8bb0a683ea0e1 | item_210 desk pick | running |  |  |
+
+
+# Tasks
+- `task_027_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work`
