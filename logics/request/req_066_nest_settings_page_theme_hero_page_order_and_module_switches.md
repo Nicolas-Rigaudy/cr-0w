@@ -23,6 +23,7 @@
 - item_267 made theme, hero and pages plain config (`modules.nest.{theme,hero,pages}`) with known value lists from `virtual:nest-modules`.
 - Brick themes, heroes and pages are compiled in, so a change needs `crow nest build`. Theme alone already switches live (data-theme).
 - Core is the only writer: Nest posts to a core endpoint, core edits crow.yaml and runs the rebuild, the same way section actions run scripts.
+- Mockups: options A, B and C in `tools/nest/scripts/mockups/settings.html` (render with `node tools/nest/scripts/settings-mockups.mjs <dir>`). Items 282 to 285 stay Draft until the owner picks one.
 - Out of scope: installing bricks from git, editing brick config other than nest, any runtime code loading.
 
 # Acceptance criteria
@@ -49,7 +50,10 @@
 - `logics/backlog/item_267_nest_themes_hero_and_module_pages_built_from_the_user_s_modules.md`
 
 # Backlog
-- none
+- `item_282_core_settings_endpoint_writes_modules_nest_in_crow_yaml`
+- `item_283_core_rebuilds_nest_after_a_settings_save_and_reports_build_errors`
+- `item_284_nest_settings_page_for_theme_hero_and_page_order_from_the_picked_board`
+- `item_285_module_switches_on_the_nest_settings_page_through_crow_modules`
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
