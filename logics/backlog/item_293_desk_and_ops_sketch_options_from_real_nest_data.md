@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 14:43:51
 
 # AI Context
 - Summary: Map real core state to the Desk/Ops model, then draw 2-3 annotated 2D sketch options for the owner to pick. No renders, no build.
@@ -23,6 +24,7 @@
   - Pull a real snapshot from core (`/api/state`: work, missions, dispatch, runs, sessions, jobs, accounts, usage) and list which unit and state each row maps to. Note gaps (fields core lacks).
   - 2-3 annotated 2D sketches at 1440x900 (Desk and Ops each), plus one 390x844 Desk. Options differ on the open questions in the note (queued group placement, detail view tabs vs scroll, AFK batch screen vs launcher mode).
   - Side-by-side compare with the flip/zoom viewer (`bin/crow-compare`), zoom crops checked for contrast.
+  - Ops shows one quota bar per account and slot holders only: no cost or token breakdowns (owner 2026-11-25).
   - Decisions go in the vault design notes; the owner picks with AskUserQuestion.
 - Out:
   - Image-model renders, any code in tools/nest.

@@ -7,6 +7,7 @@
 > Complexity: Large
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 14:43:51
 
 # AI Context
 - Summary: Redesign the split between Desk and Ops so the owner handles missions, runs, sessions, queues and AFK launches from one model, and sees what needs them at a glance.
@@ -20,7 +21,7 @@
 
 # Context
 - Model and open questions: vault `CR-0W/Research/nest-desk-ops/desk-ops-model.md`.
-- Summary: one list of units (mission, run, session, queued job, AFK job) in one state each (needs you, moving, queued, done/failed). Desk = needs you + moving + one detail view, butler in the side panel. Ops = capacity, queues, AFK batch, history. One launcher (now / background / AFK).
+- Summary: one list of units (mission, run, session, queued job, AFK job) in one state each (needs you, moving, queued, done/failed). Desk = needs you + moving + one detail view, butler in the side panel. Ops = capacity, queues, AFK batch, history. Ops keeps usage light (one quota bar per account); no detailed cost or token breakdowns, those stay in Usage. One launcher (now / background / AFK).
 - Today Ops only shows day and week stats; mission detail was lost when Ops replaced Missions.
 
 # Acceptance criteria
