@@ -50,8 +50,7 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-25T09:46:16.709841+00:00 | cdx | b94fd623d5f44fa69c8e2263c7a86d83 | item_279 nest stop | running |  |  |
-
+| 2026-11-25T09:51:21.811074+00:00 | cdx | b94fd623d5f44fa69c8e2263c7a86d83 | item_279 nest stop | succeeded |  |  |
 
 # Tasks
 - `task_027_nest_stop_on_a_mission_run_stops_the_mission`
