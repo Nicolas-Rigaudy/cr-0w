@@ -160,3 +160,14 @@ def test_cdx_profiles_falls_back_to_the_layout_without_cdx(tmp_path, monkeypatch
     (p,) = crow_lib.cdx_profiles(str(tmp_path))
     assert p["name"] == "a" and p["transcripts_dir"] == str(tmp_path / "a/claude-home/.claude/projects")
     assert crow_lib.account_transcripts_dir("new", str(tmp_path)).endswith("new/claude-home/.claude/projects")
+
+
+def test_fresh_row_counts_a_passed_reset_as_full():
+    from datetime import datetime, timezone
+    now = datetime(2026, 11, 25, 15, 52, tzinfo=timezone.utc)
+    row = {"remaining_5h_pct": 1, "reset_5h_at_iso": "2026-11-25T15:50:00+00:00",
+           "remaining_week_pct": 54, "reset_week_at_iso": "2026-11-30T17:00:00+00:00"}
+    out = crow_lib.fresh_row(row, now)
+    assert out["remaining_5h_pct"] == 100 and out["remaining_week_pct"] == 54
+    assert row["remaining_5h_pct"] == 1
+    assert crow_lib.fresh_row(None, now) is None
