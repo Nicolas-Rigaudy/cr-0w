@@ -747,8 +747,10 @@ function DeskLaptop({ d }: { d: D }) {
           ? <Detail d={d} w={d.unit} />
           : <Deck n={5} title="Detail" cls="p-detail"><div className="empty dim">Nothing on the desk, Sir. Launch a task above.</div></Deck>}
       </div>
-      <Butler d={d} />
-      <div className="keys dim" aria-label="Keys">{KEYS.map(([k, what]) => <span key={k}><b>{k}</b> {what}</span>)}</div>
+      <div className="dfoot">
+        <div className="keys dim" aria-label="Keys">{KEYS.map(([k, what]) => <span key={k}><b>{k}</b> {what}</span>)}</div>
+        <Butler d={d} />
+      </div>
     </div>
   )
 }
@@ -764,7 +766,7 @@ function DeskPhone({ d }: { d: D }) {
       <div className="segs ptabs" role="tablist" aria-label="Panes">
         {PANE_IDS.map((id, i) => (
           <button type="button" role="tab" key={id} className={`seg${tab === id ? ' on' : ''}`} aria-selected={tab === id} onClick={() => d.setFocus(id)}>
-            [{i + 1}] {SHORT[id]} <span className="num">{d.panes[id].length}</span>
+            <span className="pk">[{i + 1}] </span>{SHORT[id]} <span className="num">{d.panes[id].length}</span>
           </button>
         ))}
       </div>

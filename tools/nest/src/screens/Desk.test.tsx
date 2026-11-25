@@ -127,7 +127,7 @@ describe('Desk layout C (item_295)', () => {
   it('shows one pane at a time on the phone, behind pane tabs', async () => {
     const h = await html(400)
     expect(h).toContain('aria-label="Panes"')
-    expect(h).toMatch(/\[1\] Needs <span class="num">\d+/)
+    expect(h).toMatch(/\[1\] <\/span>Needs <span class="num">\d+/)
     expect(h).not.toContain('[2] Moving</span>')
   })
 

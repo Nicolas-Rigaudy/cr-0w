@@ -1656,6 +1656,19 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .dk .bfold .sub { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dk .bopen { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: var(--r-pn); padding: 10px 12px; max-height: 320px; }
 .dk .bopen .msgs { overflow-y: auto; min-height: 0; }
+.dk .p-needs .dt > span:first-child { color: var(--c-n); }
+.dk .p-moving .dt > span:first-child { color: var(--c-w); }
+.dk .p-done .dt > span:first-child { color: var(--c-d); }
+.dk.m-lp .mpanes .mlist { max-height: 320px; overflow-y: auto; }
+.dk.m-lp .p-done .mlist { max-height: 200px; }
+.dk.m-lp .mpanes .mlist > * { flex-shrink: 0; }
+.dk.m-ph .lrow .field { flex: 1 1 100%; }
+.dk.m-ph .ptabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dk.m-ph .ptabs .seg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; font-size: 11px; letter-spacing: 0; min-width: 0; }
+@media (max-width: 480px) { .dk.m-ph .ptabs .pk { display: none; } }
+.dk .dfoot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.dk .dfoot .keys { flex: 1; }
+.dk .dfoot .bopen { flex-basis: 100%; }
 .dk .keys { display: flex; gap: 16px; flex-wrap: wrap; font: 11px var(--font-head); }
 .dk .keys b { color: var(--sub); font-weight: 400; }
 
