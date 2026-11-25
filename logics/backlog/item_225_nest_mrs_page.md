@@ -1,14 +1,14 @@
 ## item_225_nest_mrs_page - Nest MRs page
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 85
 > Confidence: 80
-> Progress: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 11:19:47
+> Indicators reviewed: 2026-11-25 11:59:06
 
 # AI Context
 - Summary: MRs tab on live `/api/state/mrs`: mine, to review, CI state, threads; each row opens review, threads or the MR on the forge. Optional brick (req_064 modules).
@@ -37,13 +37,17 @@
 
 # AC Traceability
 - req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits-AC -> This backlog slice. Proof: Owner approved the MRs board first.
+- request-AC1 -> This backlog slice. Proof: owner OK to land 2026-11-25 after the shots in vault Research/nest-mrs/build-2026-11-25.
+- request-AC2 -> This backlog slice. Proof: /mrs replaces the placeholder; every row action goes through a confirm sheet (vitest).
+- request-AC3 -> This backlog slice. Proof: MRs is a page, not a waiting item; review asks keep reaching Inbox.
 
 # Dependencies
 - Module flag from the module design item (can build before, flag added after).
 
 # Links
-- Request: req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits.
+- Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`
 
+- Primary task(s): `task_029_nest_mrs_page`
 # Priority
 - Priority: Medium
 - Rationale: Reviews rank second in the owner's priorities.
@@ -51,7 +55,7 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-25T10:19:28.228247+00:00 | cdx | 9b5f90d9a4a84f2ba941e9d7ebe77ec9 | nest mrs build (option C) | running |  |  |
+| 2026-11-25T10:33:00.906115+00:00 | cdx | 9b5f90d9a4a84f2ba941e9d7ebe77ec9 | nest mrs build (option C) | succeeded |  |  |
 
 # Decision framing
 - Owner 2026-11-25: none of A/B/C. Redo the mockups: closer to the deck, less clutter. MR list as clear as A or B, details like A but bigger, patterns small and expanded on demand. Do not reserve space for the chat panel.
@@ -60,3 +64,6 @@
 
 # Tasks
 - `task_029_nest_mrs_page`
+
+# Notes
+- Task `task_029_nest_mrs_page` was finished via `logics-manager flow finish task` on 2026-11-25.
