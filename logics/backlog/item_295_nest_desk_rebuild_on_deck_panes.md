@@ -1,13 +1,14 @@
 ## item_295_nest_desk_rebuild_on_deck_panes - Nest Desk rebuild on deck panes
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 10%
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 17:21:12
 
 # AI Context
 - Summary: Rebuild the Nest Desk page as deck panes (layout C) from the owner picks of the item_293 pass.
@@ -65,3 +66,6 @@
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+# Tasks
+- `task_033_nest_desk_rebuild_on_deck_panes`
