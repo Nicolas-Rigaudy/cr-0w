@@ -1,4 +1,5 @@
 import { missions as coreMissions, inbox as coreInbox } from 'virtual:core-records'
+import { heroes as brickHeroes, pages as brickPages, themes as nestThemes } from 'virtual:nest-modules'
 import stateMissions from '../../fixtures/states/missions.json'
 import stateInbox from '../../fixtures/states/inbox.json'
 import stateAgenda from '../../fixtures/states/agenda.json'
@@ -15,6 +16,7 @@ import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversatio
 import type { Actions, Dispatch, LiveReply } from './live'
 import type { Modules } from './modules'
 import { isLive, shortPath, type Changes, type Ops, type OpsQueued } from './ops'
+import type { NestBuild, NestKnown, NestSave, NestSaved, NestSettings, SettingsApi } from './settings'
 import type { DataSource } from './source'
 import { CANCELLABLE } from './state'
 import type { AgendaEvent, InboxItem, InboxVerb, Mission, SectionBody, SectionName } from './types'
@@ -348,6 +350,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     actions,
     now: () => now,
     butler: fixtureButler(now, BUTLER_SEED),
+    settings: fixtureSettings(now),
     ...(bricks && {
       modules: async () => bricks.modules,
       brickSection: async (source: string) => brickBodies.get(source) ?? NO_SECTION,
@@ -484,5 +487,55 @@ function fixtureChanges(cwd: string): Changes | undefined {
       { sha: 'c9e13aa', subject: 'chg[MD]: ops page item scope', time: t(95) },
     ],
     more: false,
+  }
+}
+
+// Names the fixture Nest can build: the engine ones plus the compiled-in bricks (item_284).
+export const FIXTURE_KNOWN: NestKnown = {
+  themes: [...nestThemes],
+  heroes: ['holotable', 'none', ...Object.keys(brickHeroes)],
+  pages: ['home', 'desk', 'ops', 'inbox', 'mrs', 'agenda', 'reports', ...brickPages.map((p) => p.key)],
+}
+
+type NestYaml = Record<'theme' | 'hero' | 'pages', unknown>
+
+// In-memory crow.yaml modules.nest with the checks of crow-modules set nest (an unknown name
+// answers 400 and writes nothing). A hero or pages save starts a build that passes on the second poll.
+export function fixtureSettings(now: Date, known: NestKnown = FIXTURE_KNOWN, conf: Partial<NestYaml> = {}): SettingsApi {
+  const yaml: NestYaml = { theme: conf.theme ?? null, hero: conf.hero ?? null, pages: conf.pages ?? null }
+  let served = 1
+  let polls = 0
+  let build: NestBuild = { state: 'idle', elapsed_s: 0, queued: false, log: [], served: `fixture-${served}` }
+  const get = (): NestSettings => ({ file: '/fixture/crow.yaml', ...structuredClone(yaml), known, errors: [] })
+  const check = (k: string, v: string, list: string[]) => {
+    if (!list.includes(v)) throw new ApiError(400, `crow-modules: unknown ${k} "${v}" (known: ${list.join(', ')})`)
+  }
+  return {
+    get: async () => get(),
+    async build() {
+      if (build.state === 'building' && ++polls >= 2) {
+        served++
+        build = { ...build, state: 'ok', elapsed_s: 38, log: ['nest build: ok'], served: `fixture-${served}` }
+      } else if (build.state === 'building') build = { ...build, elapsed_s: build.elapsed_s + 12 }
+      return { ...build }
+    },
+    async save(body: NestSave): Promise<NestSaved> {
+      if (body.theme !== undefined) check('theme', body.theme, known.themes)
+      if (body.hero !== undefined) check('hero', body.hero, known.heroes)
+      for (const p of body.pages ?? []) check('page', p, known.pages)
+      const changed: string[] = []
+      for (const k of ['theme', 'hero', 'pages'] as const) {
+        const v = body[k]
+        if (v === undefined || JSON.stringify(v) === JSON.stringify(yaml[k])) continue
+        yaml[k] = v
+        changed.push(k)
+      }
+      const needs = changed.includes('hero') || changed.includes('pages')
+      if (needs) {
+        polls = 0
+        build = { state: 'building', started_at: now.toISOString(), elapsed_s: 0, queued: false, log: [], served: `fixture-${served}` }
+      }
+      return { ...get(), changed, needs_build: needs, build: { ...build } }
+    },
   }
 }
