@@ -1,13 +1,14 @@
 ## task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs - Nest Reports page for settled AFK reports and ritual outputs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 95%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
+> Indicators reviewed: 2026-11-25 16:26:12
 
 # AI Context
 - Summary: Core `reports` section (settled AFK summaries, weekly rollups, retros) and the Nest Reports page from board B: six ritual tiles, outputs newest first, Markdown reader, Generate on the retro tile only.
@@ -16,10 +17,10 @@
 - Skip when: open decisions (Inbox), single run reports (Ops), scheduling the other rituals (item_234).
 
 # Definition of Done (DoD)
-- [ ] The backlog scope is implemented.
-- [ ] Acceptance criteria are covered.
-- [ ] Validation passes.
-- [ ] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
+- [x] The backlog scope is implemented.
+- [x] Acceptance criteria are covered.
+- [x] Validation passes.
+- [x] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
 
 # Backlog
 - `item_258_nest_reports_page_for_settled_afk_reports_and_ritual_outputs`
@@ -31,8 +32,8 @@
 - AC4: Works on 368x812 and on the laptop.
 
 # Plan
-- [ ] Use `python3 -m logics_manager flow progress task task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs.md --progress <n>%` during multi-wave work.
-- [ ] Run `python3 -m logics_manager flow finish task task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs.md` after implementation.
+- [x] Use `python3 -m logics_manager flow progress task task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs.md --progress <n>%` during multi-wave work.
+- [x] Run `python3 -m logics_manager flow finish task task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs.md` after implementation.
 
 # Decisions
 - Owner 2026-11-25: an AFK report is settled when `summary-<date>.json` has an empty `decisions[]` or every decision is in `decided[]`. Held reports show as a count pointing to Inbox.
@@ -43,6 +44,9 @@
 - 2026-11-25, tools/crow-core: `go test ./...` passed (313 tests, 14 packages).
 - 2026-11-25, tools/nest: `npx tsc --noEmit -p .` no errors; `npx vitest run` 333/333 in 43 files.
 - Shots (`scripts/shots.mjs --fixtures --only=reports,reports-retro`) not taken yet: the background run had no approval for the command.
+- command: `npx tsc --noEmit -p . && npx vitest run (333 passed)` | result: passed | date: 2026-11-25
+- Finish workflow executed on 2026-11-25.
+- Linked backlog/request close verification passed.
 
 # Report
 - 2026-11-25 data check, build paused on owner decisions:
@@ -54,11 +58,22 @@
   - caf36f0 Nest Reports page: tiles, list, reader, phone reader page, retro Generate with a 409 refresh, fixtures and tests.
   - 1c0b8fc shots entries `reports` and `reports-retro`.
   - Left: laptop and phone shots into the vault `Research/nest-design/item_258/`, compare with board B, fix CSS gaps.
+- Finished on 2026-11-25.
+- Linked backlog item(s): `item_258_nest_reports_page_for_settled_afk_reports_and_ritual_outputs`
+- Related request(s): `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`
 
 # Links
 - Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
+
+# AC Traceability
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC1 -> This task. Proof: built in caf36f0 and fixed in the phone row commit; owner OK on the shots 2026-11-25.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC2 -> This task. Proof: Reports tab has no placeholder and no dead action; Generate only on retro, other tiles show their state.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC3 -> This task. Proof: Reports lists settled reports only; an AFK report with an open decision stays in Inbox and the list footer points there.
+- request-AC1 -> This task. Proof deferred to slice closeout.
+- request-AC2 -> This task. Proof deferred to slice closeout.
+- request-AC3 -> This task. Proof deferred to slice closeout.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

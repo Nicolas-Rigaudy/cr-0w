@@ -1,14 +1,14 @@
 ## item_258_nest_reports_page_for_settled_afk_reports_and_ritual_outputs - Nest Reports page for settled AFK reports and ritual outputs
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 85%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 10:10:52
+> Indicators reviewed: 2026-11-25 16:26:12
 
 # AI Context
 - Summary: Nest Reports page: AFK reports once their decisions are taken or when they have none, and ritual outputs (brief, daily, weekly, retro, eod) with a Generate button per ritual.
@@ -38,7 +38,12 @@
 - AC4: Works on 368x812 and on the laptop.
 
 # AC Traceability
-- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC2 -> This backlog slice. Proof: Reports tab has no placeholder and no dead action.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC1 -> This backlog slice. Proof: built in caf36f0 and fixed in the phone row commit; owner OK on the shots 2026-11-25.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC2 -> This backlog slice. Proof: Reports tab has no placeholder and no dead action; Generate only on retro, other tiles show their state.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC3 -> This backlog slice. Proof: Reports lists settled reports only; an AFK report with an open decision stays in Inbox and the list footer points there.
+- request-AC1 -> This backlog slice. Proof deferred to slice closeout.
+- request-AC2 -> This backlog slice. Proof deferred to slice closeout.
+- request-AC3 -> This backlog slice. Proof deferred to slice closeout.
 
 # Decision framing
 - Product framing: Not needed
@@ -49,6 +54,7 @@
 - Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`
 - Depends on: `item_233_afk_quota_scheduler_report_languages_and_summary_schema` (report summary schema), `item_234_routine_scheduling_with_lock_and_retry` (Generate runs a routine)
 
+- Primary task(s): `task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs`
 # Priority
 - Priority: Medium
 - Rationale: Settled output, read after Ops and Inbox.
@@ -56,7 +62,7 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-25T14:52:28.868339+00:00 | cdx | 4022606c4d8748b78e92bd226702ecea | Nest Reports build 4 (item_258) | running |  |  |
+| 2026-11-25T15:03:10.016186+00:00 | cdx | 4022606c4d8748b78e92bd226702ecea | Nest Reports build 4 (item_258) | succeeded |  |  |
 | 2026-11-25T14:51:49.096284+00:00 | cdx | 9b1e6b3a37884dd2a6faa3adf17d4f10 | Nest Reports build 3 (item_258) | succeeded |  |  |
 | 2026-11-25T14:10:57.032659+00:00 | cdx | c9a39a6e952d4034bc878249ca5f1ec7 | Nest Reports build 2 (item_258) | failed |  | limit |
 | 2026-11-25T14:07:33.959947+00:00 | cdx | 63065990615e46c1aa39877c02935312 | Nest Reports build 2 (item_258) | failed |  | limit |
@@ -64,3 +70,6 @@
 
 # Tasks
 - `task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs`
+
+# Notes
+- Task `task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs` was finished via `logics-manager flow finish task` on 2026-11-25.
