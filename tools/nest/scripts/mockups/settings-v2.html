@@ -1,0 +1,104 @@
+<!doctype html><meta charset="utf-8"><title>Nest settings round 2</title>
+<!-- Round 2 of the Nest Settings mockups (req_066). Round 1 (settings.html) was too busy.
+     Structure follows the archeotech shell settings: sidebar of panes, pane header with a one-line
+     description, small uppercase section labels, one setting per row (label, one-line hint, one control).
+     ?v=D|E&f=laptop|phone&p=look|pages|list -->
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#1e2030;color:#cad3f5;font:13px/1.45 'Fira Code',monospace}
+.lap{width:1440px;height:900px;display:grid;grid-template-rows:56px 1fr;overflow:hidden;position:relative}
+.top{display:flex;align-items:center;gap:22px;padding:0 20px;border-bottom:1px solid #363a4f;letter-spacing:.08em;color:#a5adcb}
+.top .lg{font-family:Michroma,sans-serif;color:#c6a0f6;font-size:18px}.top .on{background:#c6a0f6;color:#181926;padding:4px 10px;border-radius:6px}
+.stage{display:flex;justify-content:center;padding:28px 20px 0;min-height:0}
+/* option D: shell-like window */
+.win{width:1080px;height:780px;display:grid;grid-template-columns:240px 1fr;border:1px solid #363a4f;border-radius:14px;background:#24273a;overflow:hidden}
+.side{background:#1e2030;border-right:1px solid #363a4f;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.search{border:1px solid #363a4f;border-radius:8px;padding:8px 10px;color:#6e738d;font-size:12px;margin-bottom:10px}
+.nv{display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:8px;color:#a5adcb}
+.nv.on{background:#c6a0f633;color:#cad3f5;box-shadow:inset 3px 0 0 #c6a0f6}.nv .ic{width:16px;text-align:center;color:#8087a2}.nv.on .ic{color:#c6a0f6}
+.nv .dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#eed49f}
+.pane{padding:24px 32px;display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative}
+.phd{display:flex;gap:14px;align-items:center;padding-bottom:18px;border-bottom:1px solid #363a4f;margin-bottom:6px}
+.phd .ic{width:36px;height:36px;border-radius:9px;background:#c6a0f6;color:#181926;display:grid;place-items:center;font-size:18px}
+.phd h2{margin:0;font:600 17px 'Fira Code',monospace;color:#cad3f5}.phd p{margin:2px 0 0;color:#8087a2;font-size:12.5px}
+.sl{font-size:11px;letter-spacing:.14em;color:#8087a2;text-transform:uppercase;margin:22px 0 8px}
+.card{background:#1e2030;border:1px solid #363a4f;border-radius:10px}
+.r{display:flex;align-items:center;gap:16px;padding:14px 16px}.r+.r{border-top:1px solid #363a4f}
+.r .lab{flex:1;min-width:0}.r .lab b{font-weight:500;display:block}.r .lab span{color:#8087a2;font-size:12px}
+.r.chg{box-shadow:inset 3px 0 0 #eed49f}
+.seg{display:inline-flex;background:#181926;border-radius:8px;padding:3px;gap:2px}
+.seg span{padding:5px 16px;border-radius:6px;color:#a5adcb;font-size:12px}.seg .on{background:#c6a0f6;color:#181926}
+.sw{width:36px;height:20px;border-radius:999px;background:#494d64;position:relative;flex:0 0 auto}.sw::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#8087a2}
+.sw.on{background:#c6a0f6}.sw.on::after{left:19px;background:#181926}.sw.lock{opacity:.35}
+.tc{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.tcard{border:1px solid #363a4f;border-radius:10px;padding:12px;background:#1e2030;display:flex;flex-direction:column;gap:10px}
+.tcard.on{border-color:#c6a0f6;box-shadow:0 0 0 1px #c6a0f6}
+.tcard .n{display:flex;justify-content:space-between;align-items:center}.tcard .ck{width:18px;height:18px;border-radius:50%;background:#c6a0f6;color:#181926;font-size:11px;display:grid;place-items:center}
+.sw4{display:flex;gap:6px}.sw4 i{flex:1;height:12px;border-radius:3px}
+.mini{height:70px;border-radius:7px;padding:6px;display:grid;grid-template-rows:10px 1fr;gap:5px}.mini div{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}.mini i{border-radius:3px;display:block}
+.muted{color:#8087a2;font-size:12px}
+.hdl{color:#6e738d}.num{color:#6e738d;width:18px}
+.req{font-size:11px;color:#8087a2;border:1px solid #494d64;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.bar{position:absolute;left:32px;right:32px;bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:10px;background:#181926;border:1px solid #eed49f}
+.bar .t{flex:1}.bar .t span{color:#8087a2;font-size:12px}
+.b{border:1px solid #494d64;border-radius:7px;padding:6px 14px;font-size:12px;color:#cad3f5}.b.p{background:#c6a0f6;border-color:#c6a0f6;color:#181926}
+/* option E: one column */
+.col{width:760px;height:844px;overflow:hidden;padding:4px 0 0;position:relative}
+.col h1{font:600 20px 'Fira Code',monospace;margin:0}.col .sub{color:#8087a2;margin:4px 0 6px}
+.jump{display:flex;gap:18px;color:#8087a2;font-size:12px;padding:10px 0 4px;border-bottom:1px solid #363a4f}.jump .on{color:#c6a0f6}
+.col .bar{left:0;right:0}
+.lbl{position:absolute;left:16px;bottom:10px;z-index:9;background:#eed49f;color:#181926;font:12px Michroma,sans-serif;padding:4px 10px;border-radius:6px;letter-spacing:.08em}
+/* phone */
+.phone{width:380px;min-height:820px;padding:14px 16px 0;display:flex;flex-direction:column;background:#1e2030;position:relative}
+.phone .bar0{display:flex;justify-content:space-between;align-items:center;font-family:Michroma,sans-serif;font-size:12px;color:#c6a0f6;padding-bottom:10px}
+.phone .back{color:#c6a0f6;font-size:13px;padding:4px 0 10px}
+.phone .phd{border:0;padding-bottom:4px}
+.phone .r{padding:13px 14px}.phone .seg span{padding:5px 11px}
+.phone .stack{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.phone .r.col2{flex-direction:column;align-items:stretch;gap:10px}
+.phone .fill{flex:1}
+.phone .bar{position:static;margin:14px 0 0}
+.nav{display:flex;justify-content:space-around;border-top:1px solid #363a4f;margin:14px -16px 0;padding:12px 0 14px;font-size:12px;color:#8087a2}.nav .on{color:#c6a0f6}
+.lst .r{gap:12px}.lst .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:#363a4f;color:#c6a0f6}.lst .chev{color:#6e738d}
+</style>
+<body><div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),V=(Q.get('v')||'D').toUpperCase(),F=Q.get('f')||'laptop',P=Q.get('p')||'look'
+const NAV=['HOME','DESK','OPS','INBOX','MRS','AGENDA','REPORTS']
+const topBar=()=>`<div class="top"><span class="lg">CR-0W</span>${NAV.map((n,i)=>`<span>${i+1} ${n}</span>`).join('')}<span style="margin-left:auto">MAIN ▮▮▮ 72% · WORK ▮▮▯ 41%</span><span>15:39</span><span class="on">⚙ SETTINGS</span></div>`
+const seg=(opts,on)=>`<span class="seg">${opts.map(o=>`<span class="${o===on?'on':''}">${o}</span>`).join('')}</span>`
+const sw=(on,lock)=>`<span class="sw ${on?'on':''} ${lock?'lock':''}"></span>`
+const row=(lab,hint,ctl,cls='')=>`<div class="r ${cls}"><div class="lab"><b>${lab}</b><span>${hint}</span></div>${ctl}</div>`
+const mini=c=>`<div class="mini" style="background:${c[0]}"><i style="background:${c[1]}"></i><div><i style="background:${c[3]}"></i><i style="background:${c[3]}"></i><i style="background:${c[3]}"></i></div></div>`
+const THEMES=[['Modern','Soft purple on dark, the default',['#24273a','#c6a0f6','#8bd5ca','#363a4f'],0],['Cyber','Neon green and pink on black',['#0b0f14','#39ff88','#ff3fa4','#16202a'],1]]
+const themeCards=(cols=2)=>`<div class="tc" style="grid-template-columns:repeat(${cols},1fr)">${THEMES.map(([n,h,c,on])=>`<div class="tcard ${on?'on':''}"><div class="n"><b style="font-weight:500">${n}</b>${on?'<span class="ck">✓</span>':''}</div>${mini(c)}<span class="muted">${h}</span></div>`).join('')}</div>`
+const PANES=[['look','◐','Look','Theme and hero of the Nest',1],['pages','☰','Pages','Which pages show and in what order',1],['modules','▦','Modules','Bricks that run on this hub',0],['general','⚙','General','Language, time zone, refresh',0]]
+const PAGES=[['Home','Always on',1,1,0],['Desk','Sessions, runs and picks',1,0,0],['Ops','Accounts, quotas, health',1,0,0],['Agenda','Calendar and due threads',1,0,1],['Inbox','Mail and review asks',1,0,0],['MRs','Merge requests to review or fix',1,0,0],['Reports','Weekly and daily rollups',0,0,1]]
+const pageRows=()=>`<div class="card">${PAGES.map(([n,h,on,lock,chg],i)=>`<div class="r ${chg?'chg':''}"><span class="hdl">⠿</span><span class="num">${i+1}</span><div class="lab"><b>${n}</b><span>${h}</span></div>${chg&&on?'<span class="muted">moved up</span>':''}${sw(on,lock)}</div>`).join('')}</div>`
+const lookBody=(cols=2)=>`<div class="sl">Theme</div>${themeCards(cols)}
+ <div class="sl">Hero</div><div class="card">${row('Hero','What sits at the top of Home',seg(['Holotable','None'],'Holotable'))}</div>`
+const bar=(n='2 changes',h='Pages need a rebuild, about 40 s')=>`<div class="bar"><div class="t">${n}<br><span>${h}</span></div><span class="b">Discard</span><span class="b p">Save</span></div>`
+
+function D_laptop(){
+ const cur=PANES.find(p=>p[0]===P)||PANES[0]
+ const body=P==='pages'?`<div class="sl">Order and visibility</div>${pageRows()}<div class="muted" style="margin-top:10px">Drag to reorder. Home stays on.</div>`:lookBody()
+ return `<div class="lap">${topBar()}<div class="stage"><div class="win"><div class="side"><div class="search">⌕  Search settings…</div>
+ ${PANES.map(([id,ic,n,,chg])=>`<div class="nv ${id===cur[0]?'on':''}"><span class="ic">${ic}</span>${n}${chg?'<span class="dot"></span>':''}</div>`).join('')}</div>
+ <div class="pane"><div class="phd"><span class="ic">${cur[1]}</span><div><h2>${cur[2]}</h2><p>${cur[3]}</p></div></div>${body}${bar()}</div></div></div>
+ <div class="lbl">D · SHELL LAYOUT · ${cur[2].toUpperCase()} PANE</div></div>`}
+
+function E_laptop(){
+ return `<div class="lap">${topBar()}<div class="stage"><div class="col"><h1>Settings</h1><div class="sub">Changes apply after Save</div>
+ <div class="jump"><span class="on">Look</span><span>Pages</span><span>Modules</span><span>General</span></div>
+ ${lookBody()}<div class="sl">Pages</div>${pageRows()}${bar()}</div></div><div class="lbl">E · ONE COLUMN, SECTIONS STACKED</div></div>`}
+
+function phoneShell(inner,nav=true){return `<div class="phone"><div class="bar0"><span>CR-0W</span><span style="font-family:'Fira Code';color:#8087a2">15:39</span></div>${inner}<div class="fill"></div>${nav?'<div class="nav"><span>Home</span><span>Desk</span><span>Ops</span><span>Inbox</span><span class="on">More</span></div>':''}</div>`}
+const phLook=()=>`<div class="sl" style="margin-top:12px">Theme</div>${themeCards(2)}<div class="sl">Hero</div><div class="card">${row('Hero','Top of Home',seg(['Holotable','None'],'Holotable'),'col2')}</div>`
+function D_phone(){
+ if(P==='list') return phoneShell(`<div class="phd"><div><h2>Settings</h2><p>Changes apply after Save</p></div></div>
+  <div class="card lst" style="margin-top:12px">${PANES.map(([id,ic,n,h,chg])=>`<div class="r"><span class="ic">${ic}</span><div class="lab"><b>${n}</b><span>${h}</span></div>${chg?'<span class="dot" style="width:7px;height:7px;border-radius:50%;background:#eed49f"></span>':''}<span class="chev">›</span></div>`).join('')}</div>${bar()}`)
+ if(P==='pages') return phoneShell(`<div class="back">‹ Settings</div><div class="phd"><div><h2>Pages</h2><p>Which pages show and in what order</p></div></div><div class="sl">Order and visibility</div>${pageRows()}${bar()}`,false)
+ return phoneShell(`<div class="back">‹ Settings</div><div class="phd"><div><h2>Look</h2><p>Theme and hero of the Nest</p></div></div>${phLook()}${bar()}`,false)}
+function E_phone(){return phoneShell(`<div class="phd"><div><h2>Settings</h2><p>Changes apply after Save</p></div></div>${phLook()}<div class="sl">Pages</div>${pageRows()}${bar()}`)}
+
+document.getElementById('root').innerHTML=F==='phone'?(V==='E'?E_phone():D_phone()):(V==='E'?E_laptop():D_laptop())
+</script>
