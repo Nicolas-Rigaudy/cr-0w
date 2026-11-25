@@ -1,0 +1,221 @@
+<!doctype html><meta charset="utf-8"><title>Nest Desk and Ops sketches</title>
+<!-- Desk + Ops redesign (item_293). ?v=A|B|C&p=desk|ops&f=laptop|phone
+     Model: vault Research/nest-desk-ops/desk-ops-model.md. Rows from a live core snapshot (work, dispatch, usage, ops.queue).
+     Options differ on: queued group placement, detail tabs vs one scroll, AFK batch as an Ops screen vs a launcher mode.
+     Chat is folded to a button; no space reserved for it. Yellow dashed tags mark data the core lacks today. -->
+<style>
+*{box-sizing:border-box}
+:root{--bg:#24273a;--fg:#cad3f5;--dim:#a5adcb;--sub:#939ab7;--panel:rgba(30,32,48,.78);--line:#494d64;--row:rgba(54,58,79,.55);--btn:rgba(54,58,79,.7);--well:rgba(24,25,38,.6);
+ --acc:#c6a0f6;--ink:#181926;--w:#7dc4e4;--n:#eed49f;--f:#ed8796;--d:#a6da95;--b:#8aadf4;--s:#8087a2;--t:#8bd5ca;
+ --dots:radial-gradient(color-mix(in srgb,#494d64 45%,transparent) 1px,transparent 1.2px) 0 0/18px 18px}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:12px/1.45 'Fira Code',ui-monospace,monospace}
+.lap{width:1440px;height:900px;display:flex;flex-direction:column;background:var(--dots),var(--bg);overflow:hidden;position:relative}
+.hdr{height:54px;flex:0 0 auto;display:flex;align-items:center;gap:18px;padding:0 20px;background:rgba(24,25,38,.85);border-bottom:1px solid var(--line);letter-spacing:.08em;font-size:12.5px}
+.logo{font:18px Michroma,sans-serif;color:var(--acc);letter-spacing:.12em}
+.pill{border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:3px 12px;font-size:11px}
+.nv{color:var(--fg)}.nv.on{background:var(--acc);color:var(--ink);padding:5px 10px;border-radius:7px}.nv b{color:var(--n);font-weight:400}
+.gauge{display:inline-flex;align-items:center;gap:6px;font-size:11px}.gauge i{display:inline-block;width:56px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--d) var(--p),#363a4f var(--p))}
+.cc{border:1px solid var(--n);color:var(--n);border-radius:999px;padding:1px 9px;font-size:11px}.cc.w{border-color:var(--w);color:var(--w)}
+.page{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:14px 20px 16px}
+.bar{display:flex;align-items:center;gap:10px;letter-spacing:.08em}
+.bar h1{font:20px Michroma,sans-serif;margin:0 10px 0 0;letter-spacing:.1em;font-weight:400}
+.seg{display:flex;gap:4px}.seg span{border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:11.5px;background:var(--btn)}.seg .on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.sum{margin-left:auto;color:var(--dim);font-size:12.5px;letter-spacing:.06em}.sum .x{color:var(--n)}
+/* panes with a title set in the top border, as in the deck */
+.pn{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:16px 12px 10px;min-height:0;min-width:0;display:flex;flex-direction:column;gap:5px}
+.pn>.tt{position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 7px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;display:flex;gap:8px}
+.pn>.tr{position:absolute;top:-9px;right:12px;background:var(--bg);padding:0 7px;font-size:11px;color:var(--sub);letter-spacing:.06em}
+.pn.sel{border-color:var(--acc)}
+.r{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:6px 9px;border-radius:7px;font-size:12.5px;min-width:0}
+.r:nth-child(odd){background:var(--row)}.r .ref{color:var(--t)}.r.mine .ref{color:var(--acc)}.r.done{opacity:.55}.r.done .ref{color:var(--d)}
+.r .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.r .ti small{display:block;color:var(--sub);font-size:11px}
+.r.on{background:rgba(198,160,246,.14);box-shadow:inset 2px 0 0 var(--acc)}
+.st{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.ok{color:var(--d)}.ko{color:var(--f)}.ru{color:var(--w)}.wa{color:var(--n)}.mu{color:var(--sub)}.ac{color:var(--acc)}.cy{color:var(--t)}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--btn);border-radius:8px;padding:4px 11px;font-size:11.5px;letter-spacing:.06em;white-space:nowrap}
+.btn.p{background:var(--acc);border-color:var(--acc);color:var(--ink)}.btn.g{background:none}
+.k{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;color:var(--dim);margin-right:3px}
+/* detail */
+.dh{font:17px Michroma,sans-serif;letter-spacing:.04em;line-height:1.35}.dh .ref{color:var(--acc)}
+.meta{color:var(--dim);font-size:12px}
+.facts{display:flex;gap:26px;padding:10px 12px;border-radius:9px;background:var(--well)}
+.facts div{display:flex;flex-direction:column;gap:2px;font-size:13px}.facts small{color:var(--sub);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.sh{font-size:11px;letter-spacing:.12em;color:var(--acc);text-transform:uppercase;margin-top:6px;display:flex;justify-content:space-between}
+.stg{display:flex;align-items:center;gap:0;font-size:12px}.stg span{padding:4px 10px;border:1px solid var(--line);margin-right:-1px}
+.stg span:first-child{border-radius:7px 0 0 7px}.stg span:last-child{border-radius:0 7px 7px 0}.stg .ok{border-color:var(--d)}.stg .ko{border-color:var(--f);background:rgba(237,135,150,.12)}.stg .mu{border-style:dashed}
+.th{border-left:2px solid var(--n);padding:6px 12px;background:var(--well);border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.th .w{color:var(--sub);font-size:11px}.th.res{border-left-color:var(--line);color:var(--sub)}
+.log{font-size:11.5px;background:var(--well);border-radius:8px;padding:8px 12px;color:var(--dim);white-space:pre;line-height:1.5}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.patc{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:11.5px;color:var(--dim)}
+.patc b{color:var(--n);font-weight:400}
+.pop{border:1px solid var(--acc);border-radius:10px;background:#1e2030;padding:10px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 24px #000a}
+.pop .pr{display:grid;grid-template-columns:1fr 70px 50px;gap:10px;font-size:12px;padding:3px 0;border-top:1px solid #363a4f}
+.pop .pr.hit{color:var(--n)}
+.lbl{position:absolute;left:20px;bottom:12px;z-index:9;background:var(--n);color:var(--ink);font:11.5px Michroma,sans-serif;padding:4px 10px;border-radius:6px;letter-spacing:.08em}
+.keys{display:flex;gap:16px;font-size:11px;color:var(--sub);padding:4px 2px 0}
+/* phone */
+.duo{display:flex;gap:24px;padding:12px;align-items:flex-start;background:#181926;width:max-content}
+.pw{width:368px}.pl{font:12px Michroma,sans-serif;color:var(--acc);padding:2px 2px 6px;letter-spacing:.06em}
+.ph{width:368px;height:800px;border:1px solid var(--line);border-radius:24px;background:var(--dots),var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ph .top{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px}.ph .top .logo{font-size:13px}
+.ph .bd{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:6px 12px;overflow:hidden}
+.ph .bar h1{font-size:15px}.ph .pn{padding:14px 8px 8px}.ph .r{grid-template-columns:40px 1fr auto;padding:7px 7px;font-size:12px;gap:8px}
+.ph .nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:11px 0 14px;font-size:11.5px;color:var(--sub);background:rgba(24,25,38,.85)}.ph .nav .on{color:var(--acc)}
+.cap{font-size:11.5px;color:var(--n);padding:8px 2px 0;line-height:1.45;width:368px}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:96px;border-top:1px solid var(--acc);border-radius:18px 18px 0 0;background:#1e2030;padding:10px 14px;display:flex;flex-direction:column;gap:9px;box-shadow:0 -10px 30px #000c}
+.grab{width:42px;height:4px;border-radius:2px;background:#5b6078;margin:0 auto 2px}
+.ph .dh{font-size:14px}.ph .facts{gap:14px;padding:8px 10px}.ph .facts div{font-size:12px}
+.ph .stg{font-size:11px}.ph .stg span{padding:3px 7px}
+.dim{opacity:.35;pointer-events:none}
+</style>
+<style>
+.lbl{left:auto!important;right:auto;top:68px;bottom:auto!important;left:600px!important}
+.fold{position:absolute;right:20px;bottom:12px;z-index:9;border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:4px 12px;font-size:11.5px;background:rgba(24,25,38,.9);letter-spacing:.08em}
+.cnt{display:flex;gap:10px}.cnt span{border:1px solid var(--line);border-radius:9px;padding:6px 14px;background:var(--btn);font-size:12px;display:flex;gap:8px;align-items:baseline}
+.cnt b{font:18px Michroma,sans-serif;font-weight:400}.cnt .on{border-color:var(--acc);box-shadow:inset 0 -2px 0 var(--acc)}
+.u{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:6px 9px;border-radius:7px;font-size:12.5px;min-width:0}
+.u:nth-child(odd){background:var(--row)}.u .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.u .ti small{display:block;color:var(--sub);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.u.on{background:rgba(198,160,246,.14);box-shadow:inset 2px 0 0 var(--acc)}.u.done{opacity:.55}
+.tl{display:flex;flex-direction:column;gap:3px;font-size:12px;border-left:1px solid var(--line);margin-left:6px;padding-left:12px}
+.tl div{display:flex;gap:10px}.tl .t{color:var(--sub);width:42px;flex:0 0 auto}
+.msg{background:var(--well);border-radius:8px;padding:7px 12px;font-size:12px;display:flex;flex-direction:column;gap:2px}.msg .w{color:var(--sub);font-size:10.5px;letter-spacing:.08em}
+.q{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.qb{height:8px;border-radius:4px;background:#363a4f;position:relative;overflow:hidden}.qb i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.ax{display:flex;justify-content:space-between;color:var(--sub);font-size:10px}
+.slot{border:1px dashed var(--line);border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;font-size:12px;flex:1}.slot.busy{border-style:solid;border-color:var(--w)}
+.gap{border:1px dashed var(--n);color:var(--n);border-radius:6px;padding:1px 7px;font-size:10.5px}
+.drag{color:var(--sub);cursor:grab}
+.mode{display:flex;gap:4px}.mode span{border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:11.5px}.mode .on{background:var(--acc);color:var(--ink);border-color:var(--acc)}
+.ln{display:grid;grid-template-columns:250px 1fr;height:21px;align-items:center;font-size:12px}.lnn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lnt{position:relative;height:100%;background:repeating-linear-gradient(90deg,transparent 0 calc(100%/13 - 1px),rgba(73,77,100,.5) calc(100%/13 - 1px) calc(100%/13))}
+.lnt:after{content:"";position:absolute;left:70.54%;top:0;bottom:0;width:2px;background:var(--f)}
+.lng{font-size:11px;letter-spacing:.12em;color:var(--acc);padding:7px 0 2px;border-top:1px solid var(--line);margin-top:3px}
+.qr{display:grid;grid-template-columns:18px 18px 1fr auto;gap:10px;align-items:center;padding:6px 9px;border-radius:7px;font-size:12.5px;background:var(--row)}.qr .ti small{display:block;color:var(--sub);font-size:11px}.qr .acts{gap:5px}.qr .btn{padding:3px 8px}
+.tot{display:grid;grid-template-columns:1.6fr repeat(5,.7fr) .8fr;gap:7px 10px;font-size:12px;text-align:right}.tot>span:nth-child(7n+1){text-align:left}
+.inp{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--sub);background:var(--well);font-size:12px}
+</style><body><div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),V=(Q.get('v')||'A').toUpperCase(),P=Q.get('p')||'desk',F=Q.get('f')||'laptop'
+// work rows (core /api/state work): kind, state, project, title, since, why
+const W={
+ needs:[{k:'mr',p:'api',t:'!242 raise car alerts from vendor detection',s:'4h',why:'review asked'},
+        {k:'mission',p:'cr-0w',t:'Plan logics items for three Nest desk bugs',s:'1h',why:'failed · cause not recorded',f:1}],
+ moving:[{k:'run',p:'cr-0w',t:'Nest Reports build (item_258)',s:'12m',why:'acct2 · 40k ctx · editing ReportsPage.tsx'},
+         {k:'run',p:'cr-0w',t:'Nest Agenda build (item_226)',s:'12m',why:'acct2 · 43k ctx · running vitest'},
+         {k:'run',p:'crow-butler',t:'launch a session on acct2 to look at my sprint jira',s:'12m',why:'acct2 · butler run'},
+         {k:'session',p:'cr-0w',t:'cr-0w: compare.go, inbox.go',s:'22m',why:'acct1 · 85k ctx · hub'}],
+ queued:[{k:'mr',p:'api',t:'!245 raise alerts on the power supply (draft)',s:'2d',why:'draft'},
+         {k:'afk',p:'crow',t:'hero labels',s:'',why:'afk batch'},{k:'afk',p:'shell',t:'screensaver',s:'',why:'afk batch'}],
+ done:[{k:'run',p:'cr-0w',t:'nest-desk-bugs',s:'14:16',why:'done'},{k:'run',p:'cr-0w',t:'nest mrs build (option C)',s:'11:32',why:'done'},
+       {k:'mission',p:'api',t:'Review MR !242 (CD-611)',s:'10:29',why:'done'},{k:'run',p:'api',t:'lambda!242',s:'10:29',why:'stopped'}]}
+const IC={mr:'⑂',run:'▶',session:'◧',mission:'◆',afk:'☾'}
+const COL={needs:'var(--n)',moving:'var(--w)',queued:'var(--sub)',done:'var(--d)'}
+const NAME={needs:'Needs you',moving:'Moving',queued:'Queued',done:'Done · failed'}
+const SEL=W.moving[1]
+const gap=t=>`<span class="gap">gap: ${t}</span>`
+const u=(x,st,sub=1)=>`<div class="u ${x===SEL?'on':''} ${st==='done'?'done':''}"><span style="color:${x.f?'var(--f)':COL[st]}">${IC[x.k]}</span><span class="ti">${x.t}${sub?`<small>${x.p} · ${x.f?`<span class="ko">${x.why}</span>`:x.why}</small>`:''}</span><span class="mu" style="font-size:11px">${x.s}</span></div>`
+const grp=(st,list,extra='')=>`<div class="sh"><span style="color:${COL[st]}">${NAME[st]}</span><span class="mu">${list.length}</span></div>${list.map(x=>u(x,st)).join('')}${extra}`
+const NAV=['HOME','DESK','OPS','INBOX','MRS','AGENDA','REPORTS']
+const ON=P==='desk'?'DESK':'OPS'
+const hdr=()=>`<div class="hdr"><span class="logo">CR-0W</span><span class="pill">◈ ALL</span>${NAV.map((n,i)=>`<span class="nv ${n===ON?'on':''}">${i+1} ${n}${n==='INBOX'?' <b>1</b>':n==='DESK'?' <b>2</b>':n==='OPS'?' 2/2':''}</span>`).join('')}<span style="margin-left:auto" class="gauge">ACCT1 <i style="--p:70%"></i> 70%</span><span class="gauge">ACCT2 <i style="--p:36%"></i> 36%</span><span class="cc">◆ 2</span><span class="cc w">◌ 4</span><span>15:05</span></div>`
+const fold=`<div class="fold">◇ BUTLER · c</div>`
+const lbl=t=>`<div class="lbl">${t}</div>`
+const cnt=(on)=>`<div class="cnt">${['needs','moving','queued','done'].map(s=>`<span class="${s===on?'on':''}"><b style="color:${COL[s]}">${s==='done'?'14':W[s].length}</b>${NAME[s]}</span>`).join('')}</div>`
+const launch=(afk)=>`<div style="display:flex;gap:8px;align-items:center"><span class="inp">new task… project, prompt</span><span class="mode"><span class="on">NOW</span><span>BACKGROUND</span>${afk?'<span>AFK BATCH</span>':''}</span><span class="btn p">LAUNCH</span></div>`
+const dHead=`<div class="dh"><span class="ac">▶</span> Nest Agenda build (item_226)</div><div class="meta">run · cr-0w · worktree nest-agenda-build · acct2 · started 13:55</div>
+ <div class="facts"><div><small>state</small><span class="ru">moving · 12m</span></div><div><small>context</small><span>43k</span></div><div><small>last action</small><span>running vitest</span></div><div><small>commits</small><span>2</span></div><div><small>item</small><span class="cy">item_226</span></div></div>`
+const tl=`<div class="tl"><div><span class="t">13:55</span>dispatched on acct2 · slot 2/2</div><div><span class="t">13:58</span>read item_226 + agenda board</div><div><span class="t">14:31</span><span class="ok">commit</span> new[TSX]: agenda week grid</div><div><span class="t">14:58</span><span class="ok">commit</span> chg[TSX/CSS]: agenda day rail</div><div><span class="t">15:04</span><span class="ru">running vitest</span></div></div>`
+const chat=`<div class="msg"><span class="w">RUN · 15:03</span>Week grid and day rail done. Running vitest, then shots with the chat folded.</div><div class="msg"><span class="w">TOOL · 15:04</span><span class="mu">npx vitest run src/pages/agenda</span></div><div style="display:flex;gap:8px"><span class="inp">message the run… (queued until its next turn)</span><span class="btn">SEND</span></div>`
+const acts=`<div class="acts"><span class="btn p">OPEN SESSION</span><span class="btn">MESSAGE</span><span class="btn">CANCEL</span><span class="btn g">WORKTREE ↗</span><span class="mu" style="margin-left:auto;font-size:11px">failed units show RETRY · RESUME here</span></div>`
+const tabs=on=>`<span class="seg">${['Overview','Transcript','Timeline','Files 6'].map((t,i)=>`<span class="${i===on?'on':''}">${t}</span>`).join('')}</span>`
+const page=(h1,sum,body)=>`<div class="lap">${hdr()}<div class="page"><div class="bar"><h1>${h1}</h1><span class="seg"><span class="on">ALL</span><span>CR-0W</span><span>LAMBDA</span></span><span class="sum">${sum}</span></div>${body}</div>${fold}</div>`
+
+/* ---------- DESK ---------- */
+function deskA(){ // queued next-3 on Desk, detail tabs, AFK on Ops
+ const list=`<div class="pn" style="flex:0 0 540px"><span class="tt">Units</span><span class="tr">grouped by state</span>
+  ${grp('needs',W.needs)}${grp('moving',W.moving)}${grp('queued',W.queued,'<div class="mu" style="font-size:11px;padding:2px 9px">next 3 · full queue on OPS ▸</div>')}<div class="sh"><span style="color:var(--d)">Done today</span><span class="mu">14 ▸</span></div></div>`
+ const det=`<div class="pn sel" style="flex:1;gap:10px;padding:20px 20px 14px"><span class="tt ac">Detail</span><span class="tr">esc closes</span>${dHead}${tabs(1)}${chat}<div style="flex:1"></div>${acts}</div>`
+ return page('DESK','<span class="x">2 need you</span> · 4 moving · 3 queued',`${launch(0)}<div style="display:flex;gap:16px;flex:1;min-height:0">${list}${det}</div>`)+''}
+function deskB(){ // counts strip filters, queued only on Ops, one-scroll detail, AFK as launcher mode
+ const list=`<div class="pn" style="flex:0 0 520px"><span class="tt">Needs you + moving</span><span class="tr">queue lives on OPS</span>${grp('needs',W.needs)}${grp('moving',W.moving)}<div class="sh"><span style="color:var(--d)">Done · failed today</span><span class="mu">14 ▸</span></div>${W.done.slice(0,2).map(x=>u(x,'done')).join('')}</div>`
+ const det=`<div class="pn sel" style="flex:1;gap:9px;padding:20px 20px 14px"><span class="tt ac">Detail · one scroll</span><span class="tr">esc closes</span>${dHead}<div class="sh"><span>Timeline</span></div>${tl}<div class="sh"><span>Transcript</span><span class="mu">last 2 ▸</span></div>${chat}<div style="flex:1"></div>${acts}</div>`
+ return page('DESK','',`<div style="display:flex;gap:16px;align-items:center">${cnt('needs')}<div style="flex:1"></div></div>${launch(1)}<div style="display:flex;gap:16px;flex:1;min-height:0">${list}${det}</div>`)}
+function deskC(){ // deck panes, queued as a folded pane, tabs, AFK launcher mode
+ const pane=(n,st,list,on,fold)=>`<div class="pn ${on?'sel':''}" style="flex:0 0 auto;border-radius:4px"><span class="tt" style="color:${COL[st]}">[${n}] ${NAME[st]}</span><span class="tr">${list.length}${fold?' · folded ▸':''}</span>${fold?`<div class="mu" style="font-size:11.5px;padding:2px 9px">${list.map(x=>x.t.split(' (')[0]).join(' · ')}</div>`:list.map(x=>u(x,st)).join('')}</div>`
+ const det=`<div class="pn sel" style="flex:1;gap:10px;padding:20px 20px 14px;border-radius:4px"><span class="tt ac">[5] Agenda build</span><span class="tr">cr-0w · run</span>${dHead}${tabs(2)}${tl}<div style="flex:1"></div>${acts}</div>`
+ const keys=`<div class="keys"><span><span class="k">1-5</span>pane</span><span><span class="k">j k</span>move</span><span><span class="k">n</span>new task</span><span><span class="k">a</span>answer</span><span><span class="k">r</span>retry</span><span><span class="k">x</span>cancel</span><span><span class="k">o</span>open session</span><span><span class="k">c</span>chat</span></div>`
+ return page('DESK','<span class="x">2 need you</span> · 4 moving · 3 queued',`${launch(1)}<div style="display:flex;gap:16px;flex:1;min-height:0"><div style="flex:0 0 500px;display:flex;flex-direction:column;gap:16px">${pane(1,'needs',W.needs)}${pane(2,'moving',W.moving,1)}${pane(3,'queued',W.queued,0,1)}${pane(4,'done',W.done.slice(0,2))}</div>${det}</div>${keys}`)}
+
+/* ---------- OPS ---------- */
+const ACC=[['acct1',70,56,'18:00',24.1,'use'],['acct2',36,58,'18:00',5,'use'],['acct3',65,72,'18:00',26.1,'ask first'],['acct4',36,68,'18:00',29.1,'never'],['acct5',0,26,'18:00',38.2,'never']]
+const qcol=p=>p>=50?'var(--d)':p>=20?'var(--n)':'var(--f)'
+const quota=(a,wide)=>`<div class="q" style="${wide?'':'flex:1'}"><div style="display:flex;justify-content:space-between"><span>${a[0]} <span class="mu">· ${a[5]}</span></span><span class="mu">5h ${a[1]}% · week ${a[2]}%</span></div><div class="qb"><i style="width:${a[1]}%;background:${qcol(a[1])}"></i></div><div class="ax"><span>0%</span><span>5h left · resets ${a[3]} · burn ${a[4]}%/h</span><span>100%</span></div></div>`
+const slots=`<div style="display:flex;gap:12px"><div class="slot busy"><span class="mu">SLOT 1 · acct2</span><span>Nest Reports build</span><span class="mu">12m · 40k ctx</span></div><div class="slot busy"><span class="mu">SLOT 2 · acct2</span><span>Nest Agenda build</span><span class="mu">12m · 43k ctx</span></div><div class="slot" style="flex:.8"><span class="mu">OUTSIDE SLOTS</span><span>butler run · hub session acct1</span><span>${gap('slots say 2/2 for 3 runs')}</span></div></div>`
+const bg=`${W.queued.slice(0,1).map(x=>u(x,'queued')).join('')}<div class="u"><span class="drag">⋮⋮</span><span class="ti">nest usage build (item_227)<small>cr-0w · waits for a free slot</small></span><span class="mu" style="font-size:11px">#1</span></div><div class="u"><span class="drag">⋮⋮</span><span class="ti">nest settings build (item_284)<small>cr-0w · waits for a free slot</small></span><span class="mu" style="font-size:11px">#2</span></div>`
+const afkL=['mrs v2','inbox build','settings mockups','nest lag2','screensaver','hero labels','fallback']
+const afk=`<div class="mu" style="font-size:11px">7 jobs · starts on “go” · ${gap('no batch state in core')}</div>${afkL.map((t,i)=>`<div class="u"><span class="drag">⋮⋮</span><span class="ti">${t}<small>${t==='screensaver'?'shell':'crow'} · afk job</small></span><span class="mu" style="font-size:11px">${i+1}</span></div>`).join('')}`
+const sched=`<div class="u"><span>⏲</span><span class="ti">daily session retro batch<small>crow-retro.timer</small></span><span class="mu" style="font-size:11px">15:04</span></div><div class="u"><span>⏲</span><span class="ti">weekly tool update watch<small>crow-toolwatch.timer</small></span><span class="mu" style="font-size:11px">Mon 09:30</span></div>`
+const hist=W.done.map(x=>u(x,'done')).join('')
+const pn=(t,body,st='')=>`<div class="pn" style="${st}"><span class="tt">${t}</span>${body}</div>`
+/* Ops keeps today's page: lane timeline, queue, day totals. Options add capacity and the AFK batch. */
+const X=h=>((h-7)/13*100).toFixed(2)+'%',W_=(a,b)=>((b-a)/13*100).toFixed(2)+'%',NOW=16.17
+const SC={w:'#7dc4e4',y:'#eed49f',i:'#5b6078',s:'#f5a97f',f:'#ed8796',d:'#a6da95',l:'repeating-linear-gradient(135deg,#7dc4e4 0 5px,#9fd4ec 5px 9px)',p:'none',q:'#b7a0e0',z:'#8bd5ca'}
+const bar=(a,b,k,t='')=>`<i style="position:absolute;left:${X(a)};width:${W_(a,b)};top:3px;bottom:3px;border-radius:4px;background:${SC[k]};${k==='p'?'border:1px dashed var(--sub);':''}${t?'font-style:normal;font-size:10.5px;color:var(--ink);padding:0 6px;white-space:nowrap;overflow:hidden;line-height:15px':''}">${t}</i>`
+const lane=(ic,name,bars,note='',nc='var(--w)')=>`<div class="ln"><span class="lnn"><span class="mu">${ic}</span> ${name}</span><span class="lnt">${bars.map(x=>bar(...x)).join('')}${note?`<em style="position:absolute;left:calc(${X(NOW)} + 8px);font-style:normal;color:${nc};font-size:11px;white-space:nowrap;line-height:21px">${note}</em>`:''}</span></div>`
+const grpH=t=>`<div class="lng">${t}</div>`
+const axis=`<div class="ln" style="color:var(--sub);font-size:10.5px"><span class="lnn">LANE</span><span class="lnt">${[7,8,9,10,11,12,13,14,15,16,17,18,19].map(h=>`<b style="position:absolute;left:${X(h)};font-weight:400;transform:translateX(-50%)">${String(h).padStart(2,'0')}:00</b>`).join('')}<b style="position:absolute;left:${X(NOW)};color:var(--f);font-weight:400;transform:translateX(-50%);top:-13px">▼ now 16:10</b></span></div>`
+const LANES=grpH('CROW · 6 LANES')+lane('◉','morning brief and triage',[[8.17,9,'w'],[9,10.5,'i'],[10.5,11.67,'w'],[15.7,16.17,'y']],'OPEN session · s-hub · 8h00 · $6.20')
+ +lane('◉','ops timeline design',[[13,14.33,'w'],[14.33,14.83,'i'],[14.83,16.17,'l']],'session · s-ops · 3h10 · $4.10')
+ +lane('▷','item-90-ops',[[14.5,16.17,'l']],'S1 · 3f2a9c1b · 1h40 · $2.40')+lane('▷','brief',[[7.5,7.66,'w']])
+ +lane('▷','item-88-docs',[[9.33,10.17,'w'],[10.17,10.33,'d']])+lane('▷','item-87-tick',[[11,11.5,'w'],[11.5,11.67,'f']])
+ +grpH('SHOP · 2 LANES')+lane('◉','checkout review threads',[[9.5,10.67,'w'],[10.67,11.17,'i'],[11.17,12,'w']])+lane('▷','mr12-threads-ci',[[12.5,13.17,'w'],[13.17,13.33,'s']])
+ +grpH('PLANNED · 1')+lane('↻','crow-retro.service',[[18,18.25,'p']])
+const LEG=`<div class="keys" style="padding:6px 0 0"><span>▆ working</span><span class="wa">▆ waits on you</span><span>idle</span><span>stuck</span><span class="ko">failed</span><span class="ok">done</span><span class="ru">▨ live</span><span>⬚ planned</span><span>x axis: Paris time · ▷ run · ◉ session</span></div>`
+const CAPL=grpH('CAPACITY · NEW')+lane('▣','slot 1 · acct2',[[13.9,NOW,'q','Nest Reports build · 2h16']],'2h16 · 40k ctx','var(--acc)')
+ +lane('▣','slot 2 · acct2',[[13.9,NOW,'q','Nest Agenda build · 2h16']],'')
+ +lane('◇','outside slots',[[15,NOW,'q','butler run · acct1']],gap('not counted in slots'),'var(--n)')
+ +lane('%','acct1 · 5h window',[[13,NOW,'z','30% used'],[NOW,18,'p']],'70% left · resets 18:00 · burn 24%/h','var(--d)')
+ +lane('%','acct2 · 5h window',[[13,NOW,'z','64% used'],[NOW,18,'p']],'36% left · resets 18:00 · burn 5%/h','var(--d)')
+const tlPane=(extra='',top='')=>`<div class="pn" style="flex:0 0 auto;gap:0;padding:14px 16px 10px">${top}${axis}${LANES}${extra}${LEG}</div>`
+const qrow=(n,t,sub,last)=>`<div class="qr"><span class="drag">⠿</span><span class="mu">${n}</span><span class="ti">${t}<small>${sub}</small></span><span class="acts"><span class="btn g">▲</span><span class="btn g">▼</span><span class="btn p">RUN ▾</span><span class="btn g">✕</span></span></div>`
+const QROWS=qrow(1,'Refresh the docs index','mission · crow · when a slot frees')+qrow(2,'Mail, team and vault bricks','mission · crow · when a slot frees')+qrow(3,'Optional tool bricks','mission · crow · when a slot frees')
+ +`<div class="qr"><span></span><span class="ac">↻</span><span class="ti">crow-retro.service<small>routine · today 18:00</small></span><span class="acts"><span class="btn g">PAUSE</span><span class="btn g">RUN NOW</span></span></div>`
+const AFKROWS=(n=7)=>`<div class="mu" style="font-size:11px;display:flex;gap:10px;align-items:center">7 jobs · start on GO or at a set time ${gap('no batch state in core')}</div>`+afkL.slice(0,n).map((t,i)=>`<div class="qr"><span class="drag">⠿</span><span class="mu">${i+1}</span><span class="ti">${t}<small>${t==='screensaver'?'shell':'crow'} · afk job · worktree ready</small></span><span class="acts"><span class="btn g">EDIT</span><span class="btn g">✕</span></span></div>`).join('')+(n<7?`<div class="mu" style="font-size:11px">+ ${7-n} more ▾</div>`:'')+`<div class="acts" style="padding-top:4px"><span class="btn p">GO · START BATCH</span><span class="btn g">START AT 19:00 ▾</span><span class="btn g">+ ADD JOB</span></div>`
+const qPane=(tab,st='flex:1')=>`<div class="pn" style="${st}"><span class="tt">Queue</span><span class="tr">3 missions · 1 routine · 7 afk · slots 2/2</span>${tab?`<span class="seg"><span class="${tab==='q'?'on':''}">QUEUE 4</span><span class="${tab==='a'?'on':''}">☾ AFK BATCH 7</span></span>`:''}${tab==='a'?AFKROWS(6):`<div class="mu" style="font-size:11px">Missions start by position when a slot frees. Drag ⠿ or use ▲ ▼ to reorder.</div>${QROWS}${tab?'':`<div class="qr"><span></span><span class="ac">☾</span><span class="ti">afk · crow checks<small>job · next afk go</small></span><span class="acts"><span class="btn g">EDIT</span><span class="btn g">✕</span></span></div>`}`}</div>`
+const afkPane=(st='flex:1')=>`<div class="pn" style="${st}"><span class="tt">☾ AFK batch · new</span><span class="tr">7 jobs</span>${AFKROWS(4)}</div>`
+const totals=`<div class="pn" style="flex:0 0 auto"><span class="tt">Mon 9 Nov totals</span><span class="tr">PROJECT · kind</span><div class="tot"><span class="mu">project</span><span class="mu">lanes</span><span class="mu">active h</span><span class="mu">wait</span><span class="mu">stuck</span><span class="mu">failed</span><span class="mu">cost</span>
+<span><i style="display:inline-block;width:46px;height:6px;border-radius:3px;background:var(--acc)"></i> crow</span><span>6</span><span>8.2</span><span>0.5</span><span>0</span><span class="ko">1</span><span>$15</span>
+<span><i style="display:inline-block;width:18px;height:6px;border-radius:3px;background:var(--d)"></i> shop</span><span>2</span><span>2.8</span><span>0.0</span><span class="wa">1</span><span>0</span><span>$4.20</span>
+<span class="mu">sessions / runs</span><span>3 / 5</span><span>6.7 / 4.3</span><span></span><span></span><span></span><span>$14 / $5.30</span></div></div>`
+const capPane=(st='flex:1')=>`<div class="pn" style="${st};gap:10px"><span class="tt">Capacity · new</span><span class="tr">2/2 slots · 1 outside</span>${ACC.slice(0,3).map(a=>quota(a,1)).join('')}<div class="mu" style="font-size:11px">acct4, acct5: never dispatched · hidden ▸</div><div style="display:flex;flex-direction:column;gap:2px;font-size:11.5px"><span><span class="ru">▣ 1</span> Nest Reports build · acct2 · 2h16</span><span><span class="ru">▣ 2</span> Nest Agenda build · acct2 · 2h16</span><span class="wa">◇ butler run · acct1 · outside slots</span></div></div>`
+const capStrip=`<div class="pn" style="flex:0 0 auto;flex-direction:row;gap:22px;align-items:center;padding:14px 16px 10px"><span class="tt">Capacity · new</span>${ACC.slice(0,3).map(a=>quota(a)).join('')}<div style="display:flex;flex-direction:column;gap:2px;font-size:11.5px;flex:0 0 250px"><span><span class="ru">▣ 1</span> Nest Reports build</span><span><span class="ru">▣ 2</span> Nest Agenda build</span><span class="wa">◇ butler run · outside slots</span></div></div>`
+const opsBar=`<div class="bar"><h1>OPS</h1><span class="seg"><span class="on">DAY</span><span>WEEK</span></span><span class="mu">◀ Today · Mon 9 Nov ▶</span><span class="seg"><span class="on">08-20</span><span>24H</span></span><span class="sum">8 lanes · 11h 00m active · $19 · <span class="ko">1 failed</span></span></div>`
+const opsPage=(body)=>`<div class="lap">${hdr()}<div class="page" style="gap:12px">${opsBar}${body}</div>${fold}</div>`
+function opsA(){ // capacity in the empty space under totals
+ return opsPage(`${tlPane()}<div style="display:flex;gap:16px;flex:1;min-height:0">${qPane('q')}<div style="flex:1;display:flex;flex-direction:column;gap:16px">${totals}${capPane()}</div></div>`)}
+function opsB(){ // capacity strip above the timeline
+ return opsPage(`${capStrip}${tlPane()}<div style="display:flex;gap:16px;flex:1;min-height:0">${qPane('q')}<div style="flex:1;display:flex;flex-direction:column;gap:16px">${totals}</div></div>`)}
+function opsC(){ // capacity as lanes inside the timeline
+ return opsPage(`${tlPane(CAPL)}<div style="display:flex;gap:16px;flex:1;min-height:0">${qPane('q')}<div style="flex:1;display:flex;flex-direction:column;gap:16px">${totals}</div></div>`)}
+function opsX(){ // AFK batch as a queue tab (capacity A)
+ return opsPage(`${tlPane()}<div style="display:flex;gap:16px;flex:1;min-height:0">${qPane('a')}<div style="flex:1;display:flex;flex-direction:column;gap:16px">${totals}${capPane()}</div></div>`)}
+function opsY(){ // AFK batch as its own pane (capacity A)
+ return opsPage(`${tlPane()}<div style="display:flex;gap:16px;flex:1;min-height:0">${qPane('',`flex:1`)}${afkPane()}<div style="flex:1;display:flex;flex-direction:column;gap:16px">${totals}${capPane()}</div></div>`)}
+
+/* ---------- PHONE DESK ---------- */
+const pTop=`<div class="top"><span class="logo">CR-0W</span><span style="display:flex;gap:6px"><span class="cc">◆ 2</span><span class="cc w">◌ 4</span></span></div>`
+const pNav=`<div class="nav"><span>Home</span><span class="on">Desk</span><span>Ops</span><span>Inbox</span><span>MRs</span></div>`
+const phone=(lb,body,cap,overlay='')=>`<div class="pw"><div class="pl">${lb}</div><div class="ph">${pTop}<div class="bd">${body}</div>${pNav}${overlay}<div class="fold" style="bottom:58px;right:12px">◇</div></div><div class="cap">${cap}</div></div>`
+const pBar=`<div class="bar"><h1>DESK</h1><span class="sum" style="font-size:11px"><span class="x">2 need you</span> · 4 moving</span></div>`
+const pDet=t=>`<div class="dh">Nest Agenda build</div><div class="meta">run · cr-0w · acct2 · 12m</div><div class="facts"><div><small>ctx</small><span>43k</span></div><div><small>commits</small><span>2</span></div><div><small>now</small><span class="ru">vitest</span></div></div>${t?'<span class="seg"><span>Overview</span><span class="on">Transcript</span><span>Timeline</span></span>'+chat:`<div class="sh"><span>Timeline</span></div>${tl}<div class="sh"><span>Transcript</span></div>`+chat.split('<div style="display:flex')[0]}<div style="flex:1"></div><div class="acts"><span class="btn p">SESSION</span><span class="btn">MESSAGE</span><span class="btn">CANCEL</span></div>`
+function phones(){
+ const pc=s=>`<div class="cnt" style="gap:6px">${['needs','moving','queued'].map(x=>`<span class="${x===s?'on':''}" style="padding:4px 9px;font-size:11px"><b style="font-size:14px;color:${COL[x]}">${W[x].length}</b>${NAME[x]}</span>`).join('')}</div>`
+ if(V==='A') return phone('A · list',pBar+`<div class="pn"><span class="tt">Units</span>${grp('needs',W.needs)}${grp('moving',W.moving)}${grp('queued',W.queued.slice(0,2))}</div>`,'Same groups as laptop A. Queued shows the next ones.')+phone('A · tap Agenda build',`<div class="mu" style="font-size:11.5px">◀ Desk</div>`+pDet(1),'Full page detail with tabs.')
+ if(V==='B') return phone('B · counts',pBar+pc('needs')+`<div class="pn"><span class="tt wa">Needs you</span>${W.needs.map(x=>u(x,'needs')).join('')}</div>`,'Counts filter the list. Opens on Needs you. Queue on Ops.')+phone('B · tap Agenda build',pBar+pc('moving')+`<div class="pn dim"><span class="tt">Moving</span>${u(SEL,'moving')}</div>`,'Detail as a bottom sheet, one scroll.',`<div class="sheet"><div class="grab"></div>${pDet(0)}</div>`)
+ const tb=`<span class="seg"><span>[1] Needs 2</span><span class="on">[2] Moving 4</span><span>[3] Queued</span></span>`
+ return phone('C · deck panes',pBar+tb+`<div class="pn sel" style="border-radius:4px"><span class="tt ac">[2] Moving</span>${W.moving.map(x=>u(x,'moving')).join('')}</div>`,'One pane at a time, deck tabs on top.')+phone('C · tap Agenda build',`<div class="mu" style="font-size:11.5px">◀ [2] Moving</div>`+pDet(1),'Detail with the laptop tabs.')}
+
+const L={desk:{A:[deskA,'A · STATE LIST + TABBED DETAIL · QUEUE NEXT 3'],B:[deskB,'B · COUNT FILTERS + ONE-SCROLL DETAIL · QUEUE ON OPS'],C:[deskC,'C · DECK PANES + TABS · QUEUE FOLDED']},
+ ops:{A:[opsA,'CAPACITY A · PANE UNDER TOTALS'],B:[opsB,'CAPACITY B · STRIP ABOVE THE TIMELINE'],C:[opsC,'CAPACITY C · LANES IN THE TIMELINE'],X:[opsX,'AFK X · TAB IN THE QUEUE'],Y:[opsY,'AFK Y · ITS OWN PANE']}}
+document.getElementById('root').innerHTML=F==='phone'?`<div class="duo">${phones()}</div>`:L[P][V][0]().replace(/<\/div>$/,lbl(L[P][V][1])+'</div>')
+</script>
