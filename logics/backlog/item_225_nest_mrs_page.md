@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 10:10:53
+> Indicators reviewed: 2026-11-25 10:23:00
 
 # AI Context
 - Summary: MRs tab on live `/api/state/mrs`: mine, to review, CI state, threads; each row opens review, threads or the MR on the forge. Optional brick (req_064 modules).
@@ -54,3 +54,4 @@
 
 # Decision framing
 - Owner 2026-11-25: none of A/B/C. Redo the mockups: closer to the deck, less clutter. MR list as clear as A or B, details like A but bigger, patterns small and expanded on demand. Do not reserve space for the chat panel.
+- Round 2 (2026-11-25): options A (list + big detail), B (who-acts strip + wide detail), C (deck panes + tabbed detail) in `tools/nest/scripts/mockups/mrs-v2.html`, rendered by `tools/nest/scripts/mrs-v2-mockups.mjs`. Waiting on the owner's pick (AC1).
