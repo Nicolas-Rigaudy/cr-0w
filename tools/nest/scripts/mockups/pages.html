@@ -1,0 +1,221 @@
+<!doctype html><meta charset="utf-8"><title>Nest pages mockups</title>
+<!-- Mockups for Agenda (item_226), MRs (item_225), Reports (item_258).
+     ?p=agenda|mrs|reports&v=A|B|C&f=laptop|phone. Look follows the Ops sketch (item_190).
+     Data: shapes of /api/state/today, /api/state/mrs, review ledgers, vault rituals; names made generic. -->
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:#1e2030;color:#cad3f5;font:13px/1.4 'Fira Code',monospace}
+.lap{width:1440px;height:900px;display:grid;grid-template-rows:56px 1fr;grid-template-columns:1fr 320px;overflow:hidden;position:relative}
+.top{grid-column:1/-1;display:flex;align-items:center;gap:22px;padding:0 20px;border-bottom:1px solid #363a4f;letter-spacing:.08em}
+.top .lg{font-family:Michroma,sans-serif;color:#c6a0f6;font-size:18px}.top .on{background:#c6a0f6;color:#181926;padding:4px 10px;border-radius:6px}
+.main{grid-row:2;grid-column:1;min-width:0;min-height:0;padding:12px 16px;display:flex;flex-direction:column;gap:10px;position:relative}
+.rail{grid-row:2;grid-column:2;border-left:1px solid #494d64;background:#181926;padding:12px 14px;display:flex;flex-direction:column;gap:10px;color:#6e738d}
+.rail .hd{height:230px;border:1px dashed #494d64;border-radius:8px;display:grid;place-items:center}
+.hd1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.hd1 h1{font:16px Michroma,sans-serif;margin:0 6px 0 0;letter-spacing:.08em}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}.tab{border:1px solid #494d64;border-radius:6px;padding:3px 9px;font-size:11.5px;white-space:nowrap}.tab.on{background:#c6a0f6;color:#181926;border-color:#c6a0f6}
+.pn{border:1px solid #494d64;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-height:0;min-width:0;overflow:hidden;position:relative}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+.c-w{color:#7dc4e4}.c-n{color:#eed49f}.c-f{color:#ed8796}.c-g{color:#a6da95}.c-s{color:#8087a2}.c-m{color:#c6a0f6}.c-t{color:#8bd5ca}
+.row{display:flex;align-items:center;gap:8px;background:#24273a;border-radius:7px;padding:5px 9px;font-size:12px;flex-wrap:wrap;min-width:0}
+.row .t{flex:1 1 160px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row .s{font-size:11px;color:#a5adcb;white-space:nowrap}
+.row.sel{box-shadow:0 0 0 1px #c6a0f6 inset}.row .tm{color:#a5adcb;font-size:11.5px;width:44px;flex:0 0 auto}
+.row.dim{opacity:.55}
+.btn{border:1px solid #494d64;border-radius:6px;padding:1px 7px;font-size:11px;white-space:nowrap}.btn.p{background:#c6a0f6;color:#181926;border-color:#c6a0f6}
+.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #494d64;border-radius:999px;padding:2px 10px;font-size:11.5px;white-space:nowrap}
+.chip.warn{border-color:#eed49f;color:#eed49f}.chip.fail{border-color:#ed8796;color:#ed8796}.chip.ok{border-color:#a6da95;color:#a6da95}.chip.run{border-color:#7dc4e4;color:#7dc4e4}.chip.m{border-color:#c6a0f6;color:#c6a0f6}
+.g{font-size:10.5px;color:#c6a0f6;letter-spacing:.12em;margin-top:4px;border-top:1px solid #363a4f;padding-top:4px;text-transform:uppercase;display:flex;justify-content:space-between}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px}.kv span:nth-child(odd){color:#a5adcb}
+.note{position:absolute;z-index:5;background:#eed49f;color:#181926;font:11px/1.35 'Fira Code',monospace;padding:5px 8px;border-radius:6px;max-width:260px;box-shadow:0 2px 8px #0008}
+.lbl{position:absolute;left:16px;bottom:10px;z-index:9;background:#eed49f;color:#181926;font:12px Michroma,sans-serif;padding:4px 10px;border-radius:6px;letter-spacing:.08em}
+table{border-collapse:collapse;width:100%;font-size:12px}th{font-weight:400;color:#a5adcb;text-align:left;padding:3px 6px;font-size:11px;letter-spacing:.06em}td{padding:4px 6px;border-top:1px solid #363a4f;white-space:nowrap}
+.bar{display:inline-block;height:8px;background:#c6a0f6;border-radius:2px;vertical-align:middle;margin-right:6px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#7dc4e4;box-shadow:0 0 6px #7dc4e4}
+/* hour grid */
+.hg{position:relative;display:grid;grid-template-columns:46px 1fr;font-size:11px}
+.hg .h{color:#a5adcb;height:var(--rh);border-top:1px solid #363a4f;padding-top:1px}.hg .c{border-top:1px solid #363a4f;height:var(--rh)}
+.ev{position:absolute;left:52px;right:6px;border-radius:6px;padding:3px 8px;font-size:11.5px;overflow:hidden;background:#7dc4e422;border-left:3px solid #7dc4e4}
+.ev.done{opacity:.5}.ev.next{background:#c6a0f62a;border-left-color:#c6a0f6}
+.nowl{position:absolute;left:46px;right:0;height:2px;background:#ed8796;z-index:2}.nowl b{position:absolute;right:4px;top:-14px;font-size:10px;color:#ed8796;font-weight:400}
+.wg{display:grid;gap:0 6px}.wg .dh{font-size:11.5px;color:#b8c0e0;padding:4px 6px;border-radius:6px}.wg .dh.on{background:#c6a0f6;color:#181926}
+.wg .col{position:relative;border-left:1px solid #363a4f;background:repeating-linear-gradient(180deg,#363a4f55 0 1px,transparent 1px var(--rh))}
+.wg .ad{font-size:10.5px;color:#a5adcb;border:1px dashed #494d64;border-radius:5px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wg .ev{left:3px;right:3px;font-size:10.5px;padding:2px 5px;border-left-width:2px}
+.due{display:block;font-size:10.5px;border-radius:5px;padding:1px 5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#eed49f22;color:#eed49f;border-left:2px solid #eed49f}
+.due.mr{background:#8bd5ca22;color:#8bd5ca;border-left-color:#8bd5ca}.due.dt{background:#f5a97f22;color:#f5a97f;border-left-color:#f5a97f}
+.stg{display:flex;gap:4px;flex-wrap:wrap}.stg span{border-radius:5px;padding:1px 7px;font-size:11px;border:1px solid #494d64}.stg .ok{border-color:#a6da95;color:#a6da95}.stg .ko{border-color:#ed8796;color:#ed8796;background:#ed879622}.stg .sk{color:#6e738d;border-style:dashed}
+.q{border-left:2px solid #494d64;padding:2px 8px;font-size:11.5px;color:#b8c0e0}
+.md{font-size:12.5px;line-height:1.55;color:#cad3f5}.md h2{font:13px Michroma,sans-serif;letter-spacing:.06em;color:#c6a0f6;margin:12px 0 4px}.md h3{font-size:12px;color:#8bd5ca;margin:10px 0 2px;font-weight:400;letter-spacing:.1em;text-transform:uppercase}.md ul{margin:2px 0;padding-left:18px}.md p{margin:4px 0}
+.tile{border:1px solid #494d64;border-radius:9px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;min-width:0}.tile .n{font:13px Michroma,sans-serif;letter-spacing:.06em}.tile.run{border-color:#7dc4e4;background:#7dc4e414}
+.k{display:inline-grid;place-items:center;width:18px;flex:0 0 auto}
+/* phone */
+.ph-wrap{width:368px;padding:0 0 8px}.ph-lbl{font:13px Michroma,sans-serif;color:#c6a0f6;padding:6px 2px 4px;letter-spacing:.06em}
+.phone{width:368px;min-height:812px;border:1px solid #494d64;border-radius:22px;padding:12px 10px 0;display:flex;flex-direction:column;gap:8px;background:#1e2030;overflow:hidden}
+.phone .bar0{display:flex;justify-content:space-between;align-items:center;padding:2px 4px;font-family:Michroma,sans-serif;font-size:12px}
+.phone .bar0 .chip{font-family:'Fira Code',monospace;font-size:11px;padding:1px 8px}
+.phone .hd1 h1{font-size:14px}.phone .pn{padding:8px 9px;border-radius:10px}.phone .row{padding:6px 8px}.phone .row .t{flex-basis:120px}
+.phone .fill{flex:1}
+.nav{display:flex;justify-content:space-around;border-top:1px solid #363a4f;margin:0 -10px;padding:10px 0 12px;font-size:12px;color:#8087a2}.nav .on{color:#c6a0f6}
+.cap{font-size:12px;color:#eed49f;padding:6px 2px 0;line-height:1.4}
+.sheet{border:1px solid #c6a0f6;border-radius:14px 14px 0 0;background:#24273a;padding:10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 -6px 18px #0009}
+.grab{width:40px;height:4px;border-radius:2px;background:#5b6078;margin:0 auto 4px}
+</style>
+<body><div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),P=Q.get('p')||'agenda',V=(Q.get('v')||'A').toUpperCase(),F=Q.get('f')||'laptop'
+const NAV=[['HOME'],['DESK'],['OPS',2],['INBOX',8],['MRS',4],['AGENDA'],['REPORTS']]
+const NOW='15:39',TODAY='Tue 24 Nov'
+const note=(x,y,t)=>`<div class="note" style="left:${x}px;top:${y}px">${t}</div>`
+function lap(page,main,notes,label){
+ return `<div class="lap"><div class="top"><span class="lg">CR-0W</span>${NAV.map((n,i)=>`<span class="${n[0]===page?'on':''}">${i+1} ${n[0]}${n[1]?' '+n[1]:''}</span>`).join('')}<span style="margin-left:auto">MAIN ▮▮▮ 72% · WORK ▮▮▯ 41%</span><span>${NOW}</span></div>
+ <div class="main">${main}</div><aside class="rail"><div>● OK · CR-0W</div><div class="hd">droid head</div><div>cr-0w › rail unchanged from Ops.</div><div style="flex:1;border:1px dashed #363a4f;border-radius:8px;display:grid;place-items:center">butler chat (unchanged)</div><div style="border:1px solid #494d64;border-radius:8px;padding:8px">Talk to CR-0W…</div></aside>${notes}<div class="lbl">${label}</div></div>`}
+function phone(main,label,cap){
+ return `<div class="ph-wrap"><div class="ph-lbl">${label}</div><div class="phone"><div class="bar0"><span>CR-0W</span><span style="display:flex;gap:6px"><span class="chip warn">◆ 8</span><span class="chip run">⟳ 2</span></span></div>${main}<div class="fill"></div><div class="nav"><span>Home</span><span>Desk</span><span>Ops</span><span>Inbox</span><span class="on">More ▴</span></div></div><div class="cap">${cap}</div></div>`}
+
+/* ---------- AGENDA ---------- */
+// today.json shape: events / tomorrow / week {start,end,subject,all_day,next}. Due: Open Threads dates, Inbox followup, sprint/release dates, MR waits.
+const DAYS=[
+ {d:'Tue 24',t:1,ad:'Office',ev:[['11:30','12:00','Team daily','done'],['16:00','17:00','Presentation review','next']],due:[['th','Nest Settings: pick a layout','thread · due today'],['mr','!242 review waits 4 days','MR · to review']]},
+ {d:'Wed 25',ad:'Office',ev:[['11:30','12:00','Team daily']],due:[['th','Reply: contract questions','follow-up · mail 19 Nov']]},
+ {d:'Thu 26',ad:'Office',ev:[['11:00','11:30','Weekly prep'],['11:30','12:00','Team daily'],['17:00','17:30','HR point']],due:[['th','Sprint planning booked?','thread · check']]},
+ {d:'Fri 27',ad:'Remote',ev:[['11:30','12:00','Team daily'],['12:00','12:30','Company weekly']],due:[['dt','Sprint ends','sprint date'],['dt','Weekly rollup','ritual · Friday']]},
+ {d:'Sat 28',ev:[],due:[]},{d:'Sun 29',ev:[],due:[]},
+ {d:'Mon 30',ad:'Office',ev:[['09:30','10:00','Log office presence'],['10:30','11:00','Management weekly'],['11:30','12:00','Team daily']],due:[['th','1:1s due this week','thread · management']]},
+]
+const KI={th:['◆','c-n'],mr:['⇄','c-t'],dt:['⚑','c-f'],ev:['◷','c-w']}
+const mm=t=>{const[a,b]=t.split(':');return +a*60+ +b}
+const dueRow=(x,ph)=>`<div class="row"><span class="k ${KI[x[0]][1]}">${KI[x[0]][0]}</span><span class="t">${x[1]}</span><span class="s">${x[2]}</span>${x[0]==='dt'?'<span class="btn">OPEN</span>':x[0]==='mr'?'<span class="btn">REVIEW</span>':`<span class="btn">OPEN</span><span class="btn">SNOOZE ▾</span>`}</div>`
+const evRow=(e,o={})=>`<div class="row ${e[3]==='done'?'dim':''} ${e[3]==='next'?'sel':''}"><span class="tm">${e[0]}</span><span class="k c-w">◷</span><span class="t">${e[2]}</span><span class="s">${(mm(e[1])-mm(e[0]))} min${e[3]==='next'?' · in 21 min':''}</span>${e[3]==='done'?'<span class="btn">NOTES</span>':'<span class="btn">NOTES</span><span class="btn'+(e[3]==='next'?' p':'')+'">PREP</span>'}</div>`
+const nextCard=(c)=>`<div class="pn" style="border-color:#c6a0f6;flex:0 0 auto"><div class="ph"><span class="c-m">Next · in 21 min</span><span class="c-s">16:00 → 17:00</span></div>
+ <div style="font:14px Michroma,sans-serif;letter-spacing:.04em">Presentation review</div>
+ <div class="kv"><span>where</span><span>video call · 4 people</span><span>prep</span><span class="c-n">todo · notes page exists</span>${c?'':`<span>context</span><span>deck v3 in Drafts · 2 open threads mention it</span>`}</div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn p">PREP SESSION</span><span class="btn">OPEN NOTES</span><span class="btn">JOIN ↗</span></div></div>`
+function dayGrid(ev,h0,h1,rh,nowAt){let h=`<div class="hg" style="--rh:${rh}px">`
+ for(let x=h0;x<h1;x++)h+=`<span class="h">${String(x).padStart(2,'0')}:00</span><span class="c"></span>`
+ ev.forEach(e=>{const top=(mm(e[0])-h0*60)/60*rh,ht=Math.max((mm(e[1])-mm(e[0]))/60*rh-2,16);h+=`<div class="ev ${e[3]||''}" style="top:${top}px;height:${ht}px">${e[0]} ${e[2]}</div>`})
+ if(nowAt)h+=`<div class="nowl" style="top:${(mm(nowAt)-h0*60)/60*rh}px"><b>now ${nowAt}</b></div>`
+ return h+'</div>'}
+function agenda(){
+ const hdr=(x)=>`<div class="hd1"><h1>AGENDA</h1><span class="tabs">${x||'<span class="tab on">TODAY + 7 DAYS</span><span class="tab">WEEK</span>'}</span><span class="c-s">◀ ${TODAY} ▶</span><span style="margin-left:auto" class="c-s">today 2 meetings · 2 due · week 13 meetings · 7 due</span></div>`
+ const legend=`<div style="display:flex;gap:14px;font-size:11px;color:#a5adcb;flex-wrap:wrap"><span><span class="c-w">◷</span> meeting</span><span><span class="c-n">◆</span> thread / follow-up (snooze)</span><span><span class="c-t">⇄</span> MR wait</span><span><span class="c-f">⚑</span> sprint / release date</span><span>times: Paris</span></div>`
+ const D=DAYS[0]
+ if(F==='laptop'){
+  if(V==='A'){
+   const week=DAYS.slice(1).map(d=>`<div class="g"><span>${d.d}${d.ad?' · '+d.ad:''}</span><span class="c-s">${d.ev.length} meetings${d.due.length?' · '+d.due.length+' due':''}</span></div>${d.due.map(x=>dueRow(x)).join('')}${d.ev.map(e=>evRow(e)).join('')}${!d.ev.length&&!d.due.length?'<div class="c-s" style="font-size:11px;padding:2px 4px">nothing</div>':''}`).join('')
+   return lap('AGENDA',hdr()+`<div style="display:flex;gap:10px;flex:1;min-height:0">
+    <div style="flex:1.05;display:flex;flex-direction:column;gap:10px;min-width:0">${nextCard()}
+     <div class="pn" style="flex:1"><div class="ph"><span>Today · ${TODAY} · ${D.ad}</span><span class="c-s">08:00 to 19:00</span></div>
+      <div class="g" style="margin:0"><span>due today</span><span class="c-s">2</span></div>${D.due.map(x=>dueRow(x)).join('')}
+      ${dayGrid(D.ev,8,19,30,NOW)}</div></div>
+    <div class="pn" style="flex:1"><div class="ph"><span>Next 7 days</span><span class="c-s">${DAYS.slice(1).reduce((a,d)=>a+d.ev.length,0)} meetings · 5 due</span></div>${week}${legend}</div></div>`,
+    note(300,140,'Next meeting card on top: PREP starts a session with its context, NOTES opens the vault note.')+note(1000,150,'Next 7 days as a list per day: due items first, then meetings.'),'A · TODAY HOUR GRID + NEXT 7 DAYS LIST')}
+  if(V==='B'){
+   const cols=DAYS.map(d=>d.ev.length||d.due.length?'1fr':'.45fr').join(' '),h0=9,h1=19,rh=40
+   let g=`<div class="wg" style="grid-template-columns:${cols};--rh:${rh}px">`
+   DAYS.forEach(d=>g+=`<span class="dh ${d.t?'on':''}">${d.d}</span>`)
+   DAYS.forEach(d=>g+=`<div style="min-height:24px;padding:2px 3px">${d.ad?`<span class="ad">${d.ad}</span>`:''}</div>`)
+   DAYS.forEach(d=>g+=`<div style="min-height:46px;padding:2px 3px">${d.due.map(x=>`<span class="due ${x[0]==='mr'?'mr':x[0]==='dt'?'dt':''}">${KI[x[0]][0]} ${x[1]}</span>`).join('')}</div>`)
+   DAYS.forEach(d=>{g+=`<div class="col" style="height:${(h1-h0)*rh}px">${d.ev.map(e=>`<div class="ev ${e[3]||''}" style="top:${(mm(e[0])-h0*60)/60*rh}px;height:${Math.max((mm(e[1])-mm(e[0]))/60*rh-2,16)}px">${e[0]} ${e[2]}</div>`).join('')}${d.t?`<div class="nowl" style="left:0;top:${(mm(NOW)-h0*60)/60*rh}px"><b>now</b></div>`:''}</div>`})
+   g+='</div>'
+   const hours=`<div style="display:flex;flex-direction:column;padding-top:${24+46+30}px;font-size:10.5px;color:#a5adcb;width:40px">${[...Array(h1-h0)].map((_,i)=>`<span style="height:${rh}px">${String(h0+i).padStart(2,'0')}:00</span>`).join('')}</div>`
+   return lap('AGENDA',hdr('<span class="tab">TODAY + 7 DAYS</span><span class="tab on">WEEK</span>')+`<div class="pn" style="flex:0 0 auto"><div class="ph"><span>Week 48 · ${TODAY} → Mon 30</span><span class="c-s">click a block or a due chip</span></div><div style="display:flex;gap:4px">${hours}<div style="flex:1;min-width:0">${g}</div></div>${legend}</div>
+    <div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:1">${nextCard(1).replace('class="pn" style="border-color:#c6a0f6;flex:0 0 auto"','')}</div>
+    <div class="pn" style="flex:1.3"><div class="ph"><span>Due this week</span><span class="c-s">7 · snooze moves to a later day</span></div>${DAYS.flatMap(d=>d.due.map(x=>dueRow([x[0],x[1],d.d+' · '+x[2]]))).slice(0,5).join('')}</div></div>`,
+    note(560,95,'Due row per day on top of the week grid: threads, follow-ups, MR waits, sprint dates.')+note(330,700,'Bottom: selected block detail and the due list with SNOOZE.'),'B · WEEK GRID WITH A DUE ROW')}
+  // C
+  const rows=DAYS.map((d,i)=>`<div class="g"><span>${i===0?'Today · ':''}${d.d}${d.ad?' · '+d.ad:''}</span><span class="c-s">${d.ev.length} meetings${d.due.length?' · '+d.due.length+' due':''}</span></div>${!d.ev.length&&!d.due.length?'<div class="c-s" style="font-size:11px;padding:0 4px">nothing</div>':''}${d.due.map(x=>dueRow(['',...x].slice(1))).join('')}${d.ev.map(e=>evRow(e)).join('')}`).join('')
+  return lap('AGENDA',hdr('<span class="tab on">ALL 20</span><span class="tab">MEETINGS 13</span><span class="tab">DUE 5</span><span class="tab">MRS 1</span><span class="tab">DATES 2</span>')+`<div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:1.6;overflow:hidden">${rows}</div>
+   <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">${nextCard()}<div class="pn"><div class="ph"><span>Snooze</span><span class="c-s">on a due row</span></div><div class="row sel"><span class="k c-n">◆</span><span class="t">Nest Settings: pick a layout</span></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn">+1 H</span><span class="btn p">TOMORROW</span><span class="btn">MON 30</span><span class="btn">PICK DAY</span></div><div class="c-s" style="font-size:11px">writes the new date to Open Threads</div></div>${legend}</div></div>`,
+   note(240,95,'Filter chips by kind. One chronological list, 7 days, grouped by day.')+note(930,520,'Snooze menu shown open on a due thread.'),'C · ONE LIST BY DAY + FILTERS')}
+ // phone
+ const ph=`<div class="hd1"><h1>AGENDA</h1><span class="c-s" style="margin-left:auto">◀ Tue 24 ▶</span></div>`
+ if(V==='A')return phone(ph+nextCard(1)+`<div class="pn"><div class="ph"><span>Today</span><span class="c-s">2 meetings · 2 due</span></div>${D.due.map(x=>dueRow(x)).join('')}${dayGrid(D.ev,10,18,26,NOW)}</div>
+  <div class="pn"><div class="ph"><span>Next 7 days</span><span class="c-s">tap a day</span></div>${DAYS.slice(1).map(d=>`<div class="row"><span class="tm">${d.d}</span><span class="t c-s">${d.ev.length?d.ev.length+' meetings':'free'}${d.due.length?` · <span class="c-n">${d.due.length} due</span>`:''}</span><span class="s">${d.ev[0]?d.ev[0][0]+' '+d.ev[0][2]:''}</span></div>`).join('')}</div>`,'A · Today grid + next 7 days','Next meeting card, today as an hour grid with due items above it, then one line per day (tap opens the day).')
+ if(V==='B')return phone(ph.replace('◀ Tue 24 ▶','W48')+`<div style="display:flex;gap:4px;overflow:hidden">${DAYS.map(d=>`<span class="tab ${d.t?'on':''}" style="display:flex;flex-direction:column;align-items:center;padding:3px 6px">${d.d.split(' ')[0]}<b style="font-weight:400">${d.d.split(' ')[1]}</b><span style="font-size:9px">${'•'.repeat(Math.min(d.ev.length,3))}${d.due.length?'◆':''}</span></span>`).join('')}</div>
+  <div class="pn"><div class="ph"><span>Tue 24 · Office</span><span class="c-s">2 · 2 due</span></div>${D.due.map(x=>`<span class="due ${x[0]==='mr'?'mr':''}" style="font-size:11.5px;padding:4px 7px">${KI[x[0]][0]} ${x[1]}<span style="float:right">${x[0]==='mr'?'REVIEW':'SNOOZE ▾'}</span></span>`).join('')}${dayGrid(D.ev,9,18,30,NOW)}</div>`+nextCard(1),'B · Day strip','Day strip with meeting dots and ◆ for due items. Tap a day to swap the grid. Due chips sit above the grid.')
+ return phone(ph+`<div class="tabs"><span class="tab on">ALL</span><span class="tab">MEET</span><span class="tab">DUE 5</span><span class="tab">MRS</span></div><div class="pn">${DAYS.slice(0,4).map((d,i)=>`<div class="g"><span>${i?d.d:'Today · '+d.d}</span><span class="c-s">${d.ad||''}</span></div>${d.due.map(x=>dueRow(x)).join('')}${d.ev.map(e=>evRow(e)).join('')}`).join('')}<div class="c-s" style="font-size:11px">Sat 28 · Sun 29 nothing · Mon 30 ›</div></div>`,'C · One list','One list by day with kind filters. Row actions inline (NOTES, PREP, SNOOZE). Long-press a row for snooze dates.')
+}
+
+/* ---------- MRS ---------- */
+// mrs.json shape: {forge,project,ref,title,author,role,draft,pipeline,threads_open,threads_resolved,created,updated}; branches {project,branch,ahead}
+const RV=[['!242','lambda','raise alerts from detection events','dev-a','passed',0,0,'4d',0,'1/1 files read'],['!245','lambda','Draft: power supply alerts','dev-a','passed',0,0,'1d',1,'']]
+const MI=[['!239','lambda','one helper for the sync loops','failed',2,3,'0/1','2d'],['!241','lambda','rate limit per client behind the proxy','passed',0,4,'1/1','3d']]
+const MG=[['!235','lambda','sync roles: reset what the code drops','11:42']]
+const BR=[['webapp','proxy-rate-limit','2 ahead']]
+const PAT=[['Name doesn\'t follow its siblings',7,'!239'],['Same loop copied instead of one helper',1,'!239'],['Comment says what the code doesn\'t do',9,'!235'],['Doc or README left stale',10,'!229'],['Comment too long or justifying',5,'!219'],['Hardcoded value where a constant exists',4,'!219']]
+const ci=p=>p==='passed'?'<span class="chip ok">CI ✓</span>':p==='failed'?'<span class="chip fail">CI ✕ test</span>':'<span class="chip run">CI …</span>'
+const rvRow=(r,s)=>`<div class="row ${s?'sel':''}"><span class="c-t">${r[0]}</span><span class="t">${r[2]}</span><span class="s">${r[1]} · ${r[3]} · ${r[7]}</span>${r[8]?'<span class="chip">draft</span>':''}${ci(r[4])}<span class="btn p">REVIEW</span><span class="btn">↗</span></div>`
+const miRow=(r,s)=>`<div class="row ${s?'sel':''}"><span class="c-m">${r[0]}</span><span class="t">${r[2]}</span><span class="s">${r[1]} · ${r[7]}</span>${ci(r[3])}${r[4]?`<span class="chip warn">${r[4]} threads</span>`:''}<span class="chip ${r[6]==='1/1'?'ok':''}">✓ ${r[6]}</span>${r[4]?'<span class="btn p">THREADS</span>':''}<span class="btn">↗</span></div>`
+const mgRow=r=>`<div class="row dim"><span class="c-g">${r[0]}</span><span class="t">${r[2]}</span><span class="s">${r[1]} · merged ${r[3]}</span><span class="btn">↗</span></div>`
+const brRow=r=>`<div class="row"><span class="c-s">⑂</span><span class="t">${r[1]}</span><span class="s">${r[0]} · ${r[2]} · no MR</span><span class="btn">OPEN MR</span></div>`
+const patPanel=(n,wide)=>`<div class="pn" style="${wide?'flex:1':'flex:0 0 auto'}"><div class="ph"><span>Review patterns · lambda</span><span class="c-s">newest hit first</span></div><table><tr><th>pattern</th><th style="text-align:right">MRs</th><th>last</th></tr>${PAT.slice(0,n).map(p=>`<tr><td style="max-width:${wide?240:330}px;overflow:hidden;text-overflow:ellipsis">${p[0]}</td><td style="text-align:right"><span class="bar" style="width:${p[1]*8}px"></span>${p[1]}</td><td class="c-t">${p[2]}</td></tr>`).join('')}</table><div class="c-s" style="font-size:11px">from local/reviews: common + project ledger · 27 rows</div></div>`
+function mrs(){
+ const hdr=(x)=>`<div class="hd1"><h1>MRS</h1><span class="tabs">${x||'<span class="tab on">ALL</span><span class="tab">LAMBDA</span><span class="tab">CR-0W</span>'}</span><span class="c-s">gitlab ok · github ok</span><span style="margin-left:auto" class="c-s">2 to review · 2 mine · 1 needs you · merged today 1</span></div>`
+ const detail=`<div class="pn" style="flex:0 0 auto;border-color:#c6a0f6"><div class="ph"><span class="c-m">!239 · one helper for the sync loops</span><span class="btn">✕</span></div>
+  <div class="c-s" style="font-size:11.5px">lambda · gitlab · sync-loops-helper → main · you · updated 2h ago</div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="c-s" style="font-size:11px">pipeline</span><span class="stg"><span class="ok">lint ✓</span><span class="ko">test ✕</span><span class="ok">sonar ✓</span><span class="sk">deploy dev</span></span><span class="c-s" style="font-size:11px">approvals 0/1</span></div>
+  <div class="g" style="margin:0"><span>Threads · 2 open · 3 resolved</span><span></span></div>
+  <div class="q">sync.py:112 · <span class="c-n">open</span> “same loop as in sync_grants, one helper”</div><div class="q">sync.py:40 · <span class="c-n">open</span> “this only forwards to _apply”</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn p">ANSWER THREADS</span><span class="btn">REPO SESSION</span><span class="btn">OPEN ON FORGE ↗</span></div><div class="c-s" style="font-size:11px">replies post only after your OK in the threads session</div></div>`
+ if(F==='laptop'){
+  if(V==='A')return lap('MRS',hdr()+`<div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:1.2"><div class="g" style="margin:0;border:0"><span>To review · unblock devs first</span><span class="c-s">2</span></div>${RV.map(r=>rvRow(r)).join('')}
+   <div class="g"><span>Mine</span><span class="c-s">2 · 1 needs you</span></div>${MI.map((r,i)=>miRow(r,!i)).join('')}${BR.map(brRow).join('')}<div class="g"><span>Merged today</span><span class="c-s">1</span></div>${MG.map(mgRow).join('')}</div>
+   <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">${detail}${patPanel(6)}</div></div>`,
+   note(330,420,'Sections in priority order: To review, Mine (with branches pushed but not opened), Merged today.')+note(780,430,'Selected MR detail: pipeline stages, open threads, actions. Patterns for the MR\'s project below.'),'A · SECTIONS + DETAIL PANE')
+  if(V==='B'){const card=(c,t,s,b)=>`<div class="row" style="flex-direction:column;align-items:stretch;gap:4px"><div style="display:flex;gap:6px"><span class="${c}">${t[0]}</span><span class="c-s" style="font-size:11px;margin-left:auto">${t[1]} · ${s}</span></div><div style="white-space:normal">${t[2]}</div><div style="display:flex;gap:5px;flex-wrap:wrap">${b}</div></div>`
+   const col=(h,n,body,c)=>`<div class="pn" style="flex:1;${c?'border-color:'+c:''}"><div class="ph"><span>${h}</span><span class="c-s">${n}</span></div>${body}</div>`
+   return lap('MRS',hdr()+`<div style="display:flex;gap:10px;flex:1.4;min-height:0">${col('To review',2,RV.map(r=>card('c-t',r,r[3]+' · '+r[7],(r[8]?'<span class="chip">draft</span>':'')+ci(r[4])+'<span class="btn p">REVIEW</span><span class="btn">↗</span>')).join(''),'#8bd5ca')}
+    ${col('Needs you',1,card('c-m',MI[0],MI[0][7],ci('failed')+'<span class="chip warn">2 threads</span><span class="btn p">THREADS</span><span class="btn">SESSION</span>')+brRow(BR[0]),'#eed49f')}
+    ${col('Waiting on others',1,card('c-m',MI[1],MI[1][7],ci('passed')+'<span class="chip ok">✓ 1/1</span><span class="btn">↗ MERGE ON FORGE</span>'))}
+    ${col('Merged today',1,MG.map(mgRow).join(''))}</div>${patPanel(4,1)}`,
+    note(360,330,'Columns by who has to act: reviewers wait on you, you fix, others approve, done.')+note(500,640,'Patterns strip under the board, MRs count bars and the last MR hit.'),'B · BOARD BY WHO ACTS')}
+  const tr=(c,r,st,acts)=>`<tr><td class="${c}">${r[0]}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">${r[2]}</td><td class="c-s">${r[1]}</td><td>${st}</td><td>${acts}</td></tr>`
+  return lap('MRS',hdr()+`<div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:2"><table><tr><th>ref</th><th>title</th><th>project</th><th>state</th><th>actions</th></tr>
+   <tr><td colspan="5" class="g" style="border:0">To review · 2</td></tr>${RV.map(r=>tr('c-t',r,`${ci(r[4])} <span class="c-s">${r[3]} · ${r[7]}</span>${r[8]?' <span class="chip">draft</span>':''}`,'<span class="btn p">REVIEW</span> <span class="btn">↗</span>')).join('')}
+   <tr><td colspan="5" class="g" style="border:0">Mine · 2</td></tr>${MI.map(r=>tr('c-m',r,`${ci(r[3])} ${r[4]?'<span class="chip warn">'+r[4]+' thr</span> ':''}<span class="chip">✓ ${r[6]}</span>`,(r[4]?'<span class="btn p">THREADS</span> ':'')+'<span class="btn">SESSION</span> <span class="btn">↗</span>')).join('')}
+   <tr><td class="c-s">⑂</td><td>proxy-rate-limit</td><td class="c-s">webapp</td><td class="c-s">2 ahead · no MR</td><td><span class="btn">OPEN MR</span></td></tr>
+   <tr><td colspan="5" class="g" style="border:0">Merged today · 1</td></tr>${MG.map(r=>tr('c-g',r,'<span class="c-s">merged 11:42</span>','<span class="btn">↗</span>')).join('')}</table></div>
+   <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">${patPanel(6,1)}<div class="pn"><div class="ph"><span>Review runs</span><span class="c-s">today</span></div><div class="row"><span class="c-w">▷</span><span class="t">review !242</span><span class="s">running 6m</span><span class="btn">OPEN</span></div><div class="row"><span class="c-g">✓</span><span class="t">threads !239 draft</span><span class="s">09:12</span><span class="btn">OPEN</span></div></div></div></div>`,
+   note(260,470,'Dense table, one line per MR. Row click opens the same detail as option A in a sheet.')+note(980,560,'Right column: patterns and the review runs started from here.'),'C · TABLE + PATTERNS COLUMN')}
+ const ph=`<div class="hd1"><h1>MRS</h1><span class="c-s" style="margin-left:auto">2 review · 1 needs you</span></div>`
+ const pr=(c,r,b)=>`<div class="row"><span class="${c}">${r[0]}</span><span class="t">${r[2]}</span><div style="display:flex;gap:5px;width:100%;flex-wrap:wrap">${b}</div></div>`
+ if(V==='A')return phone(ph+`<div class="pn"><div class="ph"><span>To review</span><span class="c-s">2</span></div>${RV.map(r=>pr('c-t',r,ci(r[4])+`<span class="s c-s">${r[7]}</span><span class="btn p" style="margin-left:auto">REVIEW</span>`)).join('')}</div>
+  <div class="pn"><div class="ph"><span>Mine</span><span class="c-s">2</span></div>${MI.map(r=>pr('c-m',r,ci(r[3])+(r[4]?`<span class="chip warn">${r[4]} thr</span><span class="btn p" style="margin-left:auto">THREADS</span>`:`<span class="chip ok">✓ ${r[6]}</span>`))).join('')}</div>
+  <div class="pn"><div class="ph"><span>Merged today</span><span class="c-s">1</span></div>${MG.map(mgRow).join('')}</div>${patPanel(3)}`,'A · Sections','Same sections as laptop A. Tap a row for the detail sheet (pipeline, threads, actions). Patterns at the bottom.')
+ if(V==='B')return phone(ph+`<div class="tabs"><span class="tab">REVIEW 2</span><span class="tab on">NEEDS YOU 1</span><span class="tab">WAITING 1</span><span class="tab">MERGED 1</span></div>${pr('c-m',MI[0],ci('failed')+'<span class="chip warn">2 thr</span>')}${brRow(BR[0])}<div class="sheet"><div class="grab"></div>${detail.replace(/class="pn"[^>]*>/,'>')}</div>`,'B · Who acts, tabs','Board columns become tabs. Detail opens as a bottom sheet (shown open on !239).')
+ return phone(ph+`<div class="pn">${[...RV.map(r=>['c-t',r[0],r[2],ci(r[4]),'REVIEW']),...MI.map(r=>['c-m',r[0],r[2],ci(r[3])+(r[4]?'<span class="chip warn">2</span>':''),r[4]?'THREADS':'']),...MG.map(r=>['c-g',r[0],r[2],'<span class="c-s">merged</span>',''])].map(x=>`<div class="row" style="flex-wrap:nowrap"><span class="${x[0]}">${x[1]}</span><span class="t">${x[2]}</span>${x[3]}${x[4]?`<span class="btn p">${x[4][0]}</span>`:''}</div>`).join('')}</div>${patPanel(4)}<div class="pn"><div class="ph"><span>Review runs</span></div><div class="row"><span class="c-w">▷</span><span class="t">review !242</span><span class="s">6m</span></div></div>`,'C · Compact rows','One line per MR, colour = section, one-letter action (R review, T threads). Patterns and review runs below.')
+}
+
+/* ---------- REPORTS ---------- */
+// AFK reports (settled: decisions answered or none) + vault ritual outputs (brief, daily, weekly, retro, eod).
+const RT={afk:['☾','c-m','AFK'],brief:['☀','c-n','BRIEF'],daily:['◷','c-w','DAILY'],weekly:['▦','c-t','WEEKLY'],retro:['↺','c-f','RETRO'],eod:['☽','c-s','EOD']}
+const OUT=[['brief','Wed 25 08:05','Morning brief · Wed 25','top 3 · 2 reviews waiting'],['afk','Wed 25 08:00','AFK night 24 → 25','5 jobs · 9 commits · no decision'],['eod','Tue 24 18:40','End of day · Tue 24','3 answers filed'],['retro','Tue 24 16:01','Retro batch · 6 sessions','4 lessons applied'],['daily','Tue 24 11:05','Team daily · Tue 24','posted after your OK'],['afk','Tue 24 08:00','AFK night 23 → 24','3 jobs · 2 decisions answered'],['brief','Tue 24 08:10','Morning brief · Tue 24','top 3 · sprint 6/9'],['weekly','Fri 20 09:00','Week 47 rollup','slides drafted']]
+const GEN=[['brief','08:05 today'],['daily','Tue 11:05'],['weekly','running 3m'],['retro','Tue 16:01'],['eod','Tue 18:40']]
+const outRow=(o,s)=>`<div class="row ${s?'sel':''}"><span class="k ${RT[o[0]][1]}">${RT[o[0]][0]}</span><span class="t">${o[2]}</span><span class="s">${o[3]} · ${o[1]}</span></div>`
+const reader=(h)=>`<div class="pn" style="flex:1"><div class="ph"><span class="c-n">☀ Morning brief · Wed 25</span><span style="display:flex;gap:6px"><span class="btn">VAULT ↗</span><span class="btn">COPY</span></span></div><div class="md" style="overflow:hidden">
+ <h3>Reviews waiting</h3><ul><li>!242 alerts from detection events · 4 days · CI green</li><li>!245 power supply alerts · draft</li></ul>
+ <h3>Sprint</h3><p>6 of 9 tickets done · 2 in review · ends Fri 27.</p>
+ <h3>Night run</h3><p>5 jobs shipped, 9 commits, nothing waits on you.</p>
+ ${h?'':'<h3>Open threads</h3><ul><li>Nest Settings layout pick · due today</li><li>Sprint planning booked? · Thu</li></ul>'}
+ <h2>Top 3</h2><ul><li>Review !242 before the team daily</li><li>Prep the 16:00 presentation review</li><li>Pick the Nest Settings layout</li></ul></div></div>`
+const genBtn=(g,big)=>g[1].startsWith('running')?`<span class="chip run"><i class="dot"></i>${RT[g[0]][2]} ${g[1]}</span>`:`<span class="btn${big?' p':''}">↻ ${RT[g[0]][2]}</span>`
+function reports(){
+ const hdr=(x)=>`<div class="hd1"><h1>REPORTS</h1><span class="tabs">${x||['ALL','AFK','BRIEF','DAILY','WEEKLY','RETRO','EOD'].map((t,i)=>`<span class="tab ${i?'':'on'}">${t}</span>`).join('')}</span><span style="margin-left:auto" class="c-s">settled only · open decisions stay in Inbox</span></div>`
+ if(F==='laptop'){
+  if(V==='A')return lap('REPORTS',hdr()+`<div class="pn" style="flex:0 0 auto;flex-direction:row;align-items:center;gap:8px"><span class="ph" style="margin-right:6px">Generate</span>${GEN.map(g=>genBtn(g)).join('')}<span class="c-s" style="margin-left:auto;font-size:11px">starts the ritual as a background run · sending stays gated in the ritual</span></div>
+   <div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:1"><div class="g" style="margin:0;border:0"><span>Wed 25</span></div>${OUT.slice(0,2).map((o,i)=>outRow(o,!i)).join('')}<div class="g"><span>Tue 24</span></div>${OUT.slice(2,7).map(o=>outRow(o)).join('')}<div class="g"><span>Fri 20</span></div>${outRow(OUT[7])}</div>${reader()}</div>`,
+   note(560,60,'Generate row: one button per ritual, a running one shows as a live chip.')+note(240,600,'List newest first, grouped by day. Reader pane renders the Markdown with a link to the vault note.'),'A · LIST + READER')
+  if(V==='B'){const tiles=['afk',...GEN.map(g=>g[0])].map(k=>{const g=GEN.find(x=>x[0]===k),last=OUT.find(o=>o[0]===k),run=g&&g[1].startsWith('running')
+    return `<div class="tile ${run?'run':''}" style="flex:1"><div style="display:flex;justify-content:space-between"><span class="n ${RT[k][1]}">${RT[k][0]} ${RT[k][2]}</span><span class="c-s" style="font-size:11px">${OUT.filter(o=>o[0]===k).length} this week</span></div><span class="c-s" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">last: ${last?last[1]:'-'}</span>${k==='afk'?'<span class="c-s" style="font-size:11px">from afk runs</span>':run?'<span class="chip run"><i class="dot"></i>running 3m</span>':'<span class="btn p" style="align-self:flex-start">↻ GENERATE</span>'}</div>`}).join('')
+   return lap('REPORTS',hdr('')+`<div style="display:flex;gap:8px;flex:0 0 auto">${tiles}</div><div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:.9">${OUT.map((o,i)=>outRow(o,!i)).join('')}</div>${reader()}</div>`,
+    note(500,175,'One tile per ritual: last output, count this week, GENERATE. Tile click filters the list.'),'B · RITUAL TILES + LIST + READER')}
+  const tl=OUT.map((o,i)=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;${i?'':'color:#c6a0f6'}"><span class="${RT[o[0]][1]}">${RT[o[0]][0]}</span><span style="flex:1;min-width:0"><span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o[2]}</span><span class="c-s" style="font-size:10.5px">${o[1]}</span></span></div>`).join('')
+  return lap('REPORTS',hdr('<span class="btn p">↻ GENERATE ▾</span><span class="chip run"><i class="dot"></i>weekly running 3m</span>')+`<div style="display:flex;gap:10px;flex:1;min-height:0"><div class="pn" style="flex:0 0 250px"><div class="ph"><span>Timeline</span><span class="c-s">7 days</span></div>${tl}</div>
+   <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;position:relative">${reader(0).replace('class="pn" style="flex:1"','class="pn" style="flex:1;padding:16px 22px"')}<div style="display:flex;gap:8px;justify-content:space-between"><span class="btn">◀ AFK night 24 → 25</span><span class="btn">nothing newer</span></div>
+   <div class="pn" style="position:absolute;left:-6px;top:-10px;width:220px;background:#24273a;border-color:#c6a0f6;z-index:3">${GEN.map(g=>`<div class="row" style="background:none">${genBtn(g).replace('btn','btn p')}<span class="s">${g[1]}</span></div>`).join('')}</div></div></div>`,
+   note(560,420,'Reader first: the newest output fills the page, ◀ ▶ walk back. GENERATE menu shown open.'),'C · READER FIRST + TIMELINE')}
+ const ph=`<div class="hd1"><h1>REPORTS</h1></div>`
+ if(V==='A')return phone(ph+`<div class="tabs">${['ALL','AFK','BRIEF','DAILY','WEEKLY','RETRO','EOD'].map((t,i)=>`<span class="tab ${i?'':'on'}">${t}</span>`).join('')}</div><div class="pn">${OUT.slice(0,7).map(o=>outRow(o)).join('')}</div><div class="pn" style="flex-direction:row;flex-wrap:wrap;gap:6px"><span class="ph" style="width:100%">Generate</span>${GEN.map(g=>genBtn(g)).join('')}</div>`,'A · List, reader as sheet','Filters, list newest first, Generate buttons below. Tap a report: full-screen reader with VAULT ↗.')
+ if(V==='B')return phone(ph+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${['afk',...GEN.map(g=>g[0])].map(k=>{const g=GEN.find(x=>x[0]===k),run=g&&g[1].startsWith('running');return `<div class="tile ${run?'run':''}"><span class="n ${RT[k][1]}" style="font-size:11.5px">${RT[k][0]} ${RT[k][2]}</span><span class="c-s" style="font-size:10.5px">${(OUT.find(o=>o[0]===k)||[,'-'])[1]}</span>${k==='afk'?'<span class="c-s" style="font-size:10.5px">from afk runs</span>':run?'<span class="chip run" style="font-size:10.5px"><i class="dot"></i>3m</span>':'<span class="btn p" style="align-self:flex-start">↻ GEN</span>'}</div>`}).join('')}</div><div class="pn">${OUT.slice(0,5).map(o=>outRow(o)).join('')}</div>`,'B · Ritual tiles','2×3 ritual tiles with GENERATE, then the newest outputs. Tile tap filters the list.')
+ return phone(ph+`<div style="display:flex;gap:6px"><span class="btn p">↻ GENERATE ▾</span><span class="chip run"><i class="dot"></i>weekly 3m</span></div>${reader(1)}<div style="display:flex;justify-content:space-between"><span class="btn">◀ AFK night</span><span class="btn">LIST ▾</span></div>`,'C · Reader first','Newest output open by default, ◀ walks back, LIST ▾ opens the timeline.')
+}
+document.getElementById('root').innerHTML={agenda,mrs,reports}[P]()
+</script>
