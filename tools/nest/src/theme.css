@@ -1657,7 +1657,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .usage .usw { flex: none; display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; }
 .usage .ufill { flex: 1; }
 .usage .utiles { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.usage .utiles.ph { grid-template-columns: 1fr 1fr; }
+.usage .utiles.uph { grid-template-columns: 1fr 1fr; }
 .usage .utile { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--r-row); background: var(--well); min-width: 0; }
 .usage .utile small { color: var(--sub); font: 10.5px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; }
 .usage .utile b { font: 400 18px var(--font-display); }
@@ -1691,7 +1691,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .usage .usplit { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
 .usage .usplit > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .usage .usplit > .uleg { grid-column: 1 / -1; }
-.usage .usplit.ph { grid-template-columns: 1fr; }
+.usage .usplit.uph { grid-template-columns: 1fr; }
 .usage .utbl { display: grid; grid-template-columns: minmax(0, 1fr) 80px 110px 80px 64px 124px; font-size: 12px; }
 .usage .utr { display: contents; }
 .usage .utr > span { padding: 5px 6px; border-bottom: 1px solid var(--u-grid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1702,11 +1702,11 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .usage .ucb { flex: 1; max-width: 64px; height: 4px; background: var(--well); border-radius: 2px; overflow: hidden; }
 .usage .ucb i { display: block; height: 100%; background: var(--c1); border-radius: 2px; }
 .usage .ucv { flex: none; min-width: 40px; text-align: right; }
-.usage .utbl.ph { grid-template-columns: minmax(0, 1fr) auto; }
-.usage .utbl.ph .ti { display: flex; flex-direction: column; white-space: normal; }
-.usage .utbl.ph .ti .sub { color: var(--dim); font-size: 11px; }
-.usage .utbl.ph .num { text-align: right; }
-.usage .utbl.ph .ucb { flex: none; width: 48px; }
+.usage .utbl.uph { grid-template-columns: minmax(0, 1fr) auto; }
+.usage .utbl.uph .ti { display: flex; flex-direction: column; white-space: normal; }
+.usage .utbl.uph .ti .sub { color: var(--dim); font-size: 11px; }
+.usage .utbl.uph .num { text-align: right; }
+.usage .utbl.uph .ucb { flex: none; width: 48px; }
 .usage .uside { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .usage .ust { margin: 0; font: 400 11px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 .usage .uhb { display: grid; gap: 6px 8px; align-items: center; }

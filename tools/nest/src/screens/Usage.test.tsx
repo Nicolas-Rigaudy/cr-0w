@@ -152,7 +152,8 @@ describe('Usage page, phone', () => {
 
   it('lists sessions as two-line rows on the phone', () => {
     const h = page(368, { account: 'acct1', search: '?tab=session' })
-    expect(h).toContain('utbl ph')
+    expect(h).toContain('utbl uph')
+    expect(h).not.toMatch(/class="([^"]* )?ph[ "]/)
     expect(h).toMatch(/class="sub">api · opus \+ sonnet · /)
   })
 

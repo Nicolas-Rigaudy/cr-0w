@@ -184,7 +184,7 @@ function WeekPane({ lim, now, days }: { lim: UsageLimit; now: Date; days: Days }
 function Tiles({ t, period, phone }: { t: ReturnType<typeof tiles>; period: Period; phone?: boolean }) {
   const tile = (k: string, v: string, s: string) => <div key={k} className="utile"><small>{k}</small><b>{v}</b><span>{s}</span></div>
   return (
-    <div className={`utiles${phone ? ' ph' : ''}`}>
+    <div className={`utiles${phone ? ' uph' : ''}`}>
       {tile(periodLabel(period), usd(t.cost), `${t.turns.toLocaleString('en-GB')} turns`)}
       {tile('Cache hit', t.cache === null ? '–' : `${t.cache}%`, 'of context read')}
       {tile('Cache saved', usd(t.saved), `${t.savedFrom} session${t.savedFrom === 1 ? '' : 's'}`)}

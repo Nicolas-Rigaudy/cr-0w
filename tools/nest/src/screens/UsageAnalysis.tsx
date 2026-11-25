@@ -111,7 +111,7 @@ function Split({ rows, period, what, phone, name = (k) => k, colors, color }: {
   const toks = rows.map(([k, g], i) => [name(k), g.tokens, colors ? COLORS[i % COLORS.length] : undefined] as [string, number, string?])
   const label = what === 'kind' ? (phone ? 90 : 150) : phone ? 70 : 100
   return (
-    <div className={phone ? 'usplit ph' : 'usplit'}>
+    <div className={phone ? 'usplit uph' : 'usplit'}>
       <div><h3 className="ust">$ per {what} · {periodLabel(period)}</h3><HBars rows={cost} fmt={usd} label={label} color={color} /></div>
       <div><h3 className="ust">tokens per {what}</h3><HBars rows={toks} fmt={tok} label={label} color={color} /></div>
       <div className="uleg"><span className="dim">{rows.map(([k, g]) => `${name(k)} ${Math.round((100 * g.cost_usd) / total)}% · ${g.turns.toLocaleString('en-GB')} turns`).join(' · ')}</span></div>
@@ -138,7 +138,7 @@ function Sessions({ rows, period, phone, runs }: { rows: UsageSession[]; period:
   const mx = Math.max(0, ...rows.map((s) => s.cost_usd ?? 0)) || 1
   if (phone) {
     return (
-      <div className="utbl ph" role="table" aria-label={head}>
+      <div className="utbl uph" role="table" aria-label={head}>
         {rows.map((s) => (
           <div key={s.id} className="utr" role="row">
             <span className="ti" role="cell">{s.title ?? s.id}<span className="sub">{s.project ?? '–'} · {runs ? s.kind ?? '–' : models(s)} · {tok(s.tokens ?? 0)} · {when(s)}</span></span>
