@@ -287,7 +287,7 @@ function Answer({ i }: { i: I }) {
   )
 }
 
-function Reader({ i }: { i: I }) {
+function Reader({ i, back }: { i: I; back?: () => void }) {
   const p = i.picked
   if (!p) return <section className="pn read"><div className="sm">Inbox is empty.</div></section>
   const l = i.line(p)
@@ -296,6 +296,7 @@ function Reader({ i }: { i: I }) {
     : p.kind === 'ask' ? [...l.sub, `v${p.item.version}`, p.item.file] : l.sub
   return (
     <section className="pn read" aria-labelledby="rt" aria-live="polite">
+      {back && <button type="button" className="btn back" onClick={back}>← Inbox</button>}
       <h2 id="rt" className="rt">{l.title}</h2>
       <div className="meta">{meta.join(' · ')}</div>
       <Body i={i} />
@@ -432,9 +433,22 @@ export function Inbox({ snap, refresh }: { snap: Snapshot; refresh: () => Promis
   const i = useInbox(snap, refresh)
   const laptop = useMedia(LAPTOP)
   const inner = useMedia(INNER)
+  // A design review takes the whole page on laptop and tablet (board 211-B); "← Inbox" or
+  // Escape brings the list back until another row is picked.
+  const [listFor, setListFor] = useState<string | null>(null)
+  const key = i.picked?.key ?? null
+  const wide = (laptop || inner) && !!i.design && listFor !== key
+  useEffect(() => {
+    if (!wide) return
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setListFor(key) }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [wide, key])
   return (
     <>
-      {laptop ? (
+      {wide ? (
+        <div className="desk ibx ib-wide"><Reader i={i} back={() => setListFor(key)} /></div>
+      ) : laptop ? (
         <div className="desk ibx ib-lp"><Rail i={i} /><List i={i} /><Reader i={i} /></div>
       ) : inner ? (
         <div className="desk ibx ib-in"><div className="col"><Chips i={i} /><List i={i} /></div><Reader i={i} /></div>

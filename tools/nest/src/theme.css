@@ -881,6 +881,14 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 @media (min-width: 600px) {
   .ib-in { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 16px; flex: 1; min-height: 0; }
   .ib-in .col { gap: 12px; }
+  .ib-wide { display: flex; flex-direction: column; padding: 20px 24px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .ib-wide .read { flex: 1; }
+  .ib-wide .back { align-self: flex-start; }
+  .ib-wide .stage.zoom .shot { display: block; }
+  .ib-wide .stage.zoom .shot img { max-height: none; }
+  .ib-wide .stage { grid-template-columns: 1fr 240px; gap: 12px 16px; }
+  .ib-wide .stage .shot { display: grid; place-items: center; }
+  .ib-wide .stage .shot img { width: auto; max-width: 100%; max-height: calc(100vh - 420px); }
   .ib-lp { display: grid; grid-template-columns: 200px minmax(300px, 380px) 1fr; gap: 16px; padding: 20px 24px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 }
 /* Flip stage (item_211, board 211-B): the option image large, letters and scenarios beside it */
