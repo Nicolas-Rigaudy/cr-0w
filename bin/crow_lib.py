@@ -391,6 +391,19 @@ def used_pct(row, key):
     return None if left is None else 100 - left
 
 
+def fresh_row(row, now):
+    """A cdx status row with every window whose reset time has passed counted as full again:
+    a cached sample read just after a reset still shows the old window."""
+    if not row:
+        return row
+    out = dict(row)
+    for key, at in (("remaining_5h_pct", "reset_5h_at_iso"), ("remaining_week_pct", "reset_week_at_iso")):
+        left = minutes_to(row.get(at), now)
+        if left is not None and left < 0 and out.get(key) is not None:
+            out[key] = 100
+    return out
+
+
 def minutes_to(iso, now):
     if not iso:
         return None
@@ -467,7 +480,7 @@ def pick_accounts(accts, rows, current, now, scope=None):
     for a in accts:
         if a["policy"] == "never":
             continue
-        row = rows.get(a["name"])
+        row = fresh_row(rows.get(a["name"]), now)
         rank, skip = 0, None
         left = min((row or {}).get("remaining_5h_pct") or 0, (row or {}).get("remaining_week_pct") or 0)
         if scoped:

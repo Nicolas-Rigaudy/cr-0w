@@ -56,8 +56,9 @@ def test_trim_keeps_recent_full_and_thins_older():
     now = at(DAY2, 12)
     recent = [s(DAY2, 11, 50, 50, m=m) for m in range(3)]
     older = [s(DAY1, 11, 50, 50, m=m) for m in range(10)]
-    stale = {"t": now - 40 * 86400, "a": "acct1", "h5": 1, "wk": 1}
-    kept = cu.trim_samples(older + recent + [stale], now)
+    base = (now - 40 * 86400) // 3600 * 3600
+    old = [{"t": base + m * 600, "a": "acct1", "h5": 1, "wk": 1} for m in range(6)]
+    kept = cu.trim_samples(older + recent + old, now)
     assert recent[0] in kept and recent[1] in kept and recent[2] in kept
     assert sum(1 for x in kept if x in older) == 2  # one per 5 minutes
-    assert stale not in kept
+    assert [x for x in kept if x in old] == old[:1]  # past 35 days: one per hour, kept
