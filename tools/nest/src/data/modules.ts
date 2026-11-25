@@ -34,6 +34,8 @@ export interface Modules {
   version: string
   modules: ModuleBrick[]
   errors: Array<{ file: string; key?: string; error: string }>
+  // Id of the Nest build core serves (item_283); a new one means this page is old.
+  nest_build?: string
 }
 
 // Pages that hold the core screens: they show whatever bricks are off.

@@ -23,6 +23,14 @@
   crow-modules require <field> <name>
                        exit 0 when the brick listing <name> under <field> (scripts, apps, skills...) is on;
                        else print "crow: module <brick> is off (crow.yaml)" and exit 2
+  crow-modules get nest
+                       {file, theme, hero, pages, known: {themes, heroes, pages}, errors} as JSON:
+                       the Nest settings in crow.yaml and the names Nest can build from the on bricks
+  crow-modules set nest <key> <value> [<key> <value>...] [--json]
+                       write modules.nest.<key> (theme, hero, pages) in crow.yaml; pages is a comma list,
+                       "" for every page. Every value is checked first: an unknown one exits 2 and
+                       writes nothing. Only the modules.nest lines change. --json prints the get answer
+                       plus changed (keys) and needs_build (hero or pages changed).
 
 Bricks come from the engine manifests (modules/<brick>.yaml) and user bricks
 (<CROW_HOME>/modules/<name>/module.yaml, or local/modules/ in a checkout; see docs/writing-a-brick.md). Switches and config come from
@@ -102,6 +110,12 @@ def main(argv):
         return switch(argv[1], argv[0] == "on")
     if argv[:1] == ["require"] and len(argv) == 3:
         return require(argv[1], argv[2])
+    if argv == ["get", "nest"]:
+        json.dump(nest_settings(), sys.stdout)
+        print()
+        return 0
+    if argv[:1] == ["set"] and len(argv) >= 2:
+        return set_settings(list(argv[1:]))
     if argv not in ([], ["json"]):
         sys.exit(__doc__)
     r = report()
@@ -253,6 +267,166 @@ def switch(name, on):
         die(f"{crow_lib.crow_yaml_path()}: could not switch {name}; edit modules.{name} by hand")
     print(f"{name} {'on' if on else 'off'} ({crow_lib.crow_yaml_path()})")
     relink()
+    return 0
+
+
+# --- Nest settings (item_282) ---
+# Engine names mirror ENGINE_THEMES/HEROES/PAGES in tools/nest/nest-modules.ts (a test keeps them equal).
+NEST_THEMES = ["modern", "cyber"]
+NEST_HEROES = ["holotable", "none"]
+NEST_PAGES = ["home", "desk", "ops", "inbox", "mrs", "agenda", "reports"]
+NEST_NAME = re.compile(r"^[a-z][a-z0-9-]*$")
+NEST_KEYS = {"theme": "themes", "hero": "heroes", "pages": "pages"}
+BUILD_KEYS = ("hero", "pages")  # compiled into Nest; the theme switches live
+
+
+def _names(folder, ext):
+    try:
+        return sorted(n[:-len(ext)] for n in os.listdir(folder) if n.endswith(ext))
+    except OSError:
+        return []
+
+
+def nest_known(rows):
+    """Theme, hero and page names Nest can build from the on bricks, as nest-modules.ts collects them."""
+    themes, heroes, pages = list(NEST_THEMES), list(NEST_HEROES), list(NEST_PAGES)
+    for b in rows:
+        if not b["on"] or not b["dir"]:
+            continue
+        root = os.path.join(b["dir"], "nest")
+        for name in _names(os.path.join(root, "themes"), ".css"):
+            if NEST_NAME.match(name) and name not in themes:
+                with open(os.path.join(root, "themes", name + ".css")) as f:
+                    if f"[data-theme='{name}']" in f.read():
+                        themes.append(name)
+        if any(os.path.isfile(os.path.join(root, "hero", n)) for n in ("index.tsx", "index.ts")):
+            heroes.append(b["name"])
+        pages += [n for n in _names(os.path.join(root, "pages"), ".tsx") if NEST_NAME.match(n) and n not in pages]
+    return {"themes": themes, "heroes": heroes, "pages": pages}
+
+
+def nest_settings():
+    r = report()
+    conf = next(m["config"] for m in r["modules"] if m["name"] == "nest")
+    return {"file": r["file"], "theme": conf.get("theme"), "hero": conf.get("hero"), "pages": conf.get("pages"),
+            "known": nest_known(r["modules"]),
+            "errors": [e for e in r["errors"] if e["key"] == "modules.nest" or e["key"].startswith("modules.nest.")]}
+
+
+def nest_values(pairs, known):
+    """{key: value} from the key/value args, every value checked against the known names."""
+    if not pairs or len(pairs) % 2:
+        die("set nest wants <key> <value> pairs (keys: theme, hero, pages)", 2)
+    out = {}
+    for key, raw in zip(pairs[::2], pairs[1::2]):
+        if key not in NEST_KEYS:
+            die(f"unknown key {key!r} (keys: {', '.join(NEST_KEYS)})", 2)
+        names = known[NEST_KEYS[key]]
+        if key == "pages":
+            val = []
+            for p in (x.strip() for x in raw.split(",")):
+                if p and p not in names:
+                    die(f"unknown page {p!r} (known: {', '.join(names)})", 2)
+                if p and p not in val:
+                    val.append(p)
+        elif raw not in names:
+            die(f"unknown {key} {raw!r} (known: {', '.join(names)})", 2)
+        else:
+            val = raw
+        out[key] = val
+    return out
+
+
+def yaml_value(v):
+    """A plain YAML scalar or flow list, quoted when YAML would read it as something else."""
+    import yaml
+    if isinstance(v, list):
+        return "[" + ", ".join(yaml_value(x) for x in v) + "]"
+    return v if NEST_NAME.match(v) and yaml.safe_load(v) == v else json.dumps(v)
+
+
+def read_text(path):
+    """The file's text, "" when it does not exist."""
+    if not os.path.exists(path):
+        return ""
+    with open(path) as f:
+        return f.read()
+
+
+def crow_yaml_config(name, values):
+    """Set modules.<name>.<key> lines in crow.yaml, block style. The rest of the file and its comments stay."""
+    path = crow_lib.crow_yaml_path()
+    lines = read_text(path).splitlines()
+    if not yaml_key_span(lines, name):
+        crow_yaml_set(name, True)
+        lines = read_text(path).splitlines()
+        start, _, indent = yaml_key_span(lines, name)
+        lines[start] = f"{indent}{name}:"  # a mapping without on: keeps the default switch
+    start, end, indent = yaml_key_span(lines, name)
+    head = re.match(r"^(\s+" + re.escape(name) + r"\s*:)[ \t]*([^#\s][^#]*?)?[ \t]*(#.*)?$", lines[start])
+    if not head:
+        die(f"{path}: cannot read modules.{name}; edit it by hand")
+    if head.group(2):
+        if head.group(2).startswith("{"):
+            die(f"{path}: modules.{name} is a flow mapping; write it in block style to save settings", 1)
+        # a scalar switch becomes the on: key of a mapping
+        lines[start] = head.group(1) + (f"  {head.group(3)}" if head.group(3) else "")
+        lines.insert(start + 1, f"{indent}  on: {head.group(2)}")
+    for key, val in values.items():
+        start, end, indent = yaml_key_span(lines, name)
+        body = [i for i in range(start + 1, end) if lines[i].strip() and not lines[i].lstrip().startswith("#")]
+        child = lines[body[0]][:len(lines[body[0]]) - len(lines[body[0]].lstrip())] if body else indent + "  "
+        at = next((i for i in body if re.match(re.escape(child) + re.escape(key) + r"\s*:", lines[i])), None)
+        if at is None:
+            last = max([start, *body])
+            lines.insert(last + 1, f"{child}{key}: {yaml_value(val)}")
+            continue
+        stop = at + 1  # a block list may follow the key, more indented or at the same indent with "- "
+        for i in range(at + 1, end):
+            ind = len(lines[i]) - len(lines[i].lstrip())
+            if not lines[i].strip() or lines[i].lstrip().startswith("#"):
+                continue
+            if ind > len(child) or (ind == len(child) and lines[i].lstrip().startswith("- ")):
+                stop = i + 1
+            else:
+                break
+        note = re.search(r"\s(#.*)$", lines[at])
+        lines[at:stop] = [f"{child}{key}: {yaml_value(val)}" + (f"  {note.group(1)}" if note else "")]
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def set_settings(args):
+    as_json = "--json" in args
+    args = [a for a in args if a != "--json"]
+    if args[0] != "nest":
+        die(f"set {args[0]}: only nest settings can be set (crow modules set nest <key> <value>)", 2)
+    before = nest_settings()
+    values = nest_values(args[1:], before["known"])
+    path = crow_lib.crow_yaml_path()
+    saved = read_text(path) if os.path.exists(path) else None
+    crow_yaml_config("nest", values)
+    after = nest_settings()
+    if any(after[k] != v for k, v in values.items()) or len(after["errors"]) > len(before["errors"]):
+        if saved is None:
+            os.remove(path)
+        else:
+            with open(path, "w") as f:
+                f.write(saved)
+        die(f"{path}: could not write modules.nest ({'; '.join(e['error'] for e in after['errors']) or 'value not read back'});"
+            " file restored, edit it by hand")
+    changed = [k for k in NEST_KEYS if k in values and before[k] != after[k]]
+    needs_build = any(k in BUILD_KEYS for k in changed)
+    if as_json:
+        json.dump({**after, "changed": changed, "needs_build": needs_build}, sys.stdout)
+        print()
+        return 0
+    for k in values:
+        v = (", ".join(after[k]) or "(every page)") if k == "pages" else after[k]
+        print(f"nest.{k}: {v}" + ("" if k in changed else " (unchanged)"))
+    if needs_build:
+        print("Nest builds hero and pages in: run crow nest build")
     return 0
 
 

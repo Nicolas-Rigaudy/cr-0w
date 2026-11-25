@@ -58,6 +58,9 @@ type Options struct {
 	Engine    string                   // CROW_ENGINE, holds the engine bin/
 	Token     func() string            // TCP login token (item_237); nil or empty turns it off
 	Logf      func(string, ...any)     // request log of non-GET /api calls (item_279); nil logs nothing
+	// NestBuild is the command that rebuilds Nest after a settings save (item_283); core
+	// appends --outDir <staging> --emptyOutDir. Nil turns rebuilds off.
+	NestBuild []string
 }
 
 // Server answers the routes. It is safe for concurrent use.
@@ -75,6 +78,7 @@ type Server struct {
 	opsLog *ops.Log
 	// tickNow runs a tick now (start now); nil when serve runs no tick.
 	tickNow func()
+	build   builder // Nest rebuilds (build.go)
 }
 
 // SetKick sets what start now calls to run a tick at once. Set it before serving.
@@ -141,6 +145,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	s.routeTerminal(mux)
 	s.routeButler(mux)
 	s.routeModules(mux)
+	s.routeSettings(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})

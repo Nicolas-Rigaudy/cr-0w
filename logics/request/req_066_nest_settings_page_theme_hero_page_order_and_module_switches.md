@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 16:44:20
 
 # AI Context
 - Summary: A Settings page in Nest to pick the theme, hero, page order and module switches without editing crow.yaml, then rebuild Nest.
@@ -37,7 +38,7 @@
 - [x] Problem statement is explicit and user impact is clear.
 - [x] Scope boundaries (in/out) are explicit.
 - [x] Acceptance criteria are testable.
-- [ ] Dependencies and known risks are listed: crow.yaml write that keeps comments, build time on the owner's machine, page layout (mockup first).
+- [x] Dependencies and known risks are listed: crow.yaml write that keeps comments, build time on the owner's machine, page layout (mockup first).
 
 # Companion docs
 - Product brief(s): (none yet)

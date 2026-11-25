@@ -59,6 +59,7 @@ func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 		ActionLog: filepath.Join(stateDir, api.ActionLogName),
 		StateDir:  stateDir,
 		Logf:      log.Printf,
+		NestBuild: []string{filepath.Join(cfg.Engine, "bin", "crow"), "nest", "build"},
 	})
 	tcp, err := net.Listen("tcp", cfg.Serve.Listen)
 	if err != nil {

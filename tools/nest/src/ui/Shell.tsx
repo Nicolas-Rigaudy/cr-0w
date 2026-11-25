@@ -100,6 +100,9 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
             <span className="long">core </span>down{snap.synced ? <> · <span className="num">{ago(snap.synced.toISOString(), snap.now)}</span></> : null}
           </span>
         )}
+        {snap?.newBuild && (
+          <button type="button" className="chip build-chip" onClick={() => location.reload()}>new build ready · reload</button>
+        )}
         {snap && <span className="clock"><span className="short">{time(snap.now)}</span><span className="long">{headerClock(snap.now, theme === 'cyber')}</span></span>}
         <button type="button" className="icon-btn" onClick={toggle} aria-label={`Theme: ${theme}. Switch to ${nextTheme(theme)}`} title="Switch theme">
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

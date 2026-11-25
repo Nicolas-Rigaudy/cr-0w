@@ -19,6 +19,9 @@ export interface Snapshot {
   // then stays as it was at synced (null when nothing ever loaded).
   synced: Date | null
   down: boolean
+  // Core serves another Nest build than this page (item_283). The page keeps running:
+  // the header offers a reload and the next route change loads the new build.
+  newBuild?: boolean
 }
 
 const minute = (d: Date) => Math.floor(d.getTime() / 60000)
@@ -80,9 +83,12 @@ async function readModules(src: DataSource, prev: Modules | null) {
 // A feed refreshes every section of a source and emits a new snapshot only when
 // a section body, the link state or the clock minute changed. A call during a
 // refresh waits for it and runs once more, so a refetch after an action never
-// returns data read before the action.
+// returns data read before the action. The first nest_build core reports is the one
+// this page runs; a later different one sets newBuild for good (item_283).
 export function feed(src: DataSource, emit: (s: Snapshot) => void) {
   let snap: Snapshot | null = null
+  let served: string | undefined
+  let newBuild = false
   let lastRaw: Mission[] | null = null
   let ok: Date | null = null
   let running: Promise<void> | null = null
@@ -96,6 +102,10 @@ export function feed(src: DataSource, emit: (s: Snapshot) => void) {
     const same = snap !== null && minute(snap.now) === minute(now)
     try {
       const modules = src.modules ? await readModules(src, snap?.modules ?? null) : null
+      const build = modules?.nest_build
+      served ??= build
+      const fresh = !newBuild && !!build && build !== served
+      if (fresh) newBuild = true
       const off = offSections(modules)
       const [raw, inbox, agendaRaw, sections, bricks] = await Promise.all([
         src.missions(), src.inbox(), src.agenda(), readSections(src, snap?.sections, off), readBricks(src, modules, snap?.bricks),
@@ -104,8 +114,8 @@ export function feed(src: DataSource, emit: (s: Snapshot) => void) {
       ok = now
       const missions = raw === lastRaw && sections === snap?.sections ? snap!.missions : withLinkedStates(raw, workOf(sections.work))
       lastRaw = raw
-      if (same && !snap!.down && snap!.missions === missions && snap!.inbox === inbox && snap!.agenda === agenda && snap!.sections === sections && snap!.modules === modules && snap!.bricks === bricks) return
-      snap = { missions, inbox, agenda, sections, modules, bricks, now, synced: now, down: false }
+      if (same && !fresh && !snap!.down && snap!.missions === missions && snap!.inbox === inbox && snap!.agenda === agenda && snap!.sections === sections && snap!.modules === modules && snap!.bricks === bricks) return
+      snap = { missions, inbox, agenda, sections, modules, bricks, now, synced: now, down: false, ...(newBuild && { newBuild }) }
     } catch {
       if (same && snap!.down) return
       snap = { ...(snap ?? { missions: [], inbox: [], agenda: [], sections: NO_SECTIONS, modules: null, bricks: NO_BRICKS }), now, synced: ok, down: true }
