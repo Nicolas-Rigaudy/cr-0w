@@ -64,6 +64,8 @@ export type Route =
   | { tab: 'chat'; target: ChatTarget }
   // A brick page (nest/pages/<key>.tsx, item_267).
   | { tab: 'brick'; key: string }
+  // Nest settings (item_284); ?pane= picks the pane.
+  | { tab: 'settings' }
   | { tab: 'missing' }
 
 export function match(path: string, brickPages: readonly string[] = BRICK_PAGE_KEYS): Route {
@@ -76,6 +78,7 @@ export function match(path: string, brickPages: readonly string[] = BRICK_PAGE_K
   if (c) return { tab: 'chat', target: c[1] ? { pid: Number(c[1]) } : { mission: decodeURIComponent(c[2]) } }
   const key = p.slice(1)
   if (['desk', 'ops', 'inbox', 'mrs', 'agenda', 'reports'].includes(key)) return { tab: key as 'desk' }
+  if (key === 'settings') return { tab: 'settings' }
   if (brickPages.includes(key)) return { tab: 'brick', key }
   return { tab: 'missing' }
 }
