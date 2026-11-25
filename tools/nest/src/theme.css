@@ -898,6 +898,8 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .ibx .stage .thumb:focus-visible, .ibx .stage .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ibx .stage .thumbs .hint.ph { margin-left: auto; }
 .ibx .stage .scen { display: flex; flex-wrap: wrap; gap: 6px; }
+.ibx .stage .cap { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.ibx .stage .cap .sm { flex-basis: 100%; }
 .ibx .stage .zoom, .ibx .stage.zoom .shot img { cursor: zoom-out; }
 .ibx .stage.zoom .shot { overflow: auto; max-height: 70vh; }
 .ibx .stage.zoom .shot img { width: 200%; max-width: none; }
@@ -905,7 +907,8 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .ibx .stage { display: grid; grid-template-columns: 1fr 120px; align-items: start; }
   .ibx .stage .hint.lp { display: block; }
   .ibx .stage .hint.ph { display: none; }
-  .ibx .stage .side { display: flex; flex-direction: column; gap: 8px; }
+  .ibx .stage .side { display: flex; flex-direction: column; gap: 8px; grid-column: 2; grid-row: 1 / span 2; }
+  .ibx .stage .cap { grid-column: 1; grid-row: 2; }
   .ibx .stage .thumbs { flex-direction: column; align-items: stretch; }
   .ibx .stage .thumb { position: relative; height: auto; padding: 0; overflow: hidden; }
   .ibx .stage .thumb img { display: block; width: 100%; height: auto; }

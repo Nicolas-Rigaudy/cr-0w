@@ -59,15 +59,40 @@ export const images = (r: InboxItem) => r.artifacts.filter((a) => IMAGE.test(a))
 // A review with images is a design review (item_211); without, a doc review.
 export const isDesign = (r: InboxItem) => r.source === 'mockup' || ((r.type === 'review' || r.type === 'choice') && images(r).length > 1)
 
-// The options and scenarios of a design review (item_211, board 211-B). A one-letter token
-// in the file name is the option, the words after it the scenario (`boot-A-dark-room.png`);
-// files without a letter become options A, B, C in order.
-export type Design = { letters: string[]; scenarios: string[]; file: (letter: string, scenario: string) => string | undefined }
+// The options and scenarios of a design review (item_211, board 211-B). A crow-compare spec
+// (`compare`, read by core) gives the option labels, notes and scenario rows. Without one, a
+// one-letter token in the file name is the option, the words after it the scenario
+// (`boot-A-dark-room.png`); files without a letter become options A, B, C in order.
+export type Design = {
+  letters: string[]
+  scenarios: string[]
+  label: (letter: string) => string | undefined
+  note: (letter: string) => string | undefined
+  recommend?: string
+  file: (letter: string, scenario: string) => string | undefined
+}
+const LETTER = (n: number) => String.fromCharCode(65 + n)
 export function designOf(r: InboxItem): Design {
+  const c = r.compare
+  if (c?.options.length) {
+    const at = (l: string) => c.options[l.charCodeAt(0) - 65]
+    const rec = c.options.findIndex((o) => o.label === c.recommend)
+    return {
+      letters: c.options.map((_, n) => LETTER(n)),
+      scenarios: c.rows,
+      label: (l) => at(l)?.label,
+      note: (l) => at(l)?.note || undefined,
+      recommend: rec >= 0 ? LETTER(rec) : undefined,
+      file: (l, s) => {
+        const imgs = at(l)?.images ?? []
+        return imgs[c.rows.indexOf(s)] ?? imgs.find((x) => x) ?? undefined
+      },
+    }
+  }
   const files = images(r).map((path, n) => {
     const words = (path.split('/').pop() ?? path).replace(IMAGE, '').split(/[-_ .]+/).filter(Boolean)
     const at = words.findIndex((w) => /^[A-Z]$/.test(w))
-    if (at < 0) return { path, letter: String.fromCharCode(65 + n), scenario: '' }
+    if (at < 0) return { path, letter: LETTER(n), scenario: '' }
     const after = words.slice(at + 1)
     return { path, letter: words[at], scenario: (after.length ? after : words.slice(0, at)).join(' ') }
   })
@@ -75,6 +100,8 @@ export function designOf(r: InboxItem): Design {
   return {
     letters: uniq(files.map((f) => f.letter)),
     scenarios: uniq(files.map((f) => f.scenario)),
+    label: () => undefined,
+    note: () => undefined,
     file: (letter, scenario) => (files.find((f) => f.letter === letter && f.scenario === scenario) ?? files.find((f) => f.letter === letter))?.path,
   }
 }

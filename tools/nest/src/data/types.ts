@@ -98,4 +98,13 @@ export interface InboxItem {
   state: 'open' | 'answered' | 'dropped'
   created: string
   answered: string | null
+  // The first decision of a crow-compare spec among the artifacts (item_211).
+  compare?: Compare
+}
+
+export interface Compare {
+  question: string
+  recommend: string
+  rows: string[]
+  options: Array<{ label: string; note: string; images: Array<string | null> }>
 }

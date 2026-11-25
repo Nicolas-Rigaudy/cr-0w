@@ -122,9 +122,9 @@ function useInbox(snap: Snapshot, refresh: () => Promise<void>) {
   // A design review offers its option letters (item_211); other rows their version questions.
   const design = q && isDesign(q) ? designOf(q) : undefined
   const opts: { q?: GateQuestion; choices: GateChoice[] } = design
-    ? { choices: design.letters.map((l) => ({ id: l, label: `Option ${l}` })) }
+    ? { choices: design.letters.map((l) => ({ id: l, label: design.label(l) ?? `Option ${l}` })) }
     : q ? optionsOf(qs, q) : { choices: [] }
-  const chosen = opts.choices.find((c) => c.id === choice) ?? opts.choices.find((c) => c.id === opts.q?.recommended) ?? opts.choices[0]
+  const chosen = opts.choices.find((c) => c.id === choice) ?? opts.choices.find((c) => c.id === (opts.q?.recommended ?? design?.recommend)) ?? opts.choices[0]
   const setSel = (k: string) => { setSelRaw(k); setChoice(undefined) }
   const step = (d: 1 | -1) => {
     const n = shown.findIndex((r) => r.key === picked?.key)
@@ -260,7 +260,8 @@ function Answer({ i }: { i: I }) {
   const r = p.item
   if (!item || !i.a.mission) return null
   const pv = i.opts.choices.length ? pickVerb(item.verbs) : undefined
-  const lead = (c: GateChoice) => `${i.opts.q?.id ?? 'pick'}: ${c.id}`
+  // A design review answers with the letter and, from a compare spec, the option label.
+  const lead = (c: GateChoice) => `${i.opts.q?.id ?? 'pick'}: ${c.id}${i.design?.label(c.id) ? ` (${c.label})` : ''}`
   const letter = (c: GateChoice) => LETTERS[i.opts.choices.indexOf(c)]
   const rest = item.verbs.filter((v) => v !== pv)
   return (
@@ -365,6 +366,12 @@ function Stage({ i, r, d }: { i: I; r: InboxItem; d: Design }) {
         <b className="lt">{on}</b>
         <span className="hint lp">Space flips · Z zooms</span>
       </button>
+      {d.label(on) && (
+        <div className="cap">
+          <b>{on} · {d.label(on)}</b>{on === d.recommend && <span className="tag">recommended</span>}
+          {d.note(on) && <span className="sm">{d.note(on)}</span>}
+        </div>
+      )}
       <div className="side">
         <div className="thumbs" role="radiogroup" aria-label="Options">
           {d.letters.map((l) => (

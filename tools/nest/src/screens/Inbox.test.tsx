@@ -116,6 +116,9 @@ describe('Inbox flip stage (item_211, board 211-B)', () => {
     expect(html).toMatch(/<img src="data:image\/svg\+xml,/)
     for (const s of ['boot frame', 'dark room']) expect(html).toContain(`<span>${s}</span>`)
     expect(html).toContain('>Pick A</button>')
+    // Labels, notes and the recommended option come from the compare spec.
+    expect(html).toContain('<b>A · Quiet line</b><span class="tag">recommended</span>')
+    expect(html).toContain('One muted line under the logo.')
   })
 
   it('opens a linked design review in the phone sheet with letter chips', async () => {
@@ -134,6 +137,21 @@ describe('Inbox flip stage (item_211, board 211-B)', () => {
     expect(d.scenarios).toEqual(['day', 'night'])
     expect(d.file('B', 'night')).toBe('o/x-B-day.png')
     expect(designOf({ artifacts: ['one.png', 'two.png'] } as InboxItem).letters).toEqual(['A', 'B'])
+  })
+
+  it('reads labels, rows and the recommendation from a compare spec', () => {
+    const d = designOf({
+      artifacts: [],
+      compare: { question: 'q', recommend: 'Loud', rows: ['day', 'night'], options: [
+        { label: 'Quiet', note: '', images: ['outbox/q-day.png', null] },
+        { label: 'Loud', note: 'big', images: ['outbox/l-day.png', 'outbox/l-night.png'] }] },
+    } as unknown as InboxItem)
+    expect(d.letters).toEqual(['A', 'B'])
+    expect(d.scenarios).toEqual(['day', 'night'])
+    expect(d.recommend).toBe('B')
+    expect([d.label('B'), d.note('B'), d.note('A')]).toEqual(['Loud', 'big', undefined])
+    expect(d.file('B', 'night')).toBe('outbox/l-night.png')
+    expect(d.file('A', 'night')).toBe('outbox/q-day.png')
   })
 })
 
