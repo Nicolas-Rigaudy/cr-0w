@@ -15,6 +15,8 @@ export interface Confirm {
   // Heavy action: red button. The tap that opened the sheet was the first one.
   danger?: boolean
   run: () => Promise<void>
+  // A second action shown before the main one (item_279: Restart run next to Stop).
+  alt?: { label: string; run: () => Promise<void> }
 }
 
 export function Sheet({ c, onClose }: { c: Confirm; onClose: () => void }) {
@@ -28,11 +30,11 @@ export function Sheet({ c, onClose }: { c: Confirm; onClose: () => void }) {
     addEventListener('keydown', key)
     return () => removeEventListener('keydown', key)
   }, [busy, onClose])
-  const go = async () => {
+  const go = (run: () => Promise<void>) => async () => {
     setBusy(true)
     setError('')
     try {
-      await c.run()
+      await run()
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -54,7 +56,8 @@ export function Sheet({ c, onClose }: { c: Confirm; onClose: () => void }) {
         {error && <div className="err" role="alert">{error}</div>}
         <div className="btns">
           <button ref={first} type="button" className="btn" onClick={onClose} disabled={busy}>Cancel</button>
-          <button type="button" className={`btn ${c.danger ? 'xx' : 'p'}`} onClick={go} disabled={busy} aria-busy={busy}>
+          {c.alt && <button type="button" className="btn" onClick={go(c.alt.run)} disabled={busy}>{c.alt.label}</button>}
+          <button type="button" className={`btn ${c.danger ? 'xx' : 'p'}`} onClick={go(c.run)} disabled={busy} aria-busy={busy}>
             {busy ? 'Working…' : c.ok}
           </button>
         </div>

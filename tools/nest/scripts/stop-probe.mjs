@@ -41,6 +41,7 @@ try {
       void pid
       const stops = page.getByRole('button', { name: /^Stop$/ })
       const n = await stops.count()
+      let missionRun = false
       check(`a Stop button shows (${n})`, n > 0)
       if (!n) { await ctx.close(); continue }
       for (let i = 0; i < n; i++) {
@@ -54,10 +55,18 @@ try {
         const ok = sheet.locator('.btns .btn').last()
         const label = await ok.innerText()
         check(`stop ${i}: "${label}" is on top`, await onTop(ok))
+        // A mission run: the main action cancels the mission, Restart run sits next to it.
+        if ((await sheet.locator('.sh').innerText()) === 'Stop mission run') {
+          check(`stop ${i}: main action reads "Stop and cancel the mission"`, label === 'Stop and cancel the mission')
+          const alt = sheet.getByRole('button', { name: 'Restart run' })
+          check(`stop ${i}: "Restart run" is on top`, (await alt.count()) === 1 && await onTop(alt))
+          missionRun = true
+        }
         await page.screenshot({ path: `${out}/stop-${tag}-${i}.png` })
         await sheet.getByRole('button', { name: 'Cancel' }).click().catch(() => page.keyboard.press('Escape'))
         await page.waitForTimeout(150)
       }
+      console.log(`${missionRun ? 'seen' : 'not seen'} ${tag} mission run sheet`)
       await ctx.close()
     }
   }

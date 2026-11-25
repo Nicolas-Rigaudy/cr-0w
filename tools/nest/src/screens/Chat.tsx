@@ -13,6 +13,7 @@ import { AskDock } from '../ui/AskDock'
 import { DeliveryLine, useDeliveryClock } from '../ui/Delivery'
 import { enterSubmits, rowsOf } from '../ui/keys'
 import { Sheet, type Confirm } from '../ui/Sheet'
+import { refused, stopMissionRun } from '../ui/missionSheets'
 import { Terminal } from '../ui/Terminal'
 
 // Phone chat of one session, run or mission (item_177, boards chat-cover and
@@ -191,23 +192,21 @@ export function Chat({ snap, refresh, target, log }: { snap: Snapshot; refresh: 
   const stop = () => {
     setMenu(false)
     if (mission && mission.state === 'running') {
-      setSheet({
-        title: 'Stop mission run', lead: `Stop the run ${name} of ${title(mission)}.`,
-        target: [['mission', mission.id.replace(/^\d{8}-/, '')], ['run', agent?.run_id ?? mission.runs[mission.runs.length - 1]?.run ?? ''], ['project', mission.project]],
-        note: 'Tap again to confirm. Same as crow mission stop, logged with surface nest. The mission moves on at the next tick.', ok: 'Tap again to stop', danger: true,
-        run: async () => { await act.missionStop(mission.id); void refresh() },
-      })
+      setSheet(stopMissionRun({
+        mission, run: agent?.run_id ?? mission.runs[mission.runs.length - 1]?.run ?? '', name, act,
+        refresh: () => void refresh(), done: () => {},
+      }))
     } else if (agent?.kind === 'run' && agent.run_id) {
       setSheet({
         title: 'Stop run', lead: `Stop the run ${name} of ${agent.project}.`, target: [['run', agent.run_id], ['project', agent.project], ['account', agent.account]],
         note: 'Tap again to confirm. Its commits stay on the run branch.', ok: 'Tap again to stop', danger: true,
-        run: async () => { await act.stopRun(agent.run_id!); void refresh() },
+        run: async () => { refused(await act.stopRun(agent.run_id!)); void refresh() },
       })
     } else if (agent) {
       setSheet({
         title: 'Stop session', lead: `End the claude session of ${agent.project} (SIGTERM).`, target: [['session', name], ['account', agent.account], ['pid', String(agent.pid)]],
         note: 'Tap again to confirm. The window closes; the conversation can be resumed.', ok: 'Tap again to stop', danger: true,
-        run: async () => { await act.stop(agent.pid); void refresh(); if (!inner) navigate('/desk') },
+        run: async () => { refused(await act.stop(agent.pid)); void refresh(); if (!inner) navigate('/desk') },
       })
     }
   }
@@ -216,7 +215,7 @@ export function Chat({ snap, refresh, target, log }: { snap: Snapshot; refresh: 
     if (!agent) return
     setSheet({
       title: 'Pause session', lead: `Interrupt the current turn of ${agent.project} (${agent.account}).`, target: [['session', name], ['account', agent.account], ['pid', String(agent.pid)]],
-      note: 'The session stays open and waits for you.', ok: 'Pause', run: async () => { await act.interrupt(agent.pid); void refresh() },
+      note: 'The session stays open and waits for you.', ok: 'Pause', run: async () => { refused(await act.interrupt(agent.pid)); void refresh() },
     })
   }
   const stoppable = (mission?.state === 'running') || !!agent

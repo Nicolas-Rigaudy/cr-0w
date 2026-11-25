@@ -10,6 +10,7 @@ import type { Mission } from '../data/types'
 import { missionOfRun } from '../data/state'
 import { Link, navigate, useQuery } from '../router'
 import { Sheet, type Confirm } from '../ui/Sheet'
+import { cancelMission, refused, stopMissionRun } from '../ui/missionSheets'
 import { AskDock } from '../ui/AskDock'
 import { promptView } from '../ui/prompt'
 import { enterSubmits, rowsOf } from '../ui/keys'
@@ -116,7 +117,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   // (thrown) and refetches when the view was stale (409).
   const wrap = (said: string, call: () => Promise<LiveReply>, done?: () => void) => async () => {
     try {
-      const r = await call()
+      const r = refused(await call())
       setLog((l) => [...l, { me: true, text: said }, { text: r.message || `${r.action} ${r.target}`, f: !r.ok }])
       done?.()
     } catch (e) {
@@ -160,22 +161,15 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   const stop = (a: Agent) => {
     const m = a.kind === 'run' && a.run_id ? missionOfRun(snap.missions, a.run_id) : undefined
     if (m) {
-      setSheet({
-        title: 'Stop mission run', lead: `Stop the run ${nameOf(a)} of ${title(m)}.`,
-        target: [['mission', m.id.replace(/^\d{8}-/, '')], ['run', a.run_id!], ['project', a.project]],
-        note: 'Tap again to confirm. Same as crow mission stop, logged with surface nest. The mission moves on at the next tick.', ok: 'Tap again to stop', danger: true,
-        run: async () => {
-          try {
-            await act.missionStop(m.id)
-          } catch (e) {
-            if (e instanceof ApiError && e.status === 409) void refresh()
-            throw e
-          }
-          setLog((l) => [...l, { me: true, text: `Stop ${nameOf(a)}` }, { text: `${title(m)} stopped.` }])
+      setSheet(stopMissionRun({
+        mission: m, run: a.run_id!, name: nameOf(a), act, refresh: () => void refresh(),
+        done: (what) => {
+          setLog((l) => [...l, what === 'cancelled'
+            ? { me: true, text: `Stop ${nameOf(a)} and cancel the mission` }
+            : { me: true, text: `Restart ${nameOf(a)}` }, { text: what === 'cancelled' ? `${title(m)} cancelled.` : `${title(m)}: run stopped, the next tick starts a new one.` }])
           setSel(null)
-          void refresh()
         },
-      })
+      }))
       return
     }
     stopPlain(a)
@@ -219,21 +213,10 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   })
   // Queued missions sit under the slots; the row's ⋯ cancels one (crow mission cancel).
   const queue = snap.missions.filter((m) => m.state === 'queued' || m.state === 'preflight')
-  const cancel = (m: Mission) => setSheet({
-    title: 'Cancel the mission?', lead: `${title(m)} leaves the queue for good.`,
-    target: [['mission', m.id.replace(/^\d{8}-/, '')], ['project', m.project], ['state', m.state]],
-    note: 'Same as crow mission cancel. Logged with surface nest.', ok: 'Cancel mission', danger: true,
-    run: async () => {
-      try {
-        await act.missionCancel(m.id)
-      } catch (e) {
-        if (e instanceof ApiError && e.status === 409) void refresh()
-        throw e
-      }
-      setLog((l) => [...l, { me: true, text: `Cancel ${title(m)}` }, { text: `${title(m)} cancelled.` }])
-      void refresh()
-    },
-  })
+  const cancel = (m: Mission) => setSheet(cancelMission({
+    mission: m, act, refresh: () => void refresh(),
+    done: () => setLog((l) => [...l, { me: true, text: `Cancel ${title(m)}` }, { text: `${title(m)} cancelled.` }]),
+  }))
   const pick = (a: Agent, talk = false) => { setSel(a.pid); setTell(talk) }
   const fresh = opening ? agents.find((a) => a.tmux === opening) : undefined
   useEffect(() => {
