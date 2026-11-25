@@ -140,13 +140,13 @@ function FiveHour({ lim, now, w, h, short }: { lim: UsageLimit; now: Date; w: nu
   const win = window5h(lim, now)
   if (!win) return <div className="empty">No 5h window yet.</div>
   const ticks = hourTicks(win.from, win.to).map(([d, t]) => [d, short ? `${t.slice(0, 2)}h` : t] as [Date, string])
-  return <WindowChart w={w} h={h} title={`${lim.account} 5h window`} from={win.from} to={win.to} now={now} points={[[win.from, 0], [now, win.used]]} used={win.used} proj={win.proj} floorLeft={floorOf(lim)} ticks={ticks} />
+  return <WindowChart w={w} h={h} title={`${lim.account} 5h window`} from={win.from} to={win.to} now={now} points={[[win.from, 0], [now, win.used]]} used={win.used} proj={win.proj} floorLeft={floorOf(lim)} ticks={ticks} fit={short} />
 }
 
 function WeekChart({ lim, now, days, w, h, short }: { lim: UsageLimit; now: Date; days: Days; w: number; h: number; short?: boolean }) {
   const wk = weekOf(lim, days, now)
   if (!wk) return <div className="empty">No week window yet.</div>
-  return <WindowChart w={w} h={h} title={`${lim.account} week`} from={wk.from} to={wk.to} now={now} points={wk.points} used={wk.used} proj={wk.proj} floorLeft={floorOf(lim)} ticks={dayTicks(wk.from, wk.to, short)} />
+  return <WindowChart w={w} h={h} title={`${lim.account} week`} from={wk.from} to={wk.to} now={now} points={wk.points} used={wk.used} proj={wk.proj} floorLeft={floorOf(lim)} ticks={dayTicks(wk.from, wk.to, short)} fit={short} />
 }
 
 const WIN_LEGEND: Array<[string, string, ('box' | 'dash' | 'floor')?]> = [['used', 'var(--c1)'], ['projected', '', 'dash'], ['floor', '', 'floor']]

@@ -85,7 +85,7 @@ function PerDay({ days, lim, limits, unit, period, now, phone }: {
   const cells = lim ? days.map((x) => { const l = dayLimits(x, lim.account); return l === null ? null : l?.windows_5h }) : undefined
   const chart = (
     <DayChart w={phone ? 330 : 620} h={phone ? 230 : 250} bars={b} fmt={unit === 'usd' ? usd : unit === 'tok' ? tok : pctFmt} axis={axis}
-      colors={COLORS} pick={pick} onPick={(k) => setPick(days[k]?.date ?? null)} today={localDay(now)} cells={cells} />
+      colors={COLORS} pick={pick} onPick={(k) => setPick(days[k]?.date ?? null)} today={localDay(now)} cells={cells} fit={phone} />
   )
   const line = d && (
     <div className="uday" aria-live="polite"><b>{dayShort(d.date)}</b> {daySummary(d, lim?.account)}</div>

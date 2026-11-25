@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { time } from '../format'
 import { cellsLabel, dow, niceMax, type Bar } from '../data/usageView'
 
@@ -8,11 +8,30 @@ import { cellsLabel, dow, niceMax, type Bar } from '../data/usageView'
 export const COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)']
 const GRID = 'var(--u-grid)'
 
+// With fit, the viewBox width follows the measured width, so chart text keeps its CSS size
+// on any phone width; w is the first-render guess. Without fit the viewBox scales (laptop).
+function useFit(w: number, fit?: boolean) {
+  const ref = useRef<SVGSVGElement>(null)
+  const [mw, setMw] = useState(0)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!fit || !el) return
+    const read = () => { const x = Math.round(el.getBoundingClientRect().width); if (x > 0) setMw(x) }
+    read()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(read)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [fit])
+  return [ref, fit && mw ? mw : w] as const
+}
+
 // % used over a window (5h or week): area to now, dashed line to the projection at reset.
-export function WindowChart({ w, h, from, to, now, points, used, proj, floorLeft, ticks, title }: {
+export function WindowChart({ w: w0, h, from, to, now, points, used, proj, floorLeft, ticks, title, fit }: {
   w: number; h: number; from: Date; to: Date; now: Date; points: Array<[Date, number]>; used: number; proj: number | null
-  floorLeft: number; ticks: Array<[Date, string]>; title: string
+  floorLeft: number; ticks: Array<[Date, string]>; title: string; fit?: boolean
 }) {
+  const [ref, w] = useFit(w0, fit)
   const L = 40, R = 14, T = 20, B = 24, iw = w - L - R, ih = h - T - B
   const span = to.getTime() - from.getTime()
   const X = (d: Date) => L + Math.min(1, Math.max(0, (d.getTime() - from.getTime()) / span)) * iw
@@ -22,7 +41,7 @@ export function WindowChart({ w, h, from, to, now, points, used, proj, floorLeft
   const fl = 100 - floorLeft
   const nowLeft = nx - L > iw * 0.45
   return (
-    <svg className="uch" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${title}: ${used}% used now${proj !== null ? `, ${proj}% at reset` : ''}`}>
+    <svg ref={ref} className="uch" viewBox={`0 0 ${w} ${h}`} height={fit ? h : undefined} role="img" aria-label={`${title}: ${used}% used now${proj !== null ? `, ${proj}% at reset` : ''}`}>
       {[0, 25, 50, 75, 100].map((p) => (
         <g key={p}><line x1={L} x2={w - R} y1={Y(p)} y2={Y(p)} stroke={GRID} /><text x={L - 6} y={Y(p) + 3.5} textAnchor="end">{p}%</text></g>
       ))}
@@ -68,10 +87,12 @@ export interface DayChartProps {
   pick: number; onPick: (i: number) => void; today: string
   // The 5h windows of one account under each day: used % per window, null = no data.
   cells?: Array<number[] | null | undefined>
+  fit?: boolean
 }
 
 // Stacked bars per day; the dearest day and the picked day get a direct value label.
-export function DayChart({ w, h, bars, fmt, axis, colors, pick, onPick, today, cells }: DayChartProps) {
+export function DayChart({ w: w0, h, bars, fmt, axis, colors, pick, onPick, today, cells, fit }: DayChartProps) {
+  const [ref, w] = useFit(w0, fit)
   const withCells = !!cells
   const C = withCells ? 30 : 0
   const L = 44, R = 8, T = 14, B = 24 + C, iw = w - L - R, ih = h - T - B
@@ -82,7 +103,7 @@ export function DayChart({ w, h, bars, fmt, axis, colors, pick, onPick, today, c
   const step = bars.length > 14 ? Math.ceil(bars.length / 10) : 1
   const labelCells = bw >= 64
   return (
-    <svg className="uch" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={axis}>
+    <svg ref={ref} className="uch" viewBox={`0 0 ${w} ${h}`} height={fit ? h : undefined} role="img" aria-label={axis}>
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
         <g key={f}><line x1={L} x2={w - R} y1={Y(mx * f)} y2={Y(mx * f)} stroke={GRID} /><text x={L - 6} y={Y(mx * f) + 3.5} textAnchor="end">{fmt(mx * f)}</text></g>
       ))}
