@@ -36,7 +36,7 @@
 2. item_290 (failed mission says why): core and persona.
 3. item_288 (Desk hides the butler process): core tag plus Nest filter.
 4. item_287 (butler chat renders like the session chat) and item_289 (Sir sparingly): independent, can run in parallel.
-5. item_292 (mission rows and Ops badge): edits `screens/Desk.tsx`; after item_210 and desk-bugs drafts B and C land. Needs the owner pick on navigation first.
+5. item_292 (mission rows and Ops badge): edits `screens/Desk.tsx`; after item_210 and desk-bugs drafts B and C land. Owner picked open on Desk; wider redesign in req_070.
 
 # Companion docs
 - Product brief(s): (none yet)

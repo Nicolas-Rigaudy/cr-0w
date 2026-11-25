@@ -24,7 +24,7 @@
 - A mission view exists: the session chat takes a mission target (`ChatTarget` with a mission, `tkey` `chat:m<mission>` in `Chat.tsx`), with Stop through `missionSheets`.
 
 # Scope
-- In (recommended, owner to confirm):
+- In (owner picked 2026-11-25: open on Desk, first step of req_070):
   - A mission row on Desk opens the mission in the Desk main panel (the existing Chat mission target): state, why (item_290), latest version summary and actions: Answer (inbox card), Retry/Resume, Cancel.
   - The Answer action on a waiting mission opens its inbox card, not Ops.
   - The failed badge moves from Ops to Desk (failed rows live there); tapping it filters Desk to failed rows. Ops keeps no badge.
@@ -44,10 +44,11 @@
 - Request: `req_069_nest_butler_chat_polish_and_failure_clarity`
 - Depends on: item_210 build (`cr-0w.wt/item-210-desk-pick`) and drafts B and C of mission 20261125-plan-nest-desk-bugs: all edit `screens/Desk.tsx`; build after them.
 - Related: item_290.
+- Part of: `req_070_desk_and_ops_handle_missions_runs_and_queues` (first step; the full redesign follows the item_293 sketch pick).
 
 # Launch prompt
 ```text
-Read local/owner-prefs.md and local/prefs/design.md first. Work in a worktree under <repo>.wt/, commit with type[SCOPE]: message, no AI attribution, never push to main without the owner OK. Implement item_292 (mission rows and the Ops badge open the mission) end to end, after item_210 and the desk-bugs drafts B and C have landed (check git log on main first). Read logics/backlog/item_292_mission_rows_and_ops_badge_open_the_mission.md first, then tools/nest/src/screens/Desk.tsx mission row handling, router.tsx redirect, ui/Shell.tsx badges and screens/Chat.tsx mission target. Build only the option the owner confirmed in the item. Board-vs-app compare before showing anything.
+Read local/owner-prefs.md and local/prefs/design.md first. Work in a worktree under <repo>.wt/, commit with type[SCOPE]: message, no AI attribution, never push to main without the owner OK. Implement item_292 (mission rows and the Ops badge open the mission) end to end, after item_210 and the desk-bugs drafts B and C have landed (check git log on main first). Read logics/backlog/item_292_mission_rows_and_ops_badge_open_the_mission.md first, then tools/nest/src/screens/Desk.tsx mission row handling, router.tsx redirect, ui/Shell.tsx badges and screens/Chat.tsx mission target. Keep the detail view minimal: the full layout comes from the item_293 pick. Board-vs-app compare before showing anything.
 ```
 
 # Decision framing
