@@ -11,6 +11,8 @@
     "typecheck": "tsc -p .",
     "shots": "node scripts/shots.mjs",
     "shots:ops-phone": "node scripts/ops-phone-shots.mjs",
+    "perf": "node scripts/nest-perf.mjs",
+    "perf:hatch": "node scripts/hatch-diff.mjs",
     "reel:boot": "node scripts/boot-reel.mjs"
   },
   "dependencies": {
