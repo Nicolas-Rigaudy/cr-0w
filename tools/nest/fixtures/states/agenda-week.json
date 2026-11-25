@@ -1,0 +1,27 @@
+{
+  "week": [
+    { "start": "2026-11-09T00:00", "end": "2026-11-10T00:00", "subject": "Office", "all_day": true },
+    { "start": "2026-11-09T11:30", "end": "2026-11-09T11:45", "subject": "Daily Meeting", "all_day": false },
+    { "start": "2026-11-09T17:00", "end": "2026-11-09T17:45", "subject": "Sprint review", "all_day": false },
+    { "start": "2026-11-09T19:30", "end": "2026-11-09T20:00", "subject": "Call with the accountant", "all_day": false },
+    { "start": "2026-11-10T00:00", "end": "2026-11-11T00:00", "subject": "Office", "all_day": true },
+    { "start": "2026-11-10T11:30", "end": "2026-11-10T11:45", "subject": "Daily Meeting", "all_day": false },
+    { "start": "2026-11-10T14:00", "end": "2026-11-10T15:00", "subject": "Design review", "all_day": false },
+    { "start": "2026-11-11T00:00", "end": "2026-11-12T00:00", "subject": "Office", "all_day": true },
+    { "start": "2026-11-11T11:30", "end": "2026-11-11T11:45", "subject": "Daily Meeting", "all_day": false },
+    { "start": "2026-11-12T00:00", "end": "2026-11-13T00:00", "subject": "Remote", "all_day": true },
+    { "start": "2026-11-12T11:00", "end": "2026-11-12T11:30", "subject": "Weekly prep", "all_day": false },
+    { "start": "2026-11-12T11:30", "end": "2026-11-12T11:45", "subject": "Daily Meeting", "all_day": false },
+    { "start": "2026-11-12T17:00", "end": "2026-11-12T17:30", "subject": "HR point", "all_day": false },
+    { "start": "2026-11-13T00:00", "end": "2026-11-14T00:00", "subject": "Remote", "all_day": true },
+    { "start": "2026-11-13T11:30", "end": "2026-11-13T11:45", "subject": "Daily Meeting", "all_day": false },
+    { "start": "2026-11-13T12:00", "end": "2026-11-13T12:30", "subject": "Company weekly", "all_day": false },
+    { "start": "2026-11-16T10:30", "end": "2026-11-16T11:00", "subject": "Management weekly", "all_day": false }
+  ],
+  "checks": [
+    { "id": "mail:mail-3", "check": "mail", "what": "Legal: contract questions", "why": "unanswered for 3d", "action": "draft a reply", "due": "2026-11-10" },
+    { "id": "1on1:teammate:2026-11-12", "check": "one_on_one", "what": "1:1 with a teammate", "why": "last one 5 weeks ago", "action": "propose a 1:1", "due": "2026-11-12" },
+    { "id": "sprint:Sprint 34:2026-11-13", "check": "sprint", "what": "Sprint 34 ends Fri 13 Nov", "why": "no retro in the calendar", "action": "propose retro", "due": "2026-11-13" },
+    { "id": "ritual:weekly:2026-W46", "check": "ritual", "what": "Weekly rollup", "why": "due Friday", "action": "do it now", "due": "2026-11-13" }
+  ]
+}
