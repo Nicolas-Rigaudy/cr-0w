@@ -64,7 +64,11 @@ export type Route =
   | { tab: 'chat'; target: ChatTarget }
   // A brick page (nest/pages/<key>.tsx, item_267).
   | { tab: 'brick'; key: string }
+  // The Usage page (item_227), opened on one account from its header gauge.
+  | { tab: 'usage'; account?: string }
   | { tab: 'missing' }
+
+export const usagePath = (account?: string) => (account ? `/usage/${encodeURIComponent(account)}` : '/usage')
 
 export function match(path: string, brickPages: readonly string[] = BRICK_PAGE_KEYS): Route {
   const p = path.replace(/\/+$/, '') || '/'
@@ -74,6 +78,8 @@ export function match(path: string, brickPages: readonly string[] = BRICK_PAGE_K
   // The chat of a live session or run (/desk/<pid>) or of a mission's last run (/desk/m/<id>).
   const c = /^\/desk\/(?:(\d+)|m\/([^/]+))$/.exec(p)
   if (c) return { tab: 'chat', target: c[1] ? { pid: Number(c[1]) } : { mission: decodeURIComponent(c[2]) } }
+  const u = /^\/usage(?:\/([^/]+))?$/.exec(p)
+  if (u) return u[1] ? { tab: 'usage', account: decodeURIComponent(u[1]) } : { tab: 'usage' }
   const key = p.slice(1)
   if (['desk', 'ops', 'inbox', 'mrs', 'agenda', 'reports'].includes(key)) return { tab: key as 'desk' }
   if (brickPages.includes(key)) return { tab: 'brick', key }

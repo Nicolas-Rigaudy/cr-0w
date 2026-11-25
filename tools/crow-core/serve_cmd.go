@@ -51,6 +51,7 @@ func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 		Owner:     owner,
 		Nest:      cfg.Serve.Nest,
 		Sources:   append(sources(cfg), brickSources(cfg)...),
+		Costs:     scriptFetch(cfg.Engine, costAudit),
 		Modules:   mods,
 		Home:      cfg.Home,
 		Engine:    cfg.Engine,
@@ -213,6 +214,9 @@ var scripts = []script{
 	{"accounts", 10 * time.Second, nil, []string{"crow-accounts", "json"}},
 	{"ready", 30 * time.Second, nil, []string{"crow-ready", "json"}},
 }
+
+// costAudit feeds GET /api/usage: 35 days cover the M period.
+var costAudit = script{"usage-cost", 120 * time.Second, nil, []string{"crow-cost-audit", "--json", "--days", "35"}}
 
 // sources builds every external section with its configured TTL.
 func sources(cfg config.Config) []api.Source {

@@ -18,6 +18,8 @@ import { isLive, shortPath, type Changes, type Ops, type OpsQueued } from './ops
 import type { DataSource } from './source'
 import { CANCELLABLE } from './state'
 import type { AgendaEvent, InboxItem, InboxVerb, Mission, SectionBody, SectionName } from './types'
+import type { UsageData } from './usage'
+import { usageFixture } from './usageFixture'
 
 // Shared core-contract records plus Nest-local records that cover every UI state.
 const MISSIONS = [...coreMissions, ...stateMissions] as Mission[]
@@ -323,6 +325,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     if ('pid' in t && !(data.dispatch as Dispatch | undefined)?.agents.some((a) => a.pid === t.pid)) throw new ApiError(404, `no live session with pid ${t.pid}`)
     if ('mission' in t && !rec.missions.some((m) => m.id === t.mission)) throw new ApiError(404, 'no mission')
   })
+  let usage: UsageData | null = null
   const send = actions.send
   actions.send = async (pid, text) => {
     const r = await send(pid, text)
@@ -345,6 +348,7 @@ export function fixtureSource(missions: Mission[] = MISSIONS, inbox: InboxItem[]
     ops: async (query) => fixtureOps(query, ops.queue),
     run: async (id) => fixtureRun(id),
     changes: async (cwd) => fixtureChanges(cwd),
+    usage: async () => (usage ??= usageFixture(now)),
     actions,
     now: () => now,
     butler: fixtureButler(now, BUTLER_SEED),
