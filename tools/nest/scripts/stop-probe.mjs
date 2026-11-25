@@ -32,40 +32,38 @@ try {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
       await ctx.addInitScript((t) => localStorage.setItem('nest.theme', t), theme)
       const page = await ctx.newPage()
-      await page.goto(base + '/desk', { waitUntil: 'networkidle' })
-      // Open the first run: its row on the Desk list, else its chat screen.
-      const pid = await page.evaluate(async () => {
-        const r = await fetch('/fixtures/state.json').catch(() => null)
-        return r && r.ok ? null : null
-      })
-      void pid
+      let missionRun = false
+      // First the focused session, then the fixture run 7171 that belongs to a running mission.
+      for (const [step, url] of [['s', '/desk'], ['r', '/desk?pid=7171']]) {
+      await page.goto(base + url, { waitUntil: 'networkidle' })
       const stops = page.getByRole('button', { name: /^Stop$/ })
       const n = await stops.count()
-      let missionRun = false
-      check(`a Stop button shows (${n})`, n > 0)
-      if (!n) { await ctx.close(); continue }
+      check(`${step}: a Stop button shows (${n})`, n > 0)
+      if (!n) continue
       for (let i = 0; i < n; i++) {
         const b = stops.nth(i)
         if (!(await b.isVisible())) continue
         await b.click()
         await page.waitForTimeout(200)
         const sheet = page.locator('.sheet')
-        check(`stop ${i}: sheet opens`, (await sheet.count()) === 1)
+        check(`${step} stop ${i}: sheet opens`, (await sheet.count()) === 1)
         if (!(await sheet.count())) continue
         const ok = sheet.locator('.btns .btn').last()
         const label = await ok.innerText()
-        check(`stop ${i}: "${label}" is on top`, await onTop(ok))
+        check(`${step} stop ${i}: "${label}" is on top`, await onTop(ok))
         // A mission run: the main action cancels the mission, Restart run sits next to it.
         if ((await sheet.locator('.sh').innerText()) === 'Stop mission run') {
-          check(`stop ${i}: main action reads "Stop and cancel the mission"`, label === 'Stop and cancel the mission')
+          check(`${step} stop ${i}: main action reads "Stop and cancel the mission"`, label === 'Stop and cancel the mission')
           const alt = sheet.getByRole('button', { name: 'Restart run' })
-          check(`stop ${i}: "Restart run" is on top`, (await alt.count()) === 1 && await onTop(alt))
+          check(`${step} stop ${i}: "Restart run" is on top`, (await alt.count()) === 1 && await onTop(alt))
           missionRun = true
         }
-        await page.screenshot({ path: `${out}/stop-${tag}-${i}.png` })
+        await page.screenshot({ path: `${out}/stop-${tag}-${step}${i}.png` })
         await sheet.getByRole('button', { name: 'Cancel' }).click().catch(() => page.keyboard.press('Escape'))
         await page.waitForTimeout(150)
       }
+      }
+      check('mission run sheet seen', missionRun)
       console.log(`${missionRun ? 'seen' : 'not seen'} ${tag} mission run sheet`)
       await ctx.close()
     }

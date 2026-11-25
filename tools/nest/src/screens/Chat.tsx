@@ -14,6 +14,7 @@ import { DeliveryLine, useDeliveryClock } from '../ui/Delivery'
 import { enterSubmits, rowsOf } from '../ui/keys'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { refused, stopMissionRun } from '../ui/missionSheets'
+import { missionOfRun } from '../data/state'
 import { Terminal } from '../ui/Terminal'
 
 // Phone chat of one session, run or mission (item_177, boards chat-cover and
@@ -72,7 +73,7 @@ function useTarget(snap: Snapshot, target: ChatTarget) {
   let mission: Mission | undefined
   if ('pid' in target) {
     agent = agents.find((a) => a.pid === target.pid)
-    if (agent?.run_id) mission = snap.missions.find((m) => m.runs.some((r) => r.run === agent!.run_id))
+    if (agent?.run_id) mission = missionOfRun(snap.missions, agent.run_id) ?? snap.missions.find((m) => m.runs.some((r) => r.run === agent!.run_id))
   } else {
     mission = snap.missions.find((m) => m.id === target.mission)
     const last = mission?.runs[mission.runs.length - 1]
