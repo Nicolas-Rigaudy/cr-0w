@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { match } from '../router'
+import { match, usagePath } from '../router'
 import { barTab, hiddenTabs, screenTab, shownRoute } from './tabs'
 import { NAV, navKeys, splitBar } from '../modules/nav'
 import type { Snapshot } from '../data/feed'
@@ -28,6 +28,16 @@ describe('phone tab bar B', () => {
     expect(bar('/desk/m/20261109-build-inbox-filters')).toBe('desk')
     expect(bar('/missions/20261109-build-inbox-filters')).toBe('ops')
     expect(bar('/nope')).toBe('home')
+  })
+
+  it('opens Usage on /usage and /usage/<account>, under Home', () => {
+    expect(match('/usage')).toEqual({ tab: 'usage' })
+    expect(match('/usage/')).toEqual({ tab: 'usage' })
+    expect(match('/usage/acct%201')).toEqual({ tab: 'usage', account: 'acct 1' })
+    expect(match('/usage/a/b')).toEqual({ tab: 'missing' })
+    expect(usagePath('acct 1')).toBe('/usage/acct%201')
+    expect(bar('/usage/acct1')).toBe('home')
+    expect(shownRoute(match('/usage/acct1'))).toEqual({ tab: 'usage', account: 'acct1' })
   })
 
   it('keeps today\'s bar and More with no nest config', () => {

@@ -25,6 +25,7 @@ describe('laptop header gauges', () => {
     expect(accts).toContain('<i class="" style="width:99%"></i>')
     expect(accts).toContain('<span class="pc num" aria-label="99% of 5 hours, 43% of the week left">99%</span>')
     expect(accts).toContain('<span class="pc num c-f" aria-label="98% of 5 hours, 5% of the week left">98%</span>')
+    expect([...accts.matchAll(/<a href="([^"]+)" class="acct"/g)].map((m) => m[1])).toEqual(['/usage/main', '/usage/work'])
     expect(accts).not.toContain('locked')
     expect(accts).not.toContain('–')
   })

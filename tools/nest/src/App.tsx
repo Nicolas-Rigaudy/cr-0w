@@ -13,6 +13,7 @@ import { Chat } from './screens/Chat'
 import { Desk } from './screens/Desk'
 import { Ops } from './screens/Ops'
 import { Placeholder } from './screens/Placeholder'
+import { Usage } from './screens/Usage'
 import { Shell } from './ui/Shell'
 import { ButlerRail } from './ui/ButlerRail'
 import { ButlerBadge, ButlerSheet } from './ui/ButlerSheet'
@@ -46,6 +47,7 @@ export function App() {
     else if (route.tab === 'agenda') body = <Agenda snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
+    else if (route.tab === 'usage') body = <Usage account={route.account} />
     else if (route.tab === 'brick') {
       const Page = brickPages.find((p) => p.key === route.key)!.mod.default
       body = <Page snap={snap} />

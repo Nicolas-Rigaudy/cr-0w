@@ -4,6 +4,7 @@ import type { Actions } from './live'
 import type { Modules } from './modules'
 import type { Changes, Ops, RunReport } from './ops'
 import type { AgendaEvent, GateQuestion, InboxItem, Mission, SectionBody, SectionName } from './types'
+import type { UsageData } from './usage'
 
 // The only door between screens and data. Fixtures (fixtures.ts) and the core
 // API (api.ts) implement it; main.tsx picks one.
@@ -29,6 +30,8 @@ export interface DataSource {
   run(id: string): Promise<RunReport | undefined>
   // The git changes of a live lane's checkout (item_273). Undefined outside a registered repo.
   changes(cwd: string): Promise<Changes | undefined>
+  // The Usage page data (item_227). Absent: the page says it has no data.
+  usage?(): Promise<UsageData>
   // Live actions (item_170). Callers refetch after each one; nothing is optimistic.
   actions: Actions
   // Reference time for "today" and elapsed clocks. Fixtures pin it, the API uses the wall clock.

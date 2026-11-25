@@ -6,9 +6,9 @@ import type { TabKey } from './icons'
 
 export type BarKey = TabKey | 'more'
 
-// The screen a route belongs to: a chat sits under Desk, an unknown page under Home.
+// The screen a route belongs to: a chat sits under Desk, Usage and an unknown page under Home.
 export function screenTab(route: Route): TabKey {
-  if (route.tab === 'missing') return 'home'
+  if (route.tab === 'missing' || route.tab === 'usage') return 'home'
   if (route.tab === 'chat') return 'desk'
   if (route.tab === 'brick') return route.key
   return route.tab

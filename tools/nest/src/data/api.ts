@@ -4,6 +4,7 @@ import type { Actions, LiveReply, Screen } from './live'
 import type { Modules } from './modules'
 import type { Changes, Ops, RunReport } from './ops'
 import type { DataSource } from './source'
+import { usageBody, type UsageData } from './usage'
 import type { AgendaEvent, GateQuestion, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
 
 // Live adapter over the core read API (item_144). Same origin, no CORS. Records in
@@ -150,6 +151,17 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
     modsTag = res.headers.get('ETag') ?? ''
     return mods
   }
+  // GET /api/usage (item_227): a 304 returns the same object.
+  let usage: UsageData | null = null
+  let usageTag = ''
+  const usageRead = async (): Promise<UsageData> => {
+    const res = await get(`${base}/usage`, { headers: usageTag ? { 'If-None-Match': usageTag } : {}, cache: 'no-store' })
+    if (res.status === 304 && usage) return usage
+    if (!res.ok) throw await failure(res)
+    usage = usageBody(await res.json())
+    usageTag = res.headers.get('ETag') ?? ''
+    return usage
+  }
   // The agenda array is rebuilt only when the today body changes.
   let today: SectionBody | null = null
   let agenda: AgendaEvent[] = []
@@ -159,6 +171,7 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
     section,
     modules,
     brickSection: section,
+    usage: usageRead,
     async mission(id) {
       const res = await get(`${base}/missions/${encodeURIComponent(id)}`, { cache: 'no-store' })
       if (res.status === 404) return undefined
