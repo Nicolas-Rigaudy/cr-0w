@@ -1,14 +1,14 @@
 ## item_226_nest_agenda_page - Nest Agenda page
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 85
 > Confidence: 80
-> Progress: 0%
+> Progress: 10%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 10:10:53
+> Indicators reviewed: 2026-11-25 14:55:37
 
 # AI Context
 - Summary: Agenda tab: today's and the week's meetings from `/api/state/today`, due open threads and follow-ups, MR deadlines; each row actionable.
@@ -48,6 +48,10 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25T13:55:20.903974+00:00 | cdx | ecea930ff7414b4f9724976ba0059e15 | Nest Agenda build (item_226) | running |  |  |
 
 # Decision framing
 - Owner pick 2026-11-25: layout B. Build from mockup B (tools/nest/scripts/mockups/pages.html).
+
+# Tasks
+- `task_030_nest_agenda_page`
