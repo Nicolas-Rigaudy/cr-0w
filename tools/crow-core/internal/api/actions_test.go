@@ -166,6 +166,30 @@ func TestActionEvents(t *testing.T) {
 	}
 }
 
+// item_279: cancel on a running mission stops its live run and ends the mission.
+func TestCancelRunningStopsItsRun(t *testing.T) {
+	s, root, stopped := actionServer(t)
+	if w := do(t, s, post("/api/missions/"+testfix.Running+"/cancel", "")); w.Code != 200 {
+		t.Fatalf("cancel: %d %s", w.Code, w.Body)
+	}
+	if !slices.Equal(*stopped, []string{testfix.LiveRun}) {
+		t.Errorf("stopped = %v", *stopped)
+	}
+	m, err := s.o.Env.Show(testfix.Running)
+	if err != nil || m.State != "cancelled" {
+		t.Errorf("state = %s, %v", m.State, err)
+	}
+	if got := strings.Join(eventTypes(t, root, testfix.Running), ","); !strings.HasSuffix(got, "action,state") {
+		t.Errorf("events = %s", got)
+	}
+	// A cancelled mission refuses a second cancel and a stop.
+	for _, p := range []string{"/cancel", "/stop"} {
+		if w := do(t, s, post("/api/missions/"+testfix.Running+p, "")); w.Code != 409 {
+			t.Errorf("%s after cancel: %d %s", p, w.Code, w.Body)
+		}
+	}
+}
+
 // item_272: up, down, a place and next reorder the queue; a bad body is refused.
 func TestQueueRoutes(t *testing.T) {
 	s, _, _ := actionServer(t)
