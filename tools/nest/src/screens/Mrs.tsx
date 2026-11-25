@@ -1,8 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { countsOf, mrsOf, onlyProject, type Mr, type MrBranch, type MrJob, type MrsData } from '../data/mrs'
-import type { Snapshot } from '../data/useData'
+import { ApiError } from '../data/api'
+import type { Actions, LiveReply } from '../data/live'
+import { branchPrompt, countsOf, mrsOf, onlyProject, reviewLabel, reviewPrompt, threadsPrompt, type Mr, type MrBranch, type MrJob, type MrsData } from '../data/mrs'
+import { useSource, type Snapshot } from '../data/useData'
 import { ago, time } from '../format'
 import { useQuery } from '../router'
+import { Sheet, type Confirm } from '../ui/Sheet'
 import { useMedia } from '../ui/useMedia'
 
 // The MRs page (item_225, board round 2 option C): three deck panes (to review, mine,
@@ -15,7 +18,62 @@ const PANES: Array<[Pane, string]> = [['review', 'To review'], ['mine', 'Mine'],
 const TABS: Tab[] = ['overview', 'threads', 'pipeline']
 const keyOf = (m: Mr) => `${m.project}:${m.ref}`
 
-export function useMrs(snap: Snapshot) {
+// Row actions (item_225): every one goes through a confirm sheet and the existing live
+// actions. Posting on the forge stays in the review and review-threads sessions.
+type Said = { text: string; f?: boolean }
+export function confirmsOf(act: Actions, refresh: () => Promise<void>, setSaid: (s: Said) => void) {
+  const wrap = (call: () => Promise<LiveReply>) => async () => {
+    try {
+      const r = await call()
+      setSaid({ text: r.message || `${r.action} ${r.target}`, f: !r.ok })
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) void refresh()
+      throw e
+    }
+    void refresh()
+  }
+  const target = (m: Mr): Array<[string, string]> => [['MR', `${m.ref} ${m.title}`], ['Project', `${m.name} · ${m.forge}`]]
+  return {
+    review: (m: Mr): Confirm => ({
+      title: `Review ${m.ref}`, lead: 'Starts a background review run on this MR.', quote: reviewPrompt(m),
+      target: [...target(m), ['Run', reviewLabel(m)]], note: 'Comments wait for your OK before they post.', ok: 'Start review',
+      run: wrap(() => act.dispatch({ project: m.project, label: reviewLabel(m), prompt: reviewPrompt(m) })),
+    }),
+    threads: (m: Mr): Confirm => ({
+      title: `Answer threads on ${m.ref}`, lead: `Opens a session on the ${m.threads_open} open threads.`, quote: threadsPrompt(m),
+      target: target(m), note: 'Replies post after your OK in the threads session.', ok: 'Open session',
+      run: wrap(() => act.start({ project: m.project, prompt: threadsPrompt(m) })),
+    }),
+    session: (m: Mr): Confirm => ({
+      title: `Session in ${m.name}`, lead: 'Opens a session in the repo of this MR.', target: [['Project', m.name], ['Branch', m.branch]],
+      note: 'Nothing runs until you write in the session.', ok: 'Open session',
+      run: wrap(() => act.start({ project: m.project })),
+    }),
+    branch: (b: MrBranch): Confirm => ({
+      title: `Open an MR for ${b.branch}`, lead: 'Opens a session that prepares the MR.', quote: branchPrompt(b),
+      target: [['Project', b.name || b.project], ['Branch', `${b.branch} · ${b.ahead} ahead`]], note: 'The MR opens after your OK in the session.', ok: 'Open session',
+      run: wrap(() => act.start({ project: b.project, prompt: branchPrompt(b) })),
+    }),
+  }
+}
+
+export function useMrActions(refresh: () => Promise<void>) {
+  const act = useSource().actions
+  const [sheet, setSheet] = useState<Confirm | null>(null)
+  const [said, setSaid] = useState<Said | null>(null)
+  const c = confirmsOf(act, refresh, setSaid)
+  return {
+    sheet, setSheet, said,
+    review: (m: Mr) => setSheet(c.review(m)),
+    threads: (m: Mr) => setSheet(c.threads(m)),
+    session: (m: Mr) => setSheet(c.session(m)),
+    branch: (b: MrBranch) => setSheet(c.branch(b)),
+  }
+}
+export type A = ReturnType<typeof useMrActions>
+
+export function useMrs(snap: Snapshot, refresh: () => Promise<void>) {
+  const a = useMrActions(refresh)
   const q = useQuery()
   const all = mrsOf(snap.sections.mrs, snap.now)
   const [project, setProject] = useState(q.get('project') ?? '')
@@ -34,7 +92,7 @@ export function useMrs(snap: Snapshot) {
   const [shown, setShown] = useState(!!want && !!picked)
   const open = (m: Mr) => { setPick(keyOf(m)); setTab('overview'); setShown(true) }
   return {
-    all, d, project, setProject, picked, pane, tab, setTab, open, now: snap.now,
+    a, all, d, project, setProject, picked, pane, tab, setTab, open, now: snap.now,
     paneTab: paneTab ?? pane ?? 'mine', setPaneTab, shown: shown && !!picked, back: () => setShown(false),
   }
 }
@@ -106,12 +164,32 @@ function Row({ m, r, pane, phone }: { m: M; r: Mr; pane: Pane; phone?: boolean }
   )
 }
 
-function BranchRow({ b }: { b: MrBranch }) {
+function BranchRow({ b, a }: { b: MrBranch; a: A }) {
   return (
     <div className="mrow br">
       <span className="ref">⑂</span>
       <span className="ti"><b>{b.branch}</b><span className="sub">{b.name || b.project} · {b.ahead} ahead · no MR</span></span>
-      <span className="st"><button type="button" className="btn sm" disabled title="Opens with the row actions">Open MR</button></span>
+      <span className="st"><button type="button" className="btn sm" onClick={() => a.branch(b)}>Open MR</button></span>
+    </div>
+  )
+}
+
+// The detail's action row. Answer threads leads on your own MRs, Review on the others.
+function Actions({ r, a, phone }: { r: Mr; a: A; phone?: boolean }) {
+  const mine = r.role === 'AUTHOR'
+  const merged = !!r.merged_at
+  return (
+    <div className="macts">
+      <div className="btnrow">
+        {!merged && mine && (
+          <button type="button" className={`btn${r.threads_open ? ' p' : ''}`} disabled={!r.threads_open} onClick={() => a.threads(r)}>Answer threads</button>
+        )}
+        {!merged && !mine && <button type="button" className="btn p" onClick={() => a.review(r)}>Review</button>}
+        <button type="button" className="btn" onClick={() => a.session(r)}>{phone ? 'Session' : 'Repo session'}</button>
+        <a className="btn" href={r.url} target="_blank" rel="noreferrer">{phone ? 'Forge ↗' : 'Open on forge ↗'}</a>
+      </div>
+      {mine && !merged && !phone && <div className="note">Replies post after your OK in the threads session.</div>}
+      {a.said && <div className={`note${a.said.f ? ' c-f' : ''}`} role="status">{a.said.text}</div>}
     </div>
   )
 }
@@ -124,7 +202,7 @@ function PaneBody({ m, p, phone }: { m: M; p: Pane; phone?: boolean }) {
   return (
     <div className="mlist">
       {list.map((r) => <Row key={keyOf(r)} m={m} r={r} pane={p} phone={phone} />)}
-      {branches.map((b) => <BranchRow key={`${b.project}:${b.branch}`} b={b} />)}
+      {branches.map((b) => <BranchRow key={`${b.project}:${b.branch}`} b={b} a={m.a} />)}
       {!list.length && !branches.length && <div className="empty">{p === 'merged' ? 'Nothing merged today.' : 'Nothing here.'}</div>}
     </div>
   )
@@ -237,6 +315,7 @@ function Detail({ m }: { m: M }) {
           {m.tab === 'threads' && <Threads r={r} now={m.now} all />}
           {m.tab === 'pipeline' && <Pipeline r={r} />}
         </div>
+        <Actions r={r} a={m.a} />
       </div>
     </Deck>
   )
@@ -262,6 +341,7 @@ function PhoneDetail({ m }: { m: M }) {
       <div className="mbody">
         {m.tab === 'threads' ? <Threads r={r} now={m.now} all /> : <><Pipeline r={r} /><Threads r={r} now={m.now} /></>}
       </div>
+      <Actions r={r} a={m.a} phone />
     </div>
   )
 }
@@ -270,15 +350,17 @@ function Off({ d }: { d: MrsData }) {
   return <div className="desk mrs"><div className="mhead"><h1>MRs</h1></div><div className="empty">{d.off ? 'The forge module is off.' : 'No MR open on your forges.'}</div></div>
 }
 
-export function Mrs({ snap }: { snap: Snapshot; refresh: () => Promise<void> }) {
-  const m = useMrs(snap)
+export function Mrs({ snap, refresh }: { snap: Snapshot; refresh: () => Promise<void> }) {
+  const m = useMrs(snap, refresh)
   const laptop = useMedia(LAPTOP)
   if (m.all.off) return <Off d={m.all} />
   const stale = m.all.stale && <div className="empty c-f">MRs did not refresh: {m.all.error}</div>
+  const sheet = m.a.sheet && <Sheet c={m.a.sheet} onClose={() => m.a.setSheet(null)} />
   if (!laptop) {
     return (
       <div className="desk mrs m-ph">
         {m.shown ? <PhoneDetail m={m} /> : <><Head m={m} phone />{stale}<PhonePanes m={m} /></>}
+        {sheet}
       </div>
     )
   }
@@ -287,6 +369,7 @@ export function Mrs({ snap }: { snap: Snapshot; refresh: () => Promise<void> }) 
       <Head m={m} />
       {stale}
       <div className="mgrid"><Panes m={m} /><Detail m={m} /></div>
+      {sheet}
     </div>
   )
 }

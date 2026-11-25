@@ -1572,6 +1572,12 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .mrs .job.failed { border-color: var(--c-f); color: var(--c-f); background: color-mix(in srgb, var(--c-f) 10%, transparent); }
 .mrs .job.running { border-color: var(--c-b); color: var(--c-b); }
 .mrs .job.skipped, .mrs .job.manual, .mrs .job.none { border: 1px dashed var(--line); color: var(--sub); }
+.mrs .macts { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.mrs .macts .btnrow { flex-wrap: wrap; }
+.mrs .macts a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.mrs .macts .note { margin-top: 6px; color: var(--sub); font-size: 11px; }
+.mrs .macts .note.c-f { color: var(--c-f); }
+.mrs.m-ph .macts .btn { flex: 1; min-height: 40px; justify-content: center; }
 .mrs .flog { margin: 8px 0 0; padding: 10px 12px; background: var(--well); border-radius: var(--r-row); color: var(--c-f); font: 11px var(--font-head); white-space: pre-wrap; overflow-wrap: anywhere; }
 .mrs .th { border-left: 2px solid var(--c-n); background: var(--well); padding: 8px 12px; margin-bottom: 8px; font-family: var(--font-head); }
 .mrs .th.done { border-left-color: var(--c-d); opacity: 0.75; }

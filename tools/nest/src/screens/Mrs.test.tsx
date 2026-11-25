@@ -4,7 +4,9 @@ import { feed, type Snapshot } from '../data/feed'
 import { fixtureSource } from '../data/fixtures'
 import { DataContext } from '../data/useData'
 import { Router } from '../router'
-import { Mrs } from './Mrs'
+import { ApiError } from '../data/api'
+import { mrsOf } from '../data/mrs'
+import { confirmsOf, Mrs } from './Mrs'
 
 const snapshot = async (src: ReturnType<typeof fixtureSource>): Promise<Snapshot> => {
   const box: { s?: Snapshot } = {}
@@ -95,6 +97,58 @@ describe('MRs page, laptop (item_225, option C)', () => {
     const s = await snapshot(src)
     const stale = { ...s, sections: { ...s.sections, mrs: { ...s.sections.mrs, stale: true, error: 'crow-mrs: timed out' } } }
     expect(await page(1440, '', stale)).toContain('MRs did not refresh: crow-mrs: timed out')
+  })
+})
+
+describe('MRs row actions (item_225)', () => {
+  const mrs = async () => {
+    const src = fixtureSource()
+    const s = await snapshot(src)
+    return { src, d: mrsOf(s.sections.mrs, s.now) }
+  }
+
+  it('shows Answer threads, Repo session and Open on forge on your MR, Review on the others', async () => {
+    const h = await page(1440)
+    expect(h).toContain('class="btn p">Answer threads</button>')
+    expect(h).toContain('>Repo session</button>')
+    expect(h).toContain('href="https://gitlab.example.com/team/api/-/merge_requests/239" target="_blank" rel="noreferrer">Open on forge ↗</a>')
+    expect(h).toContain('Replies post after your OK in the threads session.')
+    const r = await page(1440, '?mr=242')
+    expect(r).toContain('class="btn p">Review</button>')
+    expect(r).not.toContain('Answer threads')
+    const p = await page(368, '?mr=239')
+    expect(p).toContain('>Session</button>')
+    expect(p).toContain('>Forge ↗</a>')
+  })
+
+  it('starts a review run, a threads session, a repo session and an MR session through the live actions', async () => {
+    const { src, d } = await mrs()
+    const said: string[] = []
+    const refresh = vi.fn(async () => {})
+    const c = confirmsOf(src.actions, refresh, (s) => said.push(s.text))
+    const dispatch = vi.spyOn(src.actions, 'dispatch')
+    const start = vi.spyOn(src.actions, 'start')
+    const review = d.review.find((m) => m.ref === '!242')!
+    const mine = d.mine.find((m) => m.ref === '!239')!
+    await c.review(review).run()
+    expect(dispatch).toHaveBeenCalledWith({ project: 'api', label: 'review-api-242', prompt: '/review https://gitlab.example.com/team/api/-/merge_requests/242' })
+    await c.threads(mine).run()
+    expect(start).toHaveBeenCalledWith({ project: 'api', prompt: '/review-threads https://gitlab.example.com/team/api/-/merge_requests/239' })
+    await c.session(mine).run()
+    expect(start).toHaveBeenCalledWith({ project: 'api' })
+    await c.branch(d.branches[0]).run()
+    expect(start).toHaveBeenCalledWith({ project: 'api', prompt: '/mr proxy-rate-limit' })
+    expect(said[0]).toMatch(/^dispatched run /)
+    expect(refresh).toHaveBeenCalledTimes(4)
+  })
+
+  it('refreshes and rethrows when the run slots are full', async () => {
+    const { src, d } = await mrs()
+    const refresh = vi.fn(async () => {})
+    const full = { ...src.actions, dispatch: async () => { throw new ApiError(409, 'too_many_runs') } }
+    const c = confirmsOf(full, refresh, () => {})
+    await expect(c.review(d.review[0]).run()).rejects.toThrow('too_many_runs')
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 })
 
