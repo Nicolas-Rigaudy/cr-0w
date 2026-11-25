@@ -58,6 +58,7 @@ func serve(env mission.Env, cfg config.Config, stdout io.Writer) error {
 		Script:    scriptRunner(cfg.Engine),
 		ActionLog: filepath.Join(stateDir, api.ActionLogName),
 		StateDir:  stateDir,
+		Logf:      log.Printf,
 	})
 	tcp, err := net.Listen("tcp", cfg.Serve.Listen)
 	if err != nil {

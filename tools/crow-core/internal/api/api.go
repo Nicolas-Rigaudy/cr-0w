@@ -57,6 +57,7 @@ type Options struct {
 	Home      string                   // CROW_HOME, passed to brick action scripts
 	Engine    string                   // CROW_ENGINE, holds the engine bin/
 	Token     func() string            // TCP login token (item_237); nil or empty turns it off
+	Logf      func(string, ...any)     // request log of non-GET /api calls (item_279); nil logs nothing
 }
 
 // Server answers the routes. It is safe for concurrent use.
@@ -144,7 +145,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 		fail(w, http.StatusNotFound, "no route")
 	})
 	mux.HandleFunc("/", s.static)
-	return s.guard(trusted, s.gate(mux))
+	return s.logRequests(trusted, s.guard(trusted, s.gate(mux)))
 }
 
 // gate answers 404 "module off" on the routes of an off brick (adr_002).

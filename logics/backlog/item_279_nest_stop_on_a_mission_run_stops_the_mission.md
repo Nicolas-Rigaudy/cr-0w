@@ -1,10 +1,10 @@
 ## item_279_nest_stop_on_a_mission_run_stops_the_mission - Nest Stop on a mission run stops the mission
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 80%
 > Confidence: 70%
-> Progress: 0%
+> Progress: 10%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -50,3 +50,8 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25T09:46:16.709841+00:00 | cdx | b94fd623d5f44fa69c8e2263c7a86d83 | item_279 nest stop | running |  |  |
+
+
+# Tasks
+- `task_027_nest_stop_on_a_mission_run_stops_the_mission`
