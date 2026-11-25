@@ -47,8 +47,9 @@
 # Notes
 - 2026-11-25: stopped by hand with `crow-runs stop` then `crow mission cancel`.
 - 2026-11-25 (8b05af6, 0472767): Stop on a mission run (Desk and session chat) opens one sheet: "Stop and cancel the mission" calls `POST /missions/{id}/cancel`; "Restart run" calls the existing `/stop` (kills the run, the tick resumes it). Cancel sheet words a running mission. A reply with `ok: false` now throws and stays in the sheet. Go test: cancel on a running mission stops its run and later cancel/stop get 409.
-- Left: run `stop-probe.mjs` (needs approval in an unattended run) and the live repro from Nest on a real running mission (AC1, AC2).
-- Open: core's cancel ignores a failed run stop (the warning is dropped) and still cancels; the UI shows success.
+- 2026-11-25 (b1cff25): session chat picked the first mission that listed the run (an old one in fixtures); it now prefers the running mission (`missionOfRun`). stop-probe reaches the mission run sheet on laptop, inner and phone, both themes; all checks pass. Landed on main.
+- Owner 2026-11-25: a failed run kill during cancel returns its warning and the sheet shows it (mission cancelled, run still alive). Stop is enough on a running mission row; no separate Cancel button.
+- Left: return the kill warning from `POST /missions/{id}/cancel` and show it in the sheet; live repro from Nest on a real running mission (AC1, AC2).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
