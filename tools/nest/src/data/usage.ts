@@ -49,6 +49,8 @@ export interface UsageLimit extends Limit {
   in_policy?: boolean
   burn_5h_pct_per_h?: number | null
   empty_at?: string | null
+  // Room left under which dispatch skips the account (accounts.yaml min_room).
+  min_room?: number
 }
 
 export interface UsageSession extends Partial<TokenKinds> {
