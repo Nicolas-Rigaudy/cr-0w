@@ -311,3 +311,8 @@ def test_retry_args_rebuild_the_run(cr, tmp_path):
 def test_retry_args_refuse_without_prompt(cr):
     args, why = cr.retry_args({"run_id": "x", "project": "hub", "label": "l", "prompt_file": "/gone.md"})
     assert args is None and "no prompt" in why
+
+
+def test_pinned_run_never_moves_on_a_limit(cr):
+    assert cr.move_target({"pinned": True}, "other") is None
+    assert cr.move_target({}, "other") == "other"

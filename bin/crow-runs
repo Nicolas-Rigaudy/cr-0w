@@ -421,6 +421,11 @@ def limit_inputs(st, acct):
     return row, left, target
 
 
+def move_target(rec, target):
+    """The account a limited run may move to: none when the run was pinned to its account."""
+    return None if rec.get("pinned") else target
+
+
 def run_end_state(run_id):
     """What crow-core tick reads of a run: ended or not, its end state (run_state) and exit code. A run cut by a
     usage limit also carries the item_115 policy (wait for the reset or move) for the mission to park with."""
@@ -434,6 +439,7 @@ def run_end_state(run_id):
         acct = rec.get("account") or r.get("account") or ACCOUNT
         try:
             _, left, target = limit_inputs(crow_lib.account_state(acct), acct)
+            target = move_target(rec, target)
             choice, why = crow_lib.limit_policy(rec.get("context") or "day", left, bool(target))
             out["policy"] = {"choice": choice, "reason": why, "account": acct, "reset_in_min": left, "target": target}
         except Exception as e:  # no usable account data: the mission still parks, without a policy
@@ -454,6 +460,7 @@ def requeue(rec, deadline):
     if rec.get("cwd") and rec["cwd"] != project(rec["project"])["path"]:
         base += ["--cwd", rec["cwd"]]
     row, left, target = limit_inputs(st, acct)
+    target = move_target(rec, target)
     ctx = rec.get("context") or "day"
     choice, why = crow_lib.limit_policy(ctx, left, bool(target and rec.get("prompt_file") and Path(rec["prompt_file"]).exists()))
     log_event(rec, "run.limit_policy", {"choice": choice, "reason": why, "context": ctx, "account": acct,
@@ -1181,6 +1188,8 @@ def dispatch(a):
         "account": acct, "prompt_file": a.prompt_file, "power": a.power, "model": a.model, "permission": a.permission or "",
         "kind": a.kind, "context": a.context,
     }
+    if a.account and (not a.resumes or parent_run(a.resumes).get("pinned")):  # owner-chosen account: a limit waits for its reset
+        rec["pinned"] = True
     if a.isolate:
         rec["isolated"] = True
     if a.logics:
