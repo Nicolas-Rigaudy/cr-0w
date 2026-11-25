@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 90%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -43,6 +43,10 @@
 - Architecture decision(s): (none yet)
 - Request: `req_057_nest_on_the_laptop_replaces_the_owner_s_terminals`
 - Primary task(s): `task_023_orchestrate_nest_laptop_parity`
+
+# Notes
+- Owner pick 2026-11-25: board 223-B laptop (kind rail with counts and the Reports log link, sectioned list, reading pane). Built with item_223 at 1100px and up; 600 to 1100px keeps chips over the list beside the reading pane.
+- Build shots: local/state/afk/shots/afk-inbox-build/inbox-laptop-*.png next to the board 223-B-laptop.png. Waits on the owner's OK on the compare (AC3).
 
 # Priority
 - Priority: Medium

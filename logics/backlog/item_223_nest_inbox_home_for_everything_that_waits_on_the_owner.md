@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 85
 > Confidence: 80
-> Progress: 0%
+> Progress: 40%
 > Complexity: High
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -53,6 +53,9 @@
 
 # Notes
 - Supersedes the layout part of item_191; item_211 becomes the design-review kind under this model.
+- Owner pick 2026-11-25 (AC1): layout B from board afk-inbox-2026-11-24 (kind rail and Reports log link on laptop, kind chips on phone), plus swipe left or right on the phone viewer for the next or previous row.
+- Built 2026-11-25 (Nest client): kinds mapped client-side from mission inbox rows (decision, review, approval, ask, mail; follow-up empty), sections To answer, Waiting on others, Done today, reading pane with options from the version questions, recommended option, Pick and Hide, route line, phone sheet with swipe. Badge still counts To answer only (AC5).
+- Left: kind model and follow-up source in core, `Decisions for the owner` parser for AFK reports (AC2), Markdown and PDF doc viewer (AC3), Reports read-only log screen (AC4).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
