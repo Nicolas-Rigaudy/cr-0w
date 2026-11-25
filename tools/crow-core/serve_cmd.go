@@ -219,7 +219,23 @@ func sources(cfg config.Config) []api.Source {
 	for _, sc := range scripts {
 		out = append(out, api.Source{Name: sc.name, TTL: cfg.Serve.TTL[sc.name], Fetch: scriptFetch(cfg.Engine, sc)})
 	}
-	return append(out, api.Source{Name: "jobs", TTL: cfg.Serve.TTL["jobs"], Fetch: jobsFetch})
+	return append(out,
+		api.Source{Name: "jobs", TTL: cfg.Serve.TTL["jobs"], Fetch: jobsFetch},
+		api.Source{Name: api.ReportsSection, TTL: cfg.Serve.TTL[api.ReportsSection], Fetch: reportsFetch(cfg)},
+	)
+}
+
+// reportsFetch reads the settled AFK reports and the ritual notes (item_258).
+func reportsFetch(cfg config.Config) api.Fetch {
+	return func() (any, error) {
+		_, vault := config.NotesDir(cfg)
+		return api.BuildReports(api.ReportDirs{
+			AFK:     filepath.Join(cfg.Home, "local", "state", "afk"),
+			Rollups: config.NotePath(cfg, "rollups"),
+			Retros:  config.NotePath(cfg, "retros"),
+			Vault:   vault,
+		})
+	}
 }
 
 // brickSources serves the Nest sections user bricks declare with `run` (item_237): the
@@ -231,7 +247,7 @@ func brickSources(cfg config.Config) []api.Source {
 		log.Printf("brick sections: %v", err)
 		return nil
 	}
-	taken := map[string]bool{"jobs": true}
+	taken := map[string]bool{"jobs": true, api.ReportsSection: true}
 	for _, sc := range scripts {
 		taken[sc.name] = true
 	}

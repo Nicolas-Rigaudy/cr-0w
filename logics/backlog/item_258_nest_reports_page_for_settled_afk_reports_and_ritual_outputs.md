@@ -56,3 +56,11 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25T14:52:28.868339+00:00 | cdx | 4022606c4d8748b78e92bd226702ecea | Nest Reports build 4 (item_258) | running |  |  |
+| 2026-11-25T14:51:49.096284+00:00 | cdx | 9b1e6b3a37884dd2a6faa3adf17d4f10 | Nest Reports build 3 (item_258) | succeeded |  |  |
+| 2026-11-25T14:10:57.032659+00:00 | cdx | c9a39a6e952d4034bc878249ca5f1ec7 | Nest Reports build 2 (item_258) | failed |  | limit |
+| 2026-11-25T14:07:33.959947+00:00 | cdx | 63065990615e46c1aa39877c02935312 | Nest Reports build 2 (item_258) | failed |  | limit |
+| 2026-11-25T13:58:05.737695+00:00 | cdx | 7fab4e5ff2ce4887ac624f3400c62161 | Nest Reports build (item_258) | succeeded |  |  |
+
+# Tasks
+- `task_030_nest_reports_page_for_settled_afk_reports_and_ritual_outputs`
