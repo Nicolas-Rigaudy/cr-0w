@@ -36,7 +36,7 @@
 
 # Links
 - Request: `req_070_desk_and_ops_handle_missions_runs_and_queues`
-- Related: item_292 (first step), item_288 (butler out of the list), item_290 (failure cause), draft C of mission 20261125-plan-nest-desk-bugs (one chat on Desk).
+- Related: item_292 (first step), item_278 (butler out of the list), item_290 (failure cause), draft C of mission 20261125-plan-nest-desk-bugs (one chat on Desk).
 
 # Launch prompt
 ```text

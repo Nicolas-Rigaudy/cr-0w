@@ -7,6 +7,7 @@
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked backlog/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 14:44:37
 
 # AI Context
 - Summary: Owner feedback 2026-11-25 on the Nest butler chat: raw rendering, the butler shown twice, Sir on every reply, an unexplained fail state and a dead Ops badge.
@@ -34,7 +35,7 @@
 # Execution order
 1. item_291 (plan resumes accept withdrawn questions): core only; unblocks the desk-bugs mission, which the owner then relaunches.
 2. item_290 (failed mission says why): core and persona.
-3. item_288 (Desk hides the butler process): core tag plus Nest filter.
+3. item_278 (Desk hides the butler, req_068): core tag plus Nest filter.
 4. item_287 (butler chat renders like the session chat) and item_289 (Sir sparingly): independent, can run in parallel.
 5. item_292 (mission rows and Ops badge): edits `screens/Desk.tsx`; after item_210 and desk-bugs drafts B and C land. Owner picked open on Desk; wider redesign in req_070.
 
@@ -44,7 +45,7 @@
 
 # Backlog
 - `item_287_butler_chat_renders_replies_like_the_session_chat`
-- `item_288_desk_hides_the_butler_process_from_the_session_list`
+- `item_278_desk_hides_the_butler_from_its_session_list` (req_068; item_288 withdrawn as a duplicate)
 - `item_289_butler_says_sir_sparingly`
 - `item_290_failed_mission_says_why_in_work_feed_and_butler`
 - `item_291_plan_resumes_accept_withdrawn_questions`

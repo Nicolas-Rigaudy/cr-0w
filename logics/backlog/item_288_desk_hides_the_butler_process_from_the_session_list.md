@@ -1,7 +1,7 @@
 ## item_288_desk_hides_the_butler_process_from_the_session_list - Desk hides the butler process from the session list
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: Obsolete
 > Understanding: 90%
 > Confidence: 85%
 > Progress: 0%
@@ -44,6 +44,7 @@
 - Request: `req_069_nest_butler_chat_polish_and_failure_clarity`
 - Overlaps: draft C "One CR-0W chat on Desk, in the side panel" in `local/state/missions/20261125-plan-nest-desk-bugs/outbox/items.md` (bug 3 of the desk-bugs mission). Build this item first or alongside; do not duplicate C.
 - Related: item_210 / `data/deskPick.ts` (default pick must skip the butler).
+- Superseded by: `item_278_desk_hides_the_butler_from_its_session_list`
 
 # Launch prompt
 ```text

@@ -44,3 +44,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Decision framing
+- Merged from item_288 (2026-11-25): the butler brief (dispatch, sessions) leaves the butler out so it stops reporting itself as a working run; hero running count and deskPick default skip it; Ops still counts butler cost under its lane. Seen in owner screenshot 20261125_141736.png.
