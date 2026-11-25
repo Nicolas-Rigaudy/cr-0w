@@ -195,10 +195,10 @@ export function weekOf(l: UsageLimit, days: CostDay[], now: Date): Week | null {
 export const bySession = (s: UsageSession[]) => [...s].sort((a, b) => (b.start ?? '').localeCompare(a.start ?? ''))
 export const topRuns = (s: UsageSession[], n = 10) => [...s].sort((a, b) => (b.cost_usd ?? 0) - (a.cost_usd ?? 0)).slice(0, n)
 
-// Axis ticks: 5 steps over a round maximum.
+// Axis ticks: 5 lines over a round maximum that splits into four even steps (12/24/36/48).
 export function niceMax(v: number): number {
   if (v <= 0) return 1
   const p = 10 ** Math.floor(Math.log10(v))
-  for (const m of [1, 2, 2.5, 4, 5, 10]) if (v <= m * p) return m * p
+  for (const m of [1, 1.2, 1.6, 2, 2.4, 3.2, 4, 4.8, 6, 8, 10]) if (v <= m * p) return m * p
   return 10 * p
 }
