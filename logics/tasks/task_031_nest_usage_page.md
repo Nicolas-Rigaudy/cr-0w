@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 90
 > Confidence: 80
-> Progress: 0%
+> Progress: 25%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -20,8 +20,8 @@
 - Board: tools/nest/scripts/mockups/usage.html?v=C and ?f=phone.
 
 # Plan
-- [ ] 1. Core: crow-cost-audit --json gains a per-day series (cost and tokens per model) and a split per account, with tests.
-- [ ] 2. Core: per-day weekly % used and 5h windows per account from limit-samples.jsonl (weekly reset, 5h split), with tests.
+- [x] 1. Core: crow-cost-audit --json gains a per-day series (cost and tokens per model) and a split per account, with tests.
+- [x] 2. Core: per-day weekly % used and 5h windows per account from limit-samples.jsonl (weekly reset, 5h split), with tests.
 - [ ] 3. crow-core: read-only endpoint serving the usage series to Nest, with Go tests.
 - [ ] 4. Nest: /usage and /usage/<account> routes, header gauge click opens it.
 - [ ] 5. Nest: layout C (account list, facts, 5h and week charts) matching the board, laptop and phone.
@@ -43,10 +43,11 @@
 - backlog-AC3 -> This task. Proof: pending.
 
 # Validation
-- (no validation recorded yet)
+- command: `python3 -m pytest -q tests/ -k "usage or cost or afk"` | result: 63 passed, 1 skipped | date: 2026-11-25 | note: steps 1-2.
 
 # Report
-- Not started.
+- Steps 1-2 done 2026-11-25: `by_account` and `by_day` (per model, account, project, kind, plus `limits`) in crow-cost-audit --json; `limit_days()` and `trim_samples()` in crow-usage.
+- limit-samples.jsonl was trimmed to the last 6h on every write, so no per-day history existed. Retention is now 6h full, then one sample per account per 5 minutes up to 35 days. Limits history starts when this lands on main; earlier days show "no data".
 
 # Links
 - Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`
