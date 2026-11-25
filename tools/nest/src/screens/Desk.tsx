@@ -21,6 +21,7 @@ import { WorkList, type RowAct } from '../ui/WorkList'
 import { AccountField } from '../ui/AccountField'
 import { isCommand } from '../data/butler'
 import { useButler } from '../data/useButler'
+import { deskPick, readPick, savePick } from '../data/deskPick'
 
 // Desk (item_138 boards desk, fold-desk-inner, fold-desk-cover) on the live actions of
 // item_170. Every action goes through the confirm sheet, then the feed refetches.
@@ -94,7 +95,9 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   const [sheet, setSheet] = useState<Confirm | null>(null)
   const [log, setLog] = useState<Msg[]>([])
   // Home links open a row directly: /desk?pid=N (&tell=1 opens the reply box).
-  const [sel, setSel] = useState<number | null>(() => Number(new URLSearchParams(location.search).get('pid')) || null)
+  // Otherwise the last pick of this device (item_210): Desk remounts on every tab change.
+  const [sel, setSel] = useState<number | null>(() => Number(new URLSearchParams(location.search).get('pid')) || readPick())
+  useEffect(() => { if (sel != null) savePick(sel) }, [sel])
   const [tell, setTell] = useState(() => new URLSearchParams(location.search).get('tell') === '1')
   const [text, setText] = useState('')
   const [ask, setAsk] = useState('')
@@ -105,7 +108,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   // tmux session of a session just started here: its chat opens once a poll shows it (item_188).
   const [opening, setOpening] = useState<string | null>(null)
 
-  const picked = agents.find((a) => a.pid === sel) ?? runs[0] ?? sessions.find((a) => a.state === 'working') ?? agents[0]
+  const picked = deskPick(agents, workOf(snap.sections.work), sel)
   const slotOf = (a: Agent) => (a.kind === 'run' ? `S${runs.indexOf(a) + 1}` : '')
   const since = (a: Agent) => (a.started_at ? elapsed(a.started_at, snap.now) : '')
 
