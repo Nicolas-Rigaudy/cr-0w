@@ -1,10 +1,10 @@
 ## task_028_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work - Nest Desk opens on the last selected session and groups live and background work
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 80%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -18,10 +18,10 @@
 - Skip when: (unfilled: replace before this doc is used)
 
 # Definition of Done (DoD)
-- [ ] The backlog scope is implemented.
-- [ ] Acceptance criteria are covered.
-- [ ] Validation passes.
-- [ ] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
+- [x] The backlog scope is implemented.
+- [x] Acceptance criteria are covered.
+- [x] Validation passes.
+- [x] Meaningful waves followed ADR 009: affected docs updated and the repo left commit-ready without automatic commits.
 
 # Backlog
 - `item_210_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work`
@@ -39,9 +39,14 @@
 
 # Validation
 - (no validation recorded yet)
+- Finish workflow executed on 2026-11-25.
+- Linked backlog/request close verification passed.
 
 # Report
 - Not started.
+- Finished on 2026-11-25.
+- Linked backlog item(s): `item_210_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work`
+- Related request(s): `req_068_a_full_work_day_from_nest_without_a_terminal`
 
 # Links
 - Request: `req_068_a_full_work_day_from_nest_without_a_terminal`
@@ -51,3 +56,8 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Validation 2026-11-25
+- vitest 279 tests pass, tsc clean.
+- `SHOTS_PORT=4391 node tools/nest/scripts/desk-pick-check.mjs`: cleared storage picks a session (not a run), Ops and back keeps the pick, reload on a run keeps the run. 5/5 PASS.
+- Desk shots: vault CR-0W/Research/nest-desk/pick-2026-11-25/.

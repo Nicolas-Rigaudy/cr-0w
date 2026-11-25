@@ -1,10 +1,10 @@
 ## item_210_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work - Nest Desk opens on the last selected session and groups live and background work
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90
 > Confidence: 80
-> Progress: 80%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -47,6 +47,7 @@
 
 # Notes
 - Raised 2026-11-16; rescoped 2026-11-25 from plan mission 20261125-plan-nest-desk-bugs (owner: reuse this item for bug 1).
+- Task `task_028_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work` was finished via `logics-manager flow finish task` on 2026-11-25.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
