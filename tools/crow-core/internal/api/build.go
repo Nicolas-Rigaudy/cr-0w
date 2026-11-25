@@ -1,7 +1,8 @@
 package api
 
 // Nest rebuild after a settings save (item_283). A hero or pages change is compiled into
-// Nest, so a save that needs a build starts `crow nest build` here. The build writes a
+// Nest, so a save that needs a build starts `crow nest build` here, and so does a module
+// switch that turns a brick with Nest code on or off (buildOnSwitch). The build writes a
 // staging dir next to the served dist; only a good build replaces it, so a failed one
 // leaves the last good Nest served. One build runs at a time: a save during a build
 // queues one more. GET /api/settings/nest/build answers the state; /api/state carries
@@ -57,6 +58,8 @@ type builder struct {
 	started time.Time
 	ended   time.Time
 	running bool
+	mods    *Modules // brick state last seen by buildOnSwitch
+	nestKey string   // its on bricks that ship Nest code
 }
 
 var (
@@ -101,6 +104,28 @@ func (s *Server) servedBuild() string {
 		return ""
 	}
 	return distID(s.o.Nest)
+}
+
+// buildOnSwitch starts a build when a module switch changed the on bricks that ship Nest
+// code: switches go through the same rebuild and reload path as hero and pages. The
+// first brick state core reads is the one its dist was built from.
+func (s *Server) buildOnSwitch(m *Modules) {
+	if m == nil {
+		return
+	}
+	b := &s.build
+	b.mu.Lock()
+	if m == b.mods {
+		b.mu.Unlock()
+		return
+	}
+	key := m.nestBricks()
+	moved := b.mods != nil && key != b.nestKey
+	b.mods, b.nestKey = m, key
+	b.mu.Unlock()
+	if moved && s.buildOn() {
+		s.startBuild()
+	}
 }
 
 // startBuild starts a build, or queues one more when one runs.

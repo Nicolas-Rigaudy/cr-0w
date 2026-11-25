@@ -188,7 +188,23 @@ func (s *Server) mods() *Modules {
 	if err != nil {
 		log.Printf("modules: %v", err)
 	}
+	s.buildOnSwitch(m)
 	return m
+}
+
+// nestBricks lists the on bricks that ship Nest code (a nest/ folder), the ones
+// nest-modules.ts compiles in. A switch that changes this list needs a Nest build.
+func (m *Modules) nestBricks() string {
+	var on []string
+	for _, b := range m.Modules {
+		if !b.On || b.dir == "" {
+			continue
+		}
+		if fi, err := os.Stat(filepath.Join(b.dir, "nest")); err == nil && fi.IsDir() {
+			on = append(on, b.Name)
+		}
+	}
+	return strings.Join(on, ",")
 }
 
 func (s *Server) routeModules(mux *http.ServeMux) {

@@ -196,3 +196,47 @@ func TestNestBuildOff(t *testing.T) {
 		t.Errorf("answer: %+v", v)
 	}
 }
+
+// A module switch goes through the same rebuild as hero and pages: core builds Nest when
+// the on bricks that ship Nest code change, and only then.
+func TestNestBuildOnModuleSwitch(t *testing.T) {
+	s, home, fake, dist := buildServer(t, "ok")
+	s.o.Modules = func() (*Modules, error) { return LoadModules(home, s.o.Engine)() } // no 1 s cache
+	switchTo := func(from, to string) {
+		t.Helper()
+		y := readYAML(t, home)
+		if !strings.Contains(y, from) {
+			t.Fatalf("crow.yaml has no %q:\n%s", from, y)
+		}
+		writeFile(t, filepath.Join(home, "crow.yaml"), []byte(strings.Replace(y, from, to, 1)))
+	}
+	before := liveModules(t, s) // the state the served dist was built from
+	if n := runs(t, fake); n != 0 {
+		t.Fatalf("first read ran %d builds", n)
+	}
+
+	switchTo("  notes: true", "  notes: false") // an engine brick without Nest code
+	liveModules(t, s)
+	if st := waitBuild(t, s); st.State != BuildIdle || runs(t, fake) != 0 {
+		t.Fatalf("switch without Nest code built: %+v", st)
+	}
+
+	switchTo("  notes: false", "  notes: false\n  garden: false") // the brick with Nest pages, hero, theme
+	liveModules(t, s)
+	st := waitBuild(t, s)
+	if st.State != BuildOK || runs(t, fake) != 1 {
+		t.Fatalf("switch off garden: %+v, %d builds", st, runs(t, fake))
+	}
+	if after := liveModules(t, s); after.NestBuild == before.NestBuild || after.NestBuild != distID(dist) {
+		t.Errorf("served build did not move: %s -> %s", before.NestBuild, after.NestBuild)
+	}
+	if n := runs(t, fake); n != 1 {
+		t.Errorf("reads after the switch ran %d builds, want 1", n)
+	}
+
+	switchTo("  garden: false", "  garden: true")
+	liveModules(t, s)
+	if st := waitBuild(t, s); st.State != BuildOK || runs(t, fake) != 2 {
+		t.Errorf("switch on garden: %+v, %d builds", st, runs(t, fake))
+	}
+}
