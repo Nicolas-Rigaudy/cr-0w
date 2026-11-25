@@ -42,6 +42,9 @@ const SCREENS = {
   agenda: '/agenda',
   'mrs-review': '/mrs?mr=242', // an MR to review in the detail (item_225)
   'mrs-patterns': '/mrs?mr=239&tab=patterns', // the review patterns tab (item_225)
+  usage: '/usage/acct1', // account page, PER DAY in $ (item_227)
+  'usage-limits': '/usage/acct1?unit=lim', // PER DAY in % of the weekly limit (item_227)
+  'usage-session': '/usage/acct1?tab=session', // PER SESSION table (item_227)
 }
 const unknown = (only ?? []).filter((n) => !(n in SCREENS))
 if (unknown.length || (only && !only.length)) {
