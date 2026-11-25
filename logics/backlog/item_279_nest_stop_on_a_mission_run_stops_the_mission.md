@@ -2,9 +2,9 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: In progress
-> Understanding: 80%
-> Confidence: 70%
-> Progress: 40%
+> Understanding: 90%
+> Confidence: 85%
+> Progress: 80%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -46,10 +46,14 @@
 
 # Notes
 - 2026-11-25: stopped by hand with `crow-runs stop` then `crow mission cancel`.
+- 2026-11-25 (8b05af6, 0472767): Stop on a mission run (Desk and session chat) opens one sheet: "Stop and cancel the mission" calls `POST /missions/{id}/cancel`; "Restart run" calls the existing `/stop` (kills the run, the tick resumes it). Cancel sheet words a running mission. A reply with `ok: false` now throws and stays in the sheet. Go test: cancel on a running mission stops its run and later cancel/stop get 409.
+- Left: run `stop-probe.mjs` (needs approval in an unattended run) and the live repro from Nest on a real running mission (AC1, AC2).
+- Open: core's cancel ignores a failed run stop (the warning is dropped) and still cancels; the UI shows success.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25T10:27:57.900812+00:00 | cdx | 470beddb074d46aaba6bf86687d56146 | nest stop build item_279 | running |  |  |
 | 2026-11-25T09:51:21.811074+00:00 | cdx | b94fd623d5f44fa69c8e2263c7a86d83 | item_279 nest stop | succeeded |  |  |
 
 # Tasks
