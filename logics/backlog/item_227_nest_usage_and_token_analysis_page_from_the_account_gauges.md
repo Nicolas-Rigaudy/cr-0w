@@ -1,13 +1,14 @@
 ## item_227_nest_usage_and_token_analysis_page_from_the_account_gauges - Nest usage and token analysis page from the account gauges
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 95
 > Confidence: 85
-> Progress: 25%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 16:59:18
 
 # AI Context
 - Summary: Clicking an account gauge in the Nest header opens a Usage page: per account 5h and week windows, burn rate, reset times, cost per run, per project and per model, and the token savers (cache hit, hub start context) from crow-cost-audit.
@@ -49,14 +50,20 @@
 - Core derives these from limit-samples.jsonl (history from 2026-11-24).
 
 # AC Traceability
-- req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits-AC -> This backlog slice. Proof: Owner approved the Usage board first.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC1 -> This backlog slice. Proof: built on nest-usage-build, merged in e156284 and served; owner OK on the shots 2026-11-25.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC2 -> This backlog slice. Proof: built on nest-usage-build, merged in e156284 and served; owner OK on the shots 2026-11-25.
+- `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits` AC3 -> This backlog slice. Proof: built on nest-usage-build, merged in e156284 and served; owner OK on the shots 2026-11-25.
+- request-AC1 -> This backlog slice. Proof deferred to slice closeout.
+- request-AC2 -> This backlog slice. Proof deferred to slice closeout.
+- request-AC3 -> This backlog slice. Proof deferred to slice closeout.
 
 # Dependencies
 - Header gauges 0a925df. crow-cost-audit.
 
 # Links
-- Request: req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits.
+- Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`
 
+- Primary task(s): `task_031_nest_usage_page`
 # Priority
 - Priority: Medium
 - Rationale: Owner asked for it; helps the token work (item_213).
@@ -71,3 +78,9 @@
 | 2026-11-25T15:36:47.325046+00:00 | cdx | 5c42e25079a34599984c3847a22ace6e | Nest Usage build 3 (item_227) | failed |  | limit |
 | 2026-11-25T15:08:57.054125+00:00 | cdx | b2b1795a99ea40dfa50fa668fee47111 | Nest Usage build 2 (item_227) | succeeded |  |  |
 
+
+# Tasks
+- `task_031_nest_usage_page`
+
+# Notes
+- Task `task_031_nest_usage_page` was finished via `logics-manager flow finish task` on 2026-11-25.
