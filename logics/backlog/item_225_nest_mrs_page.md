@@ -55,3 +55,4 @@
 # Decision framing
 - Owner 2026-11-25: none of A/B/C. Redo the mockups: closer to the deck, less clutter. MR list as clear as A or B, details like A but bigger, patterns small and expanded on demand. Do not reserve space for the chat panel.
 - Round 2 (2026-11-25): options A (list + big detail), B (who-acts strip + wide detail), C (deck panes + tabbed detail) in `tools/nest/scripts/mockups/mrs-v2.html`, rendered by `tools/nest/scripts/mrs-v2-mockups.mjs`. Waiting on the owner's pick (AC1).
+- 2026-11-25: owner picked round 2 option C (deck panes + tabbed detail). Approved board: `mrs-v2.html` option C, PNGs in the vault `CR-0W/Research/nest-mrs/round2/mrs-C-{laptop,laptop-patterns,phone}.png`. AC1 met.
