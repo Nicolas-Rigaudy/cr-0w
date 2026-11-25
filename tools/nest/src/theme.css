@@ -1572,6 +1572,13 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .mrs .job.failed { border-color: var(--c-f); color: var(--c-f); background: color-mix(in srgb, var(--c-f) 10%, transparent); }
 .mrs .job.running { border-color: var(--c-b); color: var(--c-b); }
 .mrs .job.skipped, .mrs .job.manual, .mrs .job.none { border: 1px dashed var(--line); color: var(--sub); }
+.mrs .pats table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mrs .pats th { text-align: left; color: var(--dim); font: 600 10px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 6px; }
+.mrs .pats td { padding: 6px; border-top: 1px solid var(--line); color: var(--sub); }
+.mrs .pats td:nth-child(2), .mrs .pats th:nth-child(2) { text-align: right; width: 44px; }
+.mrs .pats td:nth-child(3), .mrs .pats th:nth-child(3) { width: 56px; }
+.mrs .pats tr.hit td:first-child { color: var(--c-n); }
+.mrs .pats .note { margin-top: 6px; color: var(--dim); font-size: 11px; }
 .mrs .macts { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .mrs .macts .btnrow { flex-wrap: wrap; }
 .mrs .macts a.btn { text-decoration: none; display: inline-flex; align-items: center; }

@@ -152,6 +152,31 @@ describe('MRs row actions (item_225)', () => {
   })
 })
 
+describe('MRs review patterns (item_225)', () => {
+  it('stays a tab with the hit count until picked', async () => {
+    const h = await page(1440)
+    expect(h).toContain('>Patterns ◆2</button>')
+    expect(h).not.toContain('class="pats"')
+  })
+
+  it('lists the common and project ledger newest first with the hits marked', async () => {
+    const h = await page(1440, '?mr=239&tab=patterns')
+    expect(h).toContain('Review patterns · api')
+    const order = [...h.matchAll(/<tr[^>]*><td>(?:◆ )?([^<]+)<\/td><td>(\d+)<\/td>/g)].map((x) => Number(x[2]))
+    expect(order).toEqual([1, 7, 9, 10, 5, 4])
+    expect(h).toContain('<tr class="hit"><td>◆ Same loop copied instead of one helper</td>')
+    expect(h).toContain('common + project ledger')
+  })
+
+  it('shows no hit mark on an MR the ledgers do not name, and the tab on phone', async () => {
+    const h = await page(1440, '?mr=242&tab=patterns')
+    expect(h).toContain('>Patterns</button>')
+    expect(h).not.toContain('class="hit"')
+    const p = await page(368, '?mr=239&tab=patterns')
+    expect(p).toContain('Review patterns · api')
+  })
+})
+
 describe('MRs page, phone (item_225, option C)', () => {
   it('shows the pane tabs and only the picked pane, rows with project and forge', async () => {
     const h = await page(368)

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ApiError } from '../data/api'
 import type { Actions, LiveReply } from '../data/live'
-import { branchPrompt, countsOf, mrsOf, onlyProject, reviewLabel, reviewPrompt, threadsPrompt, type Mr, type MrBranch, type MrJob, type MrsData } from '../data/mrs'
+import { branchPrompt, countsOf, hitsOf, mrsOf, patternsFor, onlyProject, reviewLabel, reviewPrompt, threadsPrompt, type Mr, type MrBranch, type MrJob, type MrsData } from '../data/mrs'
 import { useSource, type Snapshot } from '../data/useData'
 import { ago, time } from '../format'
 import { useQuery } from '../router'
@@ -13,9 +13,11 @@ import { useMedia } from '../ui/useMedia'
 
 const LAPTOP = '(min-width: 1100px)'
 export type Pane = 'review' | 'mine' | 'merged'
-export type Tab = 'overview' | 'threads' | 'pipeline'
+export type Tab = 'overview' | 'threads' | 'pipeline' | 'patterns'
 const PANES: Array<[Pane, string]> = [['review', 'To review'], ['mine', 'Mine'], ['merged', 'Merged today']]
-const TABS: Tab[] = ['overview', 'threads', 'pipeline']
+const TABS: Tab[] = ['overview', 'threads', 'pipeline', 'patterns']
+// The patterns tab keeps to the newest rows; the rest stay in the ledger files.
+const PATTERN_ROWS = 8
 const keyOf = (m: Mr) => `${m.project}:${m.ref}`
 
 // Row actions (item_225): every one goes through a confirm sheet and the existing live
@@ -294,6 +296,34 @@ export function Threads({ r, now, all }: { r: Mr; now: Date; all?: boolean }) {
   )
 }
 
+// Review patterns from the ledgers (common + project), newest first, ◆ on the ones this
+// MR hits. Only rendered when its tab is picked.
+export function Patterns({ d, r }: { d: MrsData; r: Mr }) {
+  const all = patternsFor(d, r)
+  if (!all.length) return <div className="empty">No review pattern in the ledgers.</div>
+  const rows = all.slice(0, PATTERN_ROWS)
+  return (
+    <div className="pats">
+      <div className="lbl"><span>Review patterns · {r.name}</span><span>newest first</span></div>
+      <table>
+        <thead><tr><th>pattern</th><th>MRs</th><th>last</th></tr></thead>
+        <tbody>
+          {rows.map((p) => {
+            const hit = !!p.hits?.includes(r.ref)
+            return <tr key={p.pattern} className={hit ? 'hit' : undefined}><td>{hit && '◆ '}{p.pattern}</td><td>{p.count}</td><td className="c-w">{p.last ?? ''}</td></tr>
+          })}
+        </tbody>
+      </table>
+      <div className="note">◆ = this MR hits it · common + project ledger{all.length > rows.length ? ` · ${all.length - rows.length} more` : ''}</div>
+    </div>
+  )
+}
+
+function patTab(d: MrsData, r: Mr) {
+  const n = hitsOf(patternsFor(d, r), r).length
+  return <>Patterns{n ? ` ◆${n}` : ''}</>
+}
+
 function Detail({ m }: { m: M }) {
   const r = m.picked
   if (!r) return <Deck n={4} title="Detail"><div className="empty">No MR open on your forges.</div></Deck>
@@ -309,11 +339,13 @@ function Detail({ m }: { m: M }) {
           {tab('overview', 'Overview')}
           {tab('threads', <>Threads {r.threads_open || ''}</>)}
           {tab('pipeline', <>Pipeline {CI[r.pipeline][0]}</>)}
+          {tab('patterns', patTab(m.all, r))}
         </div>
         <div className="mbody">
           {m.tab === 'overview' && <><Facts r={r} now={m.now} /><Pipeline r={r} /><Threads r={r} now={m.now} /></>}
           {m.tab === 'threads' && <Threads r={r} now={m.now} all />}
           {m.tab === 'pipeline' && <Pipeline r={r} />}
+          {m.tab === 'patterns' && <Patterns d={m.all} r={r} />}
         </div>
         <Actions r={r} a={m.a} />
       </div>
@@ -337,9 +369,10 @@ function PhoneDetail({ m }: { m: M }) {
       <div className="mtabs" role="tablist">
         {tab('overview', 'Overview')}
         {tab('threads', <>Threads {r.threads_open || ''}</>)}
+        {tab('patterns', patTab(m.all, r))}
       </div>
       <div className="mbody">
-        {m.tab === 'threads' ? <Threads r={r} now={m.now} all /> : <><Pipeline r={r} /><Threads r={r} now={m.now} /></>}
+        {m.tab === 'threads' ? <Threads r={r} now={m.now} all /> : m.tab === 'patterns' ? <Patterns d={m.all} r={r} /> : <><Pipeline r={r} /><Threads r={r} now={m.now} /></>}
       </div>
       <Actions r={r} a={m.a} phone />
     </div>
