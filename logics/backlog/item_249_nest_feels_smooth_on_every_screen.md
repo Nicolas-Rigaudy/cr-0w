@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 10:18:16
 
 # AI Context
 - Summary: Measure and fix the lag on the laptop Desk and other screens, not only the Home hologram.
@@ -44,6 +45,7 @@
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
+- Owner pick 2026-11-25: rail head idle motion D. Still frame at idle, blinks, nods, asks and face changes animate, plus a 2 s motion burst every 10-15 s.
 
 # Links
 - Product brief(s): (none yet)
@@ -99,4 +101,3 @@ After the hatch fix (c4c4fb0, transform on a pseudo-element; `npm run perf:hatch
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-25T09:12:13.195208+00:00 | afk | afk-nest-lag | Measure, fix the Ops hatch repaint | succeeded |  | Probe and before/after in Notes; head idle loop paused on a look decision; AC3 not started |
-
