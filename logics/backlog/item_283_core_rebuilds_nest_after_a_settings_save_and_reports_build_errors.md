@@ -70,7 +70,7 @@ Brick themes, heroes and pages are compiled in. A hero or page change in crow.ya
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-25T15:43:36.916266+00:00 | cdx | 3814751952664ffb83222fa44cd7a61c | Settings core closeout (item_283) | running |  |  |
+| 2026-11-25T15:44:59.085881+00:00 | cdx | 3814751952664ffb83222fa44cd7a61c | Settings core closeout (item_283) | succeeded |  |  |
 | 2026-11-25T15:36:54.813214+00:00 | cdx | a6f35983988146baacef59b5fbf49d4c | Nest Settings core 2 (item_283) | cancelled |  | stopped |
 | 2026-11-25T15:36:31.719471+00:00 | cdx | 86a703d4b67947d79562ca0878c3c400 | Nest Settings core 2 (item_283) | failed |  | limit |
 
