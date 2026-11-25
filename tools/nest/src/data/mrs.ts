@@ -22,6 +22,8 @@ export interface Mr {
   author: string
   role: MrRole
   draft: boolean
+  // The owner already approved it (reviewer rows only).
+  approved: boolean
   pipeline: Pipeline
   updated: string
   created: string
@@ -82,7 +84,7 @@ export function mrOf(v: unknown): Mr {
     ...(r as Partial<Mr>),
     project: str(r.project), name: str(r.name) || str(r.project), scope: str(r.scope), forge, repo: str(r.repo), number,
     ref: str(r.ref) || `${forge === 'github' ? '#' : '!'}${number}`, title: str(r.title), author: str(r.author),
-    role: ROLES.includes(role) ? role : '', draft: !!r.draft, pipeline: PIPES.includes(pipe) ? pipe : 'none',
+    role: ROLES.includes(role) ? role : '', draft: !!r.draft, approved: !!r.approved, pipeline: PIPES.includes(pipe) ? pipe : 'none',
     updated: str(r.updated), created: str(r.created), branch: str(r.branch), target: str(r.target), url: str(r.url),
     threads_open: num(r.threads_open), threads_resolved: num(r.threads_resolved),
   }
@@ -95,8 +97,8 @@ const t = (iso: string) => Date.parse(iso) || 0
 export function mrsOf(b: SectionBody | undefined, now: Date): MrsData {
   const d = obj(b?.data)
   const rows = arr<unknown>(d.mrs).map(mrOf)
-  // To review: the oldest wait first, drafts last (unblock devs first).
-  const review = rows.filter((m) => m.role !== 'AUTHOR').sort((a, c) => Number(a.draft) - Number(c.draft) || t(a.updated) - t(c.updated))
+  // To review: ready MRs the owner has not approved yet, the oldest wait first (unblock devs first).
+  const review = rows.filter((m) => m.role !== 'AUTHOR' && !m.draft && !m.approved).sort((a, c) => t(a.updated) - t(c.updated))
   // Mine: what needs the owner first, then the oldest.
   const mine = rows.filter((m) => m.role === 'AUTHOR').sort((a, c) => Number(needsYou(c)) - Number(needsYou(a)) || t(a.updated) - t(c.updated))
   const merged = arr<unknown>(d.merged).map(mrOf).filter((m) => m.merged_at && sameDay(new Date(m.merged_at), now))
@@ -118,7 +120,7 @@ export const hitsOf = (ps: Pattern[], m: Mr) => ps.filter((p) => p.hits?.include
 export interface MrsCounts { review: number; needs: number; waiting: number; merged: number }
 export function countsOf(d: MrsData): MrsCounts {
   const needs = d.mine.filter(needsYou).length
-  return { review: d.review.filter((m) => !m.draft).length, needs, waiting: d.mine.length - needs, merged: d.merged.length }
+  return { review: d.review.length, needs, waiting: d.mine.length - needs, merged: d.merged.length }
 }
 
 // A project filter keeps the rows, branches and counts of that project.

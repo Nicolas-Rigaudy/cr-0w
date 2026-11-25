@@ -11,7 +11,7 @@ const body = (data: unknown, more: Partial<SectionBody> = {}): SectionBody => ({
 describe('MRs mapping (item_225)', () => {
   it('splits crow-mrs rows into to review, mine and merged today', () => {
     const d = mrsOf(body(stateMrs), NOW)
-    expect(d.review.map((m) => m.ref)).toEqual(['!242', '!245'])
+    expect(d.review.map((m) => m.ref)).toEqual(['!242'])
     expect(d.mine.map((m) => m.ref)).toEqual(['!239', '!241', '#57'])
     // !229 merged two days ago stays out of Merged today.
     expect(d.merged.map((m) => m.ref)).toEqual(['!235'])
@@ -19,15 +19,17 @@ describe('MRs mapping (item_225)', () => {
     expect(d.projects).toEqual(['api', 'cr-0w'])
   })
 
-  it('puts drafts last in To review and what needs the owner first in Mine', () => {
+  it('leaves drafts and approved MRs out of To review and what needs the owner first in Mine', () => {
     const rows = [
       { project: 'p', number: 1, role: 'REVIEWER', draft: true, updated: '2026-11-01T00:00:00Z' },
       { project: 'p', number: 2, role: 'ASSIGNEE', updated: '2026-11-08T00:00:00Z' },
+      { project: 'p', number: 5, role: 'REVIEWER', approved: true, updated: '2026-11-02T00:00:00Z' },
+      { project: 'p', number: 6, role: 'REVIEWER', updated: '2026-11-03T00:00:00Z' },
       { project: 'p', number: 3, role: 'AUTHOR', pipeline: 'passed', updated: '2026-11-01T00:00:00Z' },
       { project: 'p', number: 4, role: 'AUTHOR', threads_open: 1, updated: '2026-11-08T00:00:00Z' },
     ]
     const d = mrsOf(body({ mrs: rows }), NOW)
-    expect(d.review.map((m) => m.number)).toEqual([2, 1])
+    expect(d.review.map((m) => m.number)).toEqual([6, 2])
     expect(d.mine.map((m) => m.number)).toEqual([4, 3])
     expect(needsYou(d.mine[0])).toBe(true)
   })

@@ -113,6 +113,9 @@ def gitlab_rows(projs, call=api):
             th = gitlab_threads(call(["glab", "api", f"{base}/discussions?per_page=100"]))
             r["threads_open"] = sum(not t["resolved"] for t in th)
             r["threads_resolved"] = sum(t["resolved"] for t in th)
+        else:
+            appr = call(["glab", "api", f"{base}/approvals"]) or {}
+            r["approved"] = any((a.get("user") or {}).get("username") == me for a in appr.get("approved_by") or [])
         rows.append(r)
     return rows
 
@@ -178,7 +181,7 @@ def github_rows(projs, call=api):
             continue
         author = pr["author"]["login"]
         role = "AUTHOR" if author == me else "REVIEWER" if flag == "--review-requested=@me" else "ASSIGNEE"
-        view = call(["gh", "pr", "view", str(number), "-R", repo, "--json", "headRefName,baseRefName,statusCheckRollup"]) or {}
+        view = call(["gh", "pr", "view", str(number), "-R", repo, "--json", "headRefName,baseRefName,statusCheckRollup,latestReviews"]) or {}
         r = row(p, "github", number, title=pr["title"], author=author, role=role, draft=bool(pr.get("isDraft")),
                 pipeline=github_pipeline(view.get("statusCheckRollup")), updated=pr["updatedAt"], created=pr["createdAt"],
                 branch=view.get("headRefName", ""), target=view.get("baseRefName", ""), url=pr["url"],
@@ -187,6 +190,9 @@ def github_rows(projs, call=api):
             th = github_threads_call(repo, number, call)
             r["threads_open"] = sum(not t["resolved"] for t in th)
             r["threads_resolved"] = sum(t["resolved"] for t in th)
+        else:
+            r["approved"] = any((v.get("author") or {}).get("login") == me and v.get("state") == "APPROVED"
+                                for v in view.get("latestReviews") or [])
         rows.append(r)
     return rows
 

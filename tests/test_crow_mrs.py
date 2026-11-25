@@ -38,6 +38,8 @@ def gitlab_call(cmd):
         note = lambda resolved: [{"resolvable": True, "resolved": resolved, "author": {"username": "sam"}, "body": "guard it",
                                   "created_at": "2026-10-29T09:00:00Z", "position": {"new_path": "a.py", "new_line": 3}}]
         return [{"notes": note(False)}, {"notes": note(True)}, {"notes": [{"resolvable": False}]}]
+    if path.endswith("/approvals"):
+        return {"approved_by": [{"user": {"username": "me"}}]}
     return {"head_pipeline": {"status": "failed"}}
 
 
@@ -49,6 +51,7 @@ def test_gitlab_rows_roles_threads_and_unregistered_repos():
     assert (by_ref["!5"]["threads_open"], by_ref["!5"]["threads_resolved"]) == (1, 1)
     assert by_ref["!5"]["pipeline"] == "failed" and by_ref["!5"]["branch"] == "feat/ids"
     assert by_ref["!6"]["role"] == "REVIEWER" and by_ref["!6"]["threads_open"] == 0
+    assert by_ref["!6"]["approved"] is True and "approved" not in by_ref["!5"]
 
 
 def github_call(cmd):
@@ -57,15 +60,18 @@ def github_call(cmd):
     if cmd[:3] == ["gh", "search", "prs"]:
         pr = {"repository": {"nameWithOwner": "me/demo-tool"}, "number": 12, "title": "pill", "author": {"login": "me"},
               "isDraft": True, "updatedAt": "2026-10-29T10:00:00Z", "createdAt": "2026-10-28T10:00:00Z", "url": "https://x/12"}
-        return [pr] if "--author=@me" in cmd else []
+        theirs = {**pr, "number": 13, "author": {"login": "kim"}, "isDraft": False, "url": "https://x/13"}
+        return [pr] if "--author=@me" in cmd else [theirs] if "--review-requested=@me" in cmd else []
     if cmd[:3] == ["gh", "pr", "view"]:
-        return {"headRefName": "feat/pill", "baseRefName": "main", "statusCheckRollup": [{"conclusion": "SUCCESS"}, {"status": "IN_PROGRESS"}]}
+        return {"headRefName": "feat/pill", "baseRefName": "main", "statusCheckRollup": [{"conclusion": "SUCCESS"}, {"status": "IN_PROGRESS"}],
+                "latestReviews": [{"author": {"login": "me"}, "state": "APPROVED"}] if cmd[3] == "13" else []}
     return {"data": {"repository": {"pullRequest": {"reviewThreads": {"nodes": [
         {"isResolved": False, "path": "b.go", "line": 4, "comments": {"nodes": [{"author": {"login": "kim"}, "body": "rename", "createdAt": "2026-10-29T08:00:00Z"}]}}]}}}}}
 
 
 def test_github_rows_draft_pipeline_and_threads():
-    (r,) = load().github_rows(PROJS, call=github_call)
+    r, theirs = sorted(load().github_rows(PROJS, call=github_call), key=lambda x: x["number"])
+    assert (theirs["role"], theirs["approved"]) == ("REVIEWER", True)
     assert (r["ref"], r["role"], r["draft"], r["pipeline"]) == ("#12", "AUTHOR", True, "running")
     assert (r["threads_open"], r["branch"], r["project"]) == (1, "feat/pill", "demo-tool")
 
@@ -77,7 +83,7 @@ def test_one_forge_failing_keeps_the_other_and_names_the_error():
         raise RuntimeError("401 unauthorized")
     out = mod.list_all(PROJS, gl=broken, gh=lambda p: mod.github_rows(p, call=github_call))
     assert out["forges"]["gitlab"] == "gitlab sync failed: 401 unauthorized" and out["forges"]["github"] == "ok"
-    assert [r["ref"] for r in out["mrs"]] == ["#12"]
+    assert [r["ref"] for r in out["mrs"]] == ["#12", "#13"]
 
 
 def test_show_returns_files_with_counts_and_threads():

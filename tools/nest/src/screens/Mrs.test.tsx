@@ -33,7 +33,7 @@ describe('MRs page, laptop (item_225, option C)', () => {
   it('shows the three deck panes with their counts and the header summary', async () => {
     const h = await page(1440)
     expect(h).toContain('m-lp')
-    expect(h).toContain('[1] To review</span><span class="num">2</span>')
+    expect(h).toContain('[1] To review</span><span class="num">1</span>')
     expect(h).toContain('[2] Mine</span><span class="num">3</span>')
     expect(h).toContain('[3] Merged today</span><span class="num">1</span>')
     expect(h).toContain('1 to review')
@@ -182,7 +182,7 @@ describe('MRs page, phone (item_225, option C)', () => {
     const h = await page(368)
     expect(h).toContain('m-ph')
     expect(h).toContain('aria-selected="true">[2] Mine 3</button>')
-    expect(h).toContain('[1] Review 2')
+    expect(h).toContain('[1] Review 1')
     expect(h).toContain('>[3] Merged</button>')
     expect(h).toContain('<span class="c-n">1 needs you</span> · <span>1 review</span>')
     expect(h).toContain('<span class="sub">api · gitlab</span>')
