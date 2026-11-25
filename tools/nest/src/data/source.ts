@@ -3,6 +3,7 @@ import type { ChatTarget, ConversationPage, PageAsk } from './conversation'
 import type { Actions } from './live'
 import type { Modules } from './modules'
 import type { Changes, Ops, RunReport } from './ops'
+import type { SettingsApi } from './settings'
 import type { AgendaEvent, GateQuestion, InboxItem, Mission, SectionBody, SectionName } from './types'
 import type { UsageData } from './usage'
 
@@ -38,6 +39,8 @@ export interface DataSource {
   now(): Date
   // Butler chat (item_176). Absent: no rail, no sheet.
   butler?: ButlerApi
+  // Nest settings and the rebuild after a save (item_284). Absent: the Settings page says so.
+  settings?: SettingsApi
   // Refresh period in ms while the page is visible. Absent: load once.
   poll?: number
 }

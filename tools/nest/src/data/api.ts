@@ -3,6 +3,7 @@ import { conversationPath, pageQuery, type ConversationPage } from './conversati
 import type { Actions, LiveReply, Screen } from './live'
 import type { Modules } from './modules'
 import type { Changes, Ops, RunReport } from './ops'
+import type { NestBuild, NestSaved, NestSettings, SettingsApi } from './settings'
 import type { DataSource } from './source'
 import { usageBody, type UsageData } from './usage'
 import type { AgendaEvent, GateQuestion, InboxItem, Mission, SectionBody, SectionName, TodayEvent } from './types'
@@ -130,6 +131,29 @@ export function apiActions(base = '/api', get: Fetch = (i, init) => fetch(i, ini
   }
 }
 
+// Nest settings (item_284): reads are plain GETs, the save carries the CSRF header.
+export function apiSettings(base = '/api', get: Fetch = (i, init) => fetch(i, init)): SettingsApi {
+  const read = async <T>(path: string): Promise<T> => {
+    const res = await get(`${base}${path}`, { cache: 'no-store' })
+    if (!res.ok) throw await failure(res)
+    return (await res.json()) as T
+  }
+  return {
+    get: () => read<NestSettings>('/settings/nest'),
+    build: () => read<NestBuild>('/settings/nest/build'),
+    async save(body) {
+      const res = await get(`${base}/settings/nest`, {
+        method: 'POST',
+        headers: { 'X-Crow': '1', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        cache: 'no-store',
+      })
+      if (!res.ok) throw await failure(res)
+      return (await res.json()) as NestSaved
+    },
+  }
+}
+
 export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init)): DataSource {
   const missions = records<Mission>(get, `${base}/state/missions`)
   // all=1 keeps answered asks, which mission detail lists as history.
@@ -222,6 +246,7 @@ export function apiSource(base = '/api', get: Fetch = (i, init) => fetch(i, init
     actions: apiActions(base, get),
     now: () => new Date(),
     butler: apiButler(base, get),
+    settings: apiSettings(base, get),
     poll: 5000,
   }
 }

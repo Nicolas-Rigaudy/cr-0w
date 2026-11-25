@@ -17,6 +17,17 @@ export const TABS: Tab[] = [
 // Phone tab bar B (item_206): three outlined dots open the More sheet.
 export const MORE_ICON: ReactNode = <><circle cx="5" cy="11" r="1.8" /><circle cx="11" cy="11" r="1.8" /><circle cx="17" cy="11" r="1.8" /></>
 
+// Settings (item_284): the entry is a gear, the panes have their own icons.
+export const SETTINGS_ICON: ReactNode = (
+  <><circle cx="11" cy="11" r="3" /><path d="M11 2.5v2.6M11 16.9v2.6M2.5 11h2.6M16.9 11h2.6M5 5l1.8 1.8M15.2 15.2 17 17M5 17l1.8-1.8M15.2 6.8 17 5" /></>
+)
+export const PANE_ICONS: Record<'look' | 'pages' | 'modules' | 'general', ReactNode> = {
+  look: <><circle cx="11" cy="11" r="8" /><path d="M11 3a8 8 0 0 1 0 16Z" fill="currentColor" /></>,
+  pages: <path d="M4 6h14M4 11h14M4 16h14" />,
+  modules: TABS[2].icon,
+  general: SETTINGS_ICON,
+}
+
 // Scope chip icons (item_206 header A): all = stacked layers, work = briefcase, perso = person.
 export const SCOPE_ICONS: Record<'all' | 'work' | 'perso', ReactNode> = {
   all: <><path d="M11 3 19 7.5 11 12 3 7.5Z" /><path d="M3 11.5 11 16l8-4.5M3 15.5 11 20l8-4.5" /></>,

@@ -6,11 +6,12 @@ import type { Snapshot } from '../data/useData'
 import { ago, headerClock, time } from '../format'
 import { Link, usagePath } from '../router'
 import { Glyph } from './Glyph'
-import { MORE_ICON, SCOPE_ICONS, TabIcon, type Tab, type TabKey } from './icons'
-import { barTab, hiddenTabs } from './tabs'
+import { MORE_ICON, SCOPE_ICONS, SETTINGS_ICON, TabIcon, type Tab, type TabKey } from './icons'
+import { barTab, hiddenTabs, SETTINGS } from './tabs'
 import { ALL_TABS, NAV, splitBar } from '../modules/nav'
-import { config, themes } from 'virtual:nest-modules'
+import { themes } from 'virtual:nest-modules'
 import { nextScope, scopeChip, type ScopeMode } from '../data/scope'
+import { paintTheme, setTheme, useTheme } from './theme'
 
 // Themes are token files (item_267): the built-in ones and those of on bricks, in that order.
 // The switcher cycles them; crow.yaml modules.nest.theme is the first paint.
@@ -18,18 +19,11 @@ export function nextTheme(t: string, list: readonly string[] = themes): string {
   return list[(list.indexOf(t) + 1) % list.length]
 }
 
-function useTheme(): [string, () => void] {
-  const [theme, setTheme] = useState(() => {
-    const t = document.documentElement.dataset.theme
-    return t && themes.includes(t) ? t : config.theme
-  })
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
-    if (bg) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg)
-    try { localStorage.setItem('nest.theme', theme) } catch { /* storage blocked: theme stays per visit */ }
-  }, [theme])
-  return [theme, () => setTheme((t) => nextTheme(t))]
+function useThemeCycle(): [string, () => void] {
+  const theme = useTheme()
+  // First paint sets the browser bar colour too.
+  useEffect(() => paintTheme(theme), [theme])
+  return [theme, () => setTheme(nextTheme(theme))]
 }
 
 function badges(snap: Snapshot | null): Partial<Record<TabKey, { n: number; failed?: boolean }>> {
@@ -54,7 +48,7 @@ function ScopeChip({ scope, setScope }: { scope: ScopeMode; setScope: (m: ScopeM
 interface ShellProps { active: TabKey; snap: Snapshot | null; scope: ScopeMode; setScope: (m: ScopeMode) => void; rail?: ReactNode; badge?: ReactNode; children: ReactNode }
 
 export function Shell({ active, snap, scope, setScope, rail, badge, children }: ShellProps) {
-  const [theme, toggle] = useTheme()
+  const [theme, toggle] = useThemeCycle()
   const b = badges(snap)
   const c = snap ? homeCounts(snap) : null
   // Account gauges (laptop), allowed accounts only: 5h left as bar and number, week in the
@@ -109,6 +103,9 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
             <circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
           </svg>
         </button>
+        <Link href="/settings" className="settings-btn" aria-current={active === SETTINGS ? 'page' : undefined}>
+          <TabIcon>{SETTINGS_ICON}</TabIcon>Settings
+        </Link>
       </header>
       <main className="main" id="main">{children}</main>
       {rail}
@@ -120,6 +117,7 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
 type Badges = ReturnType<typeof badges>
 
 const TAB_OF = new Map<string, Tab>(ALL_TABS.map((t) => [t.key, t]))
+const SETTINGS_TAB: Tab = { key: SETTINGS, label: 'Settings', path: '/settings', icon: SETTINGS_ICON }
 
 // Phone tab bar B (item_206): Home, Desk, Missions, Inbox, More. More opens a sheet
 // with MRs, Agenda and Reports and stays highlighted while one of them is open.
@@ -155,7 +153,8 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
   }
   const split = splitBar(NAV, hidden)
   const tabs = split.bar.map((k) => TAB_OF.get(k)!)
-  const more = split.more.map((k) => TAB_OF.get(k)!)
+  // Settings closes the More sheet on every phone (item_284), so More always shows.
+  const more = [...split.more.map((k) => TAB_OF.get(k)!), SETTINGS_TAB]
   const openMore = more.find((t) => t.key === active)
   return (
     <nav className="tabbar" aria-label="Tabs">
@@ -168,7 +167,7 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
           ) : null}
         </Link>
       ))}
-      {more.length > 0 && <button
+      <button
         ref={btn}
         type="button"
         className="tab"
@@ -179,7 +178,7 @@ function TabBar({ active, b, hidden }: { active: TabKey; b: Badges; hidden: Read
       >
         <TabIcon>{MORE_ICON}</TabIcon>
         More{openMore && <span className="sr-only">, {openMore.label} open</span>}
-      </button>}
+      </button>
       {open && (
         <ul ref={sheet} id={id} className="more-sheet" aria-label="More screens" onBlur={blur}>
           {more.map((t) => (

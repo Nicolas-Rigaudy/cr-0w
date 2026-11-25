@@ -14,6 +14,7 @@ import { Chat } from './screens/Chat'
 import { Desk } from './screens/Desk'
 import { Ops } from './screens/Ops'
 import { Placeholder } from './screens/Placeholder'
+import { Settings } from './screens/Settings'
 import { Usage } from './screens/Usage'
 import { Shell } from './ui/Shell'
 import { ButlerRail } from './ui/ButlerRail'
@@ -51,6 +52,7 @@ export function App() {
     else if (route.tab === 'reports') body = <Reports snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
+    else if (route.tab === 'settings') body = <Settings laptop={laptop} refresh={refresh} />
     else if (route.tab === 'usage') body = <Usage account={route.account} />
     else if (route.tab === 'brick') {
       const Page = brickPages.find((p) => p.key === route.key)!.mod.default
@@ -59,12 +61,13 @@ export function App() {
     // Brick TSX sections (item_267) go after the page's own panels, before the generic ones.
     if (route.tab === 'home' || route.tab === 'desk') body = <BrickModuleSections snap={snap} page={route.tab}>{body}</BrickModuleSections>
     // Generic brick sections go after the page's own panels (item_237).
-    if (route.tab !== 'chat' && route.tab !== 'missing' && route.tab !== 'brick') body = listSections(snap.modules ?? null, route.tab).length ? <div className="with-bricks">{body}<BrickSections snap={snap} page={route.tab} /></div> : body
+    if (route.tab !== 'chat' && route.tab !== 'missing' && route.tab !== 'brick' && route.tab !== 'settings') body = listSections(snap.modules ?? null, route.tab).length ? <div className="with-bricks">{body}<BrickSections snap={snap} page={route.tab} /></div> : body
   }
   // Butler rail on every laptop screen (item_176).
   // Home has its own rail (item_259): keyed apart so its fold and width never leak to other pages.
   const home = route.tab === 'home'
-  const rail = laptop && snap ? <ButlerRail key={home ? 'home' : 'page'} snap={snap} home={home} /> : null
+  // Settings keeps the whole width (item_284): no rail there.
+  const rail = laptop && snap && route.tab !== 'settings' ?<ButlerRail key={home ? 'home' : 'page'} snap={snap} home={home} /> : null
   // Phone and Fold: a header badge and a chat sheet instead of the rail.
   // Fold inner Home shows the chat in its side (item_259): no badge there.
   const badge = !laptop && snap && !(home && inner) ? <ButlerBadge snap={snap} /> : null

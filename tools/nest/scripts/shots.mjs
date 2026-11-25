@@ -44,6 +44,9 @@ const SCREENS = {
   'mrs-patterns': '/mrs?mr=239&tab=patterns', // the review patterns tab (item_225)
   reports: '/reports', // ritual tiles, settled outputs and the reader (item_258)
   'reports-retro': '/reports?kind=retro', // filtered by a ritual, phone opens the list (item_258)
+  settings: '/settings', // Look pane on laptop, the pane list on phone (item_284)
+  'settings-look': '/settings?pane=look',
+  'settings-pages': '/settings?pane=pages',
   usage: '/usage/acct1', // account page, PER DAY in $ (item_227)
   'usage-limits': '/usage/acct1?unit=lim', // PER DAY in % of the weekly limit (item_227)
   'usage-session': '/usage/acct1?tab=session', // PER SESSION table (item_227)
