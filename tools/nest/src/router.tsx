@@ -8,8 +8,14 @@ export const usePath = () => useContext(PathContext)
 // Query string of the current route (e.g. ?project= on Ops).
 export const useQuery = () => new URLSearchParams(useContext(SearchContext))
 
+// Set once core serves a new Nest build (item_283): the next route change loads the
+// page from core instead of routing in place, so it runs the new build.
+let reloadOnRoute = false
+export function setReloadOnRoute(on: boolean) { reloadOnRoute = on }
+
 export function navigate(to: string) {
   if (to === location.pathname + location.search) return
+  if (reloadOnRoute) return location.assign(to)
   history.pushState(null, '', to)
   dispatchEvent(new PopStateEvent('popstate'))
 }
@@ -30,6 +36,7 @@ export function Router({ children }: { children: React.ReactNode }) {
   const [search, setSearch] = useState(location.search)
   useEffect(() => {
     const on = () => {
+      if (reloadOnRoute) return location.reload()
       fixUrl()
       setPath(location.pathname)
       setSearch(location.search)

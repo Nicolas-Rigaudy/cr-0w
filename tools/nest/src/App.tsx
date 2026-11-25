@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { scopeSnapshot } from './data/scope'
 import { useFeed } from './data/useData'
 import { useScope } from './data/useScope'
-import { match, usePath } from './router'
+import { match, setReloadOnRoute, usePath } from './router'
 import { pages as brickPages } from 'virtual:nest-modules'
 import { BrickModuleSections } from './modules/Sections'
 import { Home, INNER } from './screens/Home'
@@ -31,6 +31,9 @@ export function App() {
   // A page left out of crow.yaml modules.nest.pages falls back to Home (item_267).
   const route = shownRoute(match(usePath()))
   const [raw, refresh] = useFeed()
+  // A new Nest build never reloads mid-edit (item_283): the header chip or the next route change does.
+  const newBuild = !!raw?.newBuild
+  useEffect(() => setReloadOnRoute(newBuild), [newBuild])
   const [scope, setScope] = useScope()
   // Every screen reads the scoped snapshot; Chat reads the whole one so a link to any session opens.
   const snap = useMemo(() => raw && scopeSnapshot(raw, scope), [raw, scope])

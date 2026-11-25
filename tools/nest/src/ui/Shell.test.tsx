@@ -29,3 +29,14 @@ describe('laptop header gauges', () => {
     expect(accts).not.toContain('–')
   })
 })
+
+describe('new build chip (item_283)', () => {
+  it('shows a reload chip only when core serves a new Nest build', async () => {
+    vi.stubGlobal('location', { search: '', pathname: '/' })
+    vi.stubGlobal('document', { documentElement: { dataset: {} } })
+    const snap = await snapshot()
+    const render = (s: Snapshot) => renderToStaticMarkup(<Shell active="home" snap={s} scope="all" setScope={() => {}}>x</Shell>)
+    expect(render(snap)).not.toContain('build-chip')
+    expect(render({ ...snap, newBuild: true })).toContain('<button type="button" class="chip build-chip">new build ready · reload</button>')
+  })
+})

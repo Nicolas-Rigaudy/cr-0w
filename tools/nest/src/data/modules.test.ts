@@ -43,6 +43,26 @@ describe('bricks from /api/modules (item_237)', () => {
     expect(s.down).toBe(false)
   })
 
+  it('flags a new build once core serves another Nest build, and keeps the data live (item_283)', async () => {
+    const src = fixtureSource(undefined, undefined, undefined, undefined, undefined, DEMO_BRICKS)
+    let build: string | undefined
+    src.modules = async () => ({ ...DEMO_BRICKS.modules, nest_build: build })
+    const snaps: Snapshot[] = []
+    const refresh = feed(src, (s) => snaps.push(s))
+    await refresh() // a core without a served dist: nothing to compare
+    build = 'aaa'
+    await refresh()
+    await refresh()
+    expect(snaps.some((s) => s.newBuild)).toBe(false)
+    build = 'bbb'
+    await refresh()
+    expect(snaps.at(-1)?.newBuild).toBe(true)
+    expect(snaps.at(-1)?.modules?.nest_build).toBe('bbb')
+    build = 'aaa' // the flag stays: this page still runs the first build
+    await refresh()
+    expect(snaps.at(-1)?.newBuild).toBe(true)
+  })
+
   it('posts a module action with the row id and keeps the agenda when today fails', async () => {
     const calls: Array<[string, RequestInit | undefined]> = []
     const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
