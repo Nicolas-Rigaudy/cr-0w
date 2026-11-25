@@ -8,6 +8,7 @@
 > Complexity: Low
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 14:44:41
 
 # AI Context
 - Summary: The butler's own Claude process shows up in Desk's session and run lists. Picking it shows the butler conversation in the main panel, next to the same conversation in the side panel. Hide it from Desk.

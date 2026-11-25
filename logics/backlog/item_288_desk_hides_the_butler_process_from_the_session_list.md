@@ -8,6 +8,7 @@
 > Complexity: Small
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 14:44:41
 
 # AI Context
 - Summary: The butler runs as a headless claude process that the dispatch scan lists as a background run, so Desk offers it and its transcript opens in the main panel next to the butler panel.

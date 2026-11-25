@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 14:43:51
+> Indicators reviewed: 2026-11-25 14:44:41
 
 # AI Context
 - Summary: Map real core state to the Desk/Ops model, then draw 2-3 annotated 2D sketch options for the owner to pick. No renders, no build.
