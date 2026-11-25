@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Operator workflow and runtime integration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 16:12:19
+> Indicators reviewed: 2026-11-25 16:44:25
 
 # AI Context
 - Summary: Core GET and POST routes for Nest settings: read and write `modules.nest.{theme,hero,pages}` in crow.yaml, keep comments, refuse unknown values.
@@ -63,8 +63,7 @@ Nest can show theme, hero and pages but cannot change them. Core is the only wri
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-11-25T15:03:09.934185+00:00 | cdx | d67ae222171e424a8ab6bea854248714 | Nest Settings core (item_282/283) | running |  |  |
-
+| 2026-11-25T15:22:29.100815+00:00 | cdx | d67ae222171e424a8ab6bea854248714 | Nest Settings core (item_282/283) | succeeded |  |  |
 
 # Tasks
 - `task_031_core_settings_endpoint_writes_modules_nest_in_crow_yaml`

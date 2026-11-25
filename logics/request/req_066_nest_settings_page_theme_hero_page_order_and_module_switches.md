@@ -7,7 +7,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 16:12:19
+> Indicators reviewed: 2026-11-25 16:44:20
 
 # AI Context
 - Summary: A Settings page in Nest to pick the theme, hero, page order and module switches without editing crow.yaml, then rebuild Nest.
