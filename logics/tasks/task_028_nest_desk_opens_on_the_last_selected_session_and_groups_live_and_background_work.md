@@ -1,4 +1,4 @@
-## task_027_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work - Nest Desk opens on the last selected session and groups live and background work
+## task_028_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work - Nest Desk opens on the last selected session and groups live and background work
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: In progress
@@ -34,8 +34,8 @@
 - AC5: vitest covers `deskPick` (remembered live, remembered gone, needs before working, runs skipped, storage blocked); tsc and vitest pass.
 
 # Plan
-- [ ] Use `python3 -m logics_manager flow progress task task_027_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work.md --progress <n>%` during multi-wave work.
-- [ ] Run `python3 -m logics_manager flow finish task task_027_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work.md` after implementation.
+- [ ] Use `python3 -m logics_manager flow progress task task_028_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work.md --progress <n>%` during multi-wave work.
+- [ ] Run `python3 -m logics_manager flow finish task task_028_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work.md` after implementation.
 
 # Validation
 - (no validation recorded yet)

@@ -54,4 +54,4 @@
 | 2026-11-25T09:48:41.032445+00:00 | cdx | dcfbfb5d257a441a9de8bb0a683ea0e1 | item_210 desk pick | succeeded |  |  |
 
 # Tasks
-- `task_027_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work`
+- `task_028_nest_desk_opens_on_the_last_selected_session_and_groups_live_and_background_work`
