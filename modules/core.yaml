@@ -47,6 +47,7 @@ runbooks:
   - agent-tooling
   - claude-and-codex
   - codex-download-relay
+  - desktop-apps-hang
   - dispatch-background-runs
   - install-and-update
   - interrupted-sessions
