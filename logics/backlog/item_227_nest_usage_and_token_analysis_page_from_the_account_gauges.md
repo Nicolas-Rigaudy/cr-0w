@@ -1,10 +1,10 @@
 ## item_227_nest_usage_and_token_analysis_page_from_the_account_gauges - Nest usage and token analysis page from the account gauges
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 95
 > Confidence: 85
-> Progress: 5%
+> Progress: 25%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
