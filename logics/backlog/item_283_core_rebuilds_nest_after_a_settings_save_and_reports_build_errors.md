@@ -1,13 +1,14 @@
 ## item_283_core_rebuilds_nest_after_a_settings_save_and_reports_build_errors - Core rebuilds Nest after a settings save and reports build errors
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
+> Status: In progress
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 80%
 > Complexity: Medium
 > Theme: Operator workflow and runtime integration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 16:12:38
 
 # AI Context
 - Summary: After a settings save that needs a build, core runs `crow nest build`, streams its state, and Nest reloads on success or shows the error with the brick name.
@@ -64,3 +65,6 @@ Brick themes, heroes and pages are compiled in. A hero or page change in crow.ya
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+# Tasks
+- `task_032_core_rebuilds_nest_after_a_settings_save_and_reports_build_errors`
