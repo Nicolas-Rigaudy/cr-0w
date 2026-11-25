@@ -1800,6 +1800,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .agenda.m-lp .abot { flex: 1; }
   .agenda.m-lp .abot .card { flex: 1; }
   .agenda.m-lp .abot .dues { flex: 1.3; }
+}
 /* Reports page (item_258, board B): ritual tiles, settled outputs, Markdown reader. Tokens only. */
 .reports { font-size: 12px; line-height: 1.45; --rt: var(--c-t, var(--c-d)); }
 .reports .c-t { color: var(--rt); }
