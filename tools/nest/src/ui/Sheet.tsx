@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 // The confirm sheet (item_170, variant A): what happens, the exact text, the
 // target, then Cancel and the action. A bottom sheet on the cover screen, a side
@@ -38,7 +39,7 @@ export function Sheet({ c, onClose }: { c: Confirm; onClose: () => void }) {
       setBusy(false)
     }
   }
-  return (
+  const body = (
     <>
       <div className="scrim" onClick={busy ? undefined : onClose} aria-hidden="true" />
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby={id}>
@@ -60,4 +61,7 @@ export function Sheet({ c, onClose }: { c: Confirm; onClose: () => void }) {
       </div>
     </>
   )
+  // Mounted on the body (item_279): a sheet opened inside a clipped panel (.pn under
+  // the cyber clip-path) was cut off with its action button.
+  return typeof document === 'undefined' ? body : createPortal(body, document.body)
 }
