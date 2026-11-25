@@ -28,8 +28,15 @@ export function useMrs(snap: Snapshot) {
   const pane: Pane | null = !picked ? null : d.review.includes(picked) ? 'review' : d.mine.includes(picked) ? 'mine' : 'merged'
   const tq = q.get('tab') as Tab | null
   const [tab, setTab] = useState<Tab>(tq && TABS.includes(tq) ? tq : 'overview')
-  const open = (m: Mr) => { setPick(keyOf(m)); setTab('overview') }
-  return { all, d, project, setProject, picked, pane, tab, setTab, open, now: snap.now }
+  // Phone: one pane at a time (the picked MR's pane until a pane tab is tapped), the
+  // detail as its own page once a row is tapped (or named in the URL).
+  const [paneTab, setPaneTab] = useState<Pane | null>(null)
+  const [shown, setShown] = useState(!!want && !!picked)
+  const open = (m: Mr) => { setPick(keyOf(m)); setTab('overview'); setShown(true) }
+  return {
+    all, d, project, setProject, picked, pane, tab, setTab, open, now: snap.now,
+    paneTab: paneTab ?? pane ?? 'mine', setPaneTab, shown: shown && !!picked, back: () => setShown(false),
+  }
 }
 export type M = ReturnType<typeof useMrs>
 
@@ -43,8 +50,16 @@ function Ci({ m }: { m: Mr }) {
   return g ? <span className={`ci ${c}`}>{g} CI</span> : null
 }
 
-function Head({ m }: { m: M }) {
+function Head({ m, phone }: { m: M; phone?: boolean }) {
   const c = countsOf(m.d)
+  if (phone) {
+    return (
+      <div className="mhead">
+        <h1>MRs</h1>
+        <div className="sum">{c.needs > 0 && <><span className="c-n">{c.needs} needs you</span> · </>}<span>{c.review} review</span></div>
+      </div>
+    )
+  }
   const seg = (p: string, label: string) => (
     <button key={p || 'all'} type="button" className={`seg${m.project === p ? ' on' : ''}`} aria-pressed={m.project === p} onClick={() => m.setProject(p)}>{label}</button>
   )
@@ -71,12 +86,12 @@ export function Deck({ n, title, count, on, aside, children }: { n: number; titl
   )
 }
 
-function Row({ m, r, pane }: { m: M; r: Mr; pane: Pane }) {
+function Row({ m, r, pane, phone }: { m: M; r: Mr; pane: Pane; phone?: boolean }) {
   const on = m.picked === r
   return (
     <button type="button" className={`mrow ${pane}${on ? ' on' : ''}`} aria-current={on || undefined} onClick={() => m.open(r)}>
       <span className="ref">{r.ref}</span>
-      <span className="ti">{r.title}</span>
+      {phone ? <span className="ti"><b>{r.title}</b><span className="sub">{r.name} · {r.forge}</span></span> : <span className="ti">{r.title}</span>}
       <span className="st">
         {pane === 'merged' ? <span>merged {time(r.merged_at!)}</span> : (
           <>
@@ -101,28 +116,62 @@ function BranchRow({ b }: { b: MrBranch }) {
   )
 }
 
+const listOf = (d: MrsData, p: Pane) => (p === 'review' ? d.review : p === 'mine' ? d.mine : d.merged)
+
+function PaneBody({ m, p, phone }: { m: M; p: Pane; phone?: boolean }) {
+  const list = listOf(m.d, p)
+  const branches = p === 'mine' ? m.d.branches : []
+  return (
+    <div className="mlist">
+      {list.map((r) => <Row key={keyOf(r)} m={m} r={r} pane={p} phone={phone} />)}
+      {branches.map((b) => <BranchRow key={`${b.project}:${b.branch}`} b={b} />)}
+      {!list.length && !branches.length && <div className="empty">{p === 'merged' ? 'Nothing merged today.' : 'Nothing here.'}</div>}
+    </div>
+  )
+}
+
 function Panes({ m }: { m: M }) {
-  const { d } = m
-  const list = (p: Pane) => (p === 'review' ? d.review : p === 'mine' ? d.mine : d.merged)
   return (
     <div className="mpanes">
       {PANES.map(([p, title], i) => (
-        <Deck key={p} n={i + 1} title={title} count={list(p).length} on={m.pane === p}>
-          <div className="mlist">
-            {list(p).map((r) => <Row key={keyOf(r)} m={m} r={r} pane={p} />)}
-            {p === 'mine' && d.branches.map((b) => <BranchRow key={`${b.project}:${b.branch}`} b={b} />)}
-            {!list(p).length && !(p === 'mine' && d.branches.length) && <div className="empty">{p === 'merged' ? 'Nothing merged today.' : 'Nothing here.'}</div>}
-          </div>
-        </Deck>
+        <Deck key={p} n={i + 1} title={title} count={listOf(m.d, p).length} on={m.pane === p}><PaneBody m={m} p={p} /></Deck>
       ))}
     </div>
   )
 }
 
-function Facts({ r, now }: { r: Mr; now: Date }) {
+// Phone: the pane tabs, then the one pane they pick.
+const SHORT: Record<Pane, string> = { review: 'Review', mine: 'Mine', merged: 'Merged' }
+function PhonePanes({ m }: { m: M }) {
+  const i = PANES.findIndex(([p]) => p === m.paneTab)
+  return (
+    <>
+      <div className="segs ptabs" role="tablist" aria-label="Panes">
+        {PANES.map(([p], n) => {
+          const c = listOf(m.d, p).length
+          return <button key={p} type="button" role="tab" className={`seg${m.paneTab === p ? ' on' : ''}`} aria-selected={m.paneTab === p} onClick={() => m.setPaneTab(p)}>[{n + 1}] {SHORT[p]}{c && p !== 'merged' ? ` ${c}` : ''}</button>
+        })}
+      </div>
+      <Deck n={i + 1} title={PANES[i][1]} on><PaneBody m={m} p={m.paneTab} phone /></Deck>
+    </>
+  )
+}
+
+function Facts({ r, now, phone }: { r: Mr; now: Date; phone?: boolean }) {
+  const failed = r.jobs?.find((j) => j.state === 'failed')?.name
+  const open = <span className={r.threads_open ? 'c-n' : ''}>{r.threads_open} open</span>
+  if (phone) {
+    const [g, c] = CI[r.pipeline]
+    const f: Array<[string, ReactNode]> = [
+      ['CI', <span className={c}>{g} {r.pipeline === 'failed' ? failed ?? 'failed' : r.pipeline}</span>],
+      ['Threads', open],
+    ]
+    if (r.approvals) f.push(['Approvals', `${r.approvals.given}/${r.approvals.required}`])
+    return <dl className="facts">{f.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+  }
   const f: Array<[string, ReactNode]> = [
-    ['Pipeline', r.pipeline === 'failed' ? <span className="c-f">failed{r.jobs?.find((j) => j.state === 'failed') ? ` · ${r.jobs.find((j) => j.state === 'failed')!.name}` : ''}</span> : <span className={CI[r.pipeline][1]}>{r.pipeline}</span>],
-    ['Threads', <><span className={r.threads_open ? 'c-n' : ''}>{r.threads_open} open</span> · {r.threads_resolved} resolved</>],
+    ['Pipeline', r.pipeline === 'failed' ? <span className="c-f">failed{failed ? ` · ${failed}` : ''}</span> : <span className={CI[r.pipeline][1]}>{r.pipeline}</span>],
+    ['Threads', <>{open} · {r.threads_resolved} resolved</>],
   ]
   if (r.approvals) f.push(['Approvals', `${r.approvals.given} / ${r.approvals.required}`])
   if (r.reviewers?.length) f.push([r.role === 'AUTHOR' ? 'Reviewer' : 'Author', r.role === 'AUTHOR' ? r.reviewers.join(', ') : r.author])
@@ -193,6 +242,30 @@ function Detail({ m }: { m: M }) {
   )
 }
 
+// Phone: the detail as its own page, back to the pane it came from.
+function PhoneDetail({ m }: { m: M }) {
+  const r = m.picked!
+  const i = PANES.findIndex(([p]) => p === m.pane)
+  const tab = (t: Tab, label: ReactNode) => (
+    <button key={t} type="button" role="tab" className={`mtab${m.tab === t ? ' on' : ''}`} aria-selected={m.tab === t} onClick={() => m.setTab(t)}>{label}</button>
+  )
+  return (
+    <div className="mdet ph">
+      <button type="button" className="mback" onClick={m.back}>◀ [{i + 1}] {SHORT[m.pane!]}</button>
+      <h2><span className="ref">{r.ref}</span> {r.title}</h2>
+      <div className="meta">{r.name} · {r.branch} → {r.target} · {ago(r.updated, m.now)}</div>
+      <Facts r={r} now={m.now} phone />
+      <div className="mtabs" role="tablist">
+        {tab('overview', 'Overview')}
+        {tab('threads', <>Threads {r.threads_open || ''}</>)}
+      </div>
+      <div className="mbody">
+        {m.tab === 'threads' ? <Threads r={r} now={m.now} all /> : <><Pipeline r={r} /><Threads r={r} now={m.now} /></>}
+      </div>
+    </div>
+  )
+}
+
 function Off({ d }: { d: MrsData }) {
   return <div className="desk mrs"><div className="mhead"><h1>MRs</h1></div><div className="empty">{d.off ? 'The forge module is off.' : 'No MR open on your forges.'}</div></div>
 }
@@ -201,10 +274,18 @@ export function Mrs({ snap }: { snap: Snapshot; refresh: () => Promise<void> }) 
   const m = useMrs(snap)
   const laptop = useMedia(LAPTOP)
   if (m.all.off) return <Off d={m.all} />
+  const stale = m.all.stale && <div className="empty c-f">MRs did not refresh: {m.all.error}</div>
+  if (!laptop) {
+    return (
+      <div className="desk mrs m-ph">
+        {m.shown ? <PhoneDetail m={m} /> : <><Head m={m} phone />{stale}<PhonePanes m={m} /></>}
+      </div>
+    )
+  }
   return (
-    <div className={`desk mrs${laptop ? ' m-lp' : ' m-ph'}`}>
+    <div className="desk mrs m-lp">
       <Head m={m} />
-      {m.all.stale && <div className="empty c-f">MRs did not refresh: {m.all.error}</div>}
+      {stale}
       <div className="mgrid"><Panes m={m} /><Detail m={m} /></div>
     </div>
   )

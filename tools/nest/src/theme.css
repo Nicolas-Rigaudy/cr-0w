@@ -1577,6 +1577,24 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .mrs .th.done { border-left-color: var(--c-d); opacity: 0.75; }
 .mrs .th .tm { font-size: 11px; color: var(--sub); }
 .mrs .empty { white-space: normal; }
+/* Phone (board option C phone): pane tabs, one pane, the detail as its own page. */
+.mrs.m-ph { padding: 12px 12px 16px; gap: 12px; }
+.mrs.m-ph .mhead h1 { font-size: 16px; }
+.mrs.m-ph .ptabs { gap: 6px; }
+.mrs.m-ph .ptabs .seg { text-transform: none; letter-spacing: 0.02em; color: var(--fg); padding: 6px 10px; }
+.mrs.m-ph .ptabs .seg.on { color: var(--accent-ink); }
+.mrs.m-ph .deck { margin-top: 4px; padding: 14px 8px 8px; }
+.mrs.m-ph .mlist { gap: 4px; }
+.mrs.m-ph .mrow { min-height: 46px; align-items: center; background: var(--row); }
+.mrs.m-ph .mrow.on { background: var(--accent-soft); }
+.mrs.m-ph .mrow .ti b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrs.m-ph .mrow .st { gap: 8px; }
+.mrs .mdet.ph { padding: 0 4px; gap: 14px; }
+.mrs .mback { all: unset; cursor: pointer; color: var(--sub); font: 11px var(--font-head); letter-spacing: 0.06em; min-height: 32px; display: flex; align-items: center; }
+.mrs .mback:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mrs .mdet.ph .facts { gap: 8px 20px; }
+.mrs .mdet.ph .mbody { overflow: visible; }
+.mrs .mdet.ph .job { font-size: 11px; padding: 3px 7px; }
 @media (min-width: 1100px) {
   .mrs.m-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
   .mrs.m-lp .mgrid { display: grid; grid-template-columns: 500px 1fr; gap: 16px; flex: 1; min-height: 0; }

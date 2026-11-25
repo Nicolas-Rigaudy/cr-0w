@@ -83,10 +83,49 @@ describe('MRs page, laptop (item_225, option C)', () => {
     expect(h).not.toContain('mrow')
   })
 
+  it('says when the section did not refresh on both layouts', async () => {
+    const src = fixtureSource()
+    const s = await snapshot(src)
+    const stale = { ...s, sections: { ...s.sections, mrs: { ...s.sections.mrs, stale: true, error: 'crow-mrs: timed out' } } }
+    expect(await page(368, '', stale)).toContain('MRs did not refresh')
+  })
+
   it('says when the section did not refresh', async () => {
     const src = fixtureSource()
     const s = await snapshot(src)
     const stale = { ...s, sections: { ...s.sections, mrs: { ...s.sections.mrs, stale: true, error: 'crow-mrs: timed out' } } }
     expect(await page(1440, '', stale)).toContain('MRs did not refresh: crow-mrs: timed out')
+  })
+})
+
+describe('MRs page, phone (item_225, option C)', () => {
+  it('shows the pane tabs and only the picked pane, rows with project and forge', async () => {
+    const h = await page(368)
+    expect(h).toContain('m-ph')
+    expect(h).toContain('aria-selected="true">[2] Mine 3</button>')
+    expect(h).toContain('[1] Review 2')
+    expect(h).toContain('>[3] Merged</button>')
+    expect(h).toContain('<span class="c-n">1 needs you</span> · <span>1 review</span>')
+    expect(h).toContain('<span class="sub">api · gitlab</span>')
+    expect(h).toContain('<span class="sub">cr-0w · github</span>')
+    expect(h).toContain('2 ahead · no MR')
+    // One pane at a time and no detail until a row is tapped.
+    expect(h).not.toContain('raise alerts from detection events')
+    expect(h).not.toContain('class="mdet')
+  })
+
+  it('opens the MR the URL names as its own page with a back link', async () => {
+    const h = await page(368, '?mr=239')
+    expect(h).toContain('◀ [2] Mine')
+    expect(h).toContain('api · sync-loops-helper → main · 2h')
+    expect(h).toContain('<dt>CI</dt><dd><span class="c-f">✕ test</span></dd>')
+    expect(h).toContain('<dt>Approvals</dt><dd>0/1</dd>')
+    expect(h).toContain('class="job failed">test ✕ 3:12')
+    expect(h).toContain('Same loop as in sync_grants. One helper for both?')
+    expect(h).not.toContain('class="deck')
+  })
+
+  it('uses the phone layout below the laptop width', async () => {
+    expect(await page(707)).toContain('m-ph')
   })
 })
