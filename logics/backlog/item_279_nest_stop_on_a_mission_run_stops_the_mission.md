@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 11:02:00
 
 # AI Context
 - Summary: Stop in Nest on a mission run did nothing (2026-11-25, no event logged), and mission Stop only kills the run before the tick resumes it. Make Stop end the mission and find why the press never reached core.
@@ -24,7 +25,7 @@
 # Scope
 - In:
   - Reproduce the press from Desk and from the session chat menu (`Chat.tsx:195`) on a running mission; log every action request in crow-core (method, path, status).
-  - Stop on a mission run cancels the mission (one confirm, plain words: "Stop and cancel the mission"). Keep a separate "Restart run" if a resume is wanted.
+  - Stop on a mission run cancels the mission (one confirm, plain words: "Stop and cancel the mission"). Keep a separate "Restart run" action (owner, 2026-11-25): it kills the run and lets the tick resume it, as Stop does today.
   - Cancel offered on running missions, not only queued ones.
   - A failed action shows its error in place; never silent.
 - Out:

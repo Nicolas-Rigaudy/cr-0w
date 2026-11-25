@@ -1,9 +1,9 @@
 ## item_281_nest_chat_acts_like_a_terminal_session - Nest chat acts like a terminal session
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
-> Understanding: 60%
-> Confidence: 50%
+> Status: Ready
+> Understanding: 85%
+> Confidence: 70%
 > Progress: 0%
 > Complexity: High
 > Theme: General
@@ -20,14 +20,17 @@
 - Tools: brief, usage, mission_get/new/cancel, run_stop, session_new, dispatch_run. No file read, no scripts, no Jira or forge.
 - It treated a message from the day before as a new order (persona fixed 650b35b).
 
-# Options to settle in the plan
-- A: the chat drives a real headless hub session (opus, project settings, hub hooks) and Nest shows it; the butler persona becomes its voice.
-- B: keep the butler and widen it: read-only file and crow-script tools, hub context (owner prefs, open threads, context.md) in its prompt, model choice per message.
-- Pick with the owner before any build. Write cost per day for each.
+# Decision (owner, 2026-11-25)
+- A, with the butler kept. The chat header has an always visible switch between two modes:
+  - Butler: the current Sonnet butler for quick status and simple actions.
+  - Hub: a real headless hub session (opus, project settings, hub hooks, owner prefs, open threads, runbooks, skills) that Nest shows and drives.
+- Each mode keeps its own conversation. The switch opens in the last mode used, remembered per device.
+- B (widening the butler) is dropped.
+- Split into build items before any work. Write the cost per day of Hub mode in the plan.
 
 # Acceptance criteria
-- AC1: Owner picks A or B from a short written comparison.
-- AC2: The chat answers "what's on today", "status of !N", "stop X", "plan Y" as the hub session would, from the phone and the laptop.
+- AC1: The chat header switches between Butler and Hub in one tap, and Nest reopens on the last mode used on that device.
+- AC2: In Hub mode the chat answers "what's on today", "status of !N", "stop X", "plan Y" as the hub session would, from the phone and the laptop.
 - AC3: Every outward action still needs the same approvals as in the hub.
 
 # Links
