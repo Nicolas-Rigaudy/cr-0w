@@ -2,8 +2,8 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 80%
-> Confidence: 75%
+> Understanding: 90%
+> Confidence: 85%
 > Progress: 0%
 > Complexity: Medium
 > Theme: Operator workflow and runtime integration
@@ -61,3 +61,7 @@ Turning a brick on or off needs a terminal (`crow modules`). From a phone or lap
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+## Carried from item_284 review (2026-11-25)
+- Add the sidebar search box of board D.
+- Cyber theme preview bar: green as on board D, not pink.
