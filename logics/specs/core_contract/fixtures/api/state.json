@@ -1,6 +1,6 @@
 {
   "contract_version": 1,
-  "version": "2997cf7e46dc5fb7",
+  "version": "b81a836a42dc85ab",
   "sections": {
     "accounts": {
       "section": "accounts",
@@ -460,6 +460,40 @@
         ],
         "schema": 1,
         "total": 1
+      }
+    },
+    "reports": {
+      "section": "reports",
+      "version": "59759e9afc9b9f2b",
+      "updated_at": "2026-11-10T09:00:00Z",
+      "data": {
+        "items": [
+          {
+            "id": "afk:2026-11-09",
+            "kind": "afk",
+            "title": "AFK night → 2026-11-09",
+            "at": "2026-11-09T07:55:00+01:00",
+            "summary": "1 points · 2 runs · no decision",
+            "path": "/crow/local/state/afk/summary-2026-11-09.json",
+            "body": "## crow\n\n- **Demo login**: shipped\n\n"
+          },
+          {
+            "id": "weekly:2026-W45 rollup",
+            "kind": "weekly",
+            "title": "Week 45 rollup",
+            "at": "2026-11-06T09:00:00+01:00",
+            "summary": "Slides drafted",
+            "path": "/vault/CR-0W/Rollups/2026-W45 rollup.md",
+            "link": "obsidian://open?vault=vault&file=CR-0W%2FRollups%2F2026-W45%20rollup",
+            "body": "# Week 45 rollup\n\nSlides drafted\n"
+          }
+        ],
+        "held": 1,
+        "dirs": {
+          "afk": "/crow/local/state/afk",
+          "rollups": "/vault/CR-0W/Rollups",
+          "retros": "/vault/CR-0W/Retros"
+        }
       }
     },
     "runs": {

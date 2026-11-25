@@ -1699,4 +1699,62 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .agenda.m-lp .abot { flex: 1; }
   .agenda.m-lp .abot .card { flex: 1; }
   .agenda.m-lp .abot .dues { flex: 1.3; }
+/* Reports page (item_258, board B): ritual tiles, settled outputs, Markdown reader. Tokens only. */
+.reports { font-size: 12px; line-height: 1.45; --rt: var(--c-t, var(--c-d)); }
+.reports .c-t { color: var(--rt); }
+.reports .rhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.reports .rhead h1 { margin: 0; font: 400 20px var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.reports .rhead .sum { margin-left: auto; color: var(--sub); letter-spacing: 0.04em; }
+.reports .rtiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.reports .rtile { cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-pn); }
+.reports .rtile:hover { background: var(--row); }
+.reports .rtile.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.reports .rtile.run { border-color: var(--c-w); background: color-mix(in srgb, var(--c-w) 8%, transparent); }
+.reports .rtn { all: unset; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; min-width: 0; }
+.reports .rtn:focus-visible, .reports .rrow:focus-visible, .reports .mback:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.reports .rname { font: 13px var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.reports .rwk, .reports .rlast, .reports .rfoot { color: var(--c-s); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reports .rtile .btn.sm { align-self: flex-start; min-height: 24px; padding: 0 10px; font: 11px var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; }
+.reports .chip.run { align-self: flex-start; color: var(--c-w); }
+.reports .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.reports .rsaid { color: var(--sub); font: 11px var(--font-head); }
+.reports .rsaid.c-f { color: var(--c-f); }
+.reports .rpane { border: 1px solid var(--line); border-radius: var(--r-pn); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 0; }
+.reports .rrow { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; padding: 5px 9px; border-radius: var(--r-row); background: var(--row); font-family: var(--font-head); }
+.reports .rrow.on { box-shadow: 0 0 0 1px var(--accent) inset; }
+.reports .rrow .rg { flex: none; }
+.reports .rrow .rt { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reports .rrow .rs { flex-basis: 100%; color: var(--sub); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.reports .rheld { margin-top: 4px; color: var(--dim); font-size: 11px; }
+.reports .rph { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.reports .rtitle { font: 12px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reports .racts { display: flex; gap: 6px; flex: none; }
+.reports .racts .btn.sm { min-height: 24px; padding: 0 8px; font: 11px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; display: inline-flex; align-items: center; text-decoration: none; }
+.reports .rbody { overflow-y: auto; min-height: 0; }
+.reports .rmeta { color: var(--sub); font: 11px var(--font-head); }
+.reports .md { font-size: 12.5px; line-height: 1.55; }
+.reports .md h3 { font: 400 13px var(--font-display); letter-spacing: 0.06em; color: var(--accent); margin: 12px 0 4px; }
+.reports .md h4 { font: 400 12px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; color: var(--rt); margin: 10px 0 2px; }
+.reports .md h3:first-child, .reports .md h4:first-child { margin-top: 2px; }
+.reports .md ul { margin: 2px 0; padding-left: 18px; }
+.reports .md p { margin: 4px 0; }
+.reports .md code { font-family: var(--font-head); background: var(--well); padding: 0 4px; border-radius: 3px; }
+.reports .md a { color: var(--accent); text-decoration: underline; }
+.reports .empty { white-space: normal; }
+.reports .mback { all: unset; cursor: pointer; color: var(--sub); font: 11px var(--font-head); letter-spacing: 0.06em; min-height: 32px; display: flex; align-items: center; }
+/* Phone (board B phone): 2×3 tiles, the newest five, the reader as its own page. */
+.reports.r-ph { padding: 12px 10px 16px; gap: 8px; }
+.reports.r-ph .rhead h1 { font-size: 16px; }
+.reports.r-ph .rtiles { grid-template-columns: 1fr 1fr; gap: 6px; }
+.reports.r-ph .rname { font-size: 11.5px; }
+.reports.r-ph .rlast, .reports.r-ph .rfoot { font-size: 10.5px; }
+.reports.r-ph .rpane { padding: 8px 9px; }
+.reports.r-ph .rrow { padding: 6px 8px; min-height: 40px; }
+.reports.r-ph .rrow .rt { flex-basis: 120px; }
+.reports .rread.ph { display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
+@media (min-width: 1100px) {
+  .reports.r-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; gap: 10px; }
+  .reports.r-lp .rgrid { display: grid; grid-template-columns: 0.9fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+  .reports.r-lp .rlist { overflow-y: auto; }
+  .reports.r-lp .rrow .rs { flex-basis: auto; }
 }

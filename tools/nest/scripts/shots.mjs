@@ -42,6 +42,8 @@ const SCREENS = {
   agenda: '/agenda',
   'mrs-review': '/mrs?mr=242', // an MR to review in the detail (item_225)
   'mrs-patterns': '/mrs?mr=239&tab=patterns', // the review patterns tab (item_225)
+  reports: '/reports', // ritual tiles, settled outputs and the reader (item_258)
+  'reports-retro': '/reports?kind=retro', // filtered by a ritual, phone opens the list (item_258)
 }
 const unknown = (only ?? []).filter((n) => !(n in SCREENS))
 if (unknown.length || (only && !only.length)) {

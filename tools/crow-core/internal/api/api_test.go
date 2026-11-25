@@ -68,6 +68,14 @@ func newServer(t *testing.T) (*Server, string) {
 		Sources: append(scriptSources(t), Source{Name: "jobs", Fetch: func() (any, error) {
 			return ParseTimers([]byte(`[{"next":1794330227942489,"last":0,"unit":"crow-retro.timer","activates":"crow-retro.service"},
 				{"next":1,"last":2,"unit":"other.timer","activates":"other.service"}]`))
+		}}, Source{Name: ReportsSection, Fetch: func() (any, error) {
+			return Reports{Held: 1, Dirs: ReportDirs{AFK: "/crow/local/state/afk", Rollups: "/vault/CR-0W/Rollups", Retros: "/vault/CR-0W/Retros"},
+				Items: []Report{
+					{ID: "afk:2026-11-09", Kind: "afk", Title: "AFK night → 2026-11-09", At: "2026-11-09T07:55:00+01:00",
+						Summary: "1 points · 2 runs · no decision", Path: "/crow/local/state/afk/summary-2026-11-09.json", Body: "## crow\n\n- **Demo login**: shipped\n\n"},
+					{ID: "weekly:2026-W45 rollup", Kind: "weekly", Title: "Week 45 rollup", At: "2026-11-06T09:00:00+01:00", Summary: "Slides drafted",
+						Path: "/vault/CR-0W/Rollups/2026-W45 rollup.md", Link: "obsidian://open?vault=vault&file=CR-0W%2FRollups%2F2026-W45%20rollup", Body: "# Week 45 rollup\n\nSlides drafted\n"},
+				}}, nil
 		}}),
 		Now:      func() time.Time { return clock },
 		StateDir: stateDir(t),
@@ -172,6 +180,7 @@ func TestResponseFixtures(t *testing.T) {
 		"state-accounts":      {path: "/api/state/accounts"},
 		"state-ready":         {path: "/api/state/ready"},
 		"state-jobs":          {path: "/api/state/jobs"},
+		"state-reports":       {path: "/api/state/reports"},
 		"state-sessions":      {path: "/api/state/sessions"},
 		"state-dispatch":      {path: "/api/state/dispatch"},
 		"state-usage":         {path: "/api/state/usage"},

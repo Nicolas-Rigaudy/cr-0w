@@ -9,6 +9,7 @@ import { Home, INNER } from './screens/Home'
 import { Inbox } from './screens/Inbox'
 import { Mrs } from './screens/Mrs'
 import { Agenda } from './screens/Agenda'
+import { Reports } from './screens/Reports'
 import { Chat } from './screens/Chat'
 import { Desk } from './screens/Desk'
 import { Ops } from './screens/Ops'
@@ -23,7 +24,6 @@ import { BrickSections } from './ui/BrickSections'
 import { listSections } from './data/modules'
 
 const LATER: Record<string, [string, string]> = {
-  reports: ['Reports', 'Reports arrive with the live API.'],
   missing: ['Not found', 'This page does not exist.'],
 }
 
@@ -44,6 +44,7 @@ export function App() {
     else if (route.tab === 'inbox') body = <Inbox snap={snap} refresh={refresh} />
     else if (route.tab === 'mrs') body = <Mrs snap={snap} refresh={refresh} />
     else if (route.tab === 'agenda') body = <Agenda snap={snap} refresh={refresh} />
+    else if (route.tab === 'reports') body = <Reports snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
     else if (route.tab === 'brick') {

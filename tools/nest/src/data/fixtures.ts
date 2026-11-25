@@ -7,6 +7,8 @@ import stateWork from '../../fixtures/states/work.json'
 import stateOps from '../../fixtures/states/ops.json'
 import stateMrs from '../../fixtures/states/mrs.json'
 import stateWeek from '../../fixtures/states/agenda-week.json'
+import stateReports from '../../fixtures/states/reports.json'
+import stateJobs from '../../fixtures/states/jobs.json'
 import { ApiError } from './api'
 import { fixtureButler, type ButlerMsg } from './butler'
 import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversation'
@@ -28,8 +30,9 @@ type LiveData = Partial<Record<SectionName, unknown>>
 // The work feed (item_204) over the live fixture: one row per kind and state, a mission rollup.
 // The MRs board (item_225) also carries the fields crow-mrs does not serve yet (src/data/mrs.ts).
 // The Agenda (item_226) adds crow-today `week` and dated crow-checks rows.
+// Reports (item_258): settled AFK reports, rollups and retros; jobs carries the retro routine.
 const LIVE: LiveData = {
-  ...stateLive, work: stateWork, mrs: stateMrs,
+  ...stateLive, work: stateWork, mrs: stateMrs, reports: stateReports, jobs: stateJobs,
   today: { ...stateLive.today, week: stateWeek.week },
   checks: { ...stateLive.checks, rows: [...stateLive.checks.rows, ...stateWeek.checks] },
 }

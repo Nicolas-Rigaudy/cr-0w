@@ -7,7 +7,7 @@
 > Complexity: High
 > Theme: Nest
 > Reminder: Update status/understanding/confidence and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 11:59:06
+> Indicators reviewed: 2026-11-25 16:26:12
 
 # AI Context
 - Summary: Finish the Nest pages the owner hits every day (Ops, Inbox, Reports, MRs, Agenda, Usage, Project page), fix hero labels and planet clicks, and make Inbox the one place for everything that waits on the owner, mail drafts included.

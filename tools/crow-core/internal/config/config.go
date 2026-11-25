@@ -56,6 +56,7 @@ var DefaultTTL = map[string]time.Duration{
 	"checks":   300 * time.Second,
 	"projects": 300 * time.Second,
 	"ready":    300 * time.Second,
+	"reports":  60 * time.Second,
 }
 
 // DefaultListen is the loopback address of the service.

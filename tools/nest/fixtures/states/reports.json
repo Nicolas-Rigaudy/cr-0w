@@ -1,0 +1,68 @@
+{
+  "items": [
+    {
+      "id": "afk:2026-11-09",
+      "kind": "afk",
+      "title": "AFK night → 2026-11-09",
+      "at": "2026-11-09T07:55:00+01:00",
+      "summary": "5 points · 7 runs · no decision",
+      "path": "/home/owner/crow/local/state/afk/summary-2026-11-09.json",
+      "body": "## crow\n\nThe login demo and the review ledger shipped. Nothing waits on you.\n\n- **Demo login**: magic link sign-in works end to end on the fixture server\n- **Review ledger**: common patterns now feed the self-review gate\n- **Ops lanes**: a stuck lane shows its last log line\n\n## nest\n\nTwo small fixes, both tested.\n\n- **Inbox swipe**: answer and snooze no longer fire twice\n- **Agenda**: all-day events sit above the hours\n"
+    },
+    {
+      "id": "retro:2026-11-08 retro batch",
+      "kind": "retro",
+      "title": "Retro batch · 6 sessions",
+      "at": "2026-11-08T16:01:00+01:00",
+      "summary": "4 lessons applied, 1 proposed",
+      "path": "/home/owner/vault/CR-0W/Retros/2026-11-08 retro batch.md",
+      "link": "obsidian://open?vault=vault&file=CR-0W%2FRetros%2F2026-11-08%20retro%20batch",
+      "body": "# Retro batch · 6 sessions\n\n4 lessons applied, 1 proposed.\n\n## Applied\n\n- Shots: keep the chat folded unless the item is about chat\n- Commits: check `git diff --cached --stat` before each commit\n- Designs: compare the build against the board before showing it\n- Runbook: dispatch on an allowed account only\n\n## Proposed\n\n- A review pattern for missing 409 refresh in confirm sheets\n\n### Sessions\n\n- nest-mrs-build · 2 corrections\n- crow-deck · 1 redirect\n"
+    },
+    {
+      "id": "weekly:2026-W45 rollup",
+      "kind": "weekly",
+      "title": "Week 45 rollup",
+      "at": "2026-11-06T09:00:00+01:00",
+      "summary": "Slides drafted, 3 demos",
+      "path": "/home/owner/vault/CR-0W/Rollups/2026-W45 rollup.md",
+      "link": "obsidian://open?vault=vault&file=CR-0W%2FRollups%2F2026-W45%20rollup",
+      "body": "# Week 45 rollup\n\nSlides drafted, 3 demos.\n\n## Shipped\n\n- MRs page with review patterns\n- Agenda week view\n\n## Next\n\n- Reports page\n- Settings layout pick\n"
+    },
+    {
+      "id": "afk:2026-11-06",
+      "kind": "afk",
+      "title": "AFK night → 2026-11-06",
+      "at": "2026-11-06T08:00:00+01:00",
+      "summary": "3 points · 4 runs · 2 decisions answered",
+      "path": "/home/owner/crow/local/state/afk/summary-2026-11-06.json",
+      "body": "## crow\n\n- **Queue**: retries wait for the quota window\n- **Doctor**: flags stale worktrees\n\n### Decided\n\n- Keep the retry cap at 2: yes\n- Move the doctor check to the brief: later\n"
+    },
+    {
+      "id": "retro:2026-11-04 retro batch",
+      "kind": "retro",
+      "title": "Retro batch · 3 sessions",
+      "at": "2026-11-04T16:02:00+01:00",
+      "summary": "2 lessons applied",
+      "path": "/home/owner/vault/CR-0W/Retros/2026-11-04 retro batch.md",
+      "link": "obsidian://open?vault=vault&file=CR-0W%2FRetros%2F2026-11-04%20retro%20batch",
+      "body": "# Retro batch · 3 sessions\n\n2 lessons applied.\n\n- Name Logics items by content\n- Ask decisions with the question tool\n"
+    },
+    {
+      "id": "weekly:2026-W44 rollup",
+      "kind": "weekly",
+      "title": "Week 44 rollup",
+      "at": "2026-10-30T09:00:00+01:00",
+      "summary": "Ops page live, 2 demos",
+      "path": "/home/owner/vault/CR-0W/Rollups/2026-W44 rollup.md",
+      "link": "obsidian://open?vault=vault&file=CR-0W%2FRollups%2F2026-W44%20rollup",
+      "body": "# Week 44 rollup\n\nOps page live, 2 demos.\n"
+    }
+  ],
+  "held": 1,
+  "dirs": {
+    "afk": "/home/owner/crow/local/state/afk",
+    "rollups": "/home/owner/vault/CR-0W/Rollups",
+    "retros": "/home/owner/vault/CR-0W/Retros"
+  }
+}
