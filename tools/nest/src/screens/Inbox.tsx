@@ -433,8 +433,8 @@ export function Inbox({ snap, refresh }: { snap: Snapshot; refresh: () => Promis
   const i = useInbox(snap, refresh)
   const laptop = useMedia(LAPTOP)
   const inner = useMedia(INNER)
-  // A design review takes the whole page on laptop and tablet (board 211-B); "← Inbox" or
-  // Escape brings the list back until another row is picked.
+  // A design review takes the page on laptop and tablet (board 211-B), next to a slim list of
+  // titles; "← Inbox" or Escape brings the full list back until another row is picked.
   const [listFor, setListFor] = useState<string | null>(null)
   const key = i.picked?.key ?? null
   const wide = (laptop || inner) && !!i.design && listFor !== key
@@ -447,7 +447,7 @@ export function Inbox({ snap, refresh }: { snap: Snapshot; refresh: () => Promis
   return (
     <>
       {wide ? (
-        <div className="desk ibx ib-wide"><Reader i={i} back={() => setListFor(key)} /></div>
+        <div className="desk ibx ib-wide"><List i={i} /><Reader i={i} back={() => setListFor(key)} /></div>
       ) : laptop ? (
         <div className="desk ibx ib-lp"><Rail i={i} /><List i={i} /><Reader i={i} /></div>
       ) : inner ? (

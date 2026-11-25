@@ -1,5 +1,5 @@
 // Headless screenshots of the Nest screens at the three board sizes, both themes.
-// Usage: node scripts/shots.mjs <out_dir> [all|work|perso] [--fixtures] [--gl] [--tabs] [--only=inbox,desk]
+// Usage: node scripts/shots.mjs <out_dir> [all|work|perso] [--fixtures] [--gl] [--tabs] [--chat] [--only=inbox,desk]
 //   scope: sets the saved scope filter (nest.scope) before load.
 //   --fixtures: runs vite dev (fixture data, pinned clock) instead of vite preview of dist/.
 //   --gl: live WebGL heads on software GL (nest.head=gl), as on a real screen.
@@ -13,14 +13,16 @@ import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 
-const USAGE = 'usage: shots.mjs <out_dir> [all|work|perso] [--fixtures] [--gl] [--tabs] [--only=inbox,desk] [--rail=320,480]'
+const USAGE = 'usage: shots.mjs <out_dir> [all|work|perso] [--fixtures] [--gl] [--tabs] [--chat] [--only=inbox,desk] [--rail=320,480]'
 const args = process.argv.slice(2)
 const fixtures = args.includes('--fixtures')
 const gl = args.includes('--gl')
 const tabs = args.includes('--tabs')
+// The owner reviews page designs with the butler chat folded; --chat keeps it open.
+const chat = args.includes('--chat')
 const only = args.find((a) => a.startsWith('--only='))?.slice(7).split(',').filter(Boolean)
 const rails = args.find((a) => a.startsWith('--rail='))?.slice(7).split(',').map(Number)
-const [out, scope = ''] = args.filter((a) => a !== '--fixtures' && a !== '--tabs' && a !== '--gl' && !a.startsWith('--only=') && !a.startsWith('--rail='))
+const [out, scope = ''] = args.filter((a) => a !== '--fixtures' && a !== '--tabs' && a !== '--chat' && a !== '--gl' && !a.startsWith('--only=') && !a.startsWith('--rail='))
 if (!out || out.startsWith('-') || !['', 'all', 'work', 'perso'].includes(scope) || rails?.some((w) => !(w > 0))) {
   console.error(USAGE)
   process.exit(2)
@@ -220,11 +222,12 @@ try {
     if (rails) { await railShots(browser, theme); continue }
     for (const [size, [w, h]] of Object.entries(SIZES)) {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, timezoneId: 'Europe/Paris' })
-      await ctx.addInitScript(([t, s, g]) => {
+      await ctx.addInitScript(([t, s, g, c]) => {
         localStorage.setItem('nest.theme', t)
+        if (!c) { localStorage.setItem('nest.rail', 'folded'); localStorage.setItem('nest.rail.home', 'folded') }
         if (g) localStorage.setItem('nest.head', 'gl')
         if (s) localStorage.setItem('nest.scope', s)
-      }, [theme, scope, gl])
+      }, [theme, scope, gl, chat])
       const page = await ctx.newPage()
       if (tabs) {
         await moreSheet(page, `${size}-${theme}`, w)
