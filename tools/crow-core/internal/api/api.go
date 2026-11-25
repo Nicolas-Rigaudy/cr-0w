@@ -141,6 +141,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	s.routeTerminal(mux)
 	s.routeButler(mux)
 	s.routeModules(mux)
+	s.routeSettings(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})

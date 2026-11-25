@@ -64,6 +64,12 @@ modules:
 `crow modules` shows the result. Core reads the file again when it changes, and Nest follows
 within a few seconds. No restart is needed.
 
+The Nest look lives under `modules.nest`: `theme`, `hero` and `pages` (nav order). Set them
+with `crow modules set nest theme cyber` (`pages` takes a comma list, `""` for every page).
+It refuses a name Nest cannot build and edits only the `modules.nest` lines. Core serves the
+same writer at `GET` and `POST /api/settings/nest`. A hero or pages change needs
+`crow nest build`; the theme switches live.
+
 ## core-api (back)
 
 ```bash
