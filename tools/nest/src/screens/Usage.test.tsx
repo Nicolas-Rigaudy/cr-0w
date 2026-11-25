@@ -62,6 +62,60 @@ describe('Usage page, laptop (item_227, option C)', () => {
     expect(h).toContain('>api<')
   })
 
+  it('offers the six tabs, the unit toggle and the D/W/M period', () => {
+    const h = page(1440, { account: 'acct1' })
+    for (const t of ['Per day', 'Per project', 'Per model', 'Per kind', 'Per session', 'Top runs']) expect(h).toContain(`>${t}</button>`)
+    expect(h).toMatch(/aria-label="Unit".*>\$<.*>tokens<.*>limits</)
+    expect(h).toMatch(/aria-label="Period".*>D<.*aria-pressed="true"[^>]*>W<.*>M</)
+  })
+
+  it('puts the 5h cells under each day and the picked day summary line', () => {
+    const h = page(1440, { account: 'acct1' })
+    expect(h).toContain('class="ucell"')
+    expect(h).toContain('5h cells: acct1')
+    expect(h).toMatch(/class="uday"[^>]*><b>\w{3} \d\d\/\d\d<\/b> \$\d+ · [\d.]+M tok · \d+% cache · week −\d+% · 5h: /)
+  })
+
+  it('switches the per day unit to tokens and limits from the query', () => {
+    expect(page(1440, { account: 'acct1', search: '?unit=tok' })).toContain('aria-label="tokens per day"')
+    const h = page(1440, { account: 'acct1', search: '?unit=lim' })
+    expect(h).toContain('aria-label="% of a weekly limit used per day"')
+    expect(h).toContain('100% = one account-week')
+  })
+
+  it('shows limits as no data on days before the samples', () => {
+    const d = usageFixture(fixtureSource().now())
+    d.cost.data!.by_day = d.cost.data!.by_day.map((x, i, a) => (i < a.length - 2 ? { ...x, limits: null } : x))
+    expect(page(1440, { account: 'acct1', data: d, search: '?unit=lim' })).toContain('>no data<')
+  })
+
+  it('splits per project, model and kind in $ and tokens', () => {
+    expect(page(1440, { account: 'acct1', search: '?tab=project' })).toContain('$ per project · 7 days')
+    const m = page(1440, { account: 'acct1', search: '?tab=model' })
+    expect(m).toContain('tokens per model')
+    expect(m).toContain('>opus<')
+    expect(page(1440, { account: 'acct1', search: '?tab=kind' })).toContain('$ per kind')
+  })
+
+  it('lists the sessions of the period with full title, model, tokens and cost', () => {
+    const h = page(1440, { account: 'acct1', search: '?tab=session' })
+    for (const c of ['Session', 'Project', 'Model', 'Tokens', 'Cost']) expect(h).toContain(`>${c}</span>`)
+    expect(h).toContain('Refactor the auth middleware')
+    expect(h).toContain('opus + sonnet')
+  })
+
+  it('ranks the top runs by cost', () => {
+    const h = page(1440, { account: 'acct1', search: '?tab=runs' })
+    expect(h.indexOf('Refactor the auth middleware')).toBeLessThan(h.indexOf('Plan the plugin loader'))
+    expect(h).toContain('$31')
+  })
+
+  it('cuts the period with D', () => {
+    const h = page(1440, { account: 'acct1', search: '?tab=session&period=D' })
+    expect(h).toContain('Review the billing endpoints')
+    expect(h).not.toContain('Rewrite the completion engine')
+  })
+
   it('follows the route account and falls back to the active one', () => {
     const h = page(1440, { account: 'acct2' })
     expect(h).toContain('[2] acct2 · 5h window')
@@ -93,5 +147,12 @@ describe('Usage page, phone', () => {
     expect(h).toContain('[4] Analysis')
     expect(h).toContain('Per project')
     expect(h.indexOf('[2] 5h window')).toBeLessThan(h.indexOf('[4] Analysis'))
+    for (const t of ['Day', 'Project', 'Model', 'Kind', 'Session', 'Runs']) expect(h).toContain(`>${t}</button>`)
+  })
+
+  it('lists sessions as two-line rows on the phone', () => {
+    const h = page(368, { account: 'acct1', search: '?tab=session' })
+    expect(h).toContain('utbl ph')
+    expect(h).toMatch(/class="sub">api · opus \+ sonnet · /)
   })
 })
