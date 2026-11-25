@@ -96,7 +96,8 @@ export function DayChart({ w: w0, h, bars, fmt, axis, colors, pick, onPick, toda
   const withCells = !!cells
   const C = withCells ? 30 : 0
   const L = 44, R = 8, T = 14, B = 24 + C, iw = w - L - R, ih = h - T - B
-  const mx = niceMax(Math.max(0, ...bars.map((b) => b.total)))
+  // Headroom so the peak value label stays clear of the axis title.
+  const mx = niceMax(1.15 * Math.max(0, ...bars.map((b) => b.total)))
   const bw = iw / Math.max(1, bars.length)
   const Y = (v: number) => T + ih * (1 - v / mx)
   const top = bars.reduce((m, b, i) => (b.total > (bars[m]?.total ?? -1) ? i : m), 0)
