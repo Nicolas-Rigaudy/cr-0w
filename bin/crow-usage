@@ -1040,6 +1040,60 @@ def limit_line(lim):
             f"week {lim['remaining_week_pct']}% left (↻ {lim['reset_week_at']})")
 
 
+SAMPLE_FULL_S = 6 * 3600
+SAMPLE_FINE_S = 35 * 86400
+SAMPLE_STEP_S = 300
+SAMPLE_HOUR_S = 3600
+
+
+def trim_samples(samples, now_ts):
+    """Every sample of the last 6h, one per account per 5 minutes up to 35 days, then one per account per hour."""
+    keep, seen = [], set()
+    for x in sorted(samples, key=lambda x: x["t"]):
+        age = now_ts - x["t"]
+        if age >= SAMPLE_FULL_S:
+            step = SAMPLE_HOUR_S if age >= SAMPLE_FINE_S else SAMPLE_STEP_S
+            slot = (x["a"], step, int(x["t"] // step))
+            if slot in seen:
+                continue
+            seen.add(slot)
+        keep.append(x)
+    return keep
+
+
+def limit_days(samples):
+    """Per local day and account, from limit samples (remaining %): weekly % used that day and the 5h windows.
+
+    Weekly used = sum of the drops in remaining; a jump up is the weekly reset and counts nothing.
+    A 5h window starts where remaining jumps up, 5h after the window's first sample, or at the account's first
+    sample; it belongs to the day it
+    starts on and its used % is 100 minus the lowest remaining seen in it. Windows with nothing used are dropped.
+    Returns {date: {account: {"week_used_pct": n, "windows_5h": [used %, ...]}}}."""
+    day_of = lambda t: dt.datetime.fromtimestamp(t).astimezone().date().isoformat()
+    out = {}
+    by_acct = {}
+    for x in sorted(samples, key=lambda x: x["t"]):
+        if x.get("h5") is None or x.get("wk") is None:
+            continue
+        by_acct.setdefault(x["a"], []).append(x)
+    for acct, pts in by_acct.items():
+        windows = []  # [start_t, lowest h5]
+        prev = None
+        for x in pts:
+            row = out.setdefault(day_of(x["t"]), {}).setdefault(acct, {"week_used_pct": 0, "windows_5h": []})
+            if prev is None or x["h5"] > prev["h5"] or x["t"] - windows[-1][0] >= 5 * 3600:
+                windows.append([x["t"], x["h5"]])
+            else:
+                windows[-1][1] = min(windows[-1][1], x["h5"])
+            if prev is not None and x["wk"] < prev["wk"]:
+                row["week_used_pct"] += prev["wk"] - x["wk"]
+            prev = x
+        for start, low in windows:
+            if low < 100:
+                out[day_of(start)][acct]["windows_5h"].append(100 - low)
+    return out
+
+
 def burn_rates(limits):
     """Record a limit sample per account (at most once a minute) and derive the 5h burn over the last hour:
     % per hour and, if it runs out before the reset, when it hits zero."""
@@ -1050,7 +1104,7 @@ def burn_rates(limits):
             samples = [json.loads(l) for l in fh if l.strip()]
     except (OSError, json.JSONDecodeError):
         samples = []
-    keep = [x for x in samples if now.timestamp() - x["t"] < 6 * 3600]
+    keep = trim_samples(samples, now.timestamp())
     last = max((x["t"] for x in keep), default=0)
     if now.timestamp() - last >= 60:
         keep += [{"t": now.timestamp(), "a": l["account"], "h5": l["remaining_5h_pct"], "wk": l["remaining_week_pct"]}
