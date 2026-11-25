@@ -20,7 +20,7 @@ The owner edits crow.yaml by hand to change the Nest look and page list. Nest ne
 
 # Scope
 - In:
-  - Gate: build only after the owner picks one of the mockup options A, B or C (`tools/nest/scripts/mockups/settings.html`, rendered by `tools/nest/scripts/settings-mockups.mjs`), then a styling pass on the picked structure before the build (owner rule: layout and styling are separate picks).
+  - Gate: round 1 (A, B, C in `settings.html`) rejected as too busy. Round 2 option D picked on 2026-11-25: archeotech shell layout, sidebar of panes (Look, Pages, Modules, General), one setting per row with a hint, Save bar per pane; phone = section list then pane. Board: `tools/nest/scripts/mockups/settings-v2.html` (`?v=D&p=look|pages|list`), PNGs in vault `CR-0W/Research/nest-settings/round2/settings-D-*.png`. A styling pass on D comes before the build (owner rule: layout and styling are separate picks).
   - Settings entry in the top bar (laptop) and under More (phone).
   - Theme picker with a live preview (data-theme) before save; hero list; page list with order and show/hide; Home stays on.
   - Pending changes, discard, one save; the build state from item_283.
