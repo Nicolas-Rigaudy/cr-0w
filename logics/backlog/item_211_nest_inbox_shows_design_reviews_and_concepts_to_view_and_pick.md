@@ -1,10 +1,10 @@
 ## item_211_nest_inbox_shows_design_reviews_and_concepts_to_view_and_pick - Nest Inbox shows design reviews and concepts to view and pick
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 85%
-> Confidence: 80%
-> Progress: 70%
+> Status: Done
+> Understanding: 95%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -34,7 +34,7 @@
 - AC4: Mockups approved by the owner before the build.
 
 # AC Traceability
-- AC1-AC4 -> this item. Proof: to fill at closeout.
+- AC1-AC4 -> this item. Proof: fc59fcb, 1d04704, 9117acb, 4cbef18; go test, tsc, vitest 318 passed, pytest 93 passed; owner OK vs board 211-B 2026-11-25.
 
 # Decision framing
 - Product framing: mockups first (owner pick), one screen at a time.
@@ -52,7 +52,10 @@
 - Owner pick 2026-11-25: viewer B from board afk-inbox-2026-11-24 (flip stage like crow-compare).
 - Built 2026-11-25 (Nest client): a mockup row or a choice with several images opens the flip stage. Letters and scenarios come from the file names (`x-A-dark-room.png`). Laptop: stage with the letter and the "Space flips · Z zooms" hint, thumbnails, scenario list. Phone: letter chips and "tap image to flip" in the swipe sheet. Pick sends the pick verb with `pick: <letter>`. Images load from core `/api/missions/{id}/artifacts/{path}`. `?item=<inbox id>` opens a row directly.
 - Build shots: local/state/afk/shots/afk-inbox-build/review-*.png next to the board 211-B-*.png.
-- Left: core compare-spec source (option and scenario labels from crow-compare instead of file names), the owner's OK on the build vs the board.
+- Core compare source done 2026-11-25 (fc59fcb, 1d04704): a crow-compare spec listed in a mockup's artifacts fills `compare` on the inbox row (first decision: labels, notes, rows, recommend; images under outbox/ only). Nest shows "A · label", the recommended tag and the note under the stage; the pick reads `pick: A (label)`.
+- Build shots: vault CR-0W/Research/nest-design/item_211/build-compare-spec/, side by side with board B in board-vs-build.html.
+- 2026-11-25: owner asked for a bigger viewer: on laptop and tablet the review takes the page beside a slim list of titles; "← Inbox" or Escape brings the full list back (9117acb, 4cbef18). Shots fold the chat by default.
+- Owner OK on the build vs board B 2026-11-25 (AC4).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
