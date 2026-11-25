@@ -8,6 +8,7 @@
 > Complexity: High
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 10:10:53
 
 # AI Context
 - Summary: `crow queue run` launches queued AFK jobs by itself: picks the account under floors per 5h and week window, waits for resets, aims for a target left at a given hour. Report section titles become configurable (French and English parsed), and the AFK summary JSON gets a documented schema checked on load.
@@ -50,3 +51,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Decision framing
+- Owner 2026-11-25 (req_067): the launcher runs inside the core tick (item_250), not as a separate crow queue run loop, so the queue moves with no hub session. Landing moves to item_275.

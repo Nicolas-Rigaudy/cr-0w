@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 10:10:52
 
 # AI Context
 - Summary: Nest Reports page: AFK reports once their decisions are taken or when they have none, and ritual outputs (brief, daily, weekly, retro, eod) with a Generate button per ritual.
@@ -42,6 +43,7 @@
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
+- Owner pick 2026-11-25: layout B, one tile per ritual. Build from mockup B.
 
 # Links
 - Request: `req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits`

@@ -8,7 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-19 10:59:19
+> Indicators reviewed: 2026-11-25 10:10:53
 
 # AI Context
 - Summary: MRs tab on live `/api/state/mrs`: mine, to review, CI state, threads; each row opens review, threads or the MR on the forge. Optional brick (req_064 modules).
@@ -51,3 +51,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Decision framing
+- Owner 2026-11-25: none of A/B/C. Redo the mockups: closer to the deck, less clutter. MR list as clear as A or B, details like A but bigger, patterns small and expanded on demand. Do not reserve space for the chat panel.

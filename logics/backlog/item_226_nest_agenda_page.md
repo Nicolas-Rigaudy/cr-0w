@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-25 10:10:53
 
 # AI Context
 - Summary: Agenda tab: today's and the week's meetings from `/api/state/today`, due open threads and follow-ups, MR deadlines; each row actionable.
@@ -47,3 +48,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Decision framing
+- Owner pick 2026-11-25: layout B. Build from mockup B (tools/nest/scripts/mockups/pages.html).
