@@ -7,7 +7,7 @@
 > Complexity: Large
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked backlog/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 14:44:37
+> Indicators reviewed: 2026-11-25 20:55:58
 
 # AI Context
 - Summary: Redesign the split between Desk and Ops so the owner handles missions, runs, sessions, queues and AFK launches from one model, and sees what needs them at a glance.

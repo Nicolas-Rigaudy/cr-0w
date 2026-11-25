@@ -1,14 +1,14 @@
 ## item_295_nest_desk_rebuild_on_deck_panes - Nest Desk rebuild on deck panes
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 10%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Medium
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 17:21:12
+> Indicators reviewed: 2026-11-25 20:55:59
 
 # AI Context
 - Summary: Rebuild the Nest Desk page as deck panes (layout C) from the owner picks of the item_293 pass.
@@ -43,6 +43,15 @@
 
 # AC Traceability
 - req_070-AC -> This backlog slice. Proof: owner picks recorded 2026-11-25.
+- AC1 -> This backlog slice. Proof: Implemented in 2489716 and 772e521; validated with cd tools/nest && npm test && npm run typecheck && npm run build. Source: `772e521`
+- AC2 -> This backlog slice. Proof: Implemented in 2489716 and 772e521; validated with cd tools/nest && npm test && npm run typecheck && npm run build. Source: `772e521`
+- AC3 -> This backlog slice. Proof: Implemented in 2489716 and 772e521; validated with cd tools/nest && npm test && npm run typecheck && npm run build. Source: `772e521`
+- AC4 -> This backlog slice. Proof: Implemented in 2489716 and 772e521; validated with cd tools/nest && npm test && npm run typecheck && npm run build. Source: `772e521`
+- AC5 -> This backlog slice. Proof: Implemented in 2489716 and 772e521; validated with cd tools/nest && npm test && npm run typecheck && npm run build. Source: `772e521`
+- AC6 -> This backlog slice. Proof: Implemented in 2489716 and 772e521; validated with cd tools/nest && npm test && npm run typecheck && npm run build. Source: `772e521`
+- request-AC1 -> This backlog slice. Proof deferred to slice closeout.
+- request-AC2 -> This backlog slice. Proof deferred to slice closeout.
+- request-AC3 -> This backlog slice. Proof deferred to slice closeout.
 
 # Decision framing
 - Product framing: Not needed
@@ -51,9 +60,9 @@
 # Links
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
-- Request: req_070
+- Request: `req_070_desk_and_ops_handle_missions_runs_and_queues`
 - Related: item_293 (sketches), item_292
-- Primary task(s): (none yet)
+- Primary task(s): `task_033_nest_desk_rebuild_on_deck_panes`
 
 # Priority
 - Priority: Medium
@@ -61,6 +70,7 @@
 
 # Notes
 - Build order: item_297 core first, then item_296 and item_295 (independent).
+- Task `task_033_nest_desk_rebuild_on_deck_panes` was finished via `logics-manager flow finish task` on 2026-11-25.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
