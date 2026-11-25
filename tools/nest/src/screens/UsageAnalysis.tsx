@@ -122,16 +122,27 @@ function Split({ rows, period, what, phone, name = (k) => k, colors, color }: {
 const models = (s: UsageSession) => (s.models ?? []).map(modelName).filter((m, i, a) => a.indexOf(m) === i).join(' + ') || '–'
 const when = (s: UsageSession) => (s.start ? dayShort(localDay(new Date(s.start))) : '–')
 
+// Cost cell: a thin bar scaled to the largest cost in the list, then the value.
+function Cost({ v, mx }: { v: number; mx: number }) {
+  return (
+    <>
+      <span className="ucb" aria-hidden="true"><i style={{ width: `${(v / mx) * 100}%` }} /></span>
+      <span className="ucv">{usd(v)}</span>
+    </>
+  )
+}
+
 function Sessions({ rows, period, phone, runs }: { rows: UsageSession[]; period: Period; phone?: boolean; runs?: boolean }) {
   if (!rows.length) return <div className="empty">No sessions in {periodLabel(period)}.</div>
   const head = runs ? 'Top runs' : 'Session'
+  const mx = Math.max(0, ...rows.map((s) => s.cost_usd ?? 0)) || 1
   if (phone) {
     return (
       <div className="utbl ph" role="table" aria-label={head}>
         {rows.map((s) => (
           <div key={s.id} className="utr" role="row">
             <span className="ti" role="cell">{s.title ?? s.id}<span className="sub">{s.project ?? '–'} · {runs ? s.kind ?? '–' : models(s)} · {tok(s.tokens ?? 0)} · {when(s)}</span></span>
-            <span className="num" role="cell">{usd(s.cost_usd ?? 0)}</span>
+            <span className="num ucost" role="cell"><Cost v={s.cost_usd ?? 0} mx={mx} /></span>
           </div>
         ))}
       </div>
@@ -148,7 +159,7 @@ function Sessions({ rows, period, phone, runs }: { rows: UsageSession[]; period:
           <span role="cell" className="dim">{runs ? s.kind ?? '–' : models(s)}</span>
           <span role="cell" className="dim">{runs ? s.account : when(s)}</span>
           <span role="cell" className="rt num">{tok(s.tokens ?? 0)}</span>
-          <span role="cell" className="rt num">{usd(s.cost_usd ?? 0)}</span>
+          <span role="cell" className="rt num ucost"><Cost v={s.cost_usd ?? 0} mx={mx} /></span>
         </div>
       ))}
     </div>

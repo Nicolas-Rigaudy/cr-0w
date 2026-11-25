@@ -1692,16 +1692,21 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .usage .usplit > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .usage .usplit > .uleg { grid-column: 1 / -1; }
 .usage .usplit.ph { grid-template-columns: 1fr; }
-.usage .utbl { display: grid; grid-template-columns: minmax(0, 1fr) 80px 110px 80px 64px 64px; font-size: 12px; }
+.usage .utbl { display: grid; grid-template-columns: minmax(0, 1fr) 80px 110px 80px 64px 124px; font-size: 12px; }
 .usage .utr { display: contents; }
 .usage .utr > span { padding: 5px 6px; border-bottom: 1px solid var(--u-grid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage .utr.uth > span { font: 10.5px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; color: var(--sub); }
 .usage .utr.live > span:first-child { color: var(--accent); }
 .usage .utbl .rt { text-align: right; }
+.usage .utr > .ucost { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.usage .ucb { flex: 1; max-width: 64px; height: 4px; background: var(--well); border-radius: 2px; overflow: hidden; }
+.usage .ucb i { display: block; height: 100%; background: var(--c1); border-radius: 2px; }
+.usage .ucv { flex: none; min-width: 40px; text-align: right; }
 .usage .utbl.ph { grid-template-columns: minmax(0, 1fr) auto; }
 .usage .utbl.ph .ti { display: flex; flex-direction: column; white-space: normal; }
 .usage .utbl.ph .ti .sub { color: var(--dim); font-size: 11px; }
 .usage .utbl.ph .num { text-align: right; }
+.usage .utbl.ph .ucb { flex: none; width: 48px; }
 .usage .uside { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .usage .ust { margin: 0; font: 400 11px var(--font-head); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 .usage .uhb { display: grid; gap: 6px 8px; align-items: center; }

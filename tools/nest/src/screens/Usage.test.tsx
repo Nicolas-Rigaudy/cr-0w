@@ -155,4 +155,15 @@ describe('Usage page, phone', () => {
     expect(h).toContain('utbl ph')
     expect(h).toMatch(/class="sub">api · opus \+ sonnet · /)
   })
+
+  it('draws a cost bar on each session and run row, the top cost at full width', () => {
+    for (const tab of ['session', 'runs']) {
+      for (const w of [368, 1280]) {
+        const h = page(w, { account: 'acct1', search: `?tab=${tab}` })
+        const n = (h.match(/class="ucb"/g) ?? []).length
+        expect(n).toBeGreaterThan(1)
+        expect(h).toContain('width:100%')
+      }
+    }
+  })
 })
