@@ -1,0 +1,163 @@
+<!doctype html><meta charset="utf-8"><title>Nest MRs mockups round 2</title>
+<!-- MRs page (item_225) round 2. ?v=A|B|C&f=laptop|phone&s=pat
+     Brief: deck look, less clutter, list as clear as round 1 A/B, big detail pane, patterns collapsed until asked,
+     no space reserved for the chat panel. Tokens from src/themes/modern.css (approved Home/Ops look).
+     Data: crow-mrs record shape (mrs.schema.json) with generic names; pipeline jobs and thread text come from the forge on open. -->
+<style>
+*{box-sizing:border-box}
+:root{--bg:#24273a;--fg:#cad3f5;--dim:#a5adcb;--sub:#939ab7;--panel:rgba(30,32,48,.78);--line:#494d64;--row:rgba(54,58,79,.55);--btn:rgba(54,58,79,.7);--well:rgba(24,25,38,.6);
+ --acc:#c6a0f6;--ink:#181926;--w:#7dc4e4;--n:#eed49f;--f:#ed8796;--d:#a6da95;--b:#8aadf4;--s:#8087a2;--t:#8bd5ca;
+ --dots:radial-gradient(color-mix(in srgb,#494d64 45%,transparent) 1px,transparent 1.2px) 0 0/18px 18px}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:12px/1.45 'Fira Code',ui-monospace,monospace}
+.lap{width:1440px;height:900px;display:flex;flex-direction:column;background:var(--dots),var(--bg);overflow:hidden;position:relative}
+.hdr{height:54px;flex:0 0 auto;display:flex;align-items:center;gap:18px;padding:0 20px;background:rgba(24,25,38,.85);border-bottom:1px solid var(--line);letter-spacing:.08em;font-size:12.5px}
+.logo{font:18px Michroma,sans-serif;color:var(--acc);letter-spacing:.12em}
+.pill{border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:3px 12px;font-size:11px}
+.nv{color:var(--fg)}.nv.on{background:var(--acc);color:var(--ink);padding:5px 10px;border-radius:7px}.nv b{color:var(--n);font-weight:400}
+.gauge{display:inline-flex;align-items:center;gap:6px;font-size:11px}.gauge i{display:inline-block;width:56px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--d) var(--p),#363a4f var(--p))}
+.cc{border:1px solid var(--n);color:var(--n);border-radius:999px;padding:1px 9px;font-size:11px}.cc.w{border-color:var(--w);color:var(--w)}
+.page{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:14px 20px 16px}
+.bar{display:flex;align-items:center;gap:10px;letter-spacing:.08em}
+.bar h1{font:20px Michroma,sans-serif;margin:0 10px 0 0;letter-spacing:.1em;font-weight:400}
+.seg{display:flex;gap:4px}.seg span{border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:11.5px;background:var(--btn)}.seg .on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.sum{margin-left:auto;color:var(--dim);font-size:12.5px;letter-spacing:.06em}.sum .x{color:var(--n)}
+/* panes with a title set in the top border, as in the deck */
+.pn{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:16px 12px 10px;min-height:0;min-width:0;display:flex;flex-direction:column;gap:5px}
+.pn>.tt{position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 7px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;display:flex;gap:8px}
+.pn>.tr{position:absolute;top:-9px;right:12px;background:var(--bg);padding:0 7px;font-size:11px;color:var(--sub);letter-spacing:.06em}
+.pn.sel{border-color:var(--acc)}
+.r{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:6px 9px;border-radius:7px;font-size:12.5px;min-width:0}
+.r:nth-child(odd){background:var(--row)}.r .ref{color:var(--t)}.r.mine .ref{color:var(--acc)}.r.done{opacity:.55}.r.done .ref{color:var(--d)}
+.r .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.r .ti small{display:block;color:var(--sub);font-size:11px}
+.r.on{background:rgba(198,160,246,.14);box-shadow:inset 2px 0 0 var(--acc)}
+.st{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.ok{color:var(--d)}.ko{color:var(--f)}.ru{color:var(--w)}.wa{color:var(--n)}.mu{color:var(--sub)}.ac{color:var(--acc)}.cy{color:var(--t)}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--btn);border-radius:8px;padding:4px 11px;font-size:11.5px;letter-spacing:.06em;white-space:nowrap}
+.btn.p{background:var(--acc);border-color:var(--acc);color:var(--ink)}.btn.g{background:none}
+.k{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;color:var(--dim);margin-right:3px}
+/* detail */
+.dh{font:17px Michroma,sans-serif;letter-spacing:.04em;line-height:1.35}.dh .ref{color:var(--acc)}
+.meta{color:var(--dim);font-size:12px}
+.facts{display:flex;gap:26px;padding:10px 12px;border-radius:9px;background:var(--well)}
+.facts div{display:flex;flex-direction:column;gap:2px;font-size:13px}.facts small{color:var(--sub);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.sh{font-size:11px;letter-spacing:.12em;color:var(--acc);text-transform:uppercase;margin-top:6px;display:flex;justify-content:space-between}
+.stg{display:flex;align-items:center;gap:0;font-size:12px}.stg span{padding:4px 10px;border:1px solid var(--line);margin-right:-1px}
+.stg span:first-child{border-radius:7px 0 0 7px}.stg span:last-child{border-radius:0 7px 7px 0}.stg .ok{border-color:var(--d)}.stg .ko{border-color:var(--f);background:rgba(237,135,150,.12)}.stg .mu{border-style:dashed}
+.th{border-left:2px solid var(--n);padding:6px 12px;background:var(--well);border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.th .w{color:var(--sub);font-size:11px}.th.res{border-left-color:var(--line);color:var(--sub)}
+.log{font-size:11.5px;background:var(--well);border-radius:8px;padding:8px 12px;color:var(--dim);white-space:pre;line-height:1.5}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.patc{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:11.5px;color:var(--dim)}
+.patc b{color:var(--n);font-weight:400}
+.pop{border:1px solid var(--acc);border-radius:10px;background:#1e2030;padding:10px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 24px #000a}
+.pop .pr{display:grid;grid-template-columns:1fr 70px 50px;gap:10px;font-size:12px;padding:3px 0;border-top:1px solid #363a4f}
+.pop .pr.hit{color:var(--n)}
+.lbl{position:absolute;left:20px;bottom:12px;z-index:9;background:var(--n);color:var(--ink);font:11.5px Michroma,sans-serif;padding:4px 10px;border-radius:6px;letter-spacing:.08em}
+.keys{display:flex;gap:16px;font-size:11px;color:var(--sub);padding:4px 2px 0}
+/* phone */
+.duo{display:flex;gap:24px;padding:12px;align-items:flex-start;background:#181926;width:max-content}
+.pw{width:368px}.pl{font:12px Michroma,sans-serif;color:var(--acc);padding:2px 2px 6px;letter-spacing:.06em}
+.ph{width:368px;height:800px;border:1px solid var(--line);border-radius:24px;background:var(--dots),var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ph .top{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px}.ph .top .logo{font-size:13px}
+.ph .bd{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:6px 12px;overflow:hidden}
+.ph .bar h1{font-size:15px}.ph .pn{padding:14px 8px 8px}.ph .r{grid-template-columns:40px 1fr auto;padding:7px 7px;font-size:12px;gap:8px}
+.ph .nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:11px 0 14px;font-size:11.5px;color:var(--sub);background:rgba(24,25,38,.85)}.ph .nav .on{color:var(--acc)}
+.cap{font-size:11.5px;color:var(--n);padding:8px 2px 0;line-height:1.45;width:368px}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:96px;border-top:1px solid var(--acc);border-radius:18px 18px 0 0;background:#1e2030;padding:10px 14px;display:flex;flex-direction:column;gap:9px;box-shadow:0 -10px 30px #000c}
+.grab{width:42px;height:4px;border-radius:2px;background:#5b6078;margin:0 auto 2px}
+.ph .dh{font-size:14px}.ph .facts{gap:14px;padding:8px 10px}.ph .facts div{font-size:12px}
+.ph .stg{font-size:11px}.ph .stg span{padding:3px 7px}
+.dim{opacity:.35;pointer-events:none}
+</style>
+<body><div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),V=(Q.get('v')||'A').toUpperCase(),F=Q.get('f')||'laptop',S=Q.get('s')||''
+// crow-mrs rows: ref, project, forge, title, author, role, draft, pipeline, threads_open, threads_resolved, updated, approvals
+const MR=[
+ {ref:'!242',p:'api',fg:'gitlab',ti:'raise alerts from detection events',au:'dev-a',role:'review',pl:'passed',to:0,tr:0,up:'4d',ap:'0/1'},
+ {ref:'!245',p:'api',fg:'gitlab',ti:'power supply alerts',au:'dev-b',role:'review',draft:1,pl:'passed',to:0,tr:0,up:'1d',ap:'0/1'},
+ {ref:'!239',p:'api',fg:'gitlab',ti:'one helper for the sync loops',au:'you',role:'mine',pl:'failed',to:2,tr:3,up:'2h',ap:'0/1',br:'sync-loops-helper'},
+ {ref:'!241',p:'api',fg:'gitlab',ti:'rate limit per client behind the proxy',au:'you',role:'mine',pl:'passed',to:0,tr:4,up:'3d',ap:'1/1'},
+ {ref:'#57',p:'cr-0w',fg:'github',ti:'lock the migration runs',au:'you',role:'mine',pl:'running',to:0,tr:0,up:'25m',ap:'-'},
+ {ref:'!235',p:'api',fg:'gitlab',ti:'sync roles: reset what the code drops',au:'you',role:'merged',pl:'passed',up:'11:42'}]
+const BR={p:'webapp',b:'proxy-rate-limit',a:2}
+const PAT=[['Same loop copied instead of one helper',1,'!239',1],['Name doesn\'t follow its siblings',7,'!239',1],['Comment says what the code doesn\'t do',9,'!235'],['Doc or README left stale',10,'!229'],['Comment too long or justifying',5,'!219'],['Hardcoded value where a constant exists',4,'!219']]
+const SEL=MR[2]
+const ci=m=>m.pl==='passed'?'<span class="ok">● CI</span>':m.pl==='failed'?'<span class="ko">✕ CI</span>':'<span class="ru">◌ CI</span>'
+const st=m=>`<span class="st">${m.draft?'<span class="mu">draft</span>':''}${m.role==='merged'?`<span class="mu">merged ${m.up}</span>`:`${ci(m)}${m.to?`<span class="wa">◆ ${m.to}</span>`:''}<span class="mu">${m.up}</span>`}</span>`
+const row=(m,sub)=>`<div class="r ${m.role==='mine'?'mine':''} ${m.role==='merged'?'done':''} ${m===SEL?'on':''}"><span class="ref">${m.ref}</span><span class="ti">${m.ti}${sub?`<small>${m.p} · ${m.role==='review'?m.au:m.fg}</small>`:''}</span>${st(m)}</div>`
+const brRow=`<div class="r"><span class="mu">⑂</span><span class="ti">${BR.b}<small>${BR.p} · ${BR.a} ahead · no MR</small></span><span class="btn g">OPEN MR</span></div>`
+const sect=(name,list,extra='')=>list.length?`<div class="sh"><span>${name}</span><span class="mu">${list.length}</span></div>${list.map(m=>row(m,1)).join('')}${extra}`:''
+const by=r=>MR.filter(m=>m.role===r)
+const NAV=['HOME','DESK','OPS','INBOX','MRS','AGENDA','REPORTS']
+const hdr=()=>`<div class="hdr"><span class="logo">CR-0W</span><span class="pill">◈ ALL</span>${NAV.map((n,i)=>`<span class="nv ${n==='MRS'?'on':''}">${i+1} ${n}${n==='INBOX'?' <b>8</b>':n==='MRS'?' 3':n==='OPS'?' 2':''}</span>`).join('')}<span style="margin-left:auto" class="gauge">MAIN <i style="--p:72%"></i> 72%</span><span class="gauge">WORK <i style="--p:41%"></i> 41%</span><span class="cc">◆ 5</span><span class="cc w">◌ 2</span><span>15:39</span></div>`
+const bar=(x='')=>`<div class="bar"><h1>MRS</h1><span class="seg"><span class="on">ALL</span><span>API</span><span>CR-0W</span></span>${x}<span class="sum">2 to review · <span class="x">1 needs you</span> · 2 waiting · merged today 1</span></div>`
+const pipe=`<span class="stg"><span class="ok">lint ✓ 0:41</span><span class="ko">test ✕ 3:12</span><span class="ok">sonar ✓</span><span class="mu">deploy dev</span></span>`
+const facts=`<div class="facts"><div><small>pipeline</small><span class="ko">failed · test</span></div><div><small>threads</small><span class="wa">2 open <span class="mu">· 3 resolved</span></span></div><div><small>approvals</small><span>0 / 1</span></div><div><small>reviewer</small><span>dev-a</span></div><div><small>updated</small><span>2h ago</span></div></div>`
+const threads=(n=2)=>[
+ ['sync.py:112','dev-a · 3h','Same loop as in sync_grants. One helper for both?'],
+ ['sync.py:40','dev-a · 3h','This only forwards to _apply. Inline it?']].slice(0,n).map(t=>`<div class="th"><span class="w"><span class="wa">open</span> · ${t[0]} · ${t[1]}</span><span>“${t[2]}”</span></div>`).join('')
+const failLog=`<div class="log"><span class="ko">test_sync.py::test_reset_drops_roles FAILED</span>
+  assert reset(roles) == {'viewer'}   got {'viewer', 'editor'}</div>`
+const patChip=`<span class="patc">patterns <b>2 hit this MR</b> · 27 in ledger <span class="ac">▸</span></span>`
+const patPop=`<div class="pop"><div class="sh" style="margin:0"><span>Review patterns · api</span><span class="mu">newest hit first · <span class="ac">▾ close</span></span></div><div class="pr mu" style="border:0"><span>pattern</span><span>MRs</span><span>last</span></div>${PAT.map(p=>`<div class="pr ${p[3]?'hit':''}"><span>${p[3]?'◆ ':''}${p[0]}</span><span>${p[1]}</span><span class="cy">${p[2]}</span></div>`).join('')}<div class="mu" style="font-size:11px">◆ = this MR hits it · common + project ledger</div></div>`
+const acts=(big)=>`<div class="acts"><span class="btn p">ANSWER THREADS</span><span class="btn">REPO SESSION</span><span class="btn">RERUN CI</span><span class="btn g">OPEN ON FORGE ↗</span>${big?'<span class="mu" style="margin-left:auto;font-size:11px">replies post after your OK in the threads session</span>':''}</div>`
+const lbl=t=>`<div class="lbl">${t}</div>`
+
+function lapA(){
+ const list=`<div class="pn" style="flex:0 0 560px"><span class="tt">MR list</span><span class="tr">sorted: who acts</span>
+  ${sect('To review · unblock devs first',by('review'))}${sect('Mine',by('mine'),brRow)}${sect('Merged today',by('merged'))}</div>`
+ const det=`<div class="pn sel" style="flex:1;gap:10px;padding:20px 20px 14px"><span class="tt ac">Detail</span><span class="tr">esc closes</span>
+  <div class="dh"><span class="ref">!239</span> one helper for the sync loops</div>
+  <div class="meta">api · gitlab · sync-loops-helper → main · opened 2d ago by you</div>${facts}
+  <div class="sh"><span>Pipeline #8812</span><span class="mu">3:53 total</span></div>${pipe}${failLog}
+  <div class="sh"><span>Open threads · 2</span><span class="mu">3 resolved ▸</span></div>${threads()}
+  <div style="flex:1"></div><div style="display:flex;align-items:center;gap:10px">${patChip}</div>${S==='pat'?patPop:''}${acts(1)}</div>`
+ return `<div class="lap">${hdr()}<div class="page">${bar()}<div style="display:flex;gap:16px;flex:1;min-height:0">${list}${det}</div></div>${lbl('A · LIST + BIG DETAIL')}</div>`}
+
+function lapB(){
+ const col=(t,c,list,extra='')=>`<div class="pn" style="flex:1;${c?'border-color:'+c:''}"><span class="tt" ${c?`style="color:${c}"`:''}>${t}</span><span class="tr">${list.length}</span>${list.map(m=>row(m,0)).join('')}${extra}</div>`
+ const mine=by('mine')
+ const board=`<div style="display:flex;gap:14px;flex:0 0 auto;height:200px">${col('To review','#8bd5ca',by('review'))}${col('Needs you','#eed49f',[mine[0]],brRow)}${col('Waiting on others','',mine.slice(1))}${col('Merged today','',by('merged'))}</div>`
+ const det=`<div class="pn sel" style="flex:1;flex-direction:row;gap:22px;padding:20px 20px 14px"><span class="tt ac">!239 · detail</span><span class="tr">esc closes</span>
+  <div style="flex:1.25;display:flex;flex-direction:column;gap:10px;min-width:0"><div class="dh"><span class="ref">!239</span> one helper for the sync loops</div><div class="meta">api · gitlab · sync-loops-helper → main · opened 2d ago by you</div>${facts}
+   <div class="sh"><span>Pipeline #8812</span><span class="mu">3:53</span></div>${pipe}${failLog}<div style="flex:1"></div>${acts(0)}</div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0"><div class="sh" style="margin:0"><span>Open threads · 2</span><span class="mu">3 resolved ▸</span></div>${threads()}<div style="flex:1"></div>${S==='pat'?patPop:''}<div>${patChip}</div></div></div>`
+ return `<div class="lap">${hdr()}<div class="page">${bar()}${board}${det}</div>${lbl('B · WHO-ACTS STRIP + WIDE DETAIL')}</div>`}
+
+function lapC(){
+ const pane=(n,t,list,extra='',on)=>`<div class="pn ${on?'sel':''}" style="flex:0 0 auto;border-radius:4px"><span class="tt ${on?'ac':''}">[${n}] ${t}</span><span class="tr">${list.length}</span>${list.map(m=>row(m,0)).join('')}${extra}</div>`
+ const tabs=`<span class="seg">${['Overview','Threads 2','Pipeline ✕','Patterns ◆2'].map((t,i)=>`<span class="${(S==='pat'?i===3:i===0)?'on':''}">${t}</span>`).join('')}</span>`
+ const body=S==='pat'?patPop.replace('class="pop"','class="pop" style="box-shadow:none;border-color:var(--line)"'):`${facts}<div class="sh"><span>Pipeline #8812</span><span class="mu">3:53</span></div>${pipe}${failLog}<div class="sh"><span>Open threads · 2</span><span class="mu">3 resolved</span></div>${threads()}`
+ const det=`<div class="pn sel" style="flex:1;gap:10px;padding:20px 20px 14px;border-radius:4px"><span class="tt ac">[4] !239</span><span class="tr">api · gitlab</span>
+  <div class="dh"><span class="ref">!239</span> one helper for the sync loops</div><div class="meta">sync-loops-helper → main · opened 2d ago by you · updated 2h ago</div>${tabs}${body}<div style="flex:1"></div>${acts(1)}</div>`
+ const keys=`<div class="keys"><span><span class="k">1-4</span>pane</span><span><span class="k">j k</span>move</span><span><span class="k">r</span>review</span><span><span class="k">t</span>threads</span><span><span class="k">s</span>session</span><span><span class="k">o</span>open on forge</span><span><span class="k">p</span>patterns</span><span><span class="k">c</span>chat</span></div>`
+ return `<div class="lap">${hdr()}<div class="page">${bar()}<div style="display:flex;gap:16px;flex:1;min-height:0"><div style="flex:0 0 500px;display:flex;flex-direction:column;gap:16px">${pane(1,'To review',by('review'))}${pane(2,'Mine',by('mine'),brRow,1)}${pane(3,'Merged today',by('merged'))}</div>${det}</div>${keys}</div>${lbl('C · DECK PANES + TABBED DETAIL')}</div>`}
+
+/* phone: two frames, list then the tapped MR */
+const pTop=`<div class="top"><span class="logo">CR-0W</span><span style="display:flex;gap:6px"><span class="cc">◆ 5</span><span class="cc w">◌ 2</span></span></div>`
+const pNav=`<div class="nav"><span>Home</span><span>Desk</span><span>Ops</span><span>Inbox</span><span class="on">MRs</span></div>`
+const pBar=`<div class="bar"><h1>MRS</h1><span class="sum" style="font-size:11px"><span class="x">1 needs you</span> · 2 review</span></div>`
+const phone=(lb,body,cap,overlay='')=>`<div class="pw"><div class="pl">${lb}</div><div class="ph">${pTop}<div class="bd">${body}</div>${pNav}${overlay}</div><div class="cap">${cap}</div></div>`
+const pDetail=(tabs)=>`<div class="dh"><span class="ref">!239</span> one helper for the sync loops</div><div class="meta">api · sync-loops-helper → main · 2h</div>
+ <div class="facts"><div><small>CI</small><span class="ko">✕ test</span></div><div><small>threads</small><span class="wa">2 open</span></div><div><small>approvals</small><span>0/1</span></div></div>${tabs||''}
+ <div class="sh"><span>Pipeline</span></div><span class="stg"><span class="ok">lint ✓</span><span class="ko">test ✕</span><span class="ok">sonar ✓</span><span class="mu">deploy</span></span>
+ <div class="sh"><span>Open threads · 2</span><span class="mu">3 resolved ▸</span></div>${threads()}${tabs?'':`<div>${patChip.replace('· 27 in ledger ','')}</div>`}
+ <div style="flex:1"></div><div class="acts"><span class="btn p">ANSWER THREADS</span><span class="btn">SESSION</span><span class="btn g">FORGE ↗</span></div>`
+function phones(){
+ if(V==='A'){
+  const l=phone('A · list',pBar+`<div class="pn"><span class="tt">MR list</span>${sect('To review',by('review'))}${sect('Mine',by('mine'),brRow)}${sect('Merged today',by('merged'))}</div>`,'Same sections as laptop A, one line per MR with CI, open threads and age.')
+  const d=phone('A · tap !239',`<div class="mu" style="font-size:11.5px">◀ MRs</div>`+pDetail(),'Detail is a full page with a back link. Patterns stay one chip until tapped.')
+  return l+d}
+ if(V==='B'){
+  const seg=`<span class="seg" style="flex-wrap:wrap"><span>REVIEW 2</span><span class="on">NEEDS YOU 1</span><span>WAITING 2</span><span>MERGED 1</span></span>`
+  const l=phone('B · who acts',pBar+seg+`<div class="pn"><span class="tt wa">Needs you</span>${row(SEL,1)}${brRow}</div>`,'The laptop columns become a segment row. Opens on the group that needs you.')
+  const d=phone('B · tap !239',pBar+seg+`<div class="pn dim"><span class="tt">Needs you</span>${row(SEL,1)}</div>`,'Detail opens as a tall bottom sheet over the list. Swipe down closes it.',`<div class="sheet"><div class="grab"></div>${pDetail()}</div>`)
+  return l+d}
+ const tabs=`<span class="seg"><span>[1] Review 2</span><span class="on">[2] Mine 3</span><span>[3] Merged</span></span>`
+ const l=phone('C · deck panes',pBar+tabs+`<div class="pn sel" style="border-radius:4px"><span class="tt ac">[2] Mine</span>${by('mine').map(m=>row(m,1)).join('')}${brRow}</div>`,'Deck pane tabs on top, one pane at a time.')
+ const d=phone('C · tap !239',`<div class="mu" style="font-size:11.5px">◀ [2] Mine</div>`+pDetail(`<span class="seg"><span class="on">Overview</span><span>Threads 2</span><span>Patterns ◆2</span></span>`),'Detail with the same tabs as laptop C: Overview, Threads, Patterns.')
+ return l+d}
+
+document.getElementById('root').innerHTML=F==='phone'?`<div class="duo">${phones()}</div>`:{A:lapA,B:lapB,C:lapC}[V]()
+</script>
