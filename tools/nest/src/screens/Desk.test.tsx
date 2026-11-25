@@ -41,12 +41,12 @@ describe('Nest-started sessions (item_188)', () => {
       at(1300, q)
       return renderToStaticMarkup(<DataContext.Provider value={src}><Desk snap={s} refresh={refresh} /></DataContext.Provider>)
     }
-    expect(render(`?pid=${pid}`)).toContain('>Terminal</button>')
+    expect(render(`?pid=${pid}&tab=transcript`)).toContain('>Terminal</button>')
     const kitty = agents.find((x) => x.kind === 'session' && !x.tmux)!.pid
-    expect(render(`?pid=${kitty}`)).toContain('>Terminal</button>')
+    expect(render(`?pid=${kitty}&tab=transcript`)).toContain('>Terminal</button>')
     const run = agents.find((x) => x.kind === 'run')!.pid
-    expect(render(`?pid=${run}`)).not.toContain('>Terminal</button>')
-    expect(render(`?pid=${run}`)).toContain('>Log</button>')
+    expect(render(`?pid=${run}&tab=transcript`)).not.toContain('>Terminal</button>')
+    expect(render(`?pid=${run}&tab=transcript`)).toContain('>Log</button>')
   })
 })
 
@@ -90,30 +90,54 @@ describe('Terminal tab and setup sessions (item_240)', () => {
   })
 })
 
-describe('laptop Desk layout B (item_246)', () => {
-  const html = async () => {
+describe('Desk layout C (item_295)', () => {
+  const html = async (w = 1300, q = '') => {
     const src = fixtureSource()
     const s = await snapshot(src)
-    at(1300)
+    at(w, q)
     return renderToStaticMarkup(<DataContext.Provider value={src}><Desk snap={s} refresh={refresh} /></DataContext.Provider>)
   }
 
-  it('shows the five KPIs and the sessions block', async () => {
+  it('shows four panes with their counts in the titles and no count tiles', async () => {
     const h = await html()
-    for (const k of ['working', 'need you', 'failed', 'done today', 'ok rate 7d']) expect(h).toContain(k)
-    expect(h).not.toContain('resumable</span>')
-    expect(h).toContain('>Sessions<')
-    expect(h).toMatch(/slots \d+\/\d+/)
+    for (const t of ['[1] Needs you', '[2] Moving', '[3] Queued', '[4] Done · failed', '[5] ']) expect(h).toContain(t)
+    expect(h).toMatch(/\[1\] Needs you<\/span><span class="num">\d+</)
+    expect(h).toMatch(/\d+ · folded ▸/)
+    expect(h).not.toContain('done today')
+    expect(h).not.toContain('ok rate 7d')
+    expect(h).toContain('◇ Butler')
+    expect(h).not.toContain('aria-label="Ask CR-0W"')
   })
 
-  it('opens on the Needs filter with one action per row and Ready to run below', async () => {
+  it('details the picked unit in four tabs with its actions', async () => {
     const h = await html()
-    expect(h).toMatch(/aria-pressed="true"[^>]*>Needs/)
-    expect(h).toContain('>Retry</button>')
-    expect(h).toContain('>Open MR</button>')
-    expect(h).toContain('>Allow</button>')
-    expect(h).toContain('>Answer</button>')
-    expect(h).toContain('Ready to run')
-    expect(h).toContain('aria-label="Run ')
+    for (const t of ['Overview', 'Transcript', 'Timeline', 'Files']) expect(h).toMatch(new RegExp(`role="tab"[^>]*>${t}</button>`))
+    expect(h).toMatch(/aria-selected="true"[^>]*>Overview/)
+    expect(h).toContain('Stop')
+  })
+
+  it('offers Now and Background, with AFK batch disabled until the core route', async () => {
+    const h = await html()
+    expect(h).toMatch(/aria-pressed="true"[^>]*>Now</)
+    expect(h).toMatch(/>Background</)
+    expect(h).toMatch(/disabled=""[^>]*>AFK batch</)
+    expect(h).toContain('item_297')
+  })
+
+  it('shows one pane at a time on the phone, behind pane tabs', async () => {
+    const h = await html(400)
+    expect(h).toContain('aria-label="Panes"')
+    expect(h).toMatch(/\[1\] Needs <span class="num">\d+/)
+    expect(h).not.toContain('[2] Moving</span>')
+  })
+
+  it('opens the detail as its own page on the phone, with a back button', async () => {
+    const src = fixtureSource()
+    const s = await snapshot(src)
+    const pid = (s.sections.dispatch!.data as { agents: Array<{ pid: number }> }).agents[0].pid
+    at(400, `?pid=${pid}`)
+    const h = renderToStaticMarkup(<DataContext.Provider value={src}><Desk snap={s} refresh={refresh} /></DataContext.Provider>)
+    expect(h).toContain('class="mback"')
+    expect(h).toContain('Overview')
   })
 })

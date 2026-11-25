@@ -137,9 +137,9 @@ function Head({ m, phone }: { m: M; phone?: boolean }) {
 }
 
 // A deck pane: the title sits in the top border, the count at the right.
-export function Deck({ n, title, count, on, aside, children }: { n: number; title: string; count?: number; on?: boolean; aside?: ReactNode; children: ReactNode }) {
+export function Deck({ n, title, count, on, aside, cls, children }: { n: number; title: string; count?: number; on?: boolean; aside?: ReactNode; cls?: string; children: ReactNode }) {
   return (
-    <section className={`deck${on ? ' on' : ''}`} aria-label={title}>
+    <section className={`deck${cls ? ` ${cls}` : ''}${on ? ' on' : ''}`} aria-label={title}>
       <div className="dt"><span>[{n}] {title}</span>{aside ?? (count !== undefined && <span className="num">{count}</span>)}</div>
       {children}
     </section>
