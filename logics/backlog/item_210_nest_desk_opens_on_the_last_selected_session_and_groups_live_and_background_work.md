@@ -2,47 +2,50 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Ready
-> Understanding: 85
-> Confidence: 75
+> Understanding: 90
+> Confidence: 80
 > Progress: 0%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
 
 # AI Context
-- Summary: Desk opens on the first background run instead of what the owner last looked at, and splits live sessions and background runs on both sides of the chat. Fix the default pick and regroup the layout so the owner sees at a glance what is going on.
-- Keywords: nest, desk, selection, last selected, sessions, runs, layout, chat
-- Use when: changing how Desk picks and lists sessions and runs.
-- Skip when: the work list rows (item_204), the Terminal tab (item_209).
+- Summary: Returning to Desk jumps to the first background run. Desk forgets the pick on every tab change and its default puts runs first. Remember the last pick per device; else open the top interactive session; never default to a background run.
+- Keywords: nest, desk, selection, last pick, sessions, runs
+- Use when: changing how Desk picks its open session.
+- Skip when: Desk layout (shipped as item_246), work list rows (item_204).
 
 # Problem
-- Seen by the owner 2026-11-16 on the laptop:
-  - Desk opens on the first slot of the background runs. Root cause: `screens/Desk.tsx:93` picks `?? runs[0]` before live sessions.
-  - Live sessions and background runs sit on either side of the chat, so it is hard to see what is going on.
+- Seen 2026-11-16 and again 2026-11-25.
+- `App.tsx:45` mounts `Desk` only on the desk route, so a tab change drops `sel` (`Desk.tsx:97`, plain `useState`, seeded only from `?pid=`).
+- Default pick at `Desk.tsx:108`: `runs[0] ?? working session ?? agents[0]`. A background run comes first.
+- The layout half of the first version shipped as item_246 (layout B).
 
 # Scope
 - In:
-  - Default pick: the last selected session or run (kept per device, survives reload); if it is gone, the live session the owner is in (the hub session or the newest live session); if none, a picker screen listing sessions and runs.
-  - Layout: live sessions and background runs grouped on one side (one list, two groups), chat on the other. Mockup options first, owner picks, then build.
+  - Remember the picked pid per device in localStorage (`nest.desk.pick`), guarded like `data/useScope.ts`. Write on every pick and on `?pid=` entry.
+  - Default pick, in order: the remembered pid if still live, a run included (owner 2026-11-25: restore what the owner picked); else the first `kind: session` item of the work feed that maps to a live agent; without the feed, waiting, then working, then idle sessions, newest first; else the "Nothing open" panel.
+  - Desk never picks a background run on its own.
+  - The pure choice lives in `data/deskPick.ts` with unit tests; `useDesk` calls it.
 - Out:
-  - Row content of the Desk work list (item_204).
+  - Layout (item_246). Phone cover routing (`/desk/<pid>`).
 
 # Acceptance criteria
-- AC1: The owner approves a rendered board of the regrouped Desk (laptop and inner) first.
-- AC2: Desk reopens on the last selected session or run after reload and after switching tabs.
-- AC3: With no last pick, Desk opens the live session; with no live session, a picker.
-- AC4: Live sessions and background runs show in one place; the chat has the rest of the width.
-- AC5: Shots at 1440x900 and 707x691 in both themes; tsc, vitest, pytest pass.
+- AC1: Pick a session, switch to Ops and back: the same session is open.
+- AC2: Pick a run, reload: the same run is open.
+- AC3: No remembered pick (or it ended): the session that needs the owner first, else the working one; never a background run.
+- AC4: Only background runs live: "Nothing open" panel.
+- AC5: vitest covers `deskPick` (remembered live, remembered gone, needs before working, runs skipped, storage blocked); tsc and vitest pass.
 
 # Links
-- Builds on item_187 (session chat in the laptop Desk).
+- Request: `req_068_a_full_work_day_from_nest_without_a_terminal`. Builds on item_246. Same remount as item_277.
 
 # Priority
 - Priority: High
-- Rationale: Desk is where the owner follows sessions; the wrong default hides the live session.
+- Rationale: the wrong default hides the live session.
 
 # Notes
-- Raised by the owner 2026-11-16.
+- Raised 2026-11-16; rescoped 2026-11-25 from plan mission 20261125-plan-nest-desk-bugs (owner: reuse this item for bug 1).
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
