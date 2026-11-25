@@ -144,3 +144,6 @@ Denied for every kind (a deny beats any allow or hook): git push, gh pr create/m
 - **Resume:** always a fresh isolated run from the brief plus the RESUME NOTE, also after a reset on the same account. Needs `--prompt-file`.
 - **Probe:** `bin/crow-isolation-probe [--json]` runs a check script through cdx's own `sandbox_command` against a fixture worktree under `local/state/probe/`: credential files and env, commit and push, writes outside the tree, the host's LAN gateway, loopback and tailnet listeners (each checked open from the host first), public HTTPS, the host-side commit and the no-pasta refusal. Rerun it after a cdx upgrade.
 - **Why pasta and not Claude Code `settings.sandbox`:** that sandbox (bwrap + a socat proxy with a domain list) is enforced by Claude itself, and a bypass run skips its domain list. pasta + nftables sit outside the agent and hold in any permission mode.
+
+## Worktrees with a Node app
+A new worktree has no `node_modules`, and a background run cannot get approval to install or link it, so it stops before its gate. Before dispatching into a worktree that builds a Node app, link the main checkout's copy (`ln -sfn <repo>/<app>/node_modules <worktree>/<app>/node_modules`) and keep the path in the repo's `info/exclude` so the link is never committed.
