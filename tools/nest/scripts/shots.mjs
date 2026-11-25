@@ -44,6 +44,9 @@ const SCREENS = {
   'mrs-patterns': '/mrs?mr=239&tab=patterns', // the review patterns tab (item_225)
   reports: '/reports', // ritual tiles, settled outputs and the reader (item_258)
   'reports-retro': '/reports?kind=retro', // filtered by a ritual, phone opens the list (item_258)
+  settings: '/settings', // Look pane on laptop, the pane list on phone (item_284)
+  'settings-look': '/settings?pane=look',
+  'settings-pages': '/settings?pane=pages',
 }
 const unknown = (only ?? []).filter((n) => !(n in SCREENS))
 if (unknown.length || (only && !only.length)) {
