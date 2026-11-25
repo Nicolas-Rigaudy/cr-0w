@@ -833,9 +833,9 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .ibx .irow .t > span { font-size: 11px; color: var(--dim); }
 .ibx .irow .tm { flex: none; font-size: 11px; color: var(--sub); padding-top: 1px; }
 /* kind rail (laptop) and chips (fold, phone) */
-.ibx .rail { gap: 2px; }
-.ibx .kind { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; color: var(--dim); }
-.ibx .kind.on { background: var(--accent-soft); color: var(--fg); }
+.ibx .rail { gap: 4px; }
+.ibx .kind { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 7px; color: var(--fg); background: var(--row); border: 1px solid transparent; }
+.ibx .kind.on { background: var(--accent-soft); border-color: var(--accent); }
 .ibx .kind .num { color: var(--sub); }
 .ibx .kind:focus-visible, .ibx .ichip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ibx .kind.log > span:first-child { display: flex; flex-direction: column; }
@@ -848,7 +848,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .ibx .read { gap: 8px; overflow-y: auto; min-height: 0; }
 .ibx .rt { font: 600 15px var(--font-head); margin: 0; overflow-wrap: anywhere; }
 .ibx .meta { font-size: 11px; color: var(--sub); }
-.ibx .sh { font: 600 11px var(--font-head); letter-spacing: 0.04em; text-transform: uppercase; color: var(--sub); margin: 6px 0 0; }
+.ibx .sh { font: 600 13px var(--font-head); color: var(--accent); margin: 6px 0 0; }
 .ibx .body { font-size: 12px; line-height: 1.55; color: var(--dim); white-space: pre-wrap; overflow-wrap: anywhere; }
 .ibx .opts { display: flex; flex-direction: column; gap: 6px; }
 .ibx .opt { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
