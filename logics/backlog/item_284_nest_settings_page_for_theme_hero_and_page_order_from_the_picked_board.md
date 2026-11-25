@@ -2,9 +2,9 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: Draft
-> Understanding: 80%
-> Confidence: 70%
-> Progress: 0%
+> Understanding: 90%
+> Confidence: 85%
+> Progress: 10%
 > Complexity: Medium
 > Theme: Operator workflow and runtime integration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -64,3 +64,7 @@ The owner edits crow.yaml by hand to change the Nest look and page list. Nest ne
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 
+
+## Styling decision (2026-11-25)
+- No page-specific style. Settings uses the app themes (Modern, Cyber) through the shared theme tokens, like every other page.
+- Board D (settings-v2.html?v=D) is the layout reference; its colours are the Modern theme. Check the build in both themes.
