@@ -48,6 +48,7 @@ type Options struct {
 	Owner     func() string // tailnet login allowed on the TCP listener; empty refuses all
 	Nest      string        // built Nest dir served at /; empty serves no app
 	Sources   []Source      // sections outside the store, refreshed in the background
+	Costs     Fetch         // cost audit GET /api/usage serves (not a state section); nil serves none
 	Now       func() time.Time
 	Script    Script                   // runs the bin/ scripts of the live actions (live.go); nil refuses them
 	ActionLog string                   // core action log the live actions append to
@@ -118,6 +119,9 @@ func New(o Options) *Server {
 		s.order = append(s.order, src.Name)
 	}
 	s.order = append(s.order, WorkSection, OpsSection)
+	if o.Costs != nil {
+		s.ext[UsageCostSection] = &ext{src: Source{Name: UsageCostSection, Fetch: o.Costs, TTL: UsageCostTTL}}
+	}
 	if o.StateDir != "" {
 		s.opsLog = &ops.Log{Path: filepath.Join(o.StateDir, ops.LogName)}
 	}
@@ -146,6 +150,7 @@ func (s *Server) Handler(trusted bool) http.Handler {
 	s.routeButler(mux)
 	s.routeModules(mux)
 	s.routeSettings(mux)
+	s.routeUsage(mux)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "no route")
 	})

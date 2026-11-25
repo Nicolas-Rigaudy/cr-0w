@@ -91,6 +91,18 @@ describe('api adapter', () => {
     expect(second).toBe(first)
   })
 
+  it('reads /api/usage, a cold audit as null, and keeps the body on 304', async () => {
+    const cold = { version: 'v', generated_at: '', cost: { section: 'usage-cost', version: 'e', updated_at: null, stale: true, error: 'not loaded yet', data: [] }, limits: [{ account: 'acct1' }, {}], sessions: [{ id: 's1', account: 'acct1' }, 'x'] }
+    const { get, seen } = core({ '/api/usage': () => json(JSON.stringify(cold), 200, '"u1"') })
+    const src = apiSource('/api', get)
+    const u = await src.usage!()
+    expect(u.cost).toEqual({ data: null, stale: true, error: 'not loaded yet', updated_at: null })
+    expect(u.limits.map((l) => l.account)).toEqual(['acct1'])
+    expect(u.sessions.map((s) => s.id)).toEqual(['s1'])
+    expect(await src.usage!()).toBe(u)
+    expect(seen.map((s) => s.match)).toEqual([null, '"u1"'])
+  })
+
   it('reads one mission and treats 404 as missing', async () => {
     const { get } = core({
       '/api/missions/20261109-build-item-095': () => json(body('mission.json')),

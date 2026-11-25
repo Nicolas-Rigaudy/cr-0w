@@ -47,6 +47,14 @@ const SCREENS = {
   settings: '/settings', // Look pane on laptop, the pane list on phone (item_284)
   'settings-look': '/settings?pane=look',
   'settings-pages': '/settings?pane=pages',
+  usage: '/usage/acct1', // account page, PER DAY in $ (item_227)
+  'usage-limits': '/usage/acct1?unit=lim', // PER DAY in % of the weekly limit (item_227)
+  'usage-session': '/usage/acct1?tab=session', // PER SESSION table (item_227)
+}
+// Phone shots that open scrolled to a pane (board usage phone "analysis" frame).
+const PHONE_SCROLL = {
+  'usage-limits': 'section.deck[aria-label="Analysis"]',
+  'usage-session': 'section.deck[aria-label="Analysis"]',
 }
 const unknown = (only ?? []).filter((n) => !(n in SCREENS))
 if (unknown.length || (only && !only.length)) {
@@ -245,6 +253,11 @@ try {
         await page.evaluate(() => document.fonts.ready)
         if (fixtures && name === 'home') await page.waitForSelector('.hero-pl[data-c]', { timeout: 15000 }).catch(() => {})
         await page.waitForTimeout(fixtures ? 600 : 0)
+        if (size !== 'laptop' && PHONE_SCROLL[name]) {
+          const ok = await page.evaluate((s) => { const el = document.querySelector(s); el?.scrollIntoView({ block: 'start' }); return !!el }, PHONE_SCROLL[name])
+          if (!ok) { console.log(`FAIL ${name}-${size}-${theme} no ${PHONE_SCROLL[name]}`); failed.push(`${name}-${size}-${theme} scroll`) }
+          await page.waitForTimeout(100)
+        }
         const file = `${out}/${name}-${size}-${theme}.png`
         await page.screenshot({ path: file })
         console.log(file)

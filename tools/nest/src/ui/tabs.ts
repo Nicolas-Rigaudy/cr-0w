@@ -9,9 +9,9 @@ export type BarKey = TabKey | 'more'
 // Settings (item_284) is no page of crow.yaml modules.nest.pages: it always shows, under More on phones.
 export const SETTINGS = 'settings'
 
-// The screen a route belongs to: a chat sits under Desk, an unknown page under Home.
+// The screen a route belongs to: a chat sits under Desk, Usage and an unknown page under Home.
 export function screenTab(route: Route): TabKey {
-  if (route.tab === 'missing') return 'home'
+  if (route.tab === 'missing' || route.tab === 'usage') return 'home'
   if (route.tab === 'settings') return SETTINGS
   if (route.tab === 'chat') return 'desk'
   if (route.tab === 'brick') return route.key

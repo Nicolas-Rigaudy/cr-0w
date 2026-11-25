@@ -4,7 +4,7 @@ import { homeCounts, quotaCls, quotaOf } from '../data/home'
 import { inboxBadge } from '../data/inbox'
 import type { Snapshot } from '../data/useData'
 import { ago, headerClock, time } from '../format'
-import { Link } from '../router'
+import { Link, usagePath } from '../router'
 import { Glyph } from './Glyph'
 import { MORE_ICON, SCOPE_ICONS, SETTINGS_ICON, TabIcon, type Tab, type TabKey } from './icons'
 import { barTab, hiddenTabs, SETTINGS } from './tabs'
@@ -75,11 +75,11 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
         {accts.length > 0 && (
           <span className="accts" role="group" aria-label="Quota left">
             {accts.map((q) => (
-              <span key={q.account} className="acct" title={`${q.account}: ${q.h}% of 5 hours, ${q.w}% of the week left`}>
+              <Link key={q.account} href={usagePath(q.account)} className="acct" title={`${q.account}: ${q.h}% of 5 hours, ${q.w}% of the week left`}>
                 {q.account}
                 <span className="gb" aria-hidden="true"><i className={quotaCls(q.h)} style={{ width: `${q.h}%` }} /></span>
                 <span className={`pc num${quotaCls(q.w) === 'lo' ? ' c-f' : ''}`} aria-label={`${q.h}% of 5 hours, ${q.w}% of the week left`}>{q.h}%</span>
-              </span>
+              </Link>
             ))}
           </span>
         )}
