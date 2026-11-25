@@ -67,8 +67,9 @@ case "${1:-}" in
   update) shift; exec "$CROW_ENGINE/bin/crow-update" "$@" ;;
   modules) shift; export CROW_HOME; exec "$CROW_ENGINE/bin/crow-modules" "$@" ;;
 nest)    shift
-         [ "${1:-}" = build ] || { echo "usage: crow nest build" >&2; exit 2; }
-         export CROW_HOME; cd "$CROW_ENGINE/tools/nest" && exec npm run build ;;
+         [ "${1:-}" = build ] || { echo "usage: crow nest build [vite build flags]" >&2; exit 2; }
+         shift  # the rest goes to vite build (core passes --outDir)
+         export CROW_HOME; cd "$CROW_ENGINE/tools/nest" && exec npm run build -- "$@" ;;
 esac
 # launch() gives a session its account as CROW_SESSION_ACCOUNT, so a CROW_ACCOUNT seen here is a choice.
 # Sessions started before that inherit CROW_ACCOUNT: there it is dropped when it names the session's own

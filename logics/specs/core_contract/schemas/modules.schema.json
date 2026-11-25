@@ -10,7 +10,8 @@
     "contract_version": {"type": "integer", "minimum": 1},
     "version": {"type": "string", "minLength": 1},
     "modules": {"type": "array", "items": {"$ref": "#/$defs/brick"}},
-    "errors": {"type": "array", "items": {"$ref": "#/$defs/error"}}
+    "errors": {"type": "array", "items": {"$ref": "#/$defs/error"}},
+    "nest_build": {"type": "string", "description": "Id of the Nest build core serves (item_283). Absent without a served dist. Nest reloads when it changes; version moves with it."}
   },
   "$defs": {
     "brick": {

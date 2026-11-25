@@ -44,6 +44,7 @@ type Modules struct {
 	Version         string               `json:"version"` // changes when a switch or manifest changes
 	Modules         []ModuleBrick        `json:"modules"`
 	Errors          []config.ModuleError `json:"errors"`
+	NestBuild       string               `json:"nest_build,omitempty"` // id of the Nest build served (item_283); Nest reloads when it moves
 
 	offSections map[string]string // section -> its off brick
 	offRoutes   *http.ServeMux    // routes of off bricks, nil when none
@@ -200,6 +201,11 @@ func (s *Server) modules(w http.ResponseWriter, r *http.Request) {
 	if m == nil {
 		fail(w, http.StatusServiceUnavailable, "modules not loaded")
 		return
+	}
+	if id := s.servedBuild(); id != "" {
+		c := *m // m is shared: answer a copy with the served build
+		c.NestBuild, c.Version = id, hash([]string{m.Version, id})
+		m = &c
 	}
 	reply(w, r, m.Version, m)
 }

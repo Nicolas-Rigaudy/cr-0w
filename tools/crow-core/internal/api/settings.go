@@ -34,12 +34,14 @@ type NestSettings struct {
 	Errors []json.RawMessage `json:"errors"`
 }
 
-// NestSaved answers a save: the new settings, the keys whose value changed, and whether
-// Nest must be rebuilt (hero or pages changed; the theme switches live through data-theme).
+// NestSaved answers a save: the new settings, the keys whose value changed, whether Nest
+// must be rebuilt (hero or pages changed; the theme switches live through data-theme) and
+// the build state once core has started that build.
 type NestSaved struct {
 	NestSettings
-	Changed    []string `json:"changed"`
-	NeedsBuild bool     `json:"needs_build"`
+	Changed    []string  `json:"changed"`
+	NeedsBuild bool      `json:"needs_build"`
+	Build      NestBuild `json:"build"`
 }
 
 // NestSave is the body of POST /api/settings/nest. A missing key keeps its value; pages
@@ -56,6 +58,7 @@ var settingsMu sync.Mutex
 func (s *Server) routeSettings(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/settings/nest", s.nestSettings)
 	mux.HandleFunc("POST /api/settings/nest", s.saveNestSettings)
+	mux.HandleFunc("GET /api/settings/nest/build", s.nestBuild)
 }
 
 func (s *Server) modulesBin() string { return filepath.Join(s.o.Engine, "bin", "crow-modules") }
@@ -136,6 +139,10 @@ func (s *Server) saveNestSettings(w http.ResponseWriter, r *http.Request) {
 	if v.Errors == nil {
 		v.Errors = []json.RawMessage{}
 	}
+	if v.NeedsBuild && s.buildOn() {
+		s.startBuild()
+	}
+	v.Build = s.buildState()
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	enc := json.NewEncoder(w)
