@@ -75,6 +75,20 @@ func mcpTools() []mcpTool {
 				}
 				return markInbox(out), nil
 			}},
+		{Name: "mission_cancel", Description: "Cancel a mission when the owner asks to stop, drop or cancel it. A running mission has its live run killed first. The tick never restarts a cancelled mission.",
+			InputSchema: obj([]string{"mission_id"}, map[string]any{"mission_id": strProp("mission id, e.g. 20261118-review-api-412"), "reason": strProp("the owner's words; optional")}),
+			call: func(c *coreClient, in map[string]any) (string, error) {
+				body := map[string]any{}
+				if r := arg(in, "reason"); r != "" {
+					body["reason"] = r
+				}
+				return c.post("/api/missions/"+url.PathEscape(arg(in, "mission_id"))+"/cancel", body)
+			}},
+		{Name: "run_stop", Description: "Stop a background run (not a mission run: cancel its mission instead) when the owner asks. Its commits stay on the run branch.",
+			InputSchema: obj([]string{"run"}, map[string]any{"run": strProp("run id or prefix, from brief dispatch")}),
+			call: func(c *coreClient, in map[string]any) (string, error) {
+				return c.post("/api/dispatch/"+url.PathEscape(arg(in, "run"))+"/stop", map[string]any{})
+			}},
 		{Name: "session_new", Description: "Open a live Claude session in a project, only when the owner asks for a session.",
 			InputSchema: obj([]string{"project"}, map[string]any{"project": strProp("registry project name"), "prompt": strProp("first message; optional")}),
 			call: func(c *coreClient, in map[string]any) (string, error) {

@@ -59,7 +59,7 @@ func TestMCPLoop(t *testing.T) {
 	if r[0]["result"].(map[string]any)["protocolVersion"] != "2025-03-26" {
 		t.Fatalf("init %v", r[0])
 	}
-	if n := len(r[1]["result"].(map[string]any)["tools"].([]any)); n != 6 {
+	if n := len(r[1]["result"].(map[string]any)["tools"].([]any)); n != 8 {
 		t.Fatalf("tools %d", n)
 	}
 	if !strings.Contains(lines[3], `"isError":true`) || !strings.Contains(lines[3], "no section ghost") {
