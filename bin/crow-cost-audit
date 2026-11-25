@@ -11,8 +11,9 @@ JSON: {days, since, dedup_key, turns, cost_usd, by_model{}, buckets{}, top_bucke
 start_context{}, run_start_context{}, context_tokens, by_account{}, by_day[]}.
 by_account: per cdx profile (the account whose transcript holds the turn).
 by_day: one entry per local day {date, cost_usd, turns, tokens, input/output/cache_read/cache_write_tokens,
-by_model{}, by_account{}, by_project{}, by_kind{}}; each group row is {cost_usd, tokens, turns}, by_model rows
-also carry the four token kinds.
+by_model{}, by_account{}, by_project{}, by_kind{}, limits}; each group row is {cost_usd, tokens, turns}, by_model
+rows also carry the four token kinds. limits: {account: {week_used_pct, windows_5h[]}} from limit-samples.jsonl
+(crow-usage limit_days), null on a day without samples.
 context_tokens: input + cache reads + cache writes summed over turns (the "context read" figure); each table row
 carries its own.
 by_skill: sessions classed by first typed prompt (/skill name, retro, headless, interactive).
@@ -82,8 +83,9 @@ def add_day(by_day, day, u, cost, model, account, project, kind):
         m[k] = m.get(k, 0) + v
 
 
-def day_series(by_day):
-    """Day table as a date-sorted list, costs rounded to the cent."""
+def day_series(by_day, limits):
+    """Day table as a date-sorted list, costs rounded; limits is crow-usage limit_days(), None on days without
+    samples."""
     out = []
     for day in sorted(by_day):
         d = by_day[day]
@@ -91,7 +93,7 @@ def day_series(by_day):
                       for k, v in sorted(d[g].items(), key=lambda kv: -kv[1]["cost_usd"])}
                   for g in ("by_model", "by_account", "by_project", "by_kind")}
         out.append({"date": day, **{k: v for k, v in d.items() if k not in groups},
-                    "cost_usd": round(d["cost_usd"], 4), **groups})
+                    "cost_usd": round(d["cost_usd"], 4), **groups, "limits": limits.get(day)})
     return out
 
 
@@ -121,7 +123,7 @@ def read_transcript(path, cu):
     return turns, first_prompt, entry, cwd
 
 
-def audit(days, hub=None, profiles=None):
+def audit(days, hub=None, profiles=None, samples=None):
     cu = load_usage()
     registry = cu.load_registry()
     cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
@@ -182,7 +184,23 @@ def audit(days, hub=None, profiles=None):
     return {"days": days, "since": since, "dedup_key": DEDUP_KEY, "turns": total["turns"],
             "cost_usd": round(total["cost"], 2), "context_tokens": total["context"], "by_model": rnd(by_model), "buckets": rnd(buckets),
             "top_bucket": top, "by_project": rnd(by_project), "by_skill": rnd(by_skill), "start_context": sc,
-            "run_start_context": rsc, "by_account": rnd(by_account), "by_day": day_series(by_day)}
+            "run_start_context": rsc, "by_account": rnd(by_account),
+            "by_day": day_series(by_day, cu.limit_days(read_samples(samples or cu.SAMPLES)))}
+
+
+def read_samples(path):
+    """Limit samples (JSON lines); bad lines and a missing file read as none."""
+    out = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    out.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        pass
+    return out
 
 
 def text(r):

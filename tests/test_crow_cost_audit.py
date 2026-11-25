@@ -1,4 +1,5 @@
 """bin/crow-cost-audit: dedup, context buckets, skill classes, hub start context."""
+import datetime as dt
 import json
 
 from conftest import run, write_jsonl
@@ -52,3 +53,15 @@ def test_day_series_and_account_split(hub):
     assert set(today["by_project"]) == {"hub", "api"}
     assert days[day(1)]["by_model"]["sonnet-5-5"]["turns"] == 1
     assert abs(sum(d["cost_usd"] for d in r["by_day"]) - r["cost_usd"]) < 0.01
+    assert today["limits"] is None
+
+
+def test_day_limits_from_samples(hub):
+    home, _ = hub
+    setup(hub, "s1", [turn("a", "r1", 30_000), {**turn("d", "r4", 5_000), "timestamp": f"{day(1)}T12:00:00.000Z"}])
+    noon = dt.datetime.combine(dt.date.today(), dt.time(12)).astimezone().timestamp()
+    write_jsonl(home / "local" / "state" / "limit-samples.jsonl",
+                [{"t": noon, "a": "acct1", "h5": 100, "wk": 50}, {"t": noon + 600, "a": "acct1", "h5": 90, "wk": 48}])
+    days = {d["date"]: d for d in audit(hub)["by_day"]}
+    assert days[day(0)]["limits"] == {"acct1": {"week_used_pct": 2, "windows_5h": [10]}}
+    assert days[day(1)]["limits"] is None
