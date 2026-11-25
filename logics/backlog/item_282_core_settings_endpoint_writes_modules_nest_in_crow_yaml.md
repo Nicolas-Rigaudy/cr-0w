@@ -1,14 +1,14 @@
 ## item_282_core_settings_endpoint_writes_modules_nest_in_crow_yaml - Core settings endpoint writes modules.nest in crow.yaml
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: In progress
+> Status: Done
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 10%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Operator workflow and runtime integration
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-25 16:03:26
+> Indicators reviewed: 2026-11-25 16:12:19
 
 # AI Context
 - Summary: Core GET and POST routes for Nest settings: read and write `modules.nest.{theme,hero,pages}` in crow.yaml, keep comments, refuse unknown values.
@@ -48,8 +48,8 @@ Nest can show theme, hero and pages but cannot change them. Core is the only wri
 # Links
 - Product brief(s): (none yet)
 - Architecture decision(s): (none yet)
-- Request: `logics/request/req_066_nest_settings_page_theme_hero_page_order_and_module_switches.md`
-- Primary task(s): (none yet)
+- Request: `req_066_nest_settings_page_theme_hero_page_order_and_module_switches`
+- Primary task(s): `task_031_core_settings_endpoint_writes_modules_nest_in_crow_yaml`
 
 # Priority
 - Priority: Medium
@@ -58,6 +58,7 @@ Nest can show theme, hero and pages but cannot change them. Core is the only wri
 # Notes
 - Order: 1 of 4. Reuse `yaml_key_span` and `crow_yaml_set` in `bin/crow-modules`; the write side pattern is `tools/crow-core/internal/api/actions.go`.
 - Derived from request `req_066_nest_settings_page_theme_hero_page_order_and_module_switches`.
+- Task `task_031_core_settings_endpoint_writes_modules_nest_in_crow_yaml` was finished via `logics-manager flow finish task` on 2026-11-25.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
