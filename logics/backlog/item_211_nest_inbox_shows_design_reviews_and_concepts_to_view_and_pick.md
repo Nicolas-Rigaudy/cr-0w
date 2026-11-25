@@ -4,7 +4,7 @@
 > Status: Ready
 > Understanding: 85%
 > Confidence: 80%
-> Progress: 0%
+> Progress: 70%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -49,6 +49,10 @@
 
 # Notes
 - 2026-11-16: owner asked for "questions, design reviews, mails, viewer for concepts" in Inbox.
+- Owner pick 2026-11-25: viewer B from board afk-inbox-2026-11-24 (flip stage like crow-compare).
+- Built 2026-11-25 (Nest client): a mockup row or a choice with several images opens the flip stage. Letters and scenarios come from the file names (`x-A-dark-room.png`). Laptop: stage with the letter and the "Space flips · Z zooms" hint, thumbnails, scenario list. Phone: letter chips and "tap image to flip" in the swipe sheet. Pick sends the pick verb with `pick: <letter>`. Images load from core `/api/missions/{id}/artifacts/{path}`. `?item=<inbox id>` opens a row directly.
+- Build shots: local/state/afk/shots/afk-inbox-build/review-*.png next to the board 211-B-*.png.
+- Left: core compare-spec source (option and scenario labels from crow-compare instead of file names), the owner's OK on the build vs the board.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
