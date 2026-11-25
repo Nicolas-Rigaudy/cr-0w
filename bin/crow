@@ -225,7 +225,7 @@ case "$cmd" in
               # Headless backend (core, Nest): one JSON line naming the detached tmux session.
               echo "crow: $1 started on $CROW_ACCOUNT in tmux session ${line#tmux }" >&2
               jq -nc --arg p "$1" --arg a "$CROW_ACCOUNT" --arg t "${line#tmux }" \
-                '{ok: true, message: "started \($p) on \($a), no window", account: $a, tmux: $t}'
+                '{ok: true, message: "started \($p) on \($a), running in Nest", account: $a, tmux: $t}'
             elif [[ -n "$line" ]]; then
               echo "crow: no terminal backend (CROW_TERMINAL=kitty|tmux); run this in a new terminal:" >&2
               printf '%s\n' "$line"

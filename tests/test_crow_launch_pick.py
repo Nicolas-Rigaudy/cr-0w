@@ -242,7 +242,7 @@ def test_term_headless_starts_a_detached_tmux_session_and_prints_json(hub, fake,
     r = run(hub, "crow", "term", "demo", "hello", env={**env, "CROW_TERMINAL": "headless", "INVOCATION_ID": ""})
     assert r.returncode == 0, r.stderr
     out = json.loads(r.stdout.strip().splitlines()[-1])
-    assert out["ok"] and out["account"] == "main" and out["tmux"].startswith("crow-demo-") and "no window" in out["message"]
+    assert out["ok"] and out["account"] == "main" and out["tmux"].startswith("crow-demo-") and "running in Nest" in out["message"]
     call = calls.read_text()
     assert call.startswith(f"new-session -d -s {out['tmux']} ") and "open --on-busy ask demo hello" in call
     assert launches() == []

@@ -25,7 +25,7 @@ describe('Nest-started sessions (item_188)', () => {
     const src = fixtureSource()
     const r = await src.actions.start({ project: 'demo', prompt: 'look at the build' })
     expect(r.tmux).toMatch(/^crow-demo-/)
-    expect(r.message).toContain('no window')
+    expect(r.message).toContain('running in Nest')
     const s = await snapshot(src)
     const a = (s.sections.dispatch?.data as { agents: Array<{ pid: number; tmux?: string }> }).agents.find((x) => x.tmux === r.tmux)
     expect(a).toBeDefined()

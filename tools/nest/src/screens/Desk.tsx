@@ -196,7 +196,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
       () => { setRun({ project: '', label: '', model: 'default', account: '', prompt: '' }); setForm(null) }),
   })
   const open = () => setSheet({
-    title: 'New session', lead: `Starts a claude session on ${start.project} here, with no window. Its chat opens once it shows up.`, quote: start.prompt || undefined,
+    title: 'New session', lead: `Starts a claude session on ${start.project} inside Nest, no desktop terminal. Its chat opens once it shows up.`, quote: start.prompt || undefined,
     target: [['project', start.project], ['account', start.account || 'auto']],
     note: 'Fails when that account is busy; nothing else is started. Its Terminal tab shows the session screen.', ok: 'Start session',
     run: wrap(`/session ${start.project}`, async () => {
@@ -206,7 +206,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     }, () => { setStart({ project: '', account: '', prompt: '' }); setForm(null) }),
   })
   const resume = (r: Resumable) => setSheet({
-    title: 'Resume session', lead: `Reopens the conversation of ${r.project} here, with no window. Its chat opens once it shows up.`,
+    title: 'Resume session', lead: `Reopens the conversation of ${r.project} inside Nest, no desktop terminal. Its chat opens once it shows up.`,
     target: [['project', r.project], ['account', r.account], ['id', r.conversation_id.slice(0, 8)]],
     note: 'Same conversation, same account.', ok: 'Resume', run: wrap(`Resume ${r.project}`, async () => {
       const res = await act.resume(r.conversation_id, r.account)
@@ -332,7 +332,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     run: wrap(`/dispatch ${i.project} ${shortRef(i.ref)}`, () => act.dispatch({ project: i.project, label: shortRef(i.ref), prompt: promptOf(i) })),
   })
   const sessionReady = (i: ReadyItem) => setSheet({
-    title: 'New session', lead: `Starts a claude session on ${i.project} for ${i.title}, with no window. Its chat opens once it shows up.`, quote: promptOf(i),
+    title: 'New session', lead: `Starts a claude session on ${i.project} for ${i.title} inside Nest, no desktop terminal. Its chat opens once it shows up.`, quote: promptOf(i),
     target: [['project', i.project], ['item', shortRef(i.ref)], ['account', 'auto']],
     note: 'Fails when that account is busy; nothing else is started.', ok: 'Start session',
     run: wrap(`/session ${i.project}`, async () => {

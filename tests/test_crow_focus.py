@@ -342,5 +342,5 @@ def test_resume_headless_prints_json_with_the_tmux_session(tmp_path):
                         "--session", "abc"], capture_output=True, text=True, env=env, check=False)
     assert r.returncode == 0, r.stderr
     out = json.loads(r.stdout.strip().splitlines()[-1])
-    assert out["ok"] and out["account"] == "main" and out["tmux"].startswith("crow-") and "no window" in out["message"]
+    assert out["ok"] and out["account"] == "main" and out["tmux"].startswith("crow-") and "running in Nest" in out["message"]
     assert calls.read_text().startswith(f"new-session -d -s {out['tmux']} ") and "--conversation abc" in calls.read_text()

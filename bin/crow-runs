@@ -874,7 +874,8 @@ def collect(since="today", include_unledgered=False):
         # No session id yet: a short-lived helper, or a headless Nest session stuck on a
         # first-run dialog (item_240), listed as "setup" so Nest can answer it in its terminal.
         setup = not sid and p["provider"] == "claude"
-        if setup and not (tmux or "").startswith(crow_term.HEADLESS_PREFIX):
+        # A helper that lives a few seconds (hooks, statusline) is not a stuck session.
+        if setup and (not (tmux or "").startswith(crow_term.HEADLESS_PREFIX) or now - p["started"] < 10):
             continue
         account = p["account"] or (re.search(r"/profiles/([^/]+)/", p["home"]) or [None, "default"])[1]
         tpath = transcript_path(p["home"], p["cwd"], sid) if sid and p["provider"] == "claude" else None
@@ -1222,7 +1223,7 @@ def dispatch(a):
 
 
 C = {"dim": "\033[2m", "b": "\033[1m", "g": "\033[32m", "y": "\033[33m", "r": "\033[31m", "c": "\033[36m", "m": "\033[35m", "0": "\033[0m"}
-STATE_STYLE = {"working": ("●", "g"), "quiet": ("◌", "y"), "waiting": ("◆", "m"), "idle": ("○", "dim")}
+STATE_STYLE = {"working": ("●", "g"), "quiet": ("◌", "y"), "waiting": ("◆", "m"), "idle": ("○", "dim"), "setup": ("◇", "c")}
 PAST_STYLE = {"done": ("✓", "g"), "failed": ("✗", "r"), "limit": ("⏸", "y"), "lost": ("?", "dim"),
               "budget": ("$", "y"), "stuck": ("!", "r"), "stopped": ("■", "dim")}
 

@@ -138,7 +138,7 @@ function fixtureActions(data: LiveData, bodies: Map<SectionName, SectionBody>, n
         ...d,
         agents: [...d.agents, { kind: 'session', pid: 8000 + d.agents.length, account, project: s.project, cwd: `/src/${s.project}`, state: 'working', started_at: now.toISOString(), last_prompt: s.prompt ?? null, tmux }],
       })
-      return reply('start', s.project, { text: s.prompt, account, project: s.project, message: `started ${s.project} on ${account}, no window`, tmux })
+      return reply('start', s.project, { text: s.prompt, account, project: s.project, message: `started ${s.project} on ${account}, running in Nest`, tmux })
     },
     async dispatch(r) {
       const d = dispatch()

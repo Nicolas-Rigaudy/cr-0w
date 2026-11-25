@@ -143,7 +143,7 @@ def main(argv):
         sys.exit(f"crow-focus: could not open a {backend} window ({e})")
     if out.startswith("tmux "):
         # Headless backend (core, Nest; item_240): one JSON line naming the detached tmux session.
-        print(json.dumps({"ok": True, "message": f"resumed {os.path.basename(cwd)} on {account}, no window",
+        print(json.dumps({"ok": True, "message": f"resumed {os.path.basename(cwd)} on {account}, running in Nest",
                           "account": account, "tmux": out[5:]}))
         return 0
     print(f"resuming in a new {backend} window" if out == "opened" else f"run this in a new terminal to resume: {out}")
