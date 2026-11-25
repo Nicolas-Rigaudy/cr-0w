@@ -15,7 +15,9 @@ def test_mech_kind_runs_sonnet_with_task_access():
     assert crow_lib.isolation_mode("mech") == "rw"
 
 
-def test_run_brief_adds_footer_only_for_capped_kinds():
+def test_run_brief_adds_footer_only_for_capped_kinds(monkeypatch):
+    for k in ("TASK", "MECH", "REVIEW"):
+        monkeypatch.delenv(f"CROW_{k}_CALL_CAP", raising=False)
     assert "60 tool calls" in crow_lib.run_brief("task", "do X")
     assert "40 tool calls" in crow_lib.run_brief("mech", "do X")
     assert crow_lib.run_brief("review", "do X") == "do X"
@@ -49,3 +51,8 @@ def test_fmt_tokens():
     assert crow_lib.fmt_tokens(15_040_000) == "15.0M"
     assert crow_lib.fmt_tokens(117_400) == "117k"
     assert crow_lib.fmt_tokens(900) == "900"
+
+
+def test_run_brief_cap_follows_the_env_override(monkeypatch):
+    monkeypatch.setenv("CROW_TASK_CALL_CAP", "150")
+    assert "150 tool calls" in crow_lib.run_brief("task", "do X")
