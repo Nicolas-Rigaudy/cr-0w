@@ -1520,3 +1520,66 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .with-bricks > .bricks > .brick { width: 100%; box-sizing: border-box; }
 }
 [data-theme='cyber'] .ops-menu, [data-theme='cyber'] .ops-menu button, [data-theme='cyber'] .ops-q.ghost { border-radius: 0; }
+
+/* MRs page (item_225, board round 2 option C): deck panes + tabbed detail. Tokens only. */
+.mrs { font-size: 12px; line-height: 1.45; }
+.mrs .mhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.mrs .mhead h1 { margin: 0; font: 400 20px var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.mrs .segs { display: flex; gap: 4px; }
+.mrs .seg { all: unset; cursor: pointer; padding: 4px 12px; border: 1px solid var(--line); border-radius: var(--r-btn); clip-path: var(--clip-btn); background: var(--btn); font: 11px var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+.mrs .seg.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.mrs .seg:focus-visible, .mrs .mrow:focus-visible, .mrs .mtab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mrs .sum { margin-left: auto; color: var(--sub); letter-spacing: 0.04em; }
+.mrs .c-n { color: var(--c-n); } .mrs .c-f { color: var(--c-f); } .mrs .c-d { color: var(--c-d); } .mrs .c-b { color: var(--c-b); }
+.mrs .mgrid { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.mrs .mpanes { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding-top: 8px; }
+.mrs .deck { position: relative; border: 1px solid var(--line); border-radius: var(--r-pn); padding: 16px 12px 10px; min-width: 0; display: flex; flex-direction: column; }
+.mrs .deck.on { border-color: var(--accent); }
+.mrs .deck .dt { position: absolute; top: -9px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; font: 11px var(--font-head); letter-spacing: 0.12em; text-transform: uppercase; color: var(--sub); line-height: 16px; }
+.mrs .deck .dt > span { background: var(--bg); padding: 0 6px; }
+.mrs .deck.on .dt > span:first-child { color: var(--accent); }
+.mrs .mlist { display: flex; flex-direction: column; gap: 2px; }
+.mrs .mrow { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; min-height: 32px; padding: 4px 10px; border-left: 2px solid transparent; border-radius: var(--r-row); font-family: var(--font-head); }
+.mrs .mrow:hover { background: var(--row); }
+.mrs .mrow.on { background: var(--row); border-left-color: var(--accent); }
+.mrs .mrow .ref { flex: none; min-width: 42px; color: var(--c-w); }
+.mrs .mrow.mine .ref, .mrs .mdet h2 .ref { color: var(--accent); }
+.mrs .mrow.merged { color: var(--dim); }
+.mrs .mrow.merged .ref { color: var(--c-d); opacity: 0.7; }
+.mrs .mrow .ti { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; flex-direction: column; }
+.mrs .mrow .ti b { font-weight: 400; }
+.mrs .mrow .ti .sub { color: var(--sub); font-size: 11px; }
+.mrs .mrow .st { flex: none; display: flex; gap: 10px; align-items: center; font-size: 11px; color: var(--sub); }
+.mrs .mrow.br { cursor: default; min-height: 44px; }
+.mrs .mrow.br .ref { color: var(--sub); }
+.mrs .btn.sm { min-height: 28px; padding: 0 10px; font: 11px var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; }
+.mrs .dim { color: var(--dim); }
+.mrs .mdet { display: flex; flex-direction: column; gap: 12px; padding: 6px 8px 4px; min-height: 0; flex: 1; }
+.mrs .mdet h2 { margin: 0; font: 400 16px var(--font-head); }
+.mrs .mdet .meta { color: var(--sub); font-family: var(--font-head); }
+.mrs .mtabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.mrs .mtab { all: unset; cursor: pointer; padding: 4px 12px; border: 1px solid var(--line); border-radius: var(--r-btn); background: var(--btn); font: 11px var(--font-head); color: var(--fg); }
+.mrs .mtab.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.mrs .mbody { display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; }
+.mrs .facts { display: flex; flex-wrap: wrap; gap: 8px 40px; margin: 0; padding: 12px; background: var(--well); border-radius: var(--r-row); }
+.mrs .facts dt { font: 10px var(--font-head); letter-spacing: 0.12em; text-transform: uppercase; color: var(--sub); }
+.mrs .facts dd { margin: 2px 0 0; font: 13px var(--font-head); }
+.mrs .lbl { display: flex; justify-content: space-between; font: 11px var(--font-head); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.mrs .lbl > span + span { color: var(--sub); }
+.mrs .jobs { display: flex; flex-wrap: wrap; }
+.mrs .job { padding: 4px 10px; border: 1px solid var(--c-d); color: var(--c-d); font: 12px var(--font-head); }
+.mrs .job + .job { margin-left: -1px; }
+.mrs .job.failed { border-color: var(--c-f); color: var(--c-f); background: color-mix(in srgb, var(--c-f) 10%, transparent); }
+.mrs .job.running { border-color: var(--c-b); color: var(--c-b); }
+.mrs .job.skipped, .mrs .job.manual, .mrs .job.none { border: 1px dashed var(--line); color: var(--sub); }
+.mrs .flog { margin: 8px 0 0; padding: 10px 12px; background: var(--well); border-radius: var(--r-row); color: var(--c-f); font: 11px var(--font-head); white-space: pre-wrap; overflow-wrap: anywhere; }
+.mrs .th { border-left: 2px solid var(--c-n); background: var(--well); padding: 8px 12px; margin-bottom: 8px; font-family: var(--font-head); }
+.mrs .th.done { border-left-color: var(--c-d); opacity: 0.75; }
+.mrs .th .tm { font-size: 11px; color: var(--sub); }
+.mrs .empty { white-space: normal; }
+@media (min-width: 1100px) {
+  .mrs.m-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .mrs.m-lp .mgrid { display: grid; grid-template-columns: 500px 1fr; gap: 16px; flex: 1; min-height: 0; }
+  .mrs.m-lp .mpanes { overflow-y: auto; min-height: 0; }
+  .mrs.m-lp .mgrid > .deck { margin-top: 8px; min-height: 0; }
+}

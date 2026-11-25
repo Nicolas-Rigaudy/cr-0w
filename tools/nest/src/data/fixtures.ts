@@ -5,6 +5,7 @@ import stateAgenda from '../../fixtures/states/agenda.json'
 import stateLive from '../../fixtures/states/live.json'
 import stateWork from '../../fixtures/states/work.json'
 import stateOps from '../../fixtures/states/ops.json'
+import stateMrs from '../../fixtures/states/mrs.json'
 import { ApiError } from './api'
 import { fixtureButler, type ButlerMsg } from './butler'
 import type { ChatTarget, ConversationPage, Entry, PageAsk } from './conversation'
@@ -24,7 +25,8 @@ const NOW = new Date('2026-11-09T16:10:00+01:00')
 const NO_SECTION: SectionBody = { data: null, stale: false, updated_at: null }
 type LiveData = Partial<Record<SectionName, unknown>>
 // The work feed (item_204) over the live fixture: one row per kind and state, a mission rollup.
-const LIVE: LiveData = { ...stateLive, work: stateWork }
+// The MRs board (item_225) also carries the fields crow-mrs does not serve yet (src/data/mrs.ts).
+const LIVE: LiveData = { ...stateLive, work: stateWork, mrs: stateMrs }
 
 // In-memory live actions over the fixture sections: they check targets like core
 // (404 unknown, 409 full slots) and change the section so a refetch shows the result.

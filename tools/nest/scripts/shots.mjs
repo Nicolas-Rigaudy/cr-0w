@@ -36,6 +36,8 @@ const SCREENS = {
   inbox: '/inbox',
   review: '/inbox?item=20261109-fix-push-token-refresh/v1', // design review on the flip stage (item_211)
   desk: '/desk',
+  mrs: '/mrs',
+  'mrs-review': '/mrs?mr=242', // an MR to review in the detail (item_225)
 }
 const unknown = (only ?? []).filter((n) => !(n in SCREENS))
 if (unknown.length || (only && !only.length)) {

@@ -7,6 +7,7 @@ import { pages as brickPages } from 'virtual:nest-modules'
 import { BrickModuleSections } from './modules/Sections'
 import { Home, INNER } from './screens/Home'
 import { Inbox } from './screens/Inbox'
+import { Mrs } from './screens/Mrs'
 import { Chat } from './screens/Chat'
 import { Desk } from './screens/Desk'
 import { Ops } from './screens/Ops'
@@ -21,7 +22,6 @@ import { BrickSections } from './ui/BrickSections'
 import { listSections } from './data/modules'
 
 const LATER: Record<string, [string, string]> = {
-  mrs: ['MRs', 'Merge requests arrive with the live API.'],
   agenda: ['Agenda', 'The calendar arrives with the live API.'],
   reports: ['Reports', 'Reports arrive with the live API.'],
   missing: ['Not found', 'This page does not exist.'],
@@ -42,6 +42,7 @@ export function App() {
     if (route.tab === 'home') body = <Home snap={snap} />
     else if (route.tab === 'ops') body = <Ops snap={snap} refresh={refresh} />
     else if (route.tab === 'inbox') body = <Inbox snap={snap} refresh={refresh} />
+    else if (route.tab === 'mrs') body = <Mrs snap={snap} refresh={refresh} />
     else if (route.tab === 'desk') body = <Desk snap={snap} refresh={refresh} />
     else if (route.tab === 'chat') body = <Chat snap={raw} refresh={refresh} target={route.target} />
     else if (route.tab === 'brick') {

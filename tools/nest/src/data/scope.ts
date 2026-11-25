@@ -54,6 +54,11 @@ export function workSide(w: WorkItem, registry: RegProject[], missions: Mission[
 // The Today section reads the work mailbox. A personal mail source tags its rows perso.
 export const TODAY_MAIL_SIDE: Side = 'work'
 
+// An MR or branch row of crow-mrs: its project's registry scope, else the scope crow-mrs read.
+type MrSide = { project: string; scope?: string }
+export const mrSide = (m: MrSide, registry: RegProject[]): Side =>
+  projectSide(m.project, registry) ?? (m.scope === 'work' ? 'work' : m.scope === 'personal' ? 'perso' : undefined)
+
 const keep = (mode: ScopeMode, side: Side) => mode === 'all' || side === mode || side === 'both'
 
 export interface ScopeIn { missions: Mission[]; inbox: InboxItem[]; registry: RegProject[]; agents: Agent[]; parked: Resumable[] }
@@ -87,7 +92,7 @@ const mailIn = (b: SectionBody, key: string, side: Side, mode: ScopeMode) =>
 // MRs and the Today calendar are not per project and stay whole.
 export function scopeSnapshot(s: Snapshot, mode: ScopeMode): Snapshot {
   if (mode === 'all') return s
-  const { projects, dispatch, sessions, today, work, ready } = s.sections
+  const { projects, dispatch, sessions, today, work, ready, mrs } = s.sections
   const registry = arr<RegProject>(projects, 'projects')
   const reg = registryOf(projects)
   const items = workOf(work)
@@ -104,6 +109,7 @@ export function scopeSnapshot(s: Snapshot, mode: ScopeMode): Snapshot {
       projects: withLists(projects, { projects: registry.filter((p) => keep(mode, projectSide(p.name, registry))) }),
       dispatch: withLists(dispatch, { agents: f.agents }),
       sessions: withLists(sessions, { sessions: f.parked }),
+      mrs: withLists(mrs, Object.fromEntries(['mrs', 'merged', 'branches'].map((k) => [k, arr<MrSide>(mrs, k).filter((m) => keep(mode, mrSide(m, reg)))]))),
       ready: withLists(ready, { items: arr<ReadyItem>(ready, 'items').filter((i) => keep(mode, projectSide(i.project, reg))) }),
       work: items ? { ...work, data: items.filter((w) => keep(mode, workSide(w, reg, s.missions))) } : work,
       today: withLists(today, {

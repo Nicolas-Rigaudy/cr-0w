@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "forges": ["gitlab", "github"],
+  "now": "2026-11-09T15:10:00Z",
+  "mrs": [
+    {
+      "project": "api", "name": "api", "scope": "work", "forge": "gitlab", "repo": "team/api", "number": 242, "ref": "!242",
+      "title": "raise alerts from detection events", "author": "dev-a", "role": "REVIEWER", "draft": false, "pipeline": "passed",
+      "updated": "2026-11-05T14:40:00Z", "created": "2026-11-05T09:10:00Z", "branch": "detection-alerts", "target": "main",
+      "url": "https://gitlab.example.com/team/api/-/merge_requests/242", "threads_open": 0, "threads_resolved": 0,
+      "approvals": { "given": 0, "required": 1 }, "reviewers": ["you"], "pipeline_id": 8790,
+      "jobs": [{ "name": "lint", "state": "passed", "duration": "0:38" }, { "name": "test", "state": "passed", "duration": "2:57" }, { "name": "sonar", "state": "passed" }, { "name": "deploy dev", "state": "manual" }]
+    },
+    {
+      "project": "api", "name": "api", "scope": "work", "forge": "gitlab", "repo": "team/api", "number": 245, "ref": "!245",
+      "title": "power supply alerts", "author": "dev-b", "role": "REVIEWER", "draft": true, "pipeline": "running",
+      "updated": "2026-11-08T15:00:00Z", "created": "2026-11-08T10:20:00Z", "branch": "power-alerts", "target": "main",
+      "url": "https://gitlab.example.com/team/api/-/merge_requests/245", "threads_open": 0, "threads_resolved": 0,
+      "reviewers": ["you"]
+    },
+    {
+      "project": "api", "name": "api", "scope": "work", "forge": "gitlab", "repo": "team/api", "number": 239, "ref": "!239",
+      "title": "one helper for the sync loops", "author": "you", "role": "AUTHOR", "draft": false, "pipeline": "failed",
+      "updated": "2026-11-09T13:10:00Z", "created": "2026-11-06T08:30:00Z", "branch": "sync-loops-helper", "target": "main",
+      "url": "https://gitlab.example.com/team/api/-/merge_requests/239", "threads_open": 2, "threads_resolved": 3,
+      "approvals": { "given": 0, "required": 1 }, "reviewers": ["dev-a"], "pipeline_id": 8812,
+      "jobs": [{ "name": "lint", "state": "passed", "duration": "0:41" }, { "name": "test", "state": "failed", "duration": "3:12" }, { "name": "sonar", "state": "passed" }, { "name": "deploy dev", "state": "skipped" }],
+      "failure": "test_sync.py::test_reset_drops_roles FAILED\nAssertionError: roles left after reset: ['viewer']",
+      "threads": [
+        { "path": "sync.py", "line": 112, "author": "dev-a", "at": "2026-11-09T12:10:00Z", "body": "Same loop as in sync_grants. One helper for both?", "resolved": false },
+        { "path": "sync.py", "line": 40, "author": "dev-a", "at": "2026-11-09T12:12:00Z", "body": "This only forwards to _apply. Inline it?", "resolved": false },
+        { "path": "sync.py", "line": 18, "author": "dev-a", "at": "2026-11-08T09:00:00Z", "body": "Typo in the docstring.", "resolved": true }
+      ]
+    },
+    {
+      "project": "api", "name": "api", "scope": "work", "forge": "gitlab", "repo": "team/api", "number": 241, "ref": "!241",
+      "title": "rate limit per client behind the proxy", "author": "you", "role": "AUTHOR", "draft": false, "pipeline": "passed",
+      "updated": "2026-11-06T15:00:00Z", "created": "2026-11-04T10:00:00Z", "branch": "client-rate-limit", "target": "main",
+      "url": "https://gitlab.example.com/team/api/-/merge_requests/241", "threads_open": 0, "threads_resolved": 4,
+      "approvals": { "given": 1, "required": 1 }, "reviewers": ["dev-b"], "pipeline_id": 8771,
+      "jobs": [{ "name": "lint", "state": "passed", "duration": "0:40" }, { "name": "test", "state": "passed", "duration": "3:05" }, { "name": "sonar", "state": "passed" }, { "name": "deploy dev", "state": "passed", "duration": "1:12" }]
+    },
+    {
+      "project": "cr-0w", "name": "cr-0w", "scope": "personal", "forge": "github", "repo": "owner/cr-0w", "number": 57, "ref": "#57",
+      "title": "lock the migration runs", "author": "you", "role": "AUTHOR", "draft": false, "pipeline": "running",
+      "updated": "2026-11-09T14:45:00Z", "created": "2026-11-09T14:40:00Z", "branch": "migration-lock", "target": "main",
+      "url": "https://github.com/owner/cr-0w/pull/57", "threads_open": 0, "threads_resolved": 0,
+      "jobs": [{ "name": "lint", "state": "passed", "duration": "0:22" }, { "name": "test", "state": "running" }]
+    }
+  ],
+  "merged": [
+    {
+      "project": "api", "name": "api", "scope": "work", "forge": "gitlab", "repo": "team/api", "number": 235, "ref": "!235",
+      "title": "sync roles: reset what the code drops", "author": "you", "role": "AUTHOR", "draft": false, "pipeline": "passed",
+      "updated": "2026-11-09T10:42:00Z", "created": "2026-11-03T09:00:00Z", "branch": "sync-roles-reset", "target": "main",
+      "url": "https://gitlab.example.com/team/api/-/merge_requests/235", "threads_open": 0, "threads_resolved": 2,
+      "merged_at": "2026-11-09T10:42:00Z"
+    },
+    {
+      "project": "api", "name": "api", "scope": "work", "forge": "gitlab", "repo": "team/api", "number": 229, "ref": "!229",
+      "title": "readme for the sync jobs", "author": "you", "role": "AUTHOR", "draft": false, "pipeline": "passed",
+      "updated": "2026-11-07T16:00:00Z", "created": "2026-11-06T09:00:00Z", "branch": "sync-readme", "target": "main",
+      "url": "https://gitlab.example.com/team/api/-/merge_requests/229", "threads_open": 0, "threads_resolved": 1,
+      "merged_at": "2026-11-07T16:00:00Z"
+    }
+  ],
+  "branches": [
+    { "project": "api", "name": "api", "scope": "work", "branch": "proxy-rate-limit", "ahead": 2 }
+  ],
+  "patterns": {
+    "api": [
+      { "pattern": "Same loop copied instead of one helper", "count": 1, "last": "!239", "at": "2026-11-09T13:00:00Z", "hits": ["!239"] },
+      { "pattern": "Hardcoded value where a constant exists", "count": 4, "last": "!219", "at": "2026-10-21T09:00:00Z" }
+    ],
+    "common": [
+      { "pattern": "Name doesn't follow its siblings", "count": 7, "last": "!239", "at": "2026-11-09T12:50:00Z", "hits": ["!239"] },
+      { "pattern": "Comment says what the code doesn't do", "count": 9, "last": "!235", "at": "2026-11-08T11:00:00Z" },
+      { "pattern": "Doc or README left stale", "count": 10, "last": "!229", "at": "2026-11-07T15:00:00Z" },
+      { "pattern": "Comment too long or justifying", "count": 5, "last": "!219", "at": "2026-10-21T10:00:00Z" }
+    ]
+  }
+}
