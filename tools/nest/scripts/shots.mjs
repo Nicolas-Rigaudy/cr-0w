@@ -39,6 +39,7 @@ const SCREENS = {
   review: '/inbox?item=20261109-fix-push-token-refresh/v1', // design review on the flip stage (item_211)
   desk: '/desk',
   mrs: '/mrs',
+  agenda: '/agenda',
   'mrs-review': '/mrs?mr=242', // an MR to review in the detail (item_225)
   'mrs-patterns': '/mrs?mr=239&tab=patterns', // the review patterns tab (item_225)
 }
