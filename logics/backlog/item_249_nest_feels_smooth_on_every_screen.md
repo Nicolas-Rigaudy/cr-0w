@@ -1,10 +1,10 @@
 ## item_249_nest_feels_smooth_on_every_screen - Nest feels smooth on every screen
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 80%
-> Confidence: 75%
-> Progress: 0%
+> Status: In progress
+> Understanding: 90%
+> Confidence: 80%
+> Progress: 40%
 > Complexity: Medium
 > Theme: General
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -58,6 +58,45 @@
 # Notes
 - Generated locally by logics-manager.
 
+## Measurements 2026-11-25
+- Probe: `npm run perf -- 10` in tools/nest (scripts/nest-perf.mjs). Headless Chromium on the Intel Iris Xe GPU (ANGLE GL), 1440x900 dpr 2, fixtures, focused window, 10 s per run. "stub" refuses webgl2 so the head never starts (Home then draws its bake hero, so Home stub is not a fair baseline). Main busy = renderer main thread TaskDuration over wall time. All-process CPU = renderer + GPU + browser processes, where GL and raster work land.
+- Scrolling: frame p50/p95 stayed at 16.7/16.8 ms and no long task showed on any screen, before or after. Headless scrolling does not reproduce the lag the owner feels.
+
+Before (main at b96fbbf):
+
+| Screen | Mode | Head | Main busy | Script | All-process CPU | GL draws |
+| --- | --- | --- | --- | --- | --- | --- |
+| Home | idle | hero | 16.8% | 15.6% | 28.2% | 289/s |
+| Home | scroll | hero | 19.1% | 17.3% | 35.0% | 321/s |
+| Desk | idle | on | 2.2% | 0.8% | 11.5% | 164/s |
+| Desk | idle | stub | 0.2% | 0.0% | 4.0% | 0/s |
+| Desk | scroll | on | 3.9% | 1.0% | 17.7% | 162/s |
+| Desk | scroll | stub | 2.8% | 0.4% | 11.6% | 0/s |
+| Ops | idle | on | 10.5% | 0.8% | 39.0% | 163/s |
+| Ops | idle | stub | 8.6% | 0.0% | 31.5% | 0/s |
+| Ops | scroll | on | 10.5% | 0.8% | 36.7% | 163/s |
+| Inbox | scroll | on | 4.1% | 1.0% | 17.8% | 163/s |
+| Inbox | scroll | stub | 3.1% | 0.4% | 12.6% | 0/s |
+
+- Largest cause off Home: the Ops live hatch animated `background-position`, a full repaint every frame (31.5% CPU on an idle Ops with no head).
+- Rail head: about +2% main thread and +7.5% all-process CPU on any laptop screen (9 GL passes per frame, about 18 fps while idle). It never stops while the window is focused: the idle head breathes, drifts and sways by design.
+- Home: the hero costs 17-19% main thread, mostly script. Hologram look and cost belong to item_176.
+
+After the hatch fix (c4c4fb0, transform on a pseudo-element; `npm run perf:hatch` finds 0 visibly different pixels, only edge anti-aliasing up to 13 levels at 1440 and none at 368):
+
+| Screen | Mode | Head | Main busy | Script | All-process CPU | GL draws |
+| --- | --- | --- | --- | --- | --- | --- |
+| Ops | idle | on | 4.0% | 0.8% | 17.3% | 164/s |
+| Ops | idle | stub | 1.3% | 0.0% | 13.9% | 0/s |
+| Ops | scroll | on | 7.5% | 1.0% | 26.9% | 163/s |
+| Ops | scroll | stub | 6.9% | 0.4% | 23.4% | 0/s |
+
+- Desk, Inbox and Home are unchanged by this fix (same numbers as before).
+- AC2 status: an idle Desk is at 0.2-2.2% main thread (under 5%), but the GL loop keeps running. Stopping it at idle freezes the breathing and sway: a look change, paused for the owner.
+- AC3 (polls with unchanged data) not started: fixtures do not poll, it needs a render counter test over the api source.
+
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25T09:12:13.195208+00:00 | afk | afk-nest-lag | Measure, fix the Ops hatch repaint | succeeded |  | Probe and before/after in Notes; head idle loop paused on a look decision; AC3 not started |
+
