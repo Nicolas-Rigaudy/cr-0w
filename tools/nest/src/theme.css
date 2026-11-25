@@ -1323,8 +1323,11 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .st-failed { background: var(--st-failed); }
 .st-done { background: var(--st-done); }
 .c-stuck { color: var(--st-stuck); }
-.live { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0 3px, transparent 3px 7px); animation: ops-hatch 1.2s linear infinite; background-size: 20px 20px; }
-@keyframes ops-hatch { to { background-position: 20px 0; } }
+/* The hatch slides on a compositor layer (transform), so a live span costs no repaint per frame. */
+.live { overflow: hidden; }
+.sw.live { position: relative; }
+.live::before { content: ''; position: absolute; top: 0; bottom: 0; left: -20px; right: 0; background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0 3px, transparent 3px 7px); background-size: 20px 20px; animation: ops-hatch 1.2s linear infinite; }
+@keyframes ops-hatch { to { transform: translateX(20px); } }
 .planned { background: none; border: 1px dashed var(--st-planned); }
 .ops-tl { display: flex; flex-direction: column; min-width: 0; font-size: 11.5px; }
 .ops-row { display: grid; grid-template-columns: 230px 1fr; align-items: center; gap: 0 8px; min-width: 0; height: 22px; }
