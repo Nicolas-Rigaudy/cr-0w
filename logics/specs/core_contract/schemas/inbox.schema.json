@@ -23,6 +23,24 @@
     "artifacts": {"type": "array", "items": {"type": "string", "pattern": "^outbox/"}},
     "state": {"enum": ["open", "answered", "dropped"]},
     "created": {"type": "string", "format": "date-time"},
-    "answered": {"type": ["string", "null"], "format": "date-time"}
+    "answered": {"type": ["string", "null"], "format": "date-time"},
+    "compare": {
+      "type": "object", "additionalProperties": false,
+      "description": "The first decision of a crow-compare spec among the artifacts: options and scenarios of a design review.",
+      "required": ["question", "recommend", "rows", "options"],
+      "properties": {
+        "question": {"type": "string"},
+        "recommend": {"type": "string", "description": "Label of the recommended option, or empty."},
+        "rows": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "Scenario labels, one per image row."},
+        "options": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "additionalProperties": false, "required": ["label", "note", "images"],
+          "properties": {
+            "label": {"type": "string", "minLength": 1},
+            "note": {"type": "string"},
+            "images": {"type": "array", "description": "One image per row, null when the option has none.",
+                       "items": {"type": ["string", "null"], "pattern": "^outbox/"}}
+          }}}
+      }
+    }
   }
 }

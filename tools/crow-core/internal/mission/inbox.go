@@ -61,6 +61,14 @@ func (env Env) enrich(it contract.InboxItem) contract.InboxItem {
 		points, _ := readPoints(filepath.Join(dir, AnswersFile(it.Version)))
 		it.Blocking = len(openBlocking(cb, points)) > 0
 		it.Artifacts = artifactPaths(cb)
+		if c := compareOf(dir, it.Artifacts); c != nil {
+			it.Compare = c
+			for _, p := range compareImages(c) {
+				if !slices.Contains(it.Artifacts, p) {
+					it.Artifacts = append(it.Artifacts, p)
+				}
+			}
+		}
 	}
 	if it.Artifacts == nil {
 		it.Artifacts = []string{}

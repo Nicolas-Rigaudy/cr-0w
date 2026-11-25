@@ -10,6 +10,10 @@ Viewer: click an image to open it full screen. Left/Right flips between options 
 row (same framing, so differences stand out), Up/Down changes row, Z toggles 100% zoom
 (drag or scroll to pan), Esc closes.
 
+In a core mission, put the spec and its images under outbox/ and list the spec among the
+mockup's artifacts: the Nest Inbox reads its first decision (labels, notes, rows) for the
+design review viewer (item_211).
+
 usage: crow-compare SPEC.json [--out PAGE.html]
 """
 import argparse, html, json, os

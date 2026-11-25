@@ -125,6 +125,23 @@ type InboxItem struct {
 	State     string   `json:"state"`
 	Created   string   `json:"created"`
 	Answered  *string  `json:"answered"`
+	// Compare is filled when the inbox is read, from a crow-compare spec among the artifacts.
+	Compare *Compare `json:"compare,omitempty"`
+}
+
+// Compare is the first decision of a crow-compare spec: the options and scenarios of a design review.
+type Compare struct {
+	Question  string          `json:"question"`
+	Recommend string          `json:"recommend"`
+	Rows      []string        `json:"rows"`
+	Options   []CompareOption `json:"options"`
+}
+
+// CompareOption is one option of a Compare: one image per row, nil when it has none.
+type CompareOption struct {
+	Label  string    `json:"label"`
+	Note   string    `json:"note"`
+	Images []*string `json:"images"`
 }
 
 // Event is one line of missions/<id>/events.jsonl.
