@@ -25,7 +25,7 @@ import { isCommand } from '../data/butler'
 import { useButler } from '../data/useButler'
 import { deskPick, readPick, savePick } from '../data/deskPick'
 import {
-  PANE_IDS, PANE_TITLE, agentOf, agentUnit, flatOf, itemRef, paneGroups, panesOf, projectsOfPanes, summaryOf, unitOfAgent,
+  PANE_IDS, PANE_TITLE, agentOf, agentUnit, itemRef, paneGroups, panesOf, projectsOfPanes, summaryOf, unitOfAgent,
   type PaneId, type Panes,
 } from '../data/deskPanes'
 
@@ -70,8 +70,8 @@ const TABS: [Tab, string][] = [['overview', 'Overview'], ['transcript', 'Transcr
 type Mode = 'now' | 'background' | 'afk'
 const MODES: [Mode, string][] = [['now', 'Now'], ['background', 'Background'], ['afk', 'AFK batch']]
 type Focus = PaneId | 'detail'
-// One action of the detail: its label, an optional key, and its look.
-interface Act { label: string; run: () => void; key?: string; p?: boolean; x?: boolean }
+// One action of the detail: its label and its look.
+interface Act { label: string; run: () => void; p?: boolean; x?: boolean }
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').split('-').slice(0, 4).join('-')
 
@@ -298,27 +298,27 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     return undefined
   }
   const missionOf = (w: WorkItem) => snap.missions.find((m) => m.id === (w.kind === 'mission' ? w.source.ref : w.mission))
-  // Every action of a unit, main one first. Keys: a answer, r retry or resume, x stop or cancel.
+  // Every action of a unit, main one first.
   const actsOf = (w: WorkItem): Act[] => {
     const out: Act[] = []
     const main = rowAct(w)
-    if (main) out.push({ ...main, p: true, key: main.label === 'Retry' ? 'r' : main.label === 'Open MR' ? undefined : 'a' })
+    if (main) out.push({ ...main, p: true })
     const a = agentOf(w, agents)
     if (a) {
       if (a.kind === 'session') {
         out.push({ label: 'Message', run: () => { setTab('overview'); setTell(!tell) } })
         out.push({ label: 'Pause', run: () => pause(a) })
       }
-      out.push({ label: 'Stop', key: 'x', x: true, run: () => stop(a) })
+      out.push({ label: 'Stop', x: true, run: () => stop(a) })
     }
     if (w.kind === 'parked') {
       const r = resumable.find((x) => x.conversation_id === w.source.ref)
-      if (r) out.push({ label: 'Resume', key: 'r', p: !main, run: () => resume(r) })
+      if (r) out.push({ label: 'Resume', p: !main, run: () => resume(r) })
     }
     const m = missionOf(w)
     if (m) {
       out.push({ label: 'Open mission', run: () => navigate(`/ops?mission=${encodeURIComponent(m.id)}`) })
-      if (!a && CANCELLABLE.includes(m.state)) out.push({ label: 'Cancel', key: 'x', x: true, run: () => cancel(m) })
+      if (!a && CANCELLABLE.includes(m.state)) out.push({ label: 'Cancel', x: true, run: () => cancel(m) })
     }
     return out.filter((x, i) => out.findIndex((y) => y.label === x.label) === i)
   }
@@ -372,42 +372,13 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cmd])
 
-  // Keys (laptop board): 1-4 a pane (3 unfolds Queued), 5 the detail, j k move, n new task,
-  // c chat, a r x o the unit's actions. Off while typing or while a sheet is open.
-  const key = (k: string): boolean => {
-    if (k >= '1' && k <= '4') {
-      const id = PANE_IDS[Number(k) - 1]
-      const again = id === 'queued' && focus === 'queued'
-      if (id === 'queued') setFolded((f) => (again ? !f : false))
-      setFocus(id)
-      const first = panes[id][0]
-      if (first && !again) choose(first)
-      return true
-    }
-    if (k === '5') { setFocus('detail'); return true }
-    if (k === 'j' || k === 'k') {
-      const flat = flatOf(panes, folded)
-      if (!flat.length) return false
-      const i = unit ? flat.findIndex((w) => w.id === unit.id) : -1
-      const next = flat[Math.min(flat.length - 1, Math.max(0, i + (k === 'j' ? 1 : -1)))]
-      choose(next)
-      setFocus(paneOf(next) ?? 'needs')
-      return true
-    }
-    if (k === 'n') { document.getElementById('dk-new')?.focus(); return true }
-    if (k === 'c') { setChat((c) => !c); return true }
-    const hit = unit && actsOf(unit).find((x) => x.key === k)
-    if (hit) { hit.run(); return true }
-    return false
-  }
-
   return {
     snap, refresh, slots, agents, finished, resumable, projects, accounts,
     sheet, setSheet, log, tell, setTell, text, setText, ask, setAsk, submitAsk, chat, setChat,
     form, setForm, run, setRun, start, setStart, mode, setMode, task, setTask, launch, dispatch, open,
     send, settle, retell, answer, answerAsk, asking,
     work, panes, unit, agent, focus, setFocus, folded, setFolded, tab: tab ?? (agent && agent.state !== 'setup' ? 'transcript' : 'overview') as Tab, setTab, page, setPage, proj, setProj,
-    allProjects: projectsOfPanes(work, agents), choose, actsOf, missionOf, paneOf, key,
+    allProjects: projectsOfPanes(work, agents), choose, actsOf, missionOf, paneOf,
   }
 }
 type D = ReturnType<typeof useDesk>
@@ -714,7 +685,7 @@ function Detail({ d, w, phone }: { d: D; w: WorkItem; phone?: boolean }) {
           <div className="btnrow">
             {acts.map((x) => (
               <button type="button" key={x.label} className={`btn sm${x.p ? ' p' : ''}${x.x ? ' x' : ''}`} onClick={x.run}>
-                {x.label}{x.key && !phone && <span className="kk">{x.key}</span>}
+                {x.label}
               </button>
             ))}
           </div>
@@ -783,19 +754,6 @@ function DeskPhone({ d }: { d: D }) {
 export function Desk({ snap, refresh }: { snap: Snapshot; refresh: () => Promise<void> }) {
   const d = useDesk(snap, refresh)
   const lp = useMedia(LAPTOP)
-  const keyRef = useRef(d.key)
-  keyRef.current = d.key
-  const sheetOpen = !!d.sheet
-  useEffect(() => {
-    if (!lp || sheetOpen) return
-    const on = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null
-      if (e.metaKey || e.ctrlKey || e.altKey || t?.closest?.('input, textarea, select, [contenteditable="true"]')) return
-      if (keyRef.current(e.key)) e.preventDefault()
-    }
-    window.addEventListener('keydown', on)
-    return () => window.removeEventListener('keydown', on)
-  }, [lp, sheetOpen])
   return (
     <>
       {lp ? <DeskLaptop d={d} /> : <DeskPhone d={d} />}

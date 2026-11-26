@@ -350,22 +350,13 @@ function Stage({ i, r, d }: { i: I; r: InboxItem; d: Design }) {
     const f = d.file(l, scenario)
     return f ? src.artifact?.(r.mission, f) : undefined
   }
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|BUTTON)$/.test(e.target.tagName)) return
-      if (e.key === ' ') { e.preventDefault(); flip() }
-      if (e.key === 'z' || e.key === 'Z') setZoom((z) => !z)
-    }
-    window.addEventListener('keydown', key)
-    return () => window.removeEventListener('keydown', key)
-  })
   const img = url(on)
   return (
     <div className={`stage${zoom ? ' zoom' : ''}`}>
       <button type="button" className="shot" onClick={flip} aria-label={`Option ${on}${scenario ? `, ${scenario}` : ''}. Flip to the next option`}>
         {img ? <img src={img} alt="" /> : <span className="sm">No image for this option.</span>}
         <b className="lt">{on}</b>
-        <span className="hint lp">Space flips · Z zooms</span>
+        <span className="hint lp">Click flips</span>
       </button>
       {d.label(on) && (
         <div className="cap">
@@ -374,6 +365,7 @@ function Stage({ i, r, d }: { i: I; r: InboxItem; d: Design }) {
         </div>
       )}
       <div className="side">
+        <button type="button" className="btn zoomb" onClick={() => setZoom((z) => !z)} aria-pressed={zoom}>{zoom ? 'Fit image' : 'Zoom image'}</button>
         <div className="thumbs" role="radiogroup" aria-label="Options">
           {d.letters.map((l) => (
             <button key={l} type="button" role="radio" aria-checked={l === on} className={`thumb${l === on ? ' on' : ''}`} onClick={() => i.setChoice(l)}>

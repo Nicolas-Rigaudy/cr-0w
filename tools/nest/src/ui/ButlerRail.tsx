@@ -31,13 +31,6 @@ function useFold(key: string, auto: boolean): [boolean, () => void] {
     try { localStorage.setItem(key, next) } catch { /* storage off: fold lasts the visit */ }
     setPick(next)
   }
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.code === 'KeyB') { e.preventDefault(); toggle() }
-    }
-    window.addEventListener('keydown', key)
-    return () => window.removeEventListener('keydown', key)
-  }, [])
   return [folded, toggle]
 }
 
@@ -74,7 +67,7 @@ function Msg({ m }: { m: ButlerMsg }) {
 
 // Butler rail (item_176, board desk-rail-a): CR-0W on the right of every laptop screen.
 // Hero on top, the hero line, the conversation, then the account and the input. A grip on the
-// left edge sets the width (item_256). Ctrl+B folds it to a strip, remembered.
+// left edge sets the width (item_256). The fold button folds it to a strip, remembered.
 // Home (item_259, board H3): the right third next to the hero, open and 480px wide by default,
 // with its own fold and width; the HUD card (needs you, next, running) replaces head and line.
 export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: boolean }) {
@@ -90,7 +83,7 @@ export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: bool
   if (folded) {
     return (
       <aside className="b-rail folded" aria-label="CR-0W">
-        <button type="button" className="rl-strip" onClick={fold} title="Open CR-0W (Ctrl+B)" aria-expanded="false">
+        <button type="button" className="rl-strip" onClick={fold} title="Open CR-0W" aria-expanded="false">
           <i className={`dia m-${m.mood}`} aria-hidden="true" />
           <span className="rl-kbd">Ctrl B</span>
           <span className="rl-vert">{label}</span>
@@ -106,7 +99,7 @@ export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: bool
       <div className={home ? 'rl-hdr' : 'rl-hdr plain'}>
         <div className="rl-top">
           <span className={`rl-mood m-${m.mood}`}><i className="dia" aria-hidden="true" />{label}</span>
-          <button type="button" className="rl-kbd" onClick={fold} title="Fold (Ctrl+B)" aria-expanded="true">Ctrl B</button>
+          <button type="button" className="rl-kbd" onClick={fold} title="Fold" aria-expanded="true">Fold</button>
         </div>
         {home && <HomeHud snap={snap} />}
       </div>

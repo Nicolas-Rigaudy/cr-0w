@@ -393,7 +393,7 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
   .clock .short { display: none; }
   .link-down .long { display: inline; }
   .clock .long { display: inline; font: 600 13px var(--font-body); letter-spacing: 0.04em; color: var(--fg); }
-  .main { overflow: hidden; background: var(--dots); }
+  .main { overflow: hidden auto; background: var(--dots); }
   /* Gauge bars give up width first when all scopes and badges fill the row. */
   .top > .accts { flex-shrink: 1; min-width: 0; }
   .accts { display: flex; gap: 12px; font: 600 11px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
@@ -423,7 +423,7 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 .lp .rail { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .lp .pn { padding: 10px 12px; gap: 6px; min-height: 0; overflow: hidden; }
 .lp .pn.grow { flex: 1; }
-.lp .list { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow: hidden; }
+.lp .list { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; }
 .lp .ph {
   display: flex; align-items: center; justify-content: flex-start; gap: 8px;
   font: 600 13px var(--font-head); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ph);
@@ -902,6 +902,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .ibx .stage .shot img { display: block; width: 100%; height: auto; }
 .ibx .stage .shot .lt { position: absolute; top: 8px; left: 8px; min-width: 22px; text-align: center; padding: 2px 6px; border-radius: 6px; background: var(--accent); color: var(--panel-solid); font-family: var(--font-head); }
 .ibx .stage .hint { font-size: 11px; color: var(--dim); }
+.ibx .stage .zoomb { align-self: flex-start; }
 .ibx .stage .shot .hint { position: absolute; top: 10px; right: 10px; bottom: auto; left: auto; width: auto; height: auto; min-height: 0; flex: none; white-space: nowrap; line-height: 1.4; padding: 2px 6px; border-radius: 6px; background: var(--panel-solid); }
 .ibx .stage .hint.lp { display: none; }
 .ibx .stage .thumbs { display: flex; align-items: center; gap: 6px; }
@@ -1649,7 +1650,6 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .dk .quote { padding: 8px 12px; background: var(--well); border-radius: var(--r-row); white-space: pre-wrap; overflow-wrap: anywhere; }
 .dk .note { font-size: 11px; }
 .dk .mbody.tab-transcript { flex: 1; min-height: 320px; }
-.dk .btn .kk { margin-left: 6px; opacity: 0.6; text-transform: none; }
 .dk .bfold { all: unset; box-sizing: border-box; cursor: pointer; display: flex; gap: 8px; align-items: center; min-height: 32px; padding: 4px 12px; border: 1px solid var(--line); border-radius: var(--r-pn); font: 12px var(--font-head); }
 .dk .bfold:hover { background: var(--row); }
 .dk .bfold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -1896,8 +1896,8 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .reports.r-ph .rrow .rt { flex-basis: 120px; }
 .reports .rread.ph { display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
 @media (min-width: 1100px) {
-  .reports.r-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; gap: 10px; }
-  .reports.r-lp .rgrid { display: grid; grid-template-columns: 0.9fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+  .reports.r-lp { padding: 16px 20px; flex: 1; height: 100%; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; gap: 10px; }
+  .reports.r-lp .rgrid { display: grid; grid-template-columns: 0.9fr 1fr; grid-template-rows: minmax(0, 1fr); gap: 10px; flex: 1; min-height: 0; }
   .reports.r-lp .rlist { overflow-y: auto; }
   .reports.r-lp .rrow .rs { flex-basis: auto; }
 }

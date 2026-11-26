@@ -212,3 +212,32 @@ def test_a_prompt_left_by_a_missing_window_can_be_answered_again(tmp_path, monke
     bid = cp.pending(42, home=tmp_path, meta=WAITING)["id"]
     assert cp.answer(42, bid, "allow", backend="tmux", home=tmp_path, meta=WAITING)[0] == 1
     assert cp.pending(42, home=tmp_path, meta=WAITING)["id"] == bid
+
+
+def _transcript(home, sid, cwd, entries):
+    d = home / ".claude/projects" / cwd.replace("/", "-")
+    d.mkdir(parents=True)
+    (d / f"{sid}.jsonl").write_text("\n".join(json.dumps(e) for e in entries))
+
+
+ASK = {"type": "assistant", "message": {"content": [{"type": "tool_use", "id": "tu1", "name": "AskUserQuestion",
+       "input": {"questions": [{"header": "Pick", "question": "Which one?", "multiSelect": False,
+                                "options": [{"label": "A", "description": "first"}, {"label": "B"}]}]}}]}}
+
+
+def test_question_the_hook_missed_is_read_from_the_transcript(tmp_path):
+    import crow_lib
+    meta = {"status": "waiting", "waitingFor": "input needed", "sessionId": "s9", "cwd": "/p/toy"}
+    _transcript(tmp_path, "s9", "/p/toy", [{"type": "user", "message": {"content": "go"}}, ASK])
+    p = crow_lib.ask_from_transcript(7, meta, home=tmp_path, claude_home=tmp_path)
+    assert p["tool"] == "AskUserQuestion" and p["detail"] == "Which one?" and p["session_id"] == "s9"
+    assert p["questions"][0]["options"] == [{"label": "A", "description": "first"}, {"label": "B", "description": None}]
+    assert json.loads((tmp_path / "local/state/prompts/7.json").read_text())["id"] == p["id"]
+
+
+def test_answered_question_in_the_transcript_is_not_pending(tmp_path):
+    import crow_lib
+    meta = {"status": "waiting", "waitingFor": "input needed", "sessionId": "s9", "cwd": "/p/toy"}
+    done = {"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "tu1", "content": "A"}]}}
+    _transcript(tmp_path, "s9", "/p/toy", [ASK, done])
+    assert crow_lib.ask_from_transcript(7, meta, home=tmp_path, claude_home=tmp_path) is None

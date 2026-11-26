@@ -121,6 +121,7 @@ export function Terminal({ pid }: { pid: number }) {
       ref={box} className={`tty${focused ? ' on' : ''}`} tabIndex={0} role="textbox" aria-label="Session terminal" aria-multiline="true"
       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       onKeyDown={(e) => {
+        e.stopPropagation() // typing here never reaches page handlers
         const k = keyOf(e)
         if (!k) return
         e.preventDefault()

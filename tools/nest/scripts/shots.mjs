@@ -6,7 +6,7 @@
 //   --tabs: phone sizes only, the More sheet states and checks (see moreSheet below).
 //   --only: comma list of SCREENS keys; default all of them.
 //   --rail=320,480,640: Home only at 1280x900 with the butler rail open at each width (item_256),
-//     plus drag, reload, double-click, arrow keys and 60% cap checks.
+//     plus drag, reload, double-click, arrow keys, fold button and 60% cap checks.
 // Without --fixtures, run `npm run build` first.
 // Never opens a visible window: uses chromium-headless-shell from playwright-core.
 import { spawn } from 'node:child_process'
@@ -224,7 +224,7 @@ async function railShots(browser, theme) {
   await page.keyboard.press('ArrowRight')
   await page.keyboard.press('ArrowRight')
   check(tag, 'Right narrows by 24px', (await width(page)) === 296)
-  await page.keyboard.press('Control+b')
+  await page.click('.rl-kbd')
   await page.waitForTimeout(100)
   check(tag, 'folded rail stays 56px', (await width(page)) === 56)
   await ctx.close()

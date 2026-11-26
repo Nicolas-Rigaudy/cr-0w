@@ -704,6 +704,7 @@ def sandbox_args(kind, state=None, write_dir=None):
     CDX_EXTRA_ARGS_MAX characters and the lists are longer. With write_dir, the run may also edit under that
     folder: its rules go in a file of their own (named by the folder) and the folder is added with --add-dir."""
     import hashlib
+    import time
     from pathlib import Path
     d = Path(state or machine_dir()) / "run-sandbox"
     d.mkdir(parents=True, exist_ok=True)
@@ -1008,8 +1009,13 @@ def pending_prompt(pid, meta, home=None):
     try:
         p = json.loads((Path(home or data_home()) / "local/state/prompts" / f"{int(pid)}.json").read_text())
     except (OSError, ValueError, TypeError):
-        return None
+        p = None
     waiting_for = str((meta or {}).get("waitingFor") or "")
+    if meta and meta.get("status") == "waiting" and "input" in waiting_for and (
+            not p or p.get("tool") != "AskUserQuestion" or p.get("session_id") != meta.get("sessionId")):
+        p = ask_from_transcript(pid, meta, home) or p
+    if not p:
+        return None
     asks = p.get("tool") == "AskUserQuestion" and "input" in waiting_for
     if not meta or meta.get("status") != "waiting" or not ("permission" in waiting_for or asks):
         return None
@@ -1017,6 +1023,71 @@ def pending_prompt(pid, meta, home=None):
         return None
     return p
 
+
+
+def ask_from_transcript(pid, meta, home=None, claude_home=None):
+    """The open AskUserQuestion of pid's session, read from its transcript, when the hook missed it.
+
+    The PermissionRequest hook does not always fire for a question (seen 2026-11-26 on a bypass
+    session). The last main-thread assistant entry must be an AskUserQuestion tool_use with no
+    result yet. Writes the prompt file the hook would have written, so answer works the same."""
+    import hashlib
+    import time
+    from pathlib import Path
+    try:
+        if not claude_home:
+            env = dict(l.split("=", 1) for l in Path(f"/proc/{int(pid)}/environ").read_bytes().decode(
+                errors="replace").split("\0") if "=" in l)
+            claude_home = env.get("HOME", "")
+        sid, cwd = meta.get("sessionId") or "", meta.get("cwd") or ""
+        path = Path(claude_home) / ".claude/projects" / re.sub(r"[^A-Za-z0-9]", "-", cwd) / f"{sid}.jsonl"
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 400_000))
+            lines = f.read().decode(errors="replace").splitlines()
+    except (OSError, ValueError, TypeError):
+        return None
+    use = None
+    for line in reversed(lines):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        if d.get("isSidechain") or d.get("type") not in ("user", "assistant"):
+            continue
+        content = (d.get("message") or {}).get("content")
+        if d["type"] == "user":
+            if isinstance(content, list) and any(c.get("type") == "tool_result" for c in content if isinstance(c, dict)):
+                return None  # the last tool call already has its result
+            continue
+        tools = [c for c in content or [] if isinstance(c, dict) and c.get("type") == "tool_use"]
+        use = next((c for c in tools if c.get("name") == "AskUserQuestion"), None)
+        break
+    if not use:
+        return None
+    qs = []
+    for q in (use.get("input") or {}).get("questions") or []:
+        if isinstance(q, dict):
+            qs.append({"header": str(q.get("header", "")), "question": str(q.get("question", "")),
+                       "multiSelect": bool(q.get("multiSelect")),
+                       "options": [{"label": str(o.get("label", "")), "description": o.get("description")
+                                    if isinstance(o.get("description"), str) else None}
+                                   for o in q.get("options") or [] if isinstance(o, dict)]})
+    if not qs:
+        return None
+    p = {"schema": 1, "id": hashlib.sha1(str(use.get("id")).encode()).hexdigest()[:12], "pid": int(pid),
+         "session_id": sid, "tool": "AskUserQuestion", "detail": qs[0]["question"][:2000], "description": None,
+         "cwd": cwd, "at": time.time(), "work_approval": False,
+         "options": [{"key": "deny", "label": "Cancel"}], "questions": qs}
+    try:
+        d = Path(home or data_home()) / "local/state/prompts"
+        d.mkdir(parents=True, exist_ok=True)
+        tmp = d / f".{int(pid)}.json.tmp"
+        tmp.write_text(json.dumps(p, ensure_ascii=False))
+        tmp.replace(d / f"{int(pid)}.json")
+    except OSError:
+        pass
+    return p
 
 MISSION_LINE = re.compile(r"^Mission: (\S+)$", re.MULTILINE)
 
