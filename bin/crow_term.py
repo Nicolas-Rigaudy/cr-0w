@@ -205,14 +205,22 @@ def headless_name(title, now=None):
     return f"{HEADLESS_PREFIX}{word}-{time.strftime('%H%M%S', time.localtime(now))}"
 
 
+def tmux_arg(a):
+    """argv element for a tmux command line: a trailing `;` would end the tmux command, `\\;` keeps it."""
+    return a[:-1] + "\\;" if a.endswith(";") else a
+
+
 def headless_open_args(argv, name, cwd=None, env=None, cols=200, rows=50):
-    """tmux new-session -d running argv. Under a systemd service (INVOCATION_ID set) it runs in its own
-    user scope, so a tmux server it starts outlives a restart of the service."""
+    """tmux new-session -d running argv, then remain-on-exit on that session so a command that exits
+    at once leaves its pane and output (headless_settle reads them). Under a systemd service
+    (INVOCATION_ID set) it runs in its own user scope, so a tmux server it starts outlives a restart
+    of the service."""
     added, removed = env_changes(env)
     added.pop("PATH", None)
     wrap = ["env", *(a for k in removed for a in ("-u", k)), *(f"{k}={v}" for k, v in sorted(added.items()))]
     cmd = ["tmux", "new-session", "-d", "-s", name, "-x", str(cols), "-y", str(rows), *(["-c", cwd] if cwd else []),
-           *(wrap + argv if len(wrap) > 1 else argv)]
+           *(tmux_arg(a) for a in (wrap + argv if len(wrap) > 1 else argv)),
+           ";", "set-option", "-t", name, "remain-on-exit", "on"]
     return own_scope(cmd)
 
 

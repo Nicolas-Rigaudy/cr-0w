@@ -1,14 +1,14 @@
 ## item_298_session_start_fails_loudly_and_opens_on_desk - Session start fails loudly and opens on Desk
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: In progress
 > Understanding: 90%
 > Confidence: 85%
-> Progress: 0%
+> Progress: 10%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
-> Indicators reviewed: 2026-11-26 14:28:59
+> Indicators reviewed: 2026-11-26 14:36:14
 
 # AI Context
 - Summary: A Nest session start reports a session that died, and a live one opens on Desk.
@@ -57,3 +57,6 @@
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Tasks
+- `task_034_session_start_fails_loudly_and_opens_on_desk`

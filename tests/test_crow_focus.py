@@ -1,7 +1,11 @@
 """crow-focus and the crow_term backends: window matching, the dry run and the print fallback.
-No terminal is ever opened: kitty tests fake setsid, the rest use the print backend."""
+No terminal is ever opened: kitty tests fake setsid, the rest use the print backend or a private
+detached tmux server."""
 import os
+import shutil
+import subprocess
 import sys
+import time
 
 import pytest
 from conftest import BIN, run
@@ -224,10 +228,40 @@ def test_headless_open_is_detached_and_scoped_under_a_service(monkeypatch):
     monkeypatch.setattr(ct.shutil, "which", lambda name, **_: f"/bin/{name}")
     monkeypatch.delenv("INVOCATION_ID", raising=False)
     cmd = ct.headless_open_args(["claude"], "crow-demo-1", cwd="/src/demo", env=dict(os.environ))
-    assert cmd[:5] == ["tmux", "new-session", "-d", "-s", "crow-demo-1"] and "/src/demo" in cmd and cmd[-1] == "claude"
+    assert cmd[:5] == ["tmux", "new-session", "-d", "-s", "crow-demo-1"] and "/src/demo" in cmd
+    assert cmd[-7:] == ["claude", ";", "set-option", "-t", "crow-demo-1", "remain-on-exit", "on"]
     monkeypatch.setenv("INVOCATION_ID", "abc")
     scoped = ct.headless_open_args(["claude"], "crow-demo-1", env=dict(os.environ))
     assert scoped[:5] == ["systemd-run", "--user", "--scope", "--quiet", "--collect"] and scoped[5] == "tmux"
+
+
+@pytest.fixture
+def private_tmux(tmp_path, monkeypatch):
+    """A tmux server of its own (socket under tmp_path); killed after the test."""
+    if not shutil.which("tmux"):
+        pytest.skip("tmux not installed")
+    monkeypatch.setenv("TMUX_TMPDIR", str(tmp_path))
+    monkeypatch.delenv("TMUX", raising=False)
+    monkeypatch.delenv("INVOCATION_ID", raising=False)
+    yield
+    subprocess.run(["tmux", "kill-server"], capture_output=True, check=False)
+
+
+def tmux_out(*args):
+    return subprocess.run(["tmux", *args], capture_output=True, text=True, check=False).stdout
+
+
+def test_headless_open_keeps_the_pane_of_a_command_that_exits(private_tmux):
+    script = "echo boom; echo \"$1\"; exit 3"
+    cmd = ct.headless_open_args(["sh", "-c", script, "sh", "a;"], "crow-t-1", env=dict(os.environ))
+    subprocess.run(cmd, check=True)
+    for _ in range(50):
+        if tmux_out("display-message", "-p", "-t", "crow-t-1", "#{pane_dead}").strip() == "1":
+            break
+        time.sleep(0.05)
+    assert tmux_out("display-message", "-p", "-t", "crow-t-1", "#{pane_dead_status}").strip() == "3"
+    shot = tmux_out("capture-pane", "-p", "-S", "-200", "-t", "crow-t-1")
+    assert shot.split()[:2] == ["boom", "a;"], repr(shot)
 
 
 def test_tmux_session_for_walks_ancestors(tmp_path):
