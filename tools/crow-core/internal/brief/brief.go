@@ -309,6 +309,7 @@ func Render(in Input) string {
 	line("%s", questionsShape(m.ID, n))
 	line("- Never wait for an answer inside the run. End the turn. core resumes you with `answers.v%d.md`.", n)
 	line("- From version 2, start the file with a `## Responses` section and fill `responses`.")
+	line("- Every question of the previous version gets its own `responses` entry with `ref: qK`: outcome `done` when answered, `withdrawn` when dropped, `replaced` when rewritten as a new question (note: `replaced by q4`).")
 	line("- A report with `verdict: ready` carries `proof`.")
 	line("- List every outward action in `publish` with its exact text. core publishes only what the owner validated.")
 	return b.String()

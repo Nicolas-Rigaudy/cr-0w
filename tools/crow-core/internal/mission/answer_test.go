@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"crow-core/contract"
+	"crow-core/internal/brief"
 	"crow-core/internal/testfix"
 )
 
@@ -236,9 +238,100 @@ func TestTickRefusesAVersionThatSkipsAPoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// AC3: the first miss sends the version back once with the error.
+	if len(rep.Finished) != 1 || rep.Finished[0].State != "queued" ||
+		!strings.Contains(rep.Finished[0].Detail, "plan.v2.md: v2 responses miss a2") {
+		t.Fatalf("first miss: report = %+v", rep)
+	}
+	m := show(t, env, example)
+	k, err := env.Kinds(m.Kind)
+	if err != nil {
+		t.Fatal(err)
+	}
+	started, err := env.resume(r, m, k, false, false) // the tick holds build kinds (phase 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	note, err := os.ReadFile(filepath.Join(dir, ResumeNote))
+	if err != nil || !strings.Contains(string(note), "core rejected your last file: plan.v2.md: v2 responses miss a2") {
+		t.Errorf("note = %q, %v", note, err)
+	}
+	// The resumed run writes the same file: the second miss fails the mission.
+	r.ends[started.Run] = ended("done", 0)
+	if rep, err = env.Tick(r, 2); err != nil {
+		t.Fatal(err)
+	}
 	if len(rep.Finished) != 1 || rep.Finished[0].State != "failed" ||
 		!strings.Contains(rep.Finished[0].Detail, "plan.v2.md: v2 responses miss a2") {
-		t.Fatalf("report = %+v", rep)
+		t.Fatalf("second miss: report = %+v", rep)
+	}
+}
+
+// deskBugs copies the desk-bugs plan mission (2026-11-25): v1 asked q1 to q3, the owner
+// answered "i don't understand the question", v2 rewrote q1 as q4 and responded to a1 only.
+const deskBugs = "20261125-plan-nest-desk-bugs"
+
+func deskBugsDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	for _, n := range []string{"plan.v1.md", "answers.v1.md", "plan.v2.md"} {
+		if err := os.WriteFile(filepath.Join(dir, n), testfix.Read(t, filepath.Join("testdata", "desk-bugs", n)), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+// AC1: the live v2 misses q1 to q3; the same v2 with q1 replaced, q2 withdrawn and q3
+// done passes.
+func TestCoverageAcceptsWithdrawnAndReplaced(t *testing.T) {
+	dir := deskBugsDir(t)
+	_, cb, why := versionFile(dir, deskBugs, 2)
+	if cb == nil {
+		t.Fatal(why)
+	}
+	if err := Coverage(dir, deskBugs, 2, cb); err == nil || err.Error() != "v2 responses miss q1, q2, q3" {
+		t.Fatalf("live v2: err = %v", err)
+	}
+	note := func(s string) *string { return &s }
+	rs := append(*cb.Responses,
+		contract.Response{Ref: "q1", Outcome: "replaced", Note: note("replaced by q4")},
+		contract.Response{Ref: "q2", Outcome: "withdrawn", Note: note("bug 1 is built on item_210")},
+		contract.Response{Ref: "q3", Outcome: "done", Note: note("item_210 reused")})
+	cb.Responses = &rs
+	if err := Coverage(dir, deskBugs, 2, cb); err != nil {
+		t.Errorf("fixed v2: %v", err)
+	}
+	for _, r := range rs {
+		if !slices.Contains(contract.ResponseOutcomes, r.Outcome) {
+			t.Errorf("outcome %s is not a contract outcome", r.Outcome)
+		}
+	}
+}
+
+// AC2: the resume note of version 2 names every question of version 1, and the error of
+// a version core sent back.
+func TestResumeNoteNamesThePreviousQuestions(t *testing.T) {
+	dir := deskBugsDir(t)
+	answers, err := brief.ReadAnswers(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path, err := writeResumeNote(dir, deskBugs, 1, 2, answers, "plan.v2.md: v2 responses miss q1, q2, q3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"Version 1 asked q1, q2, q3.", "`withdrawn` when dropped", "`replaced` when rewritten",
+		"core rejected your last file: plan.v2.md: v2 responses miss q1, q2, q3", "i don't understand the question",
+	} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("note misses %q:\n%s", want, b)
+		}
 	}
 }
 

@@ -29,7 +29,7 @@ Ask for three things so one run covers each path:
 
 ## When a run fails
 - `json: cannot unmarshal string into CrowBlock...`: the run wrote a bare string where the contract wants an object. Check the block shape in the brief (`internal/brief/brief.go` `blockShape`).
-- `vN responses miss aK`: the resume note names refs `a1..aN` per answer section (`internal/mission/resume.go`); check the run used them.
+- `vN responses miss aK` or `qK`: every answer point (`aN`) and every question of the previous version (`qK`) needs a `responses` entry. The resume note names both (`internal/mission/resume.go`). A question the run drops takes outcome `withdrawn`; one it rewrites takes `replaced` with the new id in the note. The first miss logs a `responses_miss` incident and core resumes the run once with the error; a second miss fails the mission.
 - Read the cdx launch log: `<cdx profile home>/log/cdx-run-<run_id>-attempt-1.launch.log`.
 - Compare the run's recorded `launch.extra_args` with what crow-runs passed (`bin/crow-runs` ledger in `local/state/runs.jsonl`).
 - A failed mission stays failed; start a new mission (new key) for the rerun.

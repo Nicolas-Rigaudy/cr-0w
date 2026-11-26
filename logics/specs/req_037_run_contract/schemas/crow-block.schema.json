@@ -26,7 +26,7 @@
         "required": ["ref", "outcome"],
         "properties": {
           "ref": {"type": "string", "description": "Question id or answer point number (a1, a2...)."},
-          "outcome": {"enum": ["done", "partly", "declined", "moot"]},
+          "outcome": {"enum": ["done", "partly", "declined", "moot", "withdrawn", "replaced"]},
           "note": {"type": "string"}
         }
       }

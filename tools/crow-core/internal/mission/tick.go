@@ -353,7 +353,31 @@ func (env Env) finish(r Runner, m contract.Mission) (line *TickLine, live bool, 
 	file, cb, why := versionFile(dir, m.ID, run.Version)
 	if cb != nil {
 		if err := Coverage(dir, m.ID, run.Version, cb); err != nil {
-			file, cb, why = "", nil, file+": "+err.Error()
+			miss := file + ": " + err.Error()
+			retried, rerr := env.responsesMissed(m.ID, run.Version)
+			if rerr != nil {
+				return nil, false, rerr
+			}
+			if !retried {
+				// A missing response is a slip of the run, not a dead end: send the
+				// version back once with the error (item_291).
+				if err := endRun(); err != nil {
+					return nil, false, err
+				}
+				if err := incident(ResponsesMiss, miss); err != nil {
+					return nil, false, err
+				}
+				if err := move("failed", "responses miss"); err != nil {
+					return nil, false, err
+				}
+				reason := "resume once: responses miss"
+				if err := env.append(m.ID, "core", "state", ts, contract.StateData{From: "failed", To: "queued", Reason: &reason}); err != nil {
+					return nil, false, err
+				}
+				out.State, out.Detail = "queued", miss+"; resumes once with the error"
+				return out, false, nil
+			}
+			file, cb, why = "", nil, miss
 		}
 	}
 	if cb == nil {

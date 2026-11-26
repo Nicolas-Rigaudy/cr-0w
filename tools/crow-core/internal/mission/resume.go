@@ -66,7 +66,11 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold, over
 	mode, fellBack := ResumeCold, ""
 	var s Started
 	if !cold {
-		note, err := writeResumeNote(dir, prev.Version, next, in.Answers)
+		retry, err := env.lastResponsesMiss(m.ID)
+		if err != nil {
+			return nil, err
+		}
+		note, err := writeResumeNote(dir, m.ID, min(prev.Version, next-1), next, in.Answers, retry)
 		if err != nil {
 			return nil, err
 		}
@@ -114,10 +118,16 @@ func (env Env) resume(r Runner, m contract.Mission, k *contract.Kind, cold, over
 }
 
 // writeResumeNote writes the prompt of a continued run: every answer given since version
-// last, quoted, and the version to write next. It names no path: the answers are inline.
-func writeResumeNote(dir string, last, next int, answers []brief.Answer) (string, error) {
+// last, quoted, the questions of the previous version that each need a response, and the
+// version to write next. retry is the coverage error of a version core sent back, or "".
+// It names no path: the answers are inline.
+func writeResumeNote(dir, id string, last, next int, answers []brief.Answer, retry string) (string, error) {
 	var b strings.Builder
-	b.WriteString("# Resume\n\nThe owner answered. Read the answers below, then continue the mission from the brief you already have.\n")
+	b.WriteString("# Resume\n\n")
+	if retry != "" {
+		fmt.Fprintf(&b, "core rejected your last file: %s. Write it again with a response for each ref named below.\n\n", retry)
+	}
+	b.WriteString("The owner answered. Read the answers below, then continue the mission from the brief you already have.\n")
 	n := 0
 	for _, a := range answers {
 		if a.Version < last {
@@ -135,6 +145,23 @@ func writeResumeNote(dir string, last, next int, answers []brief.Answer) (string
 		return "", fmt.Errorf("no answers file since version %d to resume from", last)
 	}
 	fmt.Fprintf(&b, "\nWrite version %d next, with the same rules as the brief. Quote each answer in its Responses. The numbered points are a1, a2 and so on, counted per answer section: give each its own `responses` entry with `ref: aN`.\n", next)
+	if ids := questionIDs(dir, id, next-1); len(ids) > 0 {
+		fmt.Fprintf(&b, "\nVersion %d asked %s. Give each its own `responses` entry with `ref: qK`: outcome `done` when answered, `withdrawn` when dropped, `replaced` when rewritten as a new question (note: `replaced by q4`).\n",
+			next-1, strings.Join(ids, ", "))
+	}
 	path := filepath.Join(dir, ResumeNote)
 	return path, os.WriteFile(path, []byte(b.String()), 0o600)
+}
+
+// questionIDs are the question ids of the version n file, or none.
+func questionIDs(dir, id string, n int) []string {
+	_, cb, _ := versionFile(dir, id, n)
+	if cb == nil || cb.Questions == nil {
+		return nil
+	}
+	var ids []string
+	for _, q := range *cb.Questions {
+		ids = append(ids, q.ID)
+	}
+	return ids
 }

@@ -289,6 +289,65 @@ func Coverage(dir, id string, n int, cb *contract.CrowBlock) error {
 	return nil
 }
 
+// ResponsesMiss is the incident cause of a version core sent back once because its
+// responses missed a ref.
+const ResponsesMiss = "responses_miss"
+
+// responsesMissed reports whether core already sent version n of mission id back for
+// missing responses.
+func (env Env) responsesMissed(id string, n int) (bool, error) {
+	tag := fmt.Sprintf(": v%d responses miss ", n)
+	found := false
+	err := env.eachIncident(id, func(c, detail string) {
+		if c == ResponsesMiss && strings.Contains(detail, tag) {
+			found = true
+		}
+	}, nil)
+	return found, err
+}
+
+// lastResponsesMiss is the responses_miss detail of the last run of mission id, or "".
+func (env Env) lastResponsesMiss(id string) (string, error) {
+	last := ""
+	err := env.eachIncident(id, func(c, detail string) {
+		if c == ResponsesMiss {
+			last = detail
+		}
+	}, func() { last = "" })
+	return last, err
+}
+
+// eachIncident calls fn on every incident of the log of mission id, and onStart, when not
+// nil, on every run_start.
+func (env Env) eachIncident(id string, fn func(cause, detail string), onStart func()) error {
+	ls, err := rawLines(eventlog.Path(env.Store.Root(), id))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	for _, l := range ls {
+		switch l.Event.Type {
+		case "run_start":
+			if onStart != nil {
+				onStart()
+			}
+		case "incident":
+			var d contract.IncidentData
+			if err := json.Unmarshal(l.Event.Data, &d); err != nil {
+				return fmt.Errorf("%s line %d: %w", id, l.No, err)
+			}
+			detail := ""
+			if d.Detail != nil {
+				detail = *d.Detail
+			}
+			fn(d.Cause, detail)
+		}
+	}
+	return nil
+}
+
 // rawLine is one event log line kept as stored, for the hash chain.
 type rawLine struct {
 	No    int

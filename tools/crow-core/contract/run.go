@@ -27,6 +27,10 @@ type CrowBlock struct {
 	Next        *string     `json:"next,omitempty"`
 }
 
+// ResponseOutcomes are the outcomes of a response. withdrawn drops a question of the
+// previous version; replaced rewrites it as a new question, the note naming the new id.
+var ResponseOutcomes = []string{"done", "partly", "declined", "moot", "withdrawn", "replaced"}
+
 type Response struct {
 	Ref     string  `json:"ref"`
 	Outcome string  `json:"outcome"`

@@ -61,5 +61,6 @@ proof:
 ```
 - Never wait for an answer inside the run. End the turn. core resumes you with `answers.v{N}.md`.
 - From version 2, start the file with a `## Responses` section and fill `responses`.
+- Every question of the previous version gets its own `responses` entry with `ref: qK`: outcome `done` when answered, `withdrawn` when dropped, `replaced` when rewritten as a new question (note: `replaced by q4`).
 - A report with `verdict: ready` carries `proof`.
 - List every outward action in `publish` with its exact text. core publishes only what the owner validated.
