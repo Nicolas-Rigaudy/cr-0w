@@ -71,6 +71,8 @@ export type Route =
   | { tab: 'missing' }
 
 export const usagePath = (account?: string) => (account ? `/usage/${encodeURIComponent(account)}` : '/usage')
+// The Desk, opening the session started in tmux session `tmux` once it shows up.
+export const deskOpening = (tmux: string) => `/desk?tmux=${encodeURIComponent(tmux)}`
 
 export function match(path: string, brickPages: readonly string[] = BRICK_PAGE_KEYS): Route {
   const p = path.replace(/\/+$/, '') || '/'

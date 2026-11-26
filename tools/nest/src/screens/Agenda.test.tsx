@@ -111,7 +111,8 @@ describe('Agenda actions (item_226)', () => {
     const { src, a } = await ctx()
     const said: string[] = []
     const r = vi.fn(async () => {})
-    const c = confirmsOf(src.actions, r, (s) => said.push(s.text))
+    const opened: string[] = []
+    const c = confirmsOf(src.actions, r, (s) => said.push(s.text), (t) => opened.push(t))
     const start = vi.spyOn(src.actions, 'start')
     await c.prep(a.next!, a.days[0]).run()
     expect(start).toHaveBeenCalledWith(expect.objectContaining({ project: HUB, prompt: expect.stringContaining('Sprint review') }))
@@ -120,13 +121,16 @@ describe('Agenda actions (item_226)', () => {
     expect(start).toHaveBeenCalledWith({ project: HUB, prompt: 'Legal: contract questions. unanswered for 3d. Next step: draft a reply.' })
     expect(r).toHaveBeenCalledTimes(2)
     expect(said).toHaveLength(2)
+    expect(opened).toHaveLength(2)
   })
 
   it('sends an MR wait to the MRs review run', async () => {
     const { src, a } = await ctx()
     const dispatch = vi.spyOn(src.actions, 'dispatch')
-    const c = confirmsOf(src.actions, refresh, () => {})
+    const open = vi.fn()
+    const c = confirmsOf(src.actions, refresh, () => {}, open)
     await c.due(a.days[0].due[0], a.days[0]).run()
+    expect(open).not.toHaveBeenCalled()
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ project: 'api', label: 'review-api-242' }))
   })
 

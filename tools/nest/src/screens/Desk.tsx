@@ -355,6 +355,17 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cmd])
 
+  // A start from another screen lands here as /desk?tmux=<name>: its detail opens once it shows up.
+  const started = useQuery().get('tmux')
+  useEffect(() => {
+    if (!started) return
+    setOpening(started)
+    const q = new URLSearchParams(location.search)
+    q.delete('tmux')
+    history.replaceState(null, '', location.pathname + (q.size ? `?${q}` : ''))
+    dispatchEvent(new PopStateEvent('popstate'))
+  }, [started])
+
   return {
     snap, refresh, slots, agents, finished, resumable, projects, accounts,
     sheet, setSheet, log, tell, setTell, text, setText, 

@@ -4,7 +4,7 @@ import type { Actions, LiveReply } from '../data/live'
 import { branchPrompt, countsOf, hitsOf, mrsOf, patternsFor, onlyProject, reviewLabel, reviewPrompt, threadsPrompt, type Mr, type MrBranch, type MrJob, type MrsData } from '../data/mrs'
 import { useSource, type Snapshot } from '../data/useData'
 import { ago, time } from '../format'
-import { useQuery } from '../router'
+import { deskOpening, navigate, useQuery } from '../router'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { useMedia } from '../ui/useMedia'
 
@@ -23,11 +23,13 @@ const keyOf = (m: Mr) => `${m.project}:${m.ref}`
 // Row actions (item_225): every one goes through a confirm sheet and the existing live
 // actions. Posting on the forge stays in the review and review-threads sessions.
 type Said = { text: string; f?: boolean }
-export function confirmsOf(act: Actions, refresh: () => Promise<void>, setSaid: (s: Said) => void) {
+// A session that starts opens on the Desk (`open`); a run stays in the background.
+export function confirmsOf(act: Actions, refresh: () => Promise<void>, setSaid: (s: Said) => void, open = (tmux: string) => navigate(deskOpening(tmux))) {
   const wrap = (call: () => Promise<LiveReply>) => async () => {
     try {
       const r = await call()
       setSaid({ text: r.message || `${r.action} ${r.target}`, f: !r.ok })
+      if (r.ok && r.tmux) open(r.tmux)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) void refresh()
       throw e

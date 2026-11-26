@@ -4,7 +4,7 @@ import { agendaOf, countsOf, duePrompt, hhmm, hoursOf, prepPrompt, type AgendaDa
 import type { Actions, LiveReply } from '../data/live'
 import { useSource, type Snapshot } from '../data/useData'
 import { date, weekday } from '../format'
-import { useQuery } from '../router'
+import { deskOpening, navigate, useQuery } from '../router'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { useMedia } from '../ui/useMedia'
 import { confirmsOf as mrConfirms } from './Mrs'
@@ -20,18 +20,20 @@ const dayLabel = (d: AgendaDay) => `${weekday(d.date)} ${String(d.date.getDate()
 const span = (m: Meeting) => `${hhmm(m.from)} → ${hhmm(m.to)}`
 
 type Said = { text: string; f?: boolean }
-export function confirmsOf(act: Actions, refresh: () => Promise<void>, setSaid: (s: Said) => void) {
+// A session that starts opens on the Desk (`open`).
+export function confirmsOf(act: Actions, refresh: () => Promise<void>, setSaid: (s: Said) => void, open = (tmux: string) => navigate(deskOpening(tmux))) {
   const wrap = (call: () => Promise<LiveReply>) => async () => {
     try {
       const r = await call()
       setSaid({ text: r.message || `${r.action} ${r.target}`, f: !r.ok })
+      if (r.ok && r.tmux) open(r.tmux)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) void refresh()
       throw e
     }
     void refresh()
   }
-  const mr = mrConfirms(act, refresh, setSaid)
+  const mr = mrConfirms(act, refresh, setSaid, open)
   return {
     prep: (m: Meeting, d: AgendaDay): Confirm => ({
       title: `Prep ${m.title}`, lead: 'Opens a hub session with this meeting as its context.', quote: prepPrompt(m, date(d.date)),

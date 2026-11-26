@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { navigate, setReloadOnRoute } from './router'
+import { deskOpening, match, navigate, setReloadOnRoute } from './router'
 
 afterEach(() => {
   setReloadOnRoute(false)
@@ -37,5 +37,12 @@ describe('route change after a new Nest build (item_283)', () => {
     setReloadOnRoute(true)
     navigate('/')
     expect(loc.assign).not.toHaveBeenCalled()
+  })
+})
+
+describe('a session started off the Desk', () => {
+  it('lands on the Desk with its tmux name', () => {
+    expect(deskOpening('crow-cr-0w-1 x')).toBe('/desk?tmux=crow-cr-0w-1%20x')
+    expect(match('/desk')).toEqual({ tab: 'desk' })
   })
 })

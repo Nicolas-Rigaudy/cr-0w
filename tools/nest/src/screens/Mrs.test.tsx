@@ -125,7 +125,8 @@ describe('MRs row actions (item_225)', () => {
     const { src, d } = await mrs()
     const said: string[] = []
     const refresh = vi.fn(async () => {})
-    const c = confirmsOf(src.actions, refresh, (s) => said.push(s.text))
+    const opened: string[] = []
+    const c = confirmsOf(src.actions, refresh, (s) => said.push(s.text), (t) => opened.push(t))
     const dispatch = vi.spyOn(src.actions, 'dispatch')
     const start = vi.spyOn(src.actions, 'start')
     const review = d.review.find((m) => m.ref === '!242')!
@@ -140,6 +141,9 @@ describe('MRs row actions (item_225)', () => {
     expect(start).toHaveBeenCalledWith({ project: 'api', prompt: '/mr proxy-rate-limit' })
     expect(said[0]).toMatch(/^dispatched run /)
     expect(refresh).toHaveBeenCalledTimes(4)
+    // The three sessions open on the Desk; the review run does not.
+    expect(opened).toHaveLength(3)
+    expect(opened.every((t) => t.startsWith('crow-api-'))).toBe(true)
   })
 
   it('refreshes and rethrows when the run slots are full', async () => {
@@ -156,8 +160,10 @@ describe('MRs row actions (item_225)', () => {
     const refresh = vi.fn(async () => {})
     const why = 'crow-api-1 exited with status 1 at start\nsession_busy: account already running'
     const dead = { ...src.actions, start: async () => { throw new ApiError(502, why) } }
-    const c = confirmsOf(dead, refresh, () => {})
+    const open = vi.fn()
+    const c = confirmsOf(dead, refresh, () => {}, open)
     await expect(c.session(d.mine[0]).run()).rejects.toThrow('session_busy: account already running')
+    expect(open).not.toHaveBeenCalled()
   })
 })
 
