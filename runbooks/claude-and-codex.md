@@ -39,7 +39,7 @@ Review runs (`--permission review`) and isolated runs keep their own mode. Any o
 ## Not covered yet
 
 - Live activity of a Codex session (transcript reading): `crow watch` lists the process only.
-- Session titles use the `claude` CLI directly (`CROW_TITLE_CMD`).
+- Session titles use the `claude` CLI (`CROW_TITLE_CMD`) with HOME set to the hub cdx account's claude-home, so an expired bare `claude` login does not stop them.
 - Cross-provider relaunch, Codex usage and cost.
 
 ## Check

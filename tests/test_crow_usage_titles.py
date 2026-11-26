@@ -116,3 +116,18 @@ def test_retro_run_titled_after_its_target_without_model(hub, tmp_path):
     run(hub, "crow-usage", "--titles", env=env)
     assert stored(hub)["r"]["source"] == "rule"
     assert "retro" not in (tmp_path / "last-input").read_text()  # the model titled the target only
+
+
+def test_failed_call_keeps_budget_and_backs_off(hub, tmp_path):
+    stub = tmp_path / "title-cmd"
+    stub.write_text(f"#!/bin/sh\necho x >> {tmp_path}/calls\necho 'Failed to authenticate' >&2\nexit 1\n")
+    stub.chmod(0o755)
+    env = {"CROW_TITLE_CMD": str(stub), "CROW_TITLES_OFF": "1"}
+    session(hub, "s0", [user("work")])
+    sessions(hub, env)
+    run(hub, "crow-usage", "--titles", env=env)
+    run(hub, "crow-usage", "--titles", env=env)
+    assert len((tmp_path / "calls").read_text().split("\n")) - 1 == 1  # second poll waits
+    saved = stored(hub)
+    assert not (saved.get("_calls") or {}) or not any(saved["_calls"].values())
+    assert saved.get("_failed_at")

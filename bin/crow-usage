@@ -30,6 +30,8 @@ grew (4+ prompts and x1.5) or moved project. Dispatch labels and /rename win and
 /retro runs take "retro: <title of the reviewed session>" with no model call.
 Without a model the title is "project: most edited files" (else the first prompt).
 Bounded to CROW_TITLES_PER_DAY model calls (default 40, ~0.001 USD each on Haiku).
+The model runs on the hub's cdx account (its claude-home as HOME), not the bare `claude` login.
+A failed call (auth, limit) spends no budget; the titler waits 30 min before the next try.
 
 JSON: {generated_at, limits[], today{}, week{}, days[], sessions[], rtk{}, cost_split{}, retros{}}
 cost_split {days, since, by_kind{all, interactive, run}{cost_usd, usd{}, pct{}}}: USD by part, reload = cache
@@ -515,10 +517,24 @@ def spawn_titler():
         pass
 
 
-def ask_title(meta):
+def title_home():
+    """HOME of the cdx account the titler runs on (the hub pick, usable now), else None for the caller's own login."""
+    if os.environ.get("CROW_TITLE_CMD"):
+        return None
+    try:
+        name = crow_lib.account_state(cached=True, scope="hub").get("auto_target")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    home = os.path.join(PROFILES, name, "claude-home") if name else None
+    return home if home and os.path.isdir(home) else None
+
+
+def ask_title(meta, home=None):
     lines = title_context(meta)
-    env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDECODE")}
+    env = {k: v for k, v in os.environ.items() if not k.startswith("CLAUDECODE") and k != "CLAUDE_CONFIG_DIR"}
     env["CROW_RETRO"] = "1"
+    if home:
+        env["HOME"] = home
     try:
         out = subprocess.run(["bash", "-c", TITLE_CMD], input="\n".join(lines), capture_output=True, text=True,
                              timeout=60, env=env, cwd=STATE)
@@ -554,14 +570,17 @@ def generate_titles():
             if title_due(s, titles):
                 todo.append((meta.get("end") or "", s["id"], meta))
         done = 0
+        if todo and (titles.get("_failed_at") or "") > (dt.datetime.now() - dt.timedelta(minutes=30)).isoformat():
+            return 0  # the command failed recently (auth, limit): wait before trying again
+        home = title_home() if todo else None
         for _, sid, meta in sorted(todo, reverse=True)[:TITLES_PER_RUN]:
             if budget_left(titles) <= 0:
                 break  # daily cap reached: placeholders stay readable, resume tomorrow
+            title = ask_title(meta, home)
+            if not title:  # a failed call costs nothing: keep the budget, back off
+                save_titles({**load_titles(), "_failed_at": dt.datetime.now().isoformat(timespec="seconds")})
+                break
             spend_call(titles)
-            title = ask_title(meta)
-            if not title:
-                save_titles({**load_titles(), "_calls": titles["_calls"]})
-                break  # the command is failing (auth, limit): retry on a later poll
             titles[sid] = {"title": title, "source": "haiku", "prompts": meta.get("user_messages") or 0,
                            "project": dir_project({"cwd": meta.get("last_cwd") or meta.get("cwd")}),
                            "at": dt.datetime.now().isoformat(timespec="seconds")}
