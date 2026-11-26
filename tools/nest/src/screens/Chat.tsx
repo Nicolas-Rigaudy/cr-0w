@@ -282,7 +282,7 @@ export function Chat({ snap, refresh, target, log }: { snap: Snapshot; refresh: 
         ))}
       </div>
       {prompt?.questions?.length && agent ? (
-        <AskDock key={prompt.id} who={slot || 'Session'} questions={prompt.questions} busy={busy} onSend={(a) => void sendAsk(a)} onCancel={() => void allow('deny')} />
+        <AskDock key={prompt.id} id={prompt.id} who={slot || 'Session'} questions={prompt.questions} busy={busy} onSend={(a) => void sendAsk(a)} onCancel={() => void allow('deny')} />
       ) : prompt && agent && (
         <div className="ask" role="group" aria-label={`Permission asked by ${name}`}>
           <div className="who"><span className="c-n">◆ {slot || 'Session'} waits on you</span></div>

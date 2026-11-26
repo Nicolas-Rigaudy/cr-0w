@@ -395,7 +395,7 @@ function Ask({ d, a }: { d: D; a: Agent }) {
   if (!p) return null
   const view = promptView(p)
   if (view === 'questions') {
-    return <AskDock key={p.id} who={nameOf(a)} questions={p.questions!} busy={d.asking}
+    return <AskDock key={p.id} id={p.id} who={nameOf(a)} questions={p.questions!} busy={d.asking}
       onSend={(x) => d.answerAsk(a, x)} onCancel={() => d.answer(a, 'deny')} />
   }
   return (

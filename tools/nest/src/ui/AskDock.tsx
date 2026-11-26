@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDraft } from './draft'
 import type { AskAnswer, Question } from '../data/live'
 
 // The docked AskUserQuestion of a session (item_193, board A): one question per step,
@@ -7,7 +7,8 @@ import type { AskAnswer, Question } from '../data/live'
 
 const REC = /\s*\(recommended\)\s*$/i
 
-export function AskDock({ who, questions, busy, onSend, onCancel }: {
+export function AskDock({ id, who, questions, busy, onSend, onCancel }: {
+  id: string
   who: string
   questions: Question[]
   busy: boolean
@@ -15,9 +16,16 @@ export function AskDock({ who, questions, busy, onSend, onCancel }: {
   onCancel: () => void
 }) {
   const n = questions.length
-  const [step, setStep] = useState(0)
-  const [picks, setPicks] = useState<number[][]>(() => questions.map(() => []))
-  const [others, setOthers] = useState<string[]>(() => questions.map(() => ''))
+  // Picks survive a screen switch: the dock remounts on every route, so its state is a draft per prompt.
+  const [raw, setRaw] = useDraft(`ask.${id}`)
+  const blank = { step: 0, picks: questions.map(() => [] as number[]), others: questions.map(() => '') }
+  let st = blank
+  try { if (raw) { const v = JSON.parse(raw); if (v.picks?.length === n && v.others?.length === n) st = v } } catch { /* bad draft */ }
+  const { step, picks, others } = st
+  const save = (x: Partial<typeof blank>) => setRaw(JSON.stringify({ ...st, ...x }))
+  const setStep = (v: number) => save({ step: v })
+  const setPicks = (v: number[][]) => { st = { ...st, picks: v }; save({}) }
+  const setOthers = (v: string[]) => { st = { ...st, others: v }; save({}) }
   const q = questions[step]
   const other = others[step].trim()
   const ready = (i: number) => picks[i].length > 0 || others[i].trim() !== ''

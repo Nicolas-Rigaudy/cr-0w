@@ -10,7 +10,7 @@ const questions: Question[] = Array.from({ length: 4 }, (_, i) => ({
   header: `Q${i + 1}`, question: `Question ${i + 1}?`, multiSelect: i === 3,
   options: Array.from({ length: 4 }, (_, k) => ({ label: `Option ${k + 1}`, description: long })),
 }))
-const html = renderToStaticMarkup(<AskDock who="Session" questions={questions} busy={false} onSend={() => {}} onCancel={() => {}} />)
+const html = renderToStaticMarkup(<AskDock id="t" who="Session" questions={questions} busy={false} onSend={() => {}} onCancel={() => {}} />)
 // vitest stubs CSS imports, so the stylesheet is read from disk.
 const css: string = readFileSync(new URL('../theme.css', import.meta.url), 'utf8')
 const rule = (sel: string) => css.split('\n').find((l) => l.startsWith(sel + ' {')) ?? ''
