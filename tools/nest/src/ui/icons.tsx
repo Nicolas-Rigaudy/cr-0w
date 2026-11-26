@@ -19,7 +19,7 @@ export const MORE_ICON: ReactNode = <><circle cx="5" cy="11" r="1.8" /><circle c
 
 // Settings (item_284): the entry is a gear, the panes have their own icons.
 export const SETTINGS_ICON: ReactNode = (
-  <><circle cx="11" cy="11" r="3" /><path d="M11 2.5v2.6M11 16.9v2.6M2.5 11h2.6M16.9 11h2.6M5 5l1.8 1.8M15.2 15.2 17 17M5 17l1.8-1.8M15.2 6.8 17 5" /></>
+  <><circle cx="11" cy="11" r="2.6" /><path d="M9.6 2.5h2.8l.4 2.2 1.5.7 1.9-1.3 2 2-1.3 1.9.7 1.5 2.2.4v2.8l-2.2.4-.7 1.5 1.3 1.9-2 2-1.9-1.3-1.5.7-.4 2.2H9.6l-.4-2.2-1.5-.7-1.9 1.3-2-2 1.3-1.9-.7-1.5-2.2-.4V9.6l2.2-.4.7-1.5-1.3-1.9 2-2 1.9 1.3 1.5-.7Z" strokeLinejoin="round" /></>
 )
 export const PANE_ICONS: Record<'look' | 'pages' | 'modules' | 'general', ReactNode> = {
   look: <><circle cx="11" cy="11" r="8" /><path d="M11 3a8 8 0 0 1 0 16Z" fill="currentColor" /></>,

@@ -19,11 +19,47 @@ export function nextTheme(t: string, list: readonly string[] = themes): string {
   return list[(list.indexOf(t) + 1) % list.length]
 }
 
-function useThemeCycle(): [string, () => void] {
+function useThemeCycle(): string {
   const theme = useTheme()
   // First paint sets the browser bar colour too.
   useEffect(() => paintTheme(theme), [theme])
-  return [theme, () => setTheme(nextTheme(theme))]
+  return theme
+}
+
+const title = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+
+// Header theme picker: every installed theme with its swatch; the pick applies at once.
+function ThemeMenu({ theme }: { theme: string }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const off = (e: Event) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('pointerdown', off)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('pointerdown', off); document.removeEventListener('keydown', esc) }
+  }, [open])
+  return (
+    <span className="theme-menu" ref={box}>
+      <button type="button" className="icon-btn" aria-haspopup="menu" aria-expanded={open} aria-label={`Theme: ${theme}`} title="Theme" onClick={() => setOpen(!open)}>
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3Z" />
+          <circle cx="7.5" cy="11" r="1.2" fill="currentColor" /><circle cx="10" cy="7" r="1.2" fill="currentColor" /><circle cx="15" cy="7.5" r="1.2" fill="currentColor" />
+        </svg>
+      </button>
+      {open && (
+        <span className="theme-pop" role="menu">
+          {themes.map((t) => (
+            <button key={t} type="button" role="menuitemradio" aria-checked={t === theme} className="theme-opt" onClick={() => { setTheme(t); setOpen(false) }}>
+              <span className="set-mini" data-theme={t} aria-hidden="true"><i /><span><i /><i /><i /></span></span>
+              <span className="n">{title(t)}{t === theme && <span className="ck" aria-hidden="true"> ✓</span>}</span>
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
+  )
 }
 
 function badges(snap: Snapshot | null): Partial<Record<TabKey, { n: number; failed?: boolean }>> {
@@ -48,7 +84,7 @@ function ScopeChip({ scope, setScope }: { scope: ScopeMode; setScope: (m: ScopeM
 interface ShellProps { active: TabKey; snap: Snapshot | null; scope: ScopeMode; setScope: (m: ScopeMode) => void; rail?: ReactNode; badge?: ReactNode; children: ReactNode }
 
 export function Shell({ active, snap, scope, setScope, rail, badge, children }: ShellProps) {
-  const [theme, toggle] = useThemeCycle()
+  const theme = useThemeCycle()
   const b = badges(snap)
   const c = snap ? homeCounts(snap) : null
   // Account gauges (laptop), allowed accounts only: 5h left as bar and number, week in the
@@ -98,13 +134,9 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
           <button type="button" className="chip build-chip" onClick={() => location.reload()}>new build ready · reload</button>
         )}
         {snap && <span className="clock"><span className="short">{time(snap.now)}</span><span className="long">{headerClock(snap.now, theme === 'cyber')}</span></span>}
-        <button type="button" className="icon-btn" onClick={toggle} aria-label={`Theme: ${theme}. Switch to ${nextTheme(theme)}`} title="Switch theme">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
-          </svg>
-        </button>
-        <Link href="/settings" className="settings-btn" aria-current={active === SETTINGS ? 'page' : undefined}>
-          <TabIcon>{SETTINGS_ICON}</TabIcon>Settings
+        <ThemeMenu theme={theme} />
+        <Link href="/settings" className="icon-btn set-ic" aria-label="Settings" title="Settings" aria-current={active === SETTINGS ? 'page' : undefined}>
+          <TabIcon>{SETTINGS_ICON}</TabIcon>
         </Link>
       </header>
       <main className="main" id="main">{children}</main>

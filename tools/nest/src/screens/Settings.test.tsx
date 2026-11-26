@@ -51,7 +51,7 @@ describe('settings entries', () => {
     vi.stubGlobal('location', { search: '', pathname: '/settings' })
     vi.stubGlobal('document', { documentElement: { dataset: {} } })
     const html = renderToStaticMarkup(<Shell active="settings" snap={await snapshot()} scope="all" setScope={() => {}}>x</Shell>)
-    expect(html).toMatch(/<a href="\/settings" class="settings-btn" aria-current="page">.*Settings<\/a>/)
+    expect(html).toMatch(/<a href="\/settings" class="icon-btn set-ic" aria-label="Settings" title="Settings" aria-current="page">/)
     expect(html).toMatch(/<button type="button" class="tab" aria-expanded="false"[^>]*aria-current="page">.*More<span class="sr-only">, Settings open<\/span><\/button>/)
   })
 })
