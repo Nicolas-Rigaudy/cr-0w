@@ -135,7 +135,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 .pill[aria-current='page'] .badge-t { color: var(--accent-ink); }
 
 .main { overflow: auto; min-height: 0; position: relative; }
-.screen { padding: 16px; max-width: 1480px; margin: 0 auto; }
+.screen { padding: 16px; max-width: var(--page-max); margin: 0 auto; }
 
 .tabbar {
   height: calc(60px + env(safe-area-inset-bottom));
@@ -883,7 +883,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 @media (min-width: 600px) {
   .ib-in { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 16px; flex: 1; min-height: 0; }
   .ib-in .col { gap: 12px; }
-  .ib-wide { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 20px 24px; flex: 1; min-height: 0; max-width: 1840px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .ib-wide { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 20px 24px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; }
   .ib-wide .ilist > :not(.grp:first-child, .alist) { display: none; }
   .ib-wide .irow { padding: 6px 8px; gap: 8px; }
   .ib-wide .irow .ic { width: 22px; height: 22px; }
@@ -894,7 +894,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .ib-wide .stage { grid-template-columns: 1fr 240px; gap: 12px 16px; }
   .ib-wide .stage .shot { display: grid; place-items: center; }
   .ib-wide .stage .shot img { width: auto; max-width: 100%; max-height: calc(100vh - 420px); }
-  .ib-lp { display: grid; grid-template-columns: 200px minmax(300px, 380px) 1fr; gap: 16px; padding: 20px 24px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .ib-lp { display: grid; grid-template-columns: 200px minmax(300px, 380px) 1fr; gap: 16px; padding: 20px 24px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; }
 }
 /* Flip stage (item_211, board 211-B): the option image large, letters and scenarios beside it */
 .ibx .stage { display: flex; flex-direction: column; gap: 10px; }
@@ -1625,7 +1625,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 :is(.mrs, .dk) .mdet.ph .mbody { overflow: visible; }
 :is(.mrs, .dk) .mdet.ph .job { font-size: 11px; padding: 3px 7px; }
 @media (min-width: 1100px) {
-  :is(.mrs, .dk).m-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  :is(.mrs, .dk).m-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; }
   :is(.mrs, .dk).m-lp .mgrid { display: grid; grid-template-columns: 500px 1fr; gap: 16px; flex: 1; min-height: 0; }
   :is(.mrs, .dk).m-lp .mpanes { overflow-y: auto; min-height: 0; }
   :is(.mrs, .dk).m-lp .mgrid > .deck { margin-top: 8px; min-height: 0; }
@@ -1766,7 +1766,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .usage.u-ph .facts dd { font-size: 12px; }
 .usage.u-ph .seg { padding: 6px 10px; }
 @media (min-width: 1100px) {
-  .usage.u-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .usage.u-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; }
   .usage.u-lp .ugrid { display: grid; grid-template-columns: 280px 1fr; gap: 16px; flex: 1; min-height: 0; }
   .usage.u-lp .uright { display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow-y: auto; min-height: 0; }
 }
@@ -1836,7 +1836,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .agenda .hg .ev { left: 6px; right: 6px; font-size: 11.5px; padding: 3px 8px; border-left-width: 3px; }
 .agenda.m-ph .card .btn.p { min-height: 40px; flex: 1; }
 @media (min-width: 1100px) {
-  .agenda.m-lp { padding: 12px 16px; gap: 10px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  .agenda.m-lp { padding: 12px 16px; gap: 10px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; }
   .agenda.m-lp .wk { flex: none; }
   .agenda.m-lp .abot { flex: 1; }
   .agenda.m-lp .abot .card { flex: 1; }
@@ -1896,7 +1896,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
 .reports.r-ph .rrow .rt { flex-basis: 120px; }
 .reports .rread.ph { display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
 @media (min-width: 1100px) {
-  .reports.r-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; gap: 10px; }
+  .reports.r-lp { padding: 16px 20px; flex: 1; min-height: 0; max-width: var(--page-max); margin: 0 auto; width: 100%; box-sizing: border-box; gap: 10px; }
   .reports.r-lp .rgrid { display: grid; grid-template-columns: 0.9fr 1fr; gap: 10px; flex: 1; min-height: 0; }
   .reports.r-lp .rlist { overflow-y: auto; }
   .reports.r-lp .rrow .rs { flex-basis: auto; }
@@ -2003,3 +2003,22 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .dk.m-lp .mpanes .mlist { max-height: none; }
 }
 @media (min-width: 1100px) { .dk.m-lp .mgrid > .p-detail { overflow: visible; } }
+
+/* Deck titles stay on one line: a long session name never overlaps the pane. */
+:is(.mrs, .dk, .usage) .deck .dt > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:is(.mrs, .dk, .usage) .deck .dt > span:not(:first-child) { flex-shrink: 0; }
+
+/* Wide screens: the Desk and MRs list pane grows with the page. */
+/* One width for every page: capped on laptops, the full width on wide screens. */
+:root { --page-max: 1600px; }
+@media (min-width: 1700px) { :root { --page-max: none; } }
+@media (min-width: 1700px) {
+  :is(.mrs, .dk).m-lp .mgrid { grid-template-columns: minmax(500px, 30%) 1fr; }
+}
+
+/* Reports reader: tables and code blocks. */
+.md table { border-collapse: collapse; width: 100%; margin: 6px 0 12px; font-size: 12px; }
+.md .tw { overflow-x: auto; }
+.md th, .md td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.md th { color: var(--sub); font: 11px var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; background: var(--well); }
+.md pre { background: var(--well); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; overflow-x: auto; font-size: 12px; white-space: pre; }

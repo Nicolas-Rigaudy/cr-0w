@@ -110,12 +110,17 @@ export function running(started: string | null, items: Report[], now: Date) {
   return !items.some((r) => r.kind === 'retro' && Date.parse(r.at) >= t)
 }
 
-// Minimal Markdown for the reader: headings, lists, paragraphs, **bold**, `code`,
-// [text](url). Front matter is dropped. Raw HTML stays text.
+// Minimal Markdown for the reader: headings, lists, paragraphs, tables, code fences,
+// **bold**, `code`, [text](url). Front matter is dropped. Raw HTML stays text.
 export type Block =
   | { t: 'h'; level: 1 | 2 | 3; text: string }
   | { t: 'ul'; items: string[] }
   | { t: 'p'; text: string }
+  | { t: 'table'; head: string[]; rows: string[][] }
+  | { t: 'pre'; text: string }
+
+const cells = (l: string) => l.replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'))
+const isSep = (l: string) => /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(l)
 
 export function blocksOf(md: string): Block[] {
   let lines = md.replace(/\r\n/g, '\n').split('\n')
@@ -132,8 +137,21 @@ export function blocksOf(md: string): Block[] {
     if (list) out.push({ t: 'ul', items: list })
     list = null
   }
-  for (const raw of lines) {
+  let table: { head: string[]; rows: string[][] } | null = null
+  let fence: string[] | null = null
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i]
     const l = raw.trim()
+    if (fence) {
+      if (l.startsWith('```')) { out.push({ t: 'pre', text: fence.join('\n') }); fence = null } else fence.push(raw)
+      continue
+    }
+    if (l.startsWith('```')) { flush(); fence = []; continue }
+    if (table) {
+      if (l.startsWith('|')) { table.rows.push(cells(l)); continue }
+      out.push({ t: 'table', ...table }); table = null
+    }
+    if (l.startsWith('|') && isSep(lines[i + 1]?.trim() ?? '')) { flush(); table = { head: cells(l), rows: [] }; i++; continue }
     const h = /^(#{1,6})\s+(.*)$/.exec(l)
     const li = /^[-*+]\s+(.*)$/.exec(l) ?? /^\d+[.)]\s+(.*)$/.exec(l)
     if (!l) flush()
@@ -142,6 +160,8 @@ export function blocksOf(md: string): Block[] {
     else if (list && /^\s/.test(raw)) list[list.length - 1] += ` ${l}`
     else { if (list) { out.push({ t: 'ul', items: list }); list = null } para.push(l) }
   }
+  if (table) out.push({ t: 'table', ...table })
+  if (fence) out.push({ t: 'pre', text: fence.join('\n') })
   flush()
   return out
 }

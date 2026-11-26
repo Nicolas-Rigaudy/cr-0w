@@ -336,8 +336,13 @@ func (b *builder) mission(m contract.Mission) contract.WorkItem {
 		}
 		it.WaitS = secs(int64(b.age(from) / time.Second))
 	case "failed":
-		if n := len(m.Runs); n > 0 && m.Runs[n-1].Cause != nil {
+		// A run can end done and the mission still fail on its output: the move's
+		// reason says why, the run cause only when the run itself failed.
+		if n := len(m.Runs); n > 0 && m.Runs[n-1].Cause != nil && *m.Runs[n-1].Cause != "done" {
 			it.Why = *m.Runs[n-1].Cause
+		}
+		if m.Reason != "" {
+			it.Why = m.Reason
 		}
 	}
 	return it

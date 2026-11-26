@@ -133,6 +133,13 @@ export function Markdown({ text }: { text: string }) {
     <div className="md">
       {blocksOf(text).map((b, i) => {
         if (b.t === 'h') return b.level === 3 ? <h4 key={i}><Inline s={spansOf(b.text)} /></h4> : <h3 key={i}><Inline s={spansOf(b.text)} /></h3>
+        if (b.t === 'table') return (
+          <div key={i} className="tw"><table>
+            <thead><tr>{b.head.map((c, j) => <th key={j}><Inline s={spansOf(c)} /></th>)}</tr></thead>
+            <tbody>{b.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k}><Inline s={spansOf(c)} /></td>)}</tr>)}</tbody>
+          </table></div>
+        )
+        if (b.t === 'pre') return <pre key={i}>{b.text}</pre>
         if (b.t === 'ul') return <ul key={i}>{b.items.map((t, j) => <li key={j}><Inline s={spansOf(t)} /></li>)}</ul>
         return <p key={i}><Inline s={spansOf(b.text)} /></p>
       })}

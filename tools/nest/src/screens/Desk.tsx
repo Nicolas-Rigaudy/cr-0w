@@ -298,14 +298,13 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     return undefined
   }
   const missionOf = (w: WorkItem) => snap.missions.find((m) => m.id === (w.kind === 'mission' ? w.source.ref : w.mission))
-  // Every action of a unit, main one first. Keys: a answer, r retry or resume, x stop or cancel, o open session.
+  // Every action of a unit, main one first. Keys: a answer, r retry or resume, x stop or cancel.
   const actsOf = (w: WorkItem): Act[] => {
     const out: Act[] = []
     const main = rowAct(w)
     if (main) out.push({ ...main, p: true, key: main.label === 'Retry' ? 'r' : main.label === 'Open MR' ? undefined : 'a' })
     const a = agentOf(w, agents)
     if (a) {
-      out.push({ label: 'Open session', key: 'o', run: () => navigate(`/desk/${a.pid}`) })
       if (a.kind === 'session') {
         out.push({ label: 'Message', run: () => { setTab('overview'); setTell(!tell) } })
         out.push({ label: 'Pause', run: () => pause(a) })
@@ -727,7 +726,7 @@ function Detail({ d, w, phone }: { d: D; w: WorkItem; phone?: boolean }) {
   return <Deck n={5} title={w.title} cls="p-detail" on={d.focus === 'detail'} aside={<span>{w.project} · {KIND_LABEL[w.kind].toLowerCase()}</span>}>{inner}</Deck>
 }
 
-const KEYS: [string, string][] = [['1-5', 'pane'], ['j k', 'move'], ['n', 'new task'], ['a', 'answer'], ['r', 'retry'], ['x', 'cancel'], ['o', 'open session'], ['c', 'chat']]
+const KEYS: [string, string][] = [['1-5', 'pane'], ['j k', 'move'], ['n', 'new task'], ['a', 'answer'], ['r', 'retry'], ['x', 'cancel'], ['c', 'chat']]
 
 // ---- laptop ----
 function DeskLaptop({ d }: { d: D }) {

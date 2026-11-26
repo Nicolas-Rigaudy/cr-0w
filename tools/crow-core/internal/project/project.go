@@ -119,7 +119,10 @@ func Apply(v *View, e contract.Event, kinds Kinds) error {
 		if !contract.CanMove(d.From, d.To) {
 			return fmt.Errorf("%s: illegal move %s -> %s (from %s: %v)", e.Mission, d.From, d.To, d.From, contract.Moves[d.From])
 		}
-		m.State = d.To
+		m.State, m.Reason = d.To, ""
+		if d.To == "failed" && d.Reason != nil {
+			m.Reason = *d.Reason
+		}
 		if d.To != "queued" && d.To != "preflight" {
 			m.Position, m.OverCap = nil, false // out of the queue
 		}

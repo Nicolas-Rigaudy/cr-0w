@@ -39,6 +39,8 @@ type Mission struct {
 	// OverCap marks a queued mission the owner started now: the tick starts it past
 	// the run cap.
 	OverCap bool `json:"over_cap,omitempty"`
+	// Reason says why the mission failed, from the move to failed. Absent otherwise.
+	Reason string `json:"reason,omitempty"`
 }
 
 // QueueCompare orders the missions of the queue: placed ones by position, then the

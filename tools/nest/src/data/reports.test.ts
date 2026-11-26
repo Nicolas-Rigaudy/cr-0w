@@ -68,3 +68,14 @@ describe('Markdown blocks', () => {
     ])
   })
 })
+
+describe('blocksOf tables and fences', () => {
+  it('reads a pipe table after a paragraph and a code fence', () => {
+    const b = blocksOf('Findings:\n| # | Signal |\n|---|---|\n| 1 | a \\| b |\n\n```\nx | y\n```')
+    expect(b).toEqual([
+      { t: 'p', text: 'Findings:' },
+      { t: 'table', head: ['#', 'Signal'], rows: [['1', 'a | b']] },
+      { t: 'pre', text: 'x | y' },
+    ])
+  })
+})
