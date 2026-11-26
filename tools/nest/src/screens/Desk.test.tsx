@@ -112,7 +112,8 @@ describe('Desk layout C (item_295)', () => {
   it('details the picked unit in four tabs with its actions', async () => {
     const h = await html()
     for (const t of ['Overview', 'Transcript', 'Timeline', 'Files']) expect(h).toMatch(new RegExp(`role="tab"[^>]*>${t}</button>`))
-    expect(h).toMatch(/aria-selected="true"[^>]*>Overview/)
+    expect(h).toMatch(/aria-selected="true"[^>]*>Transcript/)
+    expect(h).toContain("ask ask-q")
     expect(h).toContain('Stop')
   })
 

@@ -92,7 +92,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   useEffect(() => { if (sel != null) savePick(sel) }, [sel])
   const [uid, setUid] = useState<string | null>(null)
   const [tell, setTell] = useState(() => q.get('tell') === '1')
-  const [tab, setTab] = useState<Tab>(() => (TABS.some(([t]) => t === q.get('tab')) ? (q.get('tab') as Tab) : 'overview'))
+  const [tab, setTab] = useState<Tab | null>(() => (TABS.some(([t]) => t === q.get('tab')) ? (q.get('tab') as Tab) : null))
   // Phone: the detail is its own page, open on a ?pid= link or a tap.
   const [page, setPage] = useState(() => !!q.get('pid'))
   const [text, setText] = useState('')
@@ -225,20 +225,20 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     done: () => setLog((l) => [...l, { me: true, text: `Cancel ${title(m)}` }, { text: `${title(m)} cancelled.` }]),
   }))
 
-  // Picking a unit opens its detail (a page on the phone) on Overview.
+  // Picking a unit opens its detail (a page on the phone): the chat for a live agent, else Overview.
   const choose = (w: WorkItem) => {
     setUid(w.id)
     const a = agentOf(w, agents)
     if (a) setSel(a.pid)
     setTell(false)
-    setTab('overview')
+    setTab(null)
     setPage(true)
   }
   const pick = (a: Agent, talk = false) => {
     setUid(agentUnit(a).id)
     setSel(a.pid)
     setTell(talk)
-    setTab('overview')
+    setTab(talk ? 'overview' : null)
     setPage(true)
   }
   const fresh = opening ? agents.find((a) => a.tmux === opening) : undefined
@@ -407,7 +407,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     sheet, setSheet, log, tell, setTell, text, setText, ask, setAsk, submitAsk, chat, setChat,
     form, setForm, run, setRun, start, setStart, mode, setMode, task, setTask, launch, dispatch, open,
     send, settle, retell, answer, answerAsk, asking,
-    work, panes, unit, agent, focus, setFocus, folded, setFolded, tab, setTab, page, setPage, proj, setProj,
+    work, panes, unit, agent, focus, setFocus, folded, setFolded, tab: tab ?? (agent && agent.state !== 'setup' ? 'transcript' : 'overview') as Tab, setTab, page, setPage, proj, setProj,
     allProjects: projectsOfPanes(work, agents), choose, actsOf, missionOf, paneOf, key,
   }
 }
@@ -693,7 +693,9 @@ function Body({ d, w, a }: { d: D; w: WorkItem; a?: Agent }) {
 
 function Detail({ d, w, phone }: { d: D; w: WorkItem; phone?: boolean }) {
   const a = d.agent
-  const acts = d.actsOf(w)
+  // The session chat carries its own reply box, Pause and Stop; the footer keeps the rest.
+  const inChat = d.tab === 'transcript' && a?.kind === 'session'
+  const acts = d.actsOf(w).filter((x) => !inChat || !CHAT_ACTS.includes(x.label))
   const pane = d.paneOf(w)
   const meta = [KIND_LABEL[w.kind].toLowerCase(), w.project, a?.account, a?.cwd, a?.started_at && `started ${time(new Date(a.started_at))}`]
     .filter(Boolean).join(' · ')
@@ -754,6 +756,8 @@ function DeskLaptop({ d }: { d: D }) {
     </div>
   )
 }
+
+const CHAT_ACTS = ['Answer', 'Allow', 'Message', 'Pause', 'Stop']
 
 // ---- phone: pane tabs, one pane, the detail as its own page ----
 const SHORT: Record<PaneId, string> = { needs: 'Needs', moving: 'Moving', queued: 'Queued', done: 'Done' }

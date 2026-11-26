@@ -27,9 +27,9 @@ describe('AskDock scroll', () => {
   })
 
   it('caps the dock to the viewport and scrolls its body on every layout', () => {
-    expect(rule(':is(.chat-cv, .desk-cv) .ask-q')).toMatch(/max-height: *\d+dvh/)
-    expect(rule(':is(.chat-cv, .desk-cv) .ask-q')).toMatch(/min-height: *0/)
-    expect(rule(':is(.chat-cv, .desk-cv) .ask-q .ab')).toMatch(/overflow-y: *auto/)
-    expect(rule(':is(.chat-cv, .desk-cv) .ask-q .ab')).toMatch(/min-height: *0/)
+    expect(rule(':is(.chat-cv, .desk-cv, .dk) .ask-q')).toMatch(/max-height: *\d+dvh/)
+    expect(rule(':is(.chat-cv, .desk-cv, .dk) .ask-q')).toMatch(/min-height: *0/)
+    expect(rule(':is(.chat-cv, .desk-cv, .dk) .ask-q .ab')).toMatch(/overflow-y: *auto/)
+    expect(rule(':is(.chat-cv, .desk-cv, .dk) .ask-q .ab')).toMatch(/min-height: *0/)
   })
 })
