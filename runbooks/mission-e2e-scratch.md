@@ -33,6 +33,7 @@ Ask for three things so one run covers each path:
 - Read the cdx launch log: `<cdx profile home>/log/cdx-run-<run_id>-attempt-1.launch.log`.
 - Compare the run's recorded `launch.extra_args` with what crow-runs passed (`bin/crow-runs` ledger in `local/state/runs.jsonl`).
 - A failed mission stays failed; start a new mission (new key) for the rerun.
+- Exception: a mission that failed on a responses miss before core retried it can be requeued by hand while it has resumes left (`crow core mission show <id>`, budget line). Pipe two events into `bin/crow core append`: an `incident` with `cause: responses_miss` and `detail: "plan.vN.md: vN responses miss ..."`, then a `state` `failed`→`queued` with reason `resume once: responses miss`. The next tick resumes it with the error at the top of `resume.md`.
 
 ## Not covered
 - Isolated (worktree) missions: core does not dispatch them yet (item_160), so the cold resume path is only unit tested.
