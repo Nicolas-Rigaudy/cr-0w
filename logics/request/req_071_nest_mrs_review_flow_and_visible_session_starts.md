@@ -25,6 +25,8 @@
 - Core has no endpoint over crow-review-run. `/api/state/mrs` carries the list only, no findings.
 - Session start: core runs `tmux new-session -d ... crow open --on-busy fail <project>` and answers 200 at once. On 11-26 10:41 the session exited after 1.4 s; two lambda starts at 10:39 left no session either. Nest showed "started".
 
+- Evaluate Claude Code `/ship` and `/steward` (added 2026-11-26, owner idea) before building item_299 to item_301. `/ship` commits, pushes, opens the PR, reviews it, fixes, then watches CI, conflicts and review comments until merge or close (never merges). `/steward` only watches. Open points: GitLab support, `/ship` pushes without the per-push OK work repos need, overlap with the `review`, `review-threads` and `mr` skills (template, assignee, ledgers). Only the user can type them, so Nest would start them as the session prompt. Try on a personal GitHub repo first.
+
 # Acceptance criteria
 - AC1: Review on an MR in Nest starts `crow-review-run start` (peer, self or threads mode, with the source branch). No plain dispatch is left.
 - AC2: The MR detail shows the run state and, when done, each finding with file, line, comment and proposed fix, and records accept, refuse, edit or chat decisions.
