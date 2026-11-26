@@ -37,7 +37,10 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
   const src = useSource()
   const now = snap.now
   const today = parisDay(now)
-  const project = useQuery().get('project') ?? undefined
+  const q = useQuery()
+  const project = q.get('project') ?? undefined
+  // ?run=<id> (Desk "Open mission"): open the lane of that run once it loads.
+  const wantRun = q.get('run')
   const [mode, setMode] = useState<Mode>('day')
   const [day, setDay] = useState(today)
   const [by, setBy] = useState<By>('project')
@@ -68,6 +71,12 @@ export function Ops({ snap, refresh }: { snap: Snapshot; refresh?: () => Promise
   }, [load, src.poll, mode, day, today])
 
   const lanes = useMemo(() => (data?.lanes ?? []).filter((l) => !project || l.project === project), [data, project])
+  const opened = useRef('')
+  useEffect(() => {
+    if (!wantRun || opened.current === wantRun) return
+    const hit = lanes.find((l) => l.id === wantRun || l.keys.some((k) => k.startsWith(wantRun) || wantRun.startsWith(k)))
+    if (hit) { opened.current = wantRun; setOpen(hit) }
+  }, [lanes, wantRun])
   const totals = useMemo(() => (data?.totals ?? []).filter((t) => t.by === by && (!project || by === 'kind' || t.name === project)), [data, by, project])
   const dispatch = dispatchOf(snap.sections.dispatch)
   const s = stats(lanes.filter((l) => mode === 'week' || l.day === day))

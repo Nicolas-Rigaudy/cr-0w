@@ -285,7 +285,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
       if (a.prompt && promptView(a.prompt) === 'options' && a.prompt.options.some((o) => o.key === 'allow')) return { label: 'Allow', run: () => allow(a) }
       return { label: 'Answer', run: () => pick(a, !a.prompt) }
     }
-    if (w.kind === 'mission' && w.state === 'needs') return { label: 'Answer', run: () => navigate(`/ops?mission=${encodeURIComponent(w.source.ref)}`) }
+    if (w.kind === 'mission' && w.state === 'needs') return { label: 'Answer', run: () => setTab('transcript') }
     return undefined
   }
   const missionOf = (w: WorkItem) => snap.missions.find((m) => m.id === (w.kind === 'mission' ? w.source.ref : w.mission))
@@ -308,7 +308,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     }
     const m = missionOf(w)
     if (m) {
-      out.push({ label: 'Open mission', run: () => navigate(`/ops?mission=${encodeURIComponent(m.id)}`) })
+      out.push({ label: 'Open mission', run: () => navigate(`/ops?run=${encodeURIComponent(m.runs[m.runs.length - 1]?.run ?? m.id)}`) })
       if (!a && CANCELLABLE.includes(m.state)) out.push({ label: 'Cancel', x: true, run: () => cancel(m) })
     }
     return out.filter((x, i) => out.findIndex((y) => y.label === x.label) === i)
@@ -608,7 +608,9 @@ function Body({ d, w, a }: { d: D; w: WorkItem; a?: Agent }) {
   if (d.tab === 'transcript') {
     return a
       ? <AgentChat key={a.pid} snap={d.snap} refresh={d.refresh} target={{ pid: a.pid }} log={<Timeline d={d} a={a} term />} />
-      : <div className="empty dim">{NO_TRANSCRIPT[w.kind]}</div>
+      : w.kind === 'mission'
+        ? <AgentChat key={w.source.ref} snap={d.snap} refresh={d.refresh} target={{ mission: w.source.ref }} />
+        : <div className="empty dim">{NO_TRANSCRIPT[w.kind]}</div>
   }
   if (d.tab === 'timeline') {
     const m = d.missionOf(w)
