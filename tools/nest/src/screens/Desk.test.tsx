@@ -100,12 +100,12 @@ describe('Desk layout C (item_295)', () => {
 
   it('shows four panes with their counts in the titles and no count tiles', async () => {
     const h = await html()
-    for (const t of ['[1] Needs you', '[2] Moving', '[3] Queued', '[4] Done · failed', '[5] ']) expect(h).toContain(t)
-    expect(h).toMatch(/\[1\] Needs you<\/span><span class="num">\d+</)
+    for (const t of ['Needs you', 'Moving', 'Queued', 'Done · failed', 'Detail']) expect(h).toContain(t)
+    expect(h).toMatch(/Needs you<\/span><span class="num">\d+</)
     expect(h).toMatch(/\d+ · folded ▸/)
     expect(h).not.toContain('done today')
     expect(h).not.toContain('ok rate 7d')
-    expect(h).toContain('◇ Butler')
+    expect(h).not.toContain('◇ Butler')
     expect(h).not.toContain('aria-label="Ask CR-0W"')
   })
 
@@ -128,8 +128,8 @@ describe('Desk layout C (item_295)', () => {
   it('shows one pane at a time on the phone, behind pane tabs', async () => {
     const h = await html(400)
     expect(h).toContain('aria-label="Panes"')
-    expect(h).toMatch(/\[1\] <\/span>Needs <span class="num">\d+/)
-    expect(h).not.toContain('[2] Moving</span>')
+    expect(h).toMatch(/>Needs <span class="num">\d+/)
+    expect(h).not.toContain('aria-label="Moving"')
   })
 
   it('opens the detail as its own page on the phone, with a back button', async () => {

@@ -137,10 +137,10 @@ function Head({ m, phone }: { m: M; phone?: boolean }) {
 }
 
 // A deck pane: the title sits in the top border, the count at the right.
-export function Deck({ n, title, count, on, aside, cls, children }: { n: number; title: string; count?: number; on?: boolean; aside?: ReactNode; cls?: string; children: ReactNode }) {
+export function Deck({ title, count, on, aside, cls, children }: { n: number; title: string; count?: number; on?: boolean; aside?: ReactNode; cls?: string; children: ReactNode }) {
   return (
     <section className={`deck${cls ? ` ${cls}` : ''}${on ? ' on' : ''}`} aria-label={title}>
-      <div className="dt"><span>[{n}] {title}</span>{aside ?? (count !== undefined && <span className="num">{count}</span>)}</div>
+      <div className="dt"><span>{title}</span>{aside ?? (count !== undefined && <span className="num">{count}</span>)}</div>
       {children}
     </section>
   )
@@ -227,9 +227,9 @@ function PhonePanes({ m }: { m: M }) {
   return (
     <>
       <div className="segs ptabs" role="tablist" aria-label="Panes">
-        {PANES.map(([p], n) => {
+        {PANES.map(([p]) => {
           const c = listOf(m.d, p).length
-          return <button key={p} type="button" role="tab" className={`seg${m.paneTab === p ? ' on' : ''}`} aria-selected={m.paneTab === p} onClick={() => m.setPaneTab(p)}>[{n + 1}] {SHORT[p]}{c && p !== 'merged' ? ` ${c}` : ''}</button>
+          return <button key={p} type="button" role="tab" className={`seg${m.paneTab === p ? ' on' : ''}`} aria-selected={m.paneTab === p} onClick={() => m.setPaneTab(p)}>{SHORT[p]}{c && p !== 'merged' ? ` ${c}` : ''}</button>
         })}
       </div>
       <Deck n={i + 1} title={PANES[i][1]} on><PaneBody m={m} p={m.paneTab} phone /></Deck>
@@ -356,13 +356,12 @@ function Detail({ m }: { m: M }) {
 // Phone: the detail as its own page, back to the pane it came from.
 function PhoneDetail({ m }: { m: M }) {
   const r = m.picked!
-  const i = PANES.findIndex(([p]) => p === m.pane)
   const tab = (t: Tab, label: ReactNode) => (
     <button key={t} type="button" role="tab" className={`mtab${m.tab === t ? ' on' : ''}`} aria-selected={m.tab === t} onClick={() => m.setTab(t)}>{label}</button>
   )
   return (
     <div className="mdet ph">
-      <button type="button" className="mback" onClick={m.back}>◀ [{i + 1}] {SHORT[m.pane!]}</button>
+      <button type="button" className="mback" onClick={m.back}>◀ {SHORT[m.pane!]}</button>
       <h2><span className="ref">{r.ref}</span> {r.title}</h2>
       <div className="meta">{r.name} · {r.branch} → {r.target} · {ago(r.updated, m.now)}</div>
       <Facts r={r} now={m.now} phone />

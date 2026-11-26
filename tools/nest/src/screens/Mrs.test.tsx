@@ -33,9 +33,9 @@ describe('MRs page, laptop (item_225, option C)', () => {
   it('shows the three deck panes with their counts and the header summary', async () => {
     const h = await page(1440)
     expect(h).toContain('m-lp')
-    expect(h).toContain('[1] To review</span><span class="num">1</span>')
-    expect(h).toContain('[2] Mine</span><span class="num">3</span>')
-    expect(h).toContain('[3] Merged today</span><span class="num">1</span>')
+    expect(h).toContain('To review</span><span class="num">1</span>')
+    expect(h).toContain('Mine</span><span class="num">3</span>')
+    expect(h).toContain('Merged today</span><span class="num">1</span>')
     expect(h).toContain('1 to review')
     expect(h).toContain('<span class="c-n">1 needs you</span>')
     expect(h).toContain('merged today 1')
@@ -44,7 +44,7 @@ describe('MRs page, laptop (item_225, option C)', () => {
   it('opens the first Mine MR by default with its facts, pipeline and open threads', async () => {
     const h = await page(1440)
     expect(h).toMatch(/class="mrow mine on"[^>]*><span class="ref">!239/)
-    expect(h).toContain('[4] !239')
+    expect(h).toContain('!239')
     expect(h).toContain('sync-loops-helper → main')
     expect(h).toContain('Pipeline #8812')
     expect(h).toContain('class="job failed">test ✕ 3:12')
@@ -64,7 +64,7 @@ describe('MRs page, laptop (item_225, option C)', () => {
 
   it('opens the MR and tab the URL names', async () => {
     const h = await page(1440, '?mr=242&tab=threads')
-    expect(h).toContain('[4] !242')
+    expect(h).toContain('!242')
     expect(h).toContain('aria-selected="true">Threads')
     const t = await page(1440, '?mr=239&tab=threads')
     expect(t).toContain('Typo in the docstring.')
@@ -72,7 +72,7 @@ describe('MRs page, laptop (item_225, option C)', () => {
 
   it('filters by project from the segment', async () => {
     const h = await page(1440, '?project=cr-0w')
-    expect(h).toContain('[4] #57')
+    expect(h).toContain('#57')
     expect(h).not.toContain('!242')
   })
 
@@ -181,9 +181,9 @@ describe('MRs page, phone (item_225, option C)', () => {
   it('shows the pane tabs and only the picked pane, rows with project and forge', async () => {
     const h = await page(368)
     expect(h).toContain('m-ph')
-    expect(h).toContain('aria-selected="true">[2] Mine 3</button>')
-    expect(h).toContain('[1] Review 1')
-    expect(h).toContain('>[3] Merged</button>')
+    expect(h).toContain('aria-selected="true">Mine 3</button>')
+    expect(h).toContain('Review 1')
+    expect(h).toContain('>Merged</button>')
     expect(h).toContain('<span class="c-n">1 needs you</span> · <span>1 review</span>')
     expect(h).toContain('<span class="sub">api · gitlab</span>')
     expect(h).toContain('<span class="sub">cr-0w · github</span>')
@@ -195,7 +195,7 @@ describe('MRs page, phone (item_225, option C)', () => {
 
   it('opens the MR the URL names as its own page with a back link', async () => {
     const h = await page(368, '?mr=239')
-    expect(h).toContain('◀ [2] Mine')
+    expect(h).toContain('◀ Mine')
     expect(h).toContain('api · sync-loops-helper → main · 2h')
     expect(h).toContain('<dt>CI</dt><dd><span class="c-f">✕ test</span></dd>')
     expect(h).toContain('<dt>Approvals</dt><dd>0/1</dd>')

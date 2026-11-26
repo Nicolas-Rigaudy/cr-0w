@@ -100,9 +100,9 @@ export function Shell({ active, snap, scope, setScope, rail, badge, children }: 
         <ScopeChip scope={scope} setScope={setScope} />
         <span className="hdr-sep" aria-hidden="true" />
         <nav className="pills" aria-label="Tabs">
-          {pills.map((t, i) => (
+          {pills.map((t) => (
             <Link key={t.key} href={t.path} className="pill" aria-current={t.key === active ? 'page' : undefined}>
-              <span className="tn">{i + 1}</span>{t.label}
+              {t.label}
               {b[t.key]?.n ? <span className={`badge-t num${b[t.key]!.failed ? ' f' : ''}`}>{b[t.key]!.n}</span> : null}
             </Link>
           ))}

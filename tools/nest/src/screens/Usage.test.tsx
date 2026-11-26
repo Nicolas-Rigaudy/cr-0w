@@ -34,7 +34,7 @@ describe('Usage page, laptop (item_227, option C)', () => {
 
   it('lists the accounts with their room left and a sparkline, then the tiles', () => {
     const h = page(1440, { account: 'acct1' })
-    expect(h).toContain('[1] Accounts')
+    expect(h).toContain('>Accounts<')
     expect(h).toContain('5h 38% left · wk 62%')
     expect(h).toContain('5h 91% left · wk 30%')
     expect(h).toContain('class="usp"')
@@ -44,7 +44,7 @@ describe('Usage page, laptop (item_227, option C)', () => {
 
   it('opens the picked account window pane with facts, both charts and the legend', () => {
     const h = page(1440, { account: 'acct1' })
-    expect(h).toContain('[2] acct1 · 5h window')
+    expect(h).toContain('acct1 · 5h window')
     for (const k of ['5h left', 'Burn', 'Empty at', 'Resets', 'Week left', 'Week resets']) expect(h).toContain(`<dt>${k}</dt>`)
     expect(h).toContain('aria-label="acct1 5h window: 62% used now')
     expect(h).toContain('aria-label="acct1 week: 38% used now')
@@ -55,7 +55,7 @@ describe('Usage page, laptop (item_227, option C)', () => {
 
   it('shows the analysis with the per day chart and this week per project', () => {
     const h = page(1440, { account: 'acct1' })
-    expect(h).toContain('[3] Analysis')
+    expect(h).toContain('Analysis')
     expect(h).toContain('one chart at a time')
     expect(h).toContain('aria-label="$ per day"')
     expect(h).toContain('<h3 class="ust">7 days</h3>')
@@ -118,7 +118,7 @@ describe('Usage page, laptop (item_227, option C)', () => {
 
   it('follows the route account and falls back to the active one', () => {
     const h = page(1440, { account: 'acct2' })
-    expect(h).toContain('[2] acct2 · 5h window')
+    expect(h).toContain('acct2 · 5h window')
     const d = usageFixture(fixtureSource().now())
     expect(pickAccount(d.limits, 'nope')?.account).toBe(d.limits.find((l) => l.active)?.account ?? d.limits[0].account)
   })
@@ -140,13 +140,13 @@ describe('Usage page, phone', () => {
   it('stacks the picker, the 5h window, the week and the analysis', () => {
     const h = page(368, { account: 'acct1' })
     expect(h).toContain('u-ph')
-    expect(h).not.toContain('[1] Accounts')
-    expect(h).toContain('[2] 5h window')
+    expect(h).not.toContain('>Accounts<')
+    expect(h).toContain('5h window')
     for (const k of ['Left', 'Burn', 'Empty']) expect(h).toContain(`<dt>${k}</dt>`)
-    expect(h).toContain('[3] Week')
-    expect(h).toContain('[4] Analysis')
+    expect(h).toContain('Week')
+    expect(h).toContain('Analysis')
     expect(h).toContain('Per project')
-    expect(h.indexOf('[2] 5h window')).toBeLessThan(h.indexOf('[4] Analysis'))
+    expect(h.indexOf('5h window')).toBeLessThan(h.indexOf('Analysis'))
     for (const t of ['Day', 'Project', 'Model', 'Kind', 'Session', 'Runs']) expect(h).toContain(`>${t}</button>`)
   })
 

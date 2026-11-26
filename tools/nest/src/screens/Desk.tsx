@@ -22,29 +22,23 @@ import { KindIcon, type RowAct } from '../ui/WorkList'
 import { stateClass } from '../ui/Glyph'
 import { AccountField } from '../ui/AccountField'
 import { isCommand } from '../data/butler'
-import { useButler } from '../data/useButler'
 import { deskPick, readPick, savePick } from '../data/deskPick'
 import {
   PANE_IDS, PANE_TITLE, agentOf, agentUnit, itemRef, paneGroups, panesOf, projectsOfPanes, summaryOf, unitOfAgent,
   type PaneId, type Panes,
 } from '../data/deskPanes'
+import { useDraft } from '../ui/draft'
 
 // Desk layout C (item_295): four deck panes (needs you, moving, queued, done) and a tabbed
 // detail, on the live actions of item_170. Every action goes through the confirm sheet,
 // then the feed refetches. The butler chat stays folded until asked for.
 const MODELS = ['default', 'sonnet', 'opus', 'haiku']
-const LATER = 'Arrives with the live API'
 const CORE = 'item_297'
 const nameOf = (a: Agent) => (a.kind === 'run' ? a.label || a.run_id || String(a.pid) : a.title || a.project)
 // setup (item_240): a headless session stuck on a first-run dialog; its Transcript tab answers it.
 const waits = (a: Agent) => a.state === 'waiting' || a.state === 'setup'
 const said = (a: Agent) => (a.state === 'setup' ? 'waits on setup' : waits(a) ? 'waits' : a.state)
 
-const Mic = ({ s = 18 }: { s?: number }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-  </svg>
-)
 
 interface Line { t?: string; tool: string; text: string; says?: boolean }
 // Timeline of an agent from what the runs section carries: start, last prompt, recent actions.
@@ -95,13 +89,10 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   const [tab, setTab] = useState<Tab | null>(() => (TABS.some(([t]) => t === q.get('tab')) ? (q.get('tab') as Tab) : null))
   // Phone: the detail is its own page, open on a ?pid= link or a tap.
   const [page, setPage] = useState(() => !!q.get('pid'))
-  const [text, setText] = useState('')
-  const [ask, setAsk] = useState('')
-  const [chat, setChat] = useState(false)
-  const butler = useButler()
+  const [text, setText] = useDraft(`desk.tell.${sel ?? ''}`)
   const [form, setForm] = useState<Form>(null)
   const [mode, setMode] = useState<Mode>('now')
-  const [task, setTask] = useState('')
+  const [task, setTask] = useDraft('desk.task')
   const [run, setRun] = useState({ project: '', label: '', model: 'default', account: '', prompt: '' })
   const [start, setStart] = useState({ project: '', account: '', prompt: '' })
   const [proj, setProj] = useState('')
@@ -351,14 +342,6 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     setForm(cmd === '/dispatch' ? 'run' : 'session')
   }
 
-  // The ask box: commands open their form; anything else goes to the butler (item_176).
-  const submitAsk = () => {
-    const t = ask.trim()
-    if (!t) return
-    if (isCommand(t)) command(t)
-    else void butler?.say(t, matchMedia(LAPTOP).matches ? 'nest' : 'phone')
-    setAsk('')
-  }
 
   // The butler rail sends commands here as /desk?cmd=...: open the form, then drop the param.
   const cmd = useQuery().get('cmd')
@@ -374,7 +357,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
 
   return {
     snap, refresh, slots, agents, finished, resumable, projects, accounts,
-    sheet, setSheet, log, tell, setTell, text, setText, ask, setAsk, submitAsk, chat, setChat,
+    sheet, setSheet, log, tell, setTell, text, setText, 
     form, setForm, run, setRun, start, setStart, mode, setMode, task, setTask, launch, dispatch, open,
     send, settle, retell, answer, answerAsk, asking,
     work, panes, unit, agent, focus, setFocus, folded, setFolded, tab: tab ?? (agent && agent.state !== 'setup' ? 'transcript' : 'overview') as Tab, setTab, page, setPage, proj, setProj,
@@ -488,41 +471,17 @@ function Watch({ p, onDone }: { p: Pending; onDone: (s: Delivery) => void }) {
   return null
 }
 
-function Msgs({ d }: { d: D }) {
-  return (
-    <div className="msgs" role="log" aria-live="polite">
-      {d.log.length === 0 && <div className="msg cr">Ask CR-0W, or type /dispatch or /session. Each action asks you to confirm first.</div>}
-      {d.log.map((m, i) => (
-        <Fragment key={i}>
-          <div className={`msg ${m.me ? 'me' : 'cr'}${m.f ? ' f' : ''}`}>{m.text}</div>
-          {m.p && m.state === 'sending' && <Watch p={m.p} onDone={(s) => d.settle(m.p!, s)} />}
-          {m.p && m.state && <DeliveryLine state={m.state} onRetry={() => d.retell(m.p!)} />}
-        </Fragment>
-      ))}
-    </div>
-  )
-}
 
-// The butler chat, folded to one line by default; the line shows the last answer.
-function Butler({ d }: { d: D }) {
+// Desk actions answer in one quiet line (the butler lives in the side rail only).
+function LastReply({ d }: { d: D }) {
   const last = d.log[d.log.length - 1]
-  if (!d.chat) {
-    return (
-      <button type="button" className="bfold" aria-expanded={false} onClick={() => d.setChat(true)}>
-        <span className="c-m">◇ Butler</span><span className="dim">· c</span>{last && <span className={`f1 sub${last.f ? ' c-f' : ''}`}>{last.text}</span>}
-      </button>
-    )
-  }
+  if (!last) return null
   return (
-    <section className="bopen" aria-label="Butler">
-      <div className="lbl"><span>◇ Butler</span><button type="button" className="bare sm" aria-expanded onClick={() => d.setChat(false)}>Fold · c</button></div>
-      <Msgs d={d} />
-      <form className="in ask" onSubmit={(e) => { e.preventDefault(); d.submitAsk() }}>
-        <input className="f1" value={d.ask} onChange={(e) => d.setAsk(e.target.value)} placeholder="Ask CR-0W: run, queue, explain…" aria-label="Ask CR-0W" />
-        <button type="button" className="mic" disabled title={`Voice: ${LATER.toLowerCase()}`} aria-label="Voice"><Mic /></button>
-        <button type="submit" className="btn p">Send</button>
-      </form>
-    </section>
+    <div className="lreply" role="status">
+      <span className={`sub${last.f ? ' c-f' : ''}`}>{last.text}</span>
+      {d.log.map((m, i) => m.p && m.state === 'sending' && <Watch key={i} p={m.p} onDone={(s) => d.settle(m.p!, s)} />)}
+      {last.p && last.state && <DeliveryLine state={last.state} onRetry={() => d.retell(last.p!)} />}
+    </div>
   )
 }
 
@@ -697,7 +656,6 @@ function Detail({ d, w, phone }: { d: D; w: WorkItem; phone?: boolean }) {
   return <Deck n={5} title={w.title} cls="p-detail" on={d.focus === 'detail'} aside={<span>{w.project} · {KIND_LABEL[w.kind].toLowerCase()}</span>}>{inner}</Deck>
 }
 
-const KEYS: [string, string][] = [['1-5', 'pane'], ['j k', 'move'], ['n', 'new task'], ['a', 'answer'], ['r', 'retry'], ['x', 'cancel'], ['c', 'chat']]
 
 // ---- laptop ----
 function DeskLaptop({ d }: { d: D }) {
@@ -719,10 +677,7 @@ function DeskLaptop({ d }: { d: D }) {
           ? <Detail d={d} w={d.unit} />
           : <Deck n={5} title="Detail" cls="p-detail"><div className="empty dim">Nothing on the desk, Sir. Launch a task above.</div></Deck>}
       </div>
-      <div className="dfoot">
-        <div className="keys dim" aria-label="Keys">{KEYS.map(([k, what]) => <span key={k}><b>{k}</b> {what}</span>)}</div>
-        <Butler d={d} />
-      </div>
+      <LastReply d={d} />
     </div>
   )
 }
@@ -738,15 +693,15 @@ function DeskPhone({ d }: { d: D }) {
     <div className="desk dk m-ph">
       <div className="mhead"><h1>Desk</h1><Summary p={d.panes} /></div>
       <div className="segs ptabs" role="tablist" aria-label="Panes">
-        {PANE_IDS.map((id, i) => (
+        {PANE_IDS.map((id) => (
           <button type="button" role="tab" key={id} className={`seg${tab === id ? ' on' : ''}`} aria-selected={tab === id} onClick={() => d.setFocus(id)}>
-            <span className="pk">[{i + 1}] </span>{SHORT[id]} <span className="num">{d.panes[id].length}</span>
+            {SHORT[id]} <span className="num">{d.panes[id].length}</span>
           </button>
         ))}
       </div>
       <Pane d={d} id={tab} phone />
       <Launcher d={d} />
-      <Butler d={d} />
+      <LastReply d={d} />
     </div>
   )
 }

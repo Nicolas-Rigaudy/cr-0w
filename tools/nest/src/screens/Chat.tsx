@@ -16,6 +16,7 @@ import { Sheet, type Confirm } from '../ui/Sheet'
 import { refused, stopMissionRun } from '../ui/missionSheets'
 import { missionOfRun } from '../data/state'
 import { Terminal } from '../ui/Terminal'
+import { useDraft } from '../ui/draft'
 
 // Phone chat of one session, run or mission (item_177, boards chat-cover and
 // chat-cover-ask): every word of the conversation, tool calls folded to one line,
@@ -90,7 +91,7 @@ export function Chat({ snap, refresh, target, log }: { snap: Snapshot; refresh: 
   const { agent, mission, asks, slot } = useTarget(snap, target)
   const ask: InboxItem | undefined = asks[0]
   const answer = useAnswer(ask, snap.inbox, snap.missions, refresh)
-  const [text, setText] = useState('')
+  const [text, setText] = useDraft(`chat.${JSON.stringify(target)}`)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const [menu, setMenu] = useState(false)

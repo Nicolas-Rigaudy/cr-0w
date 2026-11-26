@@ -1,7 +1,8 @@
-import { useState } from 'react'
+
 import { isCommand } from '../data/butler'
 import { useButler } from '../data/useButler'
 import { navigate } from '../router'
+import { useDraft } from './draft'
 
 // Where a line typed in the Home Ask bar goes: /dispatch and /session open the Desk form,
 // anything else is a message to CR-0W (the chat sheet opens on it).
@@ -15,7 +16,7 @@ export function askTarget(text: string): { cmd: string } | { say: string } | nul
 // phone and Fold Home. Same look as the Desk Ask box; sends to the butler.
 export function AskBar() {
   const b = useButler()
-  const [text, setText] = useState('')
+  const [text, setText] = useDraft('askbar')
   const send = () => {
     const to = askTarget(text)
     if (!to) return

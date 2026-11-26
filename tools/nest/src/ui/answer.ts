@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ApiError } from '../data/api'
 import type { InboxItem, InboxVerb, Mission } from '../data/types'
 import { useSource } from '../data/useData'
+import { useDraft } from './draft'
 
 // Answering an inbox row inline (item_168). A 409 refetches; when the mission moved on,
 // the newer question takes its place and the note stays.
@@ -22,14 +23,14 @@ export function current(inbox: InboxItem[], asked: InboxItem): InboxItem | undef
 
 export function useAnswer(asked: InboxItem | undefined, inbox: InboxItem[], missions: Mission[], refresh: () => Promise<void>) {
   const act = useSource().actions
-  const [text, setText] = useState('')
+  const [text, setText] = useDraft(`answer.${asked?.id ?? ''}`)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [moved, setMoved] = useState(false)
   const [key, setKey] = useState(asked?.id)
   // A new selection starts clean.
   if (asked?.id !== key) {
-    setKey(asked?.id); setText(''); setError(''); setMoved(false)
+    setKey(asked?.id); setError(''); setMoved(false)
   }
   const item = asked && current(inbox, asked)
   const m = asked && missions.find((x) => x.id === asked.mission)

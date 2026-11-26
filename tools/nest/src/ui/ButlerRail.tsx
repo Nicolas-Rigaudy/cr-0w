@@ -11,6 +11,7 @@ import { enterSubmits, rowsOf } from './keys'
 import { HomeHud } from './HomeHud'
 import { HOME_W, HOME_W_KEY, RAIL_W, RAIL_W_KEY, useRailWidth } from './railWidth'
 import { stickBottom } from './stickBottom'
+import { useDraft } from './draft'
 
 const FOLD_KEY = 'nest.rail'
 // Home keeps its own fold (item_259).
@@ -31,6 +32,14 @@ function useFold(key: string, auto: boolean): [boolean, () => void] {
     try { localStorage.setItem(key, next) } catch { /* storage off: fold lasts the visit */ }
     setPick(next)
   }
+  // Ctrl B is Nest's one shortcut: it folds and opens the butler.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.code === 'KeyB') { e.preventDefault(); toggle() }
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [])
   return [folded, toggle]
 }
 
@@ -85,7 +94,6 @@ export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: bool
       <aside className="b-rail folded" aria-label="CR-0W">
         <button type="button" className="rl-strip" onClick={fold} title="Open CR-0W" aria-expanded="false">
           <i className={`dia m-${m.mood}`} aria-hidden="true" />
-          <span className="rl-kbd">Ctrl B</span>
           <span className="rl-vert">{label}</span>
           {b.busy && <i className="rl-busy" aria-label="CR-0W is answering" />}
         </button>
@@ -99,7 +107,7 @@ export function ButlerRail({ snap, home = false }: { snap: Snapshot; home?: bool
       <div className={home ? 'rl-hdr' : 'rl-hdr plain'}>
         <div className="rl-top">
           <span className={`rl-mood m-${m.mood}`}><i className="dia" aria-hidden="true" />{label}</span>
-          <button type="button" className="rl-kbd" onClick={fold} title="Fold" aria-expanded="true">Fold</button>
+          <button type="button" className="rl-kbd" onClick={fold} title="Fold (Ctrl B)" aria-expanded="true">Fold</button>
         </div>
         {home && <HomeHud snap={snap} />}
       </div>
@@ -132,7 +140,7 @@ function ClearChat({ clear, empty }: { clear: () => Promise<void>; empty: boolea
 // its header; otherwise Clear sits in the account row.
 export function ButlerChat({ snap, fold, close, framed = false }: { snap: Snapshot; fold?: () => void; close?: () => void; framed?: boolean }) {
   const b = useButler()
-  const [text, setText] = useState('')
+  const [text, setText] = useDraft('butler')
   const [acct, setAcct] = useState<string | null>(null)
   const log = useRef<HTMLOListElement>(null)
   const accounts = useMemo(() => accountsOf(snap.sections.accounts), [snap.sections.accounts])
@@ -179,7 +187,7 @@ export function ButlerChat({ snap, fold, close, framed = false }: { snap: Snapsh
             </select>
           </label>
           {!framed && <ClearChat clear={b.clear} empty={empty} />}
-          {fold && <button type="button" className="bare sm" onClick={fold}>Ctrl B fold</button>}
+          {fold && <button type="button" className="bare sm" onClick={fold}>Fold</button>}
           {close && <button type="button" className="rl-close" onClick={close} aria-label="Close the chat" title="Close"><i aria-hidden="true" /></button>}
         </div>
         <div className="rl-in">
