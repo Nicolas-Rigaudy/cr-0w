@@ -40,6 +40,7 @@
 - Product framing: Not needed
 - Architecture framing: Not needed
 - 26/11 owner: busy account start goes through a new cdx --on-busy allow mode (handed to cdx-manager). Until it lands, the Desk New session note says a busy account fails.
+- 26/11 d94ab2b fixes crow handoff --account being lost (CROW_ACCOUNT leaked into the tmux server env); not yet proven by a live handoff. Busy-start allow mode filed upstream as AlexAgo83/cdx-manager#161 (cdx is not the owner's project).
 
 # Links
 - Product brief(s): (none yet)
