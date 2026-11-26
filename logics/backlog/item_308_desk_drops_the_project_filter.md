@@ -1,10 +1,10 @@
 ## item_308_desk_drops_the_project_filter - Desk drops the project filter
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
+> Status: Done
 > Understanding: 95
 > Confidence: 90
-> Progress: 0%
+> Progress: 100%
 > Complexity: Low
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -45,6 +45,9 @@
 # Priority
 - Priority: Low
 - Rationale: Small cleanup; owner said it is not needed.
+
+# Outcome
+- Commit 7af1674, live on Nest 26/11. Desk panes keep every project; launcher pickers unchanged. Tests 418 pass, scroll audit clean, shots in vault CR-0W/Research/nest-desk/item308/.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
