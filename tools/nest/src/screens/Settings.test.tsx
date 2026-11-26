@@ -90,7 +90,7 @@ describe('Settings page', () => {
     const list = render(v(), ctl, null, false)
     expect(list).toContain('<h2>Settings</h2><p>Changes apply after Save</p>')
     expect(list).toMatch(/href="\/settings\?pane=look" class="set-r">.*?<b>Look<\/b>.*?<span class="set-dot"/)
-    expect(list).toContain('<b>1 change</b><span>The theme applies at once</span>')
+    expect(list).toContain('<b>1 change</b><span>Applies at once</span>')
     const pane = render(v(), ctl, 'modules', false)
     expect(pane).toContain('<a href="/settings" class="set-back">‹ Settings</a>')
     expect(pane).toContain('Lands here later')
@@ -115,7 +115,7 @@ describe('save bar', () => {
   it('shows a failed build with its brick, error and log', () => {
     const v: SettingsView = {
       status: 'ready', saving: false,
-      base: { theme: 'modern', hero: 'holotable', pages: [] }, draft: { theme: 'modern', hero: 'holotable', pages: [] },
+      base: { theme: 'modern', hero: 'holotable', pages: [], mode: 'auto' }, draft: { theme: 'modern', hero: 'holotable', pages: [], mode: 'auto' },
       build: { state: 'failed', elapsed_s: 9, queued: false, brick: 'forge', error: 'tsc failed', log: ['src/x.ts: error'], served: 'a' },
     }
     expect(barText(v)).toEqual({ n: 'Build failed', hint: 'forge: tsc failed', tone: 'failed' })

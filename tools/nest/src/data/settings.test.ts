@@ -132,6 +132,32 @@ describe('settingsControl', () => {
     expect(v.draft?.theme).toBe('neon')
   })
 
+  it('keeps the mode on the device: loads it, saves it without crow.yaml, sends it with other keys', async () => {
+    let v: SettingsView = { status: 'loading', saving: false }
+    let kept: 'auto' | 'light' | 'dark' = 'dark'
+    const api = fixtureSettings(new Date(), known)
+    const sent: object[] = []
+    const save = api.save.bind(api)
+    api.save = (body) => { sent.push(body); return save(body) }
+    const ctl = settingsControl(api, (n) => (v = n), { get: () => kept, set: (m) => { kept = m } })
+    await ctl.load()
+    expect(v.draft?.mode).toBe('dark')
+    ctl.edit((d) => ({ ...d, mode: 'light' }))
+    expect(changedKeys(v.base!, v.draft!)).toEqual(['mode'])
+    expect(pendingCount(v.base!, v.draft!)).toBe(1)
+    await ctl.save()
+    expect(sent).toEqual([])
+    expect(kept).toBe('light')
+    expect(v.saved).toEqual(['mode'])
+    expect(changedKeys(v.base!, v.draft!)).toEqual([])
+    ctl.edit((d) => ({ ...d, mode: 'auto', theme: 'cyber' }))
+    await ctl.save()
+    expect(sent).toEqual([{ theme: 'cyber' }])
+    expect(kept).toBe('auto')
+    expect(v.base?.mode).toBe('auto')
+    expect(v.saved).toEqual(['theme', 'mode'])
+  })
+
   it('says off without an api', async () => {
     let v: SettingsView | undefined
     await settingsControl(undefined, (n) => (v = n)).load()

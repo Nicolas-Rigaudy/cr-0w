@@ -119,6 +119,9 @@ const agentWord = (a: HeroAgent) => (a.state === 'needs' ? 'Waits on you' : a.ki
 const stateOf = (m: Mission): UiState =>
   m.state === 'failed' ? 'failed' : m.state === 'waiting' || m.state === 'review' ? 'needs' : m.state === 'queued' ? (lastRun(m)?.cause === 'usage_limit' ? 'sleeping' : 'queued') : m.state === 'done' ? 'done' : 'working'
 
+// Theme and mode together: either one repaints the scene colours.
+const look = () => `${document.documentElement.dataset.theme}:${document.documentElement.dataset.mode}`
+
 // say replaces the model's line (phone Home counts sessions and checks too).
 // sections: the live script sections (projects, dispatch, sessions) the planets read besides missions.
 export function Hero({ missions, inbox, now, say, sections }: { missions: Mission[]; inbox: InboxItem[]; now: Date; say?: string; sections?: Partial<Record<SectionName, SectionBody>> }) {
@@ -129,7 +132,7 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
   const cv = useRef<HTMLCanvasElement>(null)
   const [heads, setHeads] = useState<Heads>()
   const [size, setSize] = useState<{ w: number; h: number }>()
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme)
+  const [theme, setTheme] = useState(look)
   const [out, setOut] = useState<SceneOut>()
   const [turn, setTurn] = useState<{ l: Heads; r: Heads }>()
   const [focus, setFocus] = useState<string>()
@@ -179,8 +182,8 @@ export function Hero({ missions, inbox, now, say, sections }: { missions: Missio
       if (first) { first = false; fit() } else wait = window.setTimeout(fit, SETTLE_MS)
     })
     ro.observe(el)
-    const mo = new MutationObserver(() => setTheme(document.documentElement.dataset.theme))
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    const mo = new MutationObserver(() => setTheme(look()))
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-mode'] })
     act.current = watchActive(el, (on) => {
       const s = st.current, h = hd.current
       if (on) { kick(); headKick(); return }

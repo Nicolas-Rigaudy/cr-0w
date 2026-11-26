@@ -47,13 +47,15 @@ export const DEFAULT_HERO = 'holotable'
 export const HOME = 'home'
 
 export interface PageRow { key: string; on: boolean }
-export interface Draft { theme: string; hero: string; pages: PageRow[] }
+// mode is per device (localStorage, item_303): it rides in the draft for preview and Save, never in crow.yaml.
+export type Mode = 'auto' | 'light' | 'dark'
+export interface Draft { theme: string; hero: string; pages: PageRow[]; mode: Mode }
 
 const str = (v: unknown, known: string[], dflt: string) => (typeof v === 'string' && v ? v : known.includes(dflt) ? dflt : known[0] ?? dflt)
 
 // The draft crow.yaml holds: listed pages first in their order and on, then the other known
 // pages off. No list shows every known page. Home is always on.
-export function draftOf(s: NestSettings): Draft {
+export function draftOf(s: NestSettings, mode: Mode = 'auto'): Draft {
   const known = s.known.pages
   const listed = Array.isArray(s.pages) ? (s.pages as unknown[]).filter((p): p is string => typeof p === 'string' && known.includes(p)) : []
   const order = listed.length ? [...new Set(listed)] : [...known]
@@ -62,13 +64,13 @@ export function draftOf(s: NestSettings): Draft {
     ...order.map((key) => ({ key, on: true })),
     ...known.filter((k) => !order.includes(k)).map((key) => ({ key, on: false })),
   ]
-  return { theme: str(s.theme, s.known.themes, DEFAULT_THEME), hero: str(s.hero, s.known.heroes, DEFAULT_HERO), pages }
+  return { theme: str(s.theme, s.known.themes, DEFAULT_THEME), hero: str(s.hero, s.known.heroes, DEFAULT_HERO), pages, mode }
 }
 
 const shown = (d: Draft) => d.pages.filter((p) => p.on).map((p) => p.key)
 const samePages = (a: Draft, b: Draft) => shown(a).join() === shown(b).join()
 
-export type SettingKey = 'theme' | 'hero' | 'pages'
+export type SettingKey = 'theme' | 'hero' | 'pages' | 'mode'
 
 // The keys the draft changes, in save order.
 export function changedKeys(base: Draft, draft: Draft): SettingKey[] {
@@ -76,10 +78,11 @@ export function changedKeys(base: Draft, draft: Draft): SettingKey[] {
   if (draft.theme !== base.theme) out.push('theme')
   if (draft.hero !== base.hero) out.push('hero')
   if (!samePages(base, draft)) out.push('pages')
+  if (draft.mode !== base.mode) out.push('mode')
   return out
 }
 
-// The body of one save: only what changed. Every page shown in the known order saves as [].
+// The body of one save: only what changed, mode left out (it stays on the device). Every page shown in the known order saves as [].
 export function saveBody(base: Draft, draft: Draft, known: NestKnown): NestSave {
   const keys = changedKeys(base, draft)
   const body: NestSave = {}
@@ -92,12 +95,12 @@ export function saveBody(base: Draft, draft: Draft, known: NestKnown): NestSave 
   return body
 }
 
-// Hero and pages are compiled into Nest; the theme switches live.
+// Hero and pages are compiled into Nest; theme and mode switch live.
 export const needsBuild = (keys: readonly SettingKey[]) => keys.includes('hero') || keys.includes('pages')
 
-// Count of pending changes as the owner sees them: theme, hero, and each page moved or switched.
+// Count of pending changes as the owner sees them: theme, mode, hero, and each page moved or switched.
 export function pendingCount(base: Draft, draft: Draft): number {
-  let n = (draft.theme !== base.theme ? 1 : 0) + (draft.hero !== base.hero ? 1 : 0)
+  let n = (draft.theme !== base.theme ? 1 : 0) + (draft.mode !== base.mode ? 1 : 0) + (draft.hero !== base.hero ? 1 : 0)
   for (const p of draft.pages) if (pageMark(base, draft, p.key)) n++
   return n
 }

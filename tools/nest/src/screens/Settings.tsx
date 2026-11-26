@@ -3,19 +3,19 @@ import { useSource } from '../data/useData'
 import {
   changedKeys, errorLines, HOME, movePage, needsBuild, pageMark, pendingCount, togglePage, type Draft, type SettingKey,
 } from '../data/settings'
-import { useSettings, type SettingsControl, type SettingsView } from '../data/useSettings'
+import { useSettings, type ModeStore, type SettingsControl, type SettingsView } from '../data/useSettings'
 import { ALL_TABS } from '../modules/nav'
 import { Link, useQuery } from '../router'
 import { PANE_ICONS, TabIcon } from '../ui/icons'
-import { paintTheme, setTheme, unpaintTheme } from '../ui/theme'
+import { MODES, paintMode, paintTheme, readKeptMode, setMode, setTheme, unpaintMode, unpaintTheme, type Mode } from '../ui/theme'
 
 // Nest settings (item_284, board D): panes in a sidebar on laptop, a pane list on phone.
-// Edits stay in a draft until Save; the theme previews live, hero and pages need a build.
+// Edits stay in a draft until Save; theme and mode preview live, hero and pages need a build.
 
 export type PaneKey = 'look' | 'pages' | 'modules' | 'general'
 
 export const PANES: Array<{ key: PaneKey; label: string; hint: string }> = [
-  { key: 'look', label: 'Look', hint: 'Theme and hero of the Nest' },
+  { key: 'look', label: 'Look', hint: 'Theme, mode and hero of the Nest' },
   { key: 'pages', label: 'Pages', hint: 'Which pages show and in what order' },
   { key: 'modules', label: 'Modules', hint: 'Bricks that run on this hub' },
   { key: 'general', label: 'General', hint: 'Language, time zone, refresh' },
@@ -24,6 +24,11 @@ export const PANES: Array<{ key: PaneKey; label: string; hint: string }> = [
 const THEME_HINTS: Record<string, string> = {
   modern: 'Soft purple on dark, the default',
   cyber: 'Neon green and pink on black',
+}
+const MODE_HINTS: Record<Mode, string> = {
+  auto: 'Follows the system light or dark setting',
+  light: 'Always light on this device',
+  dark: 'Always dark on this device',
 }
 const PAGE_HINTS: Record<string, string> = {
   home: 'Always on',
@@ -44,12 +49,19 @@ export function paneOf(q: string | null, laptop: boolean): PaneKey | null {
 
 // Panes with pending edits get a dot in the nav.
 export function paneDirty(base: Draft, draft: Draft, pane: PaneKey): boolean {
-  if (pane === 'look') return base.theme !== draft.theme || base.hero !== draft.hero
+  if (pane === 'look') return base.theme !== draft.theme || base.mode !== draft.mode || base.hero !== draft.hero
   if (pane === 'pages') return draft.pages.some((p) => pageMark(base, draft, p.key))
   return false
 }
 
 const BUILD_WHAT: Record<string, string> = { hero: 'Hero', pages: 'Pages' }
+const needsBuildKey = (k: SettingKey) => k in BUILD_WHAT
+// Mode alone stays on the device; any other key writes crow.yaml.
+function savedHint(saved: readonly SettingKey[]): string {
+  if (saved.every((k) => k === 'mode')) return 'Mode applied on this device'
+  if (saved.every((k) => k === 'mode' || k === 'theme')) return 'Theme applied'
+  return 'crow.yaml updated'
+}
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
 
 // The save bar's text: pending edits first, then the save or build that follows.
@@ -58,10 +70,10 @@ export function barText(v: SettingsView): { n: string; hint: string; tone: 'pend
   if (!base || !draft) return null
   const n = pendingCount(base, draft)
   if (n) {
-    const keys = changedKeys(base, draft).filter((k) => k !== 'theme')
+    const keys = changedKeys(base, draft).filter(needsBuildKey)
     const hint = keys.length
       ? `${keys.map((k) => BUILD_WHAT[k]).join(' and ')} need${keys.length === 1 && keys[0] !== 'pages' ? 's' : ''} a rebuild, about 40 s`
-      : 'The theme applies at once'
+      : 'Applies at once'
     return { n: plural(n, 'change'), hint: v.saveError ?? hint, tone: v.saveError ? 'failed' : 'pending' }
   }
   if (v.saving) return { n: 'Saving', hint: 'Writing crow.yaml', tone: 'busy' }
@@ -70,7 +82,7 @@ export function barText(v: SettingsView): { n: string; hint: string; tone: 'pend
   if (build?.state === 'failed')
     return { n: 'Build failed', hint: [build.brick, build.error].filter(Boolean).join(': ') || 'See the log below', tone: 'failed' }
   if (saved && needsBuild(saved) && build?.state === 'ok') return { n: 'New build ready', hint: 'Reload to use it', tone: 'ok' }
-  if (saved?.length) return { n: 'Saved', hint: saved.includes('theme') ? 'Theme applied' : 'crow.yaml updated', tone: 'ok' }
+  if (saved?.length) return { n: 'Saved', hint: savedHint(saved), tone: 'ok' }
   return null
 }
 
@@ -119,6 +131,18 @@ function Look({ v, ctl }: { v: SettingsView; ctl: SettingsControl }) {
             <span className="h">{THEME_HINTS[t] ?? 'Theme from a brick'}</span>
           </button>
         ))}
+      </div>
+      <div className="set-sl">Mode</div>
+      <div className="set-card">
+        <SettingRow label="Mode" hint={MODE_HINTS[d.mode]} cls={d.mode !== v.base!.mode ? 'chg' : ''}>
+          <span className="seg set-seg" role="group" aria-label="Mode">
+            {MODES.map((m) => (
+              <button key={m} type="button" className={d.mode === m ? 'on' : ''} aria-pressed={d.mode === m} onClick={() => ctl.edit((x) => ({ ...x, mode: m }))}>
+                {title(m)}
+              </button>
+            ))}
+          </span>
+        </SettingRow>
       </div>
       <div className="set-sl">Hero</div>
       <div className="set-card">
@@ -296,8 +320,10 @@ export function SettingsPage({ v, ctl, pane, laptop }: { v: SettingsView; ctl: S
   )
 }
 
+const MODE_STORE: ModeStore = { get: readKeptMode, set: setMode }
+
 export function Settings({ laptop, refresh }: { laptop: boolean; refresh: () => Promise<void> }) {
-  const [v, ctl] = useSettings(useSource().settings)
+  const [v, ctl] = useSettings(useSource().settings, MODE_STORE)
   const pane = paneOf(useQuery().get('pane'), laptop)
   // Theme preview: the draft theme paints the page until Save keeps it or Discard drops it.
   const draftTheme = v.draft?.theme
@@ -306,7 +332,13 @@ export function Settings({ laptop, refresh }: { laptop: boolean; refresh: () => 
     if (draftTheme && draftTheme !== baseTheme) paintTheme(draftTheme)
     else unpaintTheme()
   }, [draftTheme, baseTheme])
-  useEffect(() => unpaintTheme, [])
+  const draftMode = v.draft?.mode
+  const baseMode = v.base?.mode
+  useEffect(() => {
+    if (draftMode && draftMode !== baseMode) paintMode(draftMode)
+    else unpaintMode()
+  }, [draftMode, baseMode])
+  useEffect(() => () => { unpaintTheme(); unpaintMode() }, [])
   // A saved theme becomes the kept one, the header switcher included.
   const saved = v.saved
   useEffect(() => {

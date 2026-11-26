@@ -84,7 +84,7 @@ export function RailHead({ mood, working, asks }: { mood: Mood; working: boolean
     const mo = new MutationObserver(() => {
       pal = { fail: cssRgb('--c-f', pal.fail), run: cssRgb('--c-w', pal.run) }
     })
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-mode'] })
     const act = watchActive(el, (on) => {
       if (on) { kick(); return }
       cancelAnimationFrame(raf); clearTimeout(timer); raf = 0; timer = 0; last = 0

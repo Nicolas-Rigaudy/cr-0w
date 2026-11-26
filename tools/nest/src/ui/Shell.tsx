@@ -11,7 +11,7 @@ import { barTab, hiddenTabs, SETTINGS } from './tabs'
 import { ALL_TABS, NAV, splitBar } from '../modules/nav'
 import { themes } from 'virtual:nest-modules'
 import { nextScope, scopeChip, type ScopeMode } from '../data/scope'
-import { paintTheme, setTheme, useTheme } from './theme'
+import { MODES, paintTheme, setMode, setTheme, useMode, useTheme, watchSystemMode } from './theme'
 
 // Themes are token files (item_267): the built-in ones and those of on bricks, in that order.
 // The switcher cycles them; crow.yaml modules.nest.theme is the first paint.
@@ -23,14 +23,17 @@ function useThemeCycle(): string {
   const theme = useTheme()
   // First paint sets the browser bar colour too.
   useEffect(() => paintTheme(theme), [theme])
+  // Mode auto follows the system live.
+  useEffect(watchSystemMode, [])
   return theme
 }
 
 const title = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
 
-// Header theme picker: every installed theme with its swatch; the pick applies at once.
+// Header theme picker: every installed theme with its swatch, then the light/dark mode; picks apply at once.
 function ThemeMenu({ theme }: { theme: string }) {
   const [open, setOpen] = useState(false)
+  const mode = useMode()
   const box = useRef<HTMLSpanElement>(null)
   useEffect(() => {
     if (!open) return
@@ -56,6 +59,14 @@ function ThemeMenu({ theme }: { theme: string }) {
               <span className="n">{title(t)}{t === theme && <span className="ck" aria-hidden="true"> ✓</span>}</span>
             </button>
           ))}
+          <span className="theme-mode">
+            <span className="n">Mode</span>
+            <span className="seg sm" role="group" aria-label="Mode">
+              {MODES.map((m) => (
+                <button key={m} type="button" className={m === mode ? 'on' : ''} aria-pressed={m === mode} onClick={() => setMode(m)}>{title(m)}</button>
+              ))}
+            </span>
+          </span>
         </span>
       )}
     </span>

@@ -11,6 +11,7 @@
     "typecheck": "tsc -p .",
     "shots": "node scripts/shots.mjs",
     "audit:scroll": "node scripts/scroll-audit.mjs",
+    "check:mode": "node scripts/mode-check.mjs",
     "shots:ops-phone": "node scripts/ops-phone-shots.mjs",
     "perf": "node scripts/nest-perf.mjs",
     "perf:hatch": "node scripts/hatch-diff.mjs",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { changedKeys, draftOf, saveBody, type Draft, type NestBuild, type NestSettings, type SettingKey, type SettingsApi } from './settings'
+import { changedKeys, draftOf, saveBody, type Draft, type Mode, type NestBuild, type NestSettings, type SettingKey, type SettingsApi } from './settings'
 
 // What the Settings page shows (item_284): crow.yaml as loaded (base), the owner's draft,
 // the save in flight or its outcome, and the Nest build that follows a save.
@@ -27,8 +27,12 @@ export interface SettingsControl {
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
+// Where the device keeps its mode (ui/theme in the app, a plain value in tests).
+export interface ModeStore { get(): Mode; set(m: Mode): void }
+const noMode: ModeStore = { get: () => 'auto', set: () => {} }
+
 // The page state without React, so tests drive it like the feed.
-export function settingsControl(api: SettingsApi | undefined, emit: (v: SettingsView) => void): SettingsControl {
+export function settingsControl(api: SettingsApi | undefined, emit: (v: SettingsView) => void, modes: ModeStore = noMode): SettingsControl {
   let v: SettingsView = { status: api ? 'loading' : 'off', saving: false }
   const set = (p: Partial<SettingsView>) => emit((v = { ...v, ...p }))
   return {
@@ -36,7 +40,7 @@ export function settingsControl(api: SettingsApi | undefined, emit: (v: Settings
       if (!api) return set({})
       try {
         const [s, build] = await Promise.all([api.get(), api.build().catch(() => undefined)])
-        const base = draftOf(s)
+        const base = draftOf(s, modes.get())
         set({ status: 'ready', error: undefined, settings: s, base, draft: base, build })
       } catch (e) {
         set({ status: 'error', error: msg(e) })
@@ -52,12 +56,19 @@ export function settingsControl(api: SettingsApi | undefined, emit: (v: Settings
     async save() {
       if (!api || !v.base || !v.draft || !v.settings || v.saving) return
       const body = saveBody(v.base, v.draft, v.settings.known)
-      if (!Object.keys(body).length) return
       const keys = changedKeys(v.base, v.draft)
+      if (!keys.length) return
+      const mode = v.draft.mode
+      if (keys.includes('mode')) modes.set(mode)
+      // Mode alone stays on the device: no crow.yaml write.
+      if (!Object.keys(body).length) {
+        const base = { ...v.base, mode }
+        return set({ base, draft: base, saved: keys })
+      }
       set({ saving: true, saveError: undefined, saved: undefined })
       try {
         const r = await api.save(body)
-        const base = draftOf(r)
+        const base = draftOf(r, mode)
         set({ saving: false, settings: r, base, draft: base, saved: keys, build: r.build })
       } catch (e) {
         set({ saving: false, saveError: msg(e) })
@@ -74,9 +85,9 @@ export function settingsControl(api: SettingsApi | undefined, emit: (v: Settings
 
 const POLL = 1500
 
-export function useSettings(api: SettingsApi | undefined): [SettingsView, SettingsControl] {
+export function useSettings(api: SettingsApi | undefined, modes?: ModeStore): [SettingsView, SettingsControl] {
   const [view, setView] = useState<SettingsView>({ status: api ? 'loading' : 'off', saving: false })
-  const ctl = useMemo(() => settingsControl(api, setView), [api])
+  const ctl = useMemo(() => settingsControl(api, setView, modes), [api, modes])
   useEffect(() => { void ctl.load() }, [ctl])
   const building = view.build?.state === 'building'
   useEffect(() => {
