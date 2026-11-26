@@ -82,11 +82,12 @@ def ancestors(pid, proc="/proc"):
     return out
 
 
-def env_changes(env):
-    """(vars set or changed, vars removed) in env compared with this process."""
+def env_changes(env, keep=()):
+    """(vars set or changed, vars removed) in env compared with this process. Vars named in keep
+    count as set even when unchanged: a tmux server runs commands in its own env, not this one."""
     if env is None:
         return {}, []
-    added = {k: v for k, v in env.items() if os.environ.get(k) != v}
+    added = {k: v for k, v in env.items() if k in keep or os.environ.get(k) != v}
     return added, sorted(k for k in os.environ if k not in env)
 
 
@@ -186,9 +187,9 @@ def tmux_locate(pid):
     return tmux_find_pane(r.stdout, ancestors(pid)) if r.returncode == 0 else None
 
 
-def tmux_open_args(argv, title, cwd=None, env=None):
+def tmux_open_args(argv, title, cwd=None, env=None, keep=()):
     """tmux new-window running argv; env changes go through `env` (the tmux server has its own env)."""
-    added, removed = env_changes(env)
+    added, removed = env_changes(env, keep)
     added.pop("PATH", None)
     wrap = ["env", *(a for k in removed for a in ("-u", k)), *(f"{k}={v}" for k, v in sorted(added.items()))]
     return ["tmux", "new-window", "-n", title, *(["-c", cwd] if cwd else []),
@@ -211,12 +212,12 @@ def tmux_arg(a):
     return a[:-1] + "\\;" if a.endswith(";") else a
 
 
-def headless_open_args(argv, name, cwd=None, env=None, cols=200, rows=50):
+def headless_open_args(argv, name, cwd=None, env=None, cols=200, rows=50, keep=()):
     """tmux new-session -d running argv, then remain-on-exit on that session so a command that exits
     at once leaves its pane and output (headless_settle reads them). Under a systemd service
     (INVOCATION_ID set) it runs in its own user scope, so a tmux server it starts outlives a restart
     of the service."""
-    added, removed = env_changes(env)
+    added, removed = env_changes(env, keep)
     added.pop("PATH", None)
     wrap = ["env", *(a for k in removed for a in ("-u", k)), *(f"{k}={v}" for k, v in sorted(added.items()))]
     cmd = ["tmux", "new-session", "-d", "-s", name, "-x", str(cols), "-y", str(rows), *(["-c", cwd] if cwd else []),
@@ -313,6 +314,12 @@ def print_line(argv, cwd=None, env=None, show_env=()):
 
 # ---------- the actions ----------
 
+def server_env(env, keep):
+    """env for the tmux client: without the --set vars, so a tmux server it starts never keeps them
+    as its global env (the command gets them through `env` instead)."""
+    return None if env is None else {k: v for k, v in env.items() if k not in keep}
+
+
 def open_window(argv, title, cwd=None, env=None, show_env=(), backend=None):
     """Run argv in a new terminal window. Returns 'opened' or, on the print backend, the line to run."""
     backend = backend or choose()
@@ -320,12 +327,12 @@ def open_window(argv, title, cwd=None, env=None, show_env=(), backend=None):
         detach(kitty_open_args(argv, title, cwd), env, cwd)
         return "opened"
     if backend == "tmux":
-        subprocess.run(tmux_open_args(argv, title, cwd, env), check=True, env=env,
+        subprocess.run(tmux_open_args(argv, title, cwd, env, show_env), check=True, env=server_env(env, show_env),
                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return "opened"
     if backend == "headless":
         name = headless_name(title)
-        subprocess.run(headless_open_args(argv, name, cwd, env), check=True, env=env,
+        subprocess.run(headless_open_args(argv, name, cwd, env, keep=show_env), check=True, env=server_env(env, show_env),
                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         if why := headless_settle(name):
             raise StartFailed(why)

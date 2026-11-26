@@ -397,3 +397,26 @@ def test_resume_headless_prints_json_with_the_tmux_session(tmp_path):
     out = json.loads(r.stdout.strip().splitlines()[-1])
     assert out["ok"] and out["account"] == "main" and out["tmux"].startswith("crow-") and "running in Nest" in out["message"]
     assert calls.read_text().startswith(f"new-session -d -s {out['tmux']} ") and "--conversation abc" in calls.read_text()
+
+
+def test_headless_set_vars_beat_the_tmux_server_env_and_never_leak_into_it(private_tmux, tmp_path, monkeypatch):
+    # The caller already holds the value it sets; a tmux server started elsewhere holds a stale one.
+    monkeypatch.setattr(ct, "headless_settle", lambda name: None)
+    monkeypatch.setenv("CROW_ACCOUNT", "picked")
+    out = tmp_path / "seen"
+    cmd = ["sh", "-c", f'echo "$CROW_ACCOUNT" > {out}; sleep 30']
+    ct.open_window(cmd, "crow · fresh", env=ct.clean_env({"CROW_ACCOUNT": "picked"}), show_env=["CROW_ACCOUNT"], backend="headless")
+    for _ in range(50):
+        if out.exists() and out.read_text().strip():
+            break
+        time.sleep(0.1)
+    assert out.read_text().strip() == "picked"
+    assert "CROW_ACCOUNT" not in tmux_out("show-environment", "-g")
+    subprocess.run(["tmux", "set-environment", "-g", "CROW_ACCOUNT", "stale"], check=True)
+    out.unlink()
+    ct.open_window(cmd, "crow · again", env=ct.clean_env({"CROW_ACCOUNT": "picked"}), show_env=["CROW_ACCOUNT"], backend="headless")
+    for _ in range(50):
+        if out.exists() and out.read_text().strip():
+            break
+        time.sleep(0.1)
+    assert out.read_text().strip() == "picked"
