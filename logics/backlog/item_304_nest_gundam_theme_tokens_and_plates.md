@@ -44,6 +44,7 @@
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
+- 26/11: pass 1 rejected (colour swap of cyber). Boards are a style reference; app keeps its layout. Home look approved from mockup: vault Research/nest-gundam/item304/home-proposal-{rail,header}.png, home-proposal-mock.html, home-gap-list.md. WIP uncommitted in tools/nest (gundam.css, ENGINE_THEMES, main.tsx, index.html fonts, shots/scroll-audit --themes). Next: build approved Home, add gundam to settings tests, audit:scroll both modes, contrast, then other screens one at a time.
 
 # Links
 - Product brief(s): (none yet)
