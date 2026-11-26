@@ -41,6 +41,7 @@
 - Architecture framing: Not needed
 - 26/11 owner: busy account start goes through a new cdx --on-busy allow mode (handed to cdx-manager). Until it lands, the Desk New session note says a busy account fails.
 - 26/11 d94ab2b fixes crow handoff --account being lost (CROW_ACCOUNT leaked into the tmux server env); not yet proven by a live handoff. Busy-start allow mode filed upstream as AlexAgo83/cdx-manager#161 (cdx is not the owner's project).
+- 26/11 owner: busy account starts allowed now in crow (75988e5). crow open/term/handoff take --on-busy allow; bin/crow-cdx-second answers cdx's second-session prompt yes. Core uses allow when the owner names the account, fail on auto. Desk note updated. Live test: second session on a busy account came up headless. When cdx#161 ships a native mode, swap crow-cdx-second for it.
 
 # Links
 - Product brief(s): (none yet)
