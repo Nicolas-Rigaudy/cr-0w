@@ -1,10 +1,10 @@
 ## item_291_plan_resumes_accept_withdrawn_questions - Plan resumes accept withdrawn questions
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Draft
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 100%
 > Complexity: Small
 > Theme: nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -54,3 +54,11 @@ Read local/owner-prefs.md and local/prefs/design.md first. Work in a worktree un
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+
+# Delivery
+- Built in bf6111d (merged to main 2026-11-26). Validation: `go test ./...` in tools/crow-core passed; `pytest tests/test_run_contract_spec.py` passed (34).
+- AC1: `TestCoverageAcceptsWithdrawnAndReplaced` (desk-bugs fixtures in `internal/mission/testdata/desk-bugs`): live v2 fails with "v2 responses miss q1, q2, q3"; with q1 `replaced`, q2 `withdrawn`, q3 `done` it passes. Schema enum and `contract.ResponseOutcomes` gain `withdrawn` and `replaced`.
+- AC2: `TestResumeNoteNamesThePreviousQuestions`: the note says "Version 1 asked q1, q2, q3." with the outcome rule; the brief carries the same rule.
+- AC3: `TestTickRefusesAVersionThatSkipsAPoint`: first miss logs a `responses_miss` incident, moves running -> failed -> queued and the resume note quotes the error; the second miss fails the mission.
+- AC4: the three tests above use the desk-bugs plan v1/v2 and answers v1.
+- Live core needs a restart to pick this up. The desk-bugs mission stays failed: the owner relaunches it.
