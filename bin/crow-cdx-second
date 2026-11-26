@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# crow-cdx-second <cdx args...>: run cdx and answer yes when it asks to launch a second
+# session on a profile that already has one (cdx `--on-busy ask`). Used by `crow open
+# --on-busy allow` when the owner named the account. Needs a terminal, as cdx asks only on one.
+set -euo pipefail
+cdx_bin="$(readlink -f "$(command -v cdx)")"
+py="$(head -1 "$cdx_bin")"; py="${py#\#!}"
+exec $py -c '
+import sys
+from cdx_manager import cli
+try:
+    sys.exit(cli.main(sys.argv[1:], {"input": lambda _q: "y"}))
+except cli.CdxError as e:
+    sys.stderr.write((cli.format_json_error(e) if cli.wants_json(sys.argv[1:]) else cli.format_error(e)) + "\n")
+    sys.exit(e.exit_code)
+' "$@"

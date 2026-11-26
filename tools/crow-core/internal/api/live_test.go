@@ -152,7 +152,7 @@ func TestLiveActionsRunTheirScript(t *testing.T) {
 		{"/api/sessions/c0ffee00-0000-4000-8000-000000000001/resume", "", "crow-focus",
 			[]string{"--pid", "0", "--account", "main", "--cwd", "/src/demo", "--session", "c0ffee00-0000-4000-8000-000000000001"}, []string{"CROW_TERMINAL=headless"}},
 		{"/api/sessions", `{"project":"demo","account":"spare","prompt":"look at the build"}`, "crow",
-			[]string{"term", "--on-busy", "fail", "demo", "look at the build"}, []string{"CROW_TERMINAL=headless", "CROW_ACCOUNT=spare"}},
+			[]string{"term", "--on-busy", "allow", "demo", "look at the build"}, []string{"CROW_TERMINAL=headless", "CROW_ACCOUNT=spare"}},
 		{"/api/sessions", `{"project":"demo"}`, "crow", []string{"term", "--on-busy", "fail", "demo"}, []string{"CROW_TERMINAL=headless"}},
 		{"/api/sessions/4242/attach", "", "crow-focus", []string{"--pid", "4242", "--attach", "--json"}, nil},
 	}

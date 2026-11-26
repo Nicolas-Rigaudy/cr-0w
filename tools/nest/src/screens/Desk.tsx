@@ -195,7 +195,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   const open = () => setSheet({
     title: 'New session', lead: `Starts a claude session on ${start.project} inside Nest, no desktop terminal. Its detail opens once it shows up.`, quote: start.prompt || undefined,
     target: [['project', start.project], ['account', start.account || 'auto']],
-    note: 'Fails when that account is busy; nothing else is started. Its Transcript tab shows the session screen.', ok: 'Start session',
+    note: (start.account ? 'Opens a second session if that account already has one.' : 'Auto picks a free account; fails when none is.') + ' Its Transcript tab shows the session screen.', ok: 'Start session',
     run: wrap(`/session ${start.project}`, async () => {
       const r = await act.start({ project: start.project, account: start.account || undefined, prompt: start.prompt || undefined })
       if (r.tmux) setOpening(r.tmux)

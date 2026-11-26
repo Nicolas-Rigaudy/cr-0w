@@ -357,7 +357,13 @@ func (s *Server) newSession(w http.ResponseWriter, r *http.Request) {
 	if b.Account != "" {
 		env = append(env, "CROW_ACCOUNT="+b.Account)
 	}
-	args := []string{"term", "--on-busy", "fail", b.Project}
+	// A named account is the owner's call: open a second session on it even when one is live.
+	// Auto picks a free account and never asks.
+	busy := "fail"
+	if b.Account != "" {
+		busy = "allow"
+	}
+	args := []string{"term", "--on-busy", busy, b.Project}
 	if b.Prompt != "" {
 		args = append(args, b.Prompt)
 	}

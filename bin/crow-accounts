@@ -12,7 +12,7 @@
   crow-accounts prompt <name> <skill> [args]   prompt that runs a hub skill on that provider
   crow-accounts check-model <name> <model>     exit 1 when the model belongs to the other provider
   crow-accounts scoped             exit 0 when accounts.yaml ranks accounts per scope
-  crow-accounts pick [--scope S] [--on-busy ask|fail] [--provider P]   account for crow open/term/handoff: skips accounts with no quota
+  crow-accounts pick [--scope S] [--on-busy ask|fail|allow] [--provider P]   account for crow open/term/handoff: skips accounts with no quota
                                    left, ranks accounts with a live session after free ones, keeps the default while it has room,
                                    else the one with the most room; an ask-first pick asks on a terminal
                                    (fail: never ask); exits 1 with the reasons when none fits;
@@ -183,7 +183,7 @@ def main(argv):
                 if rest[1] not in crow_lib.PROVIDERS:
                     break
                 provider = rest[1]
-            elif rest[1] in ("ask", "fail"):
+            elif rest[1] in ("ask", "fail", "allow"):
                 busy = rest[1]
             else:
                 break

@@ -3,13 +3,14 @@
 #
 # Start
 #   crow                 open the hub session
-#   crow open [--account A] [--model M] [--on-busy fail] <project> [prompt | --task T --end-state E]
+#   crow open [--account A] [--model M] [--on-busy fail|allow] <project> [prompt | --task T --end-state E]
 #                        open a session in a registered project, optionally on a first message (model: opus, sonnet)
-#   crow term [--account A] [--model M] [--on-busy fail] <project> [...]   same, in a new terminal window (safe to call from inside a Claude session)
+#   crow term [--account A] [--model M] [--on-busy fail|allow] <project> [...]   same, in a new terminal window (safe to call from inside a Claude session)
 #   crow handoff [--account A] <project> --task T --end-state E [--logics REF] [--context C]   hand the work to a repo session (crow term), linked to its mission
 #   open, term and handoff pick a free allowed account with quota left (crow-accounts pick);
 #   --account <name> forces one, even the calling session's own account (CROW_ACCOUNT=<name> also
-#   forces one, except when it is only inherited from the calling session). --on-busy fail never asks (scripts).
+#   forces one, except when it is only inherited from the calling session). --on-busy fail never asks (scripts);
+#   --on-busy allow opens a second session on an account that already has one, without asking.
 #   term, focus and relaunch open windows through CROW_TERMINAL=kitty|tmux|print (unset: kitty, else tmux, else print).
 #   CROW_TERMINAL=headless makes term start a detached tmux session and print one JSON line (core, Nest).
 #   crow work <project>  index of a repo's own tools (skills, CLAUDE.md, hooks) for hub work on it
@@ -102,6 +103,10 @@ EOF
 launch() {
   local dir="$1"; shift
   local run=(env -u CROW_ACCOUNT -u CROW_ACCOUNT_PICKED CROW_SESSION_ACCOUNT="$CROW_ACCOUNT" cdx)
+  # --on-busy allow: open a second session on a busy account (cdx asks; crow-cdx-second answers yes)
+  if [[ "${1:-}" == --on-busy && "${2:-}" == allow ]]; then
+    run=("${run[@]:0:${#run[@]}-1}" "$CROW_ENGINE/bin/crow-cdx-second"); set -- "$1" ask "${@:3}"
+  fi
   "$CROW_ENGINE/bin/crow-accounts" require "$CROW_ACCOUNT"
   [[ "$dir" == "$CROW_HOME" ]] && "$CROW_ENGINE/bin/crow-accounts" hub-session "$CROW_ACCOUNT"
   # the hub's skills follow crow.yaml: regenerate .claude/skills and this profile's skill links
@@ -144,8 +149,8 @@ launch_opts() {
     case "${1:-}" in
       --account) CROW_ACCOUNT="${2:?usage: --account <name>}"; CROW_ACCOUNT_GIVEN="$CROW_ACCOUNT"; shift 2; n=$((n+2)) ;;
       --model)   model=(--model "${2:?usage: crow open|term [--model M] [--on-busy fail] <project> ...}"); shift 2; n=$((n+2)) ;;
-      --on-busy) on_busy="${2:?usage: --on-busy ask|fail}"; [[ "$on_busy" == ask || "$on_busy" == fail ]] \
-                   || { echo "crow: --on-busy must be ask or fail" >&2; exit 1; }; shift 2; n=$((n+2)) ;;
+      --on-busy) on_busy="${2:?usage: --on-busy ask|fail|allow}"; [[ "$on_busy" =~ ^(ask|fail|allow)$ ]] \
+                   || { echo "crow: --on-busy must be ask, fail or allow" >&2; exit 1; }; shift 2; n=$((n+2)) ;;
       *) break ;;
     esac
   done
