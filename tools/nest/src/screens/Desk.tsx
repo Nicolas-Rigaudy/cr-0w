@@ -6,12 +6,13 @@ import { DeliveryLine, useDeliveryClock } from '../ui/Delivery'
 import { accountsOf, dispatchOf, projectsOf, resumableOf, type Agent, type AskAnswer, type LiveReply, type Resumable } from '../data/live'
 import { useSource, type Snapshot } from '../data/useData'
 import { ago, time, title } from '../format'
-import type { Mission } from '../data/types'
+import type { InboxVerb, Mission } from '../data/types'
 import { CANCELLABLE, LABEL, missionOfRun } from '../data/state'
 import { navigate, useQuery } from '../router'
 import { Sheet, type Confirm } from '../ui/Sheet'
 import { cancelMission, refused, stopMissionRun } from '../ui/missionSheets'
 import { AskDock } from '../ui/AskDock'
+import { REJECT, useAnswer, verbLabel } from '../ui/answer'
 import { promptView } from '../ui/prompt'
 import { enterSubmits, rowsOf } from '../ui/keys'
 import { Chat as AgentChat } from './Chat'
@@ -285,7 +286,7 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
       if (a.prompt && promptView(a.prompt) === 'options' && a.prompt.options.some((o) => o.key === 'allow')) return { label: 'Allow', run: () => allow(a) }
       return { label: 'Answer', run: () => pick(a, !a.prompt) }
     }
-    if (w.kind === 'mission' && w.state === 'needs') return { label: 'Answer', run: () => setTab('transcript') }
+    if (w.kind === 'mission' && w.state === 'needs') return { label: 'Answer', run: () => setTab('overview') }
     return undefined
   }
   const missionOf = (w: WorkItem) => snap.missions.find((m) => m.id === (w.kind === 'mission' ? w.source.ref : w.mission))
@@ -570,6 +571,33 @@ function Facts({ d, w, a }: { d: D; w: WorkItem; a?: Agent }) {
   )
 }
 
+const MISSION_VERB: Partial<Record<InboxVerb, string>> = { go: 'Approve', dig: 'Send note', no: 'Reject', ok: 'OK', msg: 'Send note' }
+
+// What a waiting mission asks (a question, or a plan or report to approve) and its answer buttons.
+function MissionAsk({ d, m }: { d: D; m: Mission }) {
+  const open = d.snap.inbox.filter((r) => r.mission === m.id && r.state === 'open' && r.type !== 'fyi')
+  const a = useAnswer(open[0], d.snap.inbox, d.snap.missions, d.refresh)
+  const item = a.item
+  if (!item) return null
+  const what = item.source === 'questions' ? 'asks' : `wants your OK on ${item.source} v${item.version}`
+  return (
+    <div className="pq" role="group" aria-label={`${title(m)} waits on you`}>
+      <div className="pqh"><span className="tool c-n">◆ Mission {what}</span>{open.length > 1 && <span className="sm f1">{open.length - 1} more in Inbox</span>}</div>
+      <div className="quote">{item.ask}</div>
+      <div className="sm">{item.file}</div>
+      <input className="inote" placeholder="Change or note (optional)" aria-label="Change or note"
+        value={a.text} onChange={(e) => a.setText(e.target.value)} disabled={a.busy} />
+      {a.error && <div className="err" role="alert">{a.error}</div>}
+      <div className="btnrow">
+        {item.verbs.map((v, n) => (
+          <button key={v} type="button" className={`btn${n === 0 ? ' p' : REJECT.includes(v) ? ' x' : ''}`}
+            onClick={() => void a.send(v)} disabled={a.busy} aria-busy={a.busy}>{MISSION_VERB[v] ?? verbLabel(v)}</button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Overview({ d, w, a }: { d: D; w: WorkItem; a?: Agent }) {
   return (
     <>
@@ -577,6 +605,7 @@ function Overview({ d, w, a }: { d: D; w: WorkItem; a?: Agent }) {
       {w.state === 'failed' && <div className="why c-f">{w.why ? `Failed: ${w.why}.` : 'Failed. The cause is not recorded.'}</div>}
       {w.state !== 'failed' && w.why && <div className="why">{w.why}</div>}
       {a?.prompt && <Ask d={d} a={a} />}
+      {w.kind === 'mission' && d.missionOf(w) && <MissionAsk d={d} m={d.missionOf(w)!} />}
       {d.tell && a?.kind === 'session' && <TellBox d={d} a={a} />}
       {a?.last_prompt && <div><div className="lbl"><span>Last prompt</span></div><div className="quote">{a.last_prompt}</div></div>}
       <div className="note dim">Context, commits and files arrive with the core fields ({CORE}).</div>
