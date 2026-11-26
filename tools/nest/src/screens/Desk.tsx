@@ -25,7 +25,7 @@ import { AccountField } from '../ui/AccountField'
 import { isCommand } from '../data/butler'
 import { deskPick, readPick, savePick } from '../data/deskPick'
 import {
-  PANE_IDS, PANE_TITLE, agentOf, agentUnit, itemRef, paneGroups, panesOf, projectsOfPanes, summaryOf, unitOfAgent,
+  PANE_IDS, PANE_TITLE, agentOf, agentUnit, itemRef, paneGroups, panesOf, summaryOf, unitOfAgent,
   type PaneId, type Panes,
 } from '../data/deskPanes'
 import { useDraft } from '../ui/draft'
@@ -96,7 +96,6 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   const [task, setTask] = useDraft('desk.task')
   const [run, setRun] = useState({ project: '', label: '', model: 'default', account: '', prompt: '' })
   const [start, setStart] = useState({ project: '', account: '', prompt: '' })
-  const [proj, setProj] = useState('')
   const [focusSet, setFocus] = useState<Focus | null>(null)
   const [folded, setFolded] = useState(true)
   // tmux session of a session just started here: its detail opens once a poll shows it (item_188).
@@ -105,11 +104,11 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
   // The work feed (item_202) fills the panes; null on a core without it (live agents stand in).
   const work = workOf(snap.sections.work)
   const queue = snap.missions.filter((m) => m.state === 'queued' || m.state === 'preflight')
-  const panes = panesOf(work, agents, queue, finished, proj)
+  const panes = panesOf(work, agents, queue, finished)
   const units = PANE_IDS.flatMap((id) => panes[id])
   const paneOf = (w: WorkItem) => PANE_IDS.find((id) => panes[id].includes(w))
   const picked = deskPick(agents, work, sel)
-  const pickedUnit = picked && (!proj || picked.project === proj) ? unitOfAgent(panes, picked) ?? agentUnit(picked) : undefined
+  const pickedUnit = picked ? unitOfAgent(panes, picked) ?? agentUnit(picked) : undefined
   const unit: WorkItem | undefined = units.find((w) => w.id === uid) ?? pickedUnit ?? panes.needs[0] ?? panes.moving[0] ?? units[0]
   const agent = unit && agentOf(unit, agents)
   const focus: Focus = focusSet ?? (unit && paneOf(unit)) ?? 'needs'
@@ -361,8 +360,8 @@ function useDesk(snap: Snapshot, refresh: () => Promise<void>) {
     sheet, setSheet, log, tell, setTell, text, setText, 
     form, setForm, run, setRun, start, setStart, mode, setMode, task, setTask, launch, dispatch, open,
     send, settle, retell, answer, answerAsk, asking,
-    work, panes, unit, agent, focus, setFocus, folded, setFolded, tab: tab ?? (agent && agent.state !== 'setup' ? 'transcript' : 'overview') as Tab, setTab, page, setPage, proj, setProj,
-    allProjects: projectsOfPanes(work, agents), choose, actsOf, missionOf, paneOf,
+    work, panes, unit, agent, focus, setFocus, folded, setFolded, tab: tab ?? (agent && agent.state !== 'setup' ? 'transcript' : 'overview') as Tab, setTab, page, setPage,
+    choose, actsOf, missionOf, paneOf,
   }
 }
 type D = ReturnType<typeof useDesk>
@@ -694,11 +693,6 @@ function DeskLaptop({ d }: { d: D }) {
     <div className="desk dk m-lp">
       <div className="mhead">
         <h1>Desk</h1>
-        <div className="segs" role="group" aria-label="Project">
-          {['', ...d.allProjects].map((p) => (
-            <button type="button" key={p || 'all'} className={`seg${d.proj === p ? ' on' : ''}`} aria-pressed={d.proj === p} onClick={() => d.setProj(p)}>{p || 'All'}</button>
-          ))}
-        </div>
         <Summary p={d.panes} />
       </div>
       <Launcher d={d} />

@@ -37,19 +37,15 @@ const finishedUnit = (f: FinishedRun): WorkItem => ({
   since: f.ended_at ?? undefined, why: f.status === 'done' ? undefined : f.status, source: { section: 'dispatch', ref: f.run_id },
 })
 
-export function panesOf(work: WorkItem[] | null, agents: Agent[], queue: Mission[], finished: FinishedRun[] = [], project = ''): Panes {
+export function panesOf(work: WorkItem[] | null, agents: Agent[], queue: Mission[], finished: FinishedRun[] = []): Panes {
   const units = work ?? agents.map(agentUnit)
   const known = new Set(units.map((w) => w.id))
   const p: Panes = { needs: [], moving: [], queued: [], done: [] }
-  const mine = (w: WorkItem) => !project || w.project === project
-  for (const w of units) if (mine(w)) p[PANE_OF[w.state]].push(w)
-  for (const w of queue.map(missionUnit)) if (!known.has(w.id) && mine(w)) p.queued.push(w)
-  for (const w of finished.map(finishedUnit)) if (!known.has(w.id) && mine(w)) p.done.push(w)
+  for (const w of units) p[PANE_OF[w.state]].push(w)
+  for (const w of queue.map(missionUnit)) if (!known.has(w.id)) p.queued.push(w)
+  for (const w of finished.map(finishedUnit)) if (!known.has(w.id)) p.done.push(w)
   return p
 }
-
-export const projectsOfPanes = (work: WorkItem[] | null, agents: Agent[]) =>
-  [...new Set((work ?? agents.map(agentUnit)).map((w) => w.project))].sort()
 
 // A pane's rows: a mission's units sit under its goal when the goal is in the same pane.
 export function paneGroups(items: WorkItem[]): WorkGroup[] {

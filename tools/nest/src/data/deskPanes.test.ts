@@ -36,9 +36,9 @@ describe('desk panes (item_295)', () => {
     expect(p.moving.map((x) => x.id)).toEqual(['run:r3'])
   })
 
-  it('filters on a project', () => {
-    const p = panesOf([w('run:a', 'working'), w('run:b', 'working', { project: 'q' })], [], [], [], 'q')
-    expect(p.moving.map((x) => x.id)).toEqual(['run:b'])
+  it('keeps every project in the panes', () => {
+    const p = panesOf([w('run:a', 'working'), w('run:b', 'working', { project: 'q' })], [], [])
+    expect(p.moving.map((x) => x.id)).toEqual(['run:a', 'run:b'])
   })
 
   it('nests mission units under their goal and skips a folded queue', () => {
