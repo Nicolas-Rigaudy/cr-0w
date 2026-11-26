@@ -39,6 +39,7 @@
 # Decision framing
 - Product framing: Not needed
 - Architecture framing: Not needed
+- 26/11 owner: busy account start goes through a new cdx --on-busy allow mode (handed to cdx-manager). Until it lands, the Desk New session note says a busy account fails.
 
 # Links
 - Product brief(s): (none yet)
