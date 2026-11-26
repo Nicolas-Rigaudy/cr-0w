@@ -192,6 +192,22 @@ func TestStartRepliesTmux(t *testing.T) {
 	}
 }
 
+// item_298: a start whose session exits within the settle wait answers 502 with the exit
+// status and the last pane lines, and the log keeps the failure.
+func TestStartThatExitsFailsWithReason(t *testing.T) {
+	s, _, log := liveServer(t, func(c scriptCall) ([]byte, error) {
+		return []byte(`{"ok": false, "code": 2, "message": "crow-demo-101500 exited with status 1 at start\nsession_busy: Session main is already running."}` + "\n"),
+			errors.New("crow: exit status 3")
+	})
+	w := do(t, s, post("/api/sessions", `{"project":"demo"}`))
+	if w.Code != 502 || !strings.Contains(w.Body.String(), `session_busy: Session main is already running.`) {
+		t.Fatalf("status %d: %s", w.Code, w.Body)
+	}
+	if evs := logLines(t, log); len(evs) != 1 || evs[0].OK || !strings.Contains(evs[0].Message, "exited with status 1") {
+		t.Errorf("log = %+v", evs)
+	}
+}
+
 // AC6: the dispatch prompt goes through a prompt file, which is gone afterwards.
 func TestDispatchPromptFile(t *testing.T) {
 	var prompt, file string

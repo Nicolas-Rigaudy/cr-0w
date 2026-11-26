@@ -150,6 +150,15 @@ describe('MRs row actions (item_225)', () => {
     await expect(c.review(d.review[0]).run()).rejects.toThrow('too_many_runs')
     expect(refresh).toHaveBeenCalledTimes(1)
   })
+
+  it('rejects a session start that exits at once with its reason', async () => {
+    const { src, d } = await mrs()
+    const refresh = vi.fn(async () => {})
+    const why = 'crow-api-1 exited with status 1 at start\nsession_busy: account already running'
+    const dead = { ...src.actions, start: async () => { throw new ApiError(502, why) } }
+    const c = confirmsOf(dead, refresh, () => {})
+    await expect(c.session(d.mine[0]).run()).rejects.toThrow('session_busy: account already running')
+  })
 })
 
 describe('MRs review patterns (item_225)', () => {

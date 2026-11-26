@@ -220,9 +220,14 @@ case "$cmd" in
             launch_opts "$@"; shift "$n"
             dir="$(project_path "${1:?usage: crow term [--model M] <project> [prompt | --task T --end-state E]}")"
             pick_account "$(project_scope "$1")"
+            # Headless: a session that exits at once prints a JSON error line (exit status, last pane lines).
+            rc=0
             line=$(python3 "$CROW_ENGINE/bin/crow_term.py" open --title "crow · $1 · $CROW_ACCOUNT" --set CROW_ACCOUNT="$CROW_ACCOUNT" \
-                   -- "$CROW_ENGINE/bin/crow" open ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$@")
-            if [[ "$line" == "tmux "* ]]; then
+                   -- "$CROW_ENGINE/bin/crow" open ${model[@]+"${model[@]}"} --on-busy "$on_busy" "$@") || rc=$?
+            if [[ $rc -ne 0 ]]; then
+              [[ "$line" == "{"* ]] && printf '%s\n' "$line"
+              exit "$rc"
+            elif [[ "$line" == "tmux "* ]]; then
               # Headless backend (core, Nest): one JSON line naming the detached tmux session.
               echo "crow: $1 started on $CROW_ACCOUNT in tmux session ${line#tmux }" >&2
               jq -nc --arg p "$1" --arg a "$CROW_ACCOUNT" --arg t "${line#tmux }" \

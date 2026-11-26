@@ -1,6 +1,7 @@
 """crow-focus and the crow_term backends: window matching, the dry run and the print fallback.
 No terminal is ever opened: kitty tests fake setsid, the rest use the print backend or a private
 detached tmux server."""
+import json
 import os
 import shutil
 import subprocess
@@ -262,6 +263,24 @@ def test_headless_open_keeps_the_pane_of_a_command_that_exits(private_tmux):
     assert tmux_out("display-message", "-p", "-t", "crow-t-1", "#{pane_dead_status}").strip() == "3"
     shot = tmux_out("capture-pane", "-p", "-S", "-200", "-t", "crow-t-1")
     assert shot.split()[:2] == ["boom", "a;"], repr(shot)
+
+
+def test_headless_start_that_exits_fails_with_its_output(private_tmux, monkeypatch, capsys):
+    monkeypatch.setenv("CROW_TERMINAL", "headless")
+    monkeypatch.setenv("CROW_TERM_SETTLE", "1")
+    rc = ct.main(["open", "--title", "crow · demo", "--", "sh", "-c", "echo session_busy: demo is running; exit 1"])
+    reply = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 3 and reply["ok"] is False and reply["code"] == 2
+    assert "exited with status 1" in reply["message"] and "session_busy: demo is running" in reply["message"]
+    assert not tmux_out("list-sessions", "-F", "#{session_name}").strip()
+
+
+def test_headless_start_that_lives_closes_normally_later(private_tmux, monkeypatch, capsys):
+    monkeypatch.setenv("CROW_TERMINAL", "headless")
+    monkeypatch.setenv("CROW_TERM_SETTLE", "0.3")
+    assert ct.main(["open", "--title", "crow · demo", "--", "sh", "-c", "sleep 1"]) == 0
+    name = capsys.readouterr().out.split()[-1]
+    assert tmux_out("show-options", "-v", "-t", name, "remain-on-exit").strip() == "off"
 
 
 def test_tmux_session_for_walks_ancestors(tmp_path):

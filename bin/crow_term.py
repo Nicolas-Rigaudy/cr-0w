@@ -13,7 +13,8 @@ As a script (for shell callers such as bin/crow):
   crow_term.py open --title T [--cwd D] [--set K=V]... -- CMD...
       runs CMD detached from the calling session (clean_env plus the --set vars); on the print
       backend prints the line to run instead (the --set vars included); on the headless backend
-      prints `tmux <session name>`.
+      prints `tmux <session name>`, or, when CMD exits within the settle wait (headless_settle),
+      a JSON line {ok: false, code: 2, message} and exits 3.
 """
 import glob
 import json
@@ -224,6 +225,34 @@ def headless_open_args(argv, name, cwd=None, env=None, cols=200, rows=50):
     return own_scope(cmd)
 
 
+class StartFailed(Exception):
+    """A headless session whose command exited within the settle wait."""
+
+
+def headless_settle(name, wait=None, step=0.2, keep=12):
+    """Wait up to `wait` seconds (CROW_TERM_SETTLE, default 3) on a fresh headless session. Alive:
+    remain-on-exit goes off again (a normal exit closes the session) and None is returned. Dead: the
+    session is killed and the reason returned: exit status and the last `keep` lines of the pane."""
+    wait = float(os.environ.get("CROW_TERM_SETTLE", 3)) if wait is None else wait
+    end = time.monotonic() + wait
+    while True:
+        r = subprocess.run(["tmux", "display-message", "-p", "-t", name, "#{pane_dead} #{pane_dead_status}"],
+                           capture_output=True, text=True, check=False)
+        if r.returncode != 0:
+            return f"{name} closed at once, its output is lost"
+        dead, _, status = r.stdout.strip().partition(" ")
+        if dead == "1":
+            shot = subprocess.run(["tmux", "capture-pane", "-p", "-J", "-S", "-200", "-t", name],
+                                  capture_output=True, text=True, check=False).stdout
+            tail = [ln.rstrip() for ln in shot.splitlines() if ln.strip() and not ln.startswith("Pane is dead")]
+            subprocess.run(["tmux", "kill-session", "-t", name], capture_output=True, check=False)
+            return "\n".join([f"{name} exited with status {status or '?'} at start", *tail[-keep:]])
+        if time.monotonic() >= end:
+            subprocess.run(["tmux", "set-option", "-t", name, "remain-on-exit", "off"], capture_output=True, check=False)
+            return None
+        time.sleep(step)
+
+
 def own_scope(cmd):
     """Under a systemd service (INVOCATION_ID set), run cmd in its own user scope so it outlives a
     restart of the service (the core's cgroup is killed whole)."""
@@ -298,6 +327,8 @@ def open_window(argv, title, cwd=None, env=None, show_env=(), backend=None):
         name = headless_name(title)
         subprocess.run(headless_open_args(argv, name, cwd, env), check=True, env=env,
                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        if why := headless_settle(name):
+            raise StartFailed(why)
         return f"tmux {name}"
     return print_line(argv, cwd, env, show_env)
 
@@ -529,6 +560,10 @@ def main(argv):
         if not cmd:
             sys.exit(__doc__)
         out = open_window(cmd, title, cwd, clean_env(extra), list(extra))
+    except StartFailed as e:
+        print(str(e), file=sys.stderr)
+        print(json.dumps({"ok": False, "code": 2, "message": str(e)}))
+        return 3
     except (OSError, subprocess.CalledProcessError) as e:
         sys.exit(f"crow: could not open a window ({e})")
     if out != "opened":

@@ -592,7 +592,7 @@ button.row { width: 100%; text-align: left; border-top: 0; border-right: 0; bord
 .btn.x { background: color-mix(in srgb, var(--c-f) 22%, transparent); border-color: var(--c-f); color: var(--c-f); }
 .btn.xx { background: var(--c-f); border-color: var(--c-f); color: var(--accent-ink); }
 .btn:disabled { opacity: 0.6; cursor: default; }
-.err { color: var(--c-f); font-size: 12px; }
+.err { color: var(--c-f); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 12em; overflow-y: auto; }
 /* Answer sheet (item_168 shape A): big verb buttons, stale notice after a 409 */
 .verbs { display: grid; gap: 8px; }
 .verbs .btn { min-height: 44px; }
