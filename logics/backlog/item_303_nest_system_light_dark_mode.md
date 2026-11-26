@@ -1,10 +1,10 @@
 ## item_303_nest_system_light_dark_mode - System light and dark mode with Settings override
 > From version: 1.0.0
 > Schema version: 1.0
-> Status: Ready
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Status: Done
+> Understanding: 100%
+> Confidence: 95%
+> Progress: 100%
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
@@ -55,6 +55,14 @@
 # Notes
 - Dependencies: none. First in order.
 - Design source: vault folder CR-0W/Research/nest-gundam, design-notes.md (Decided: follow system, override in Settings).
+
+# Outcome
+- Commit 516dbe7. Engine in `src/ui/theme.ts`, first paint in `index.html`, Settings Look > Mode row, quick Auto/Light/Dark in the header theme popup (owner request 26/11).
+- AC1, AC2: `npm run check:mode` (scripts/mode-check.mjs), 15 headless checks incl. first paint on `readystatechange`, system switch, preview/Discard/Save, popup toggle.
+- AC3: main vs this build, 0 px on inbox, mrs, usage at every size and theme; home/chat only hero animation noise; Settings differs by the new Mode row.
+- AC4: `src/ui/theme.test.ts`, `src/data/settings.test.ts` (mode kept on the device, never in the save body). 418 tests pass.
+- Owner review 26/11: placement OK; the changed-row and active-pane side stripes were removed from Settings; header now stacks above Home need rows (`.hh-need.top` reused the header class).
+- Shots: vault CR-0W/Research/nest-gundam/item303/.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

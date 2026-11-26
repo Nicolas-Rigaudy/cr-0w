@@ -1968,7 +1968,7 @@ textarea.field { padding: 8px 10px; min-height: 84px; resize: vertical; }
   .set-nv .ic { display: grid; color: var(--sub); }
   .set-nv .ic svg { width: 16px; height: 16px; }
   .set-nv:hover { color: var(--fg); }
-  .set-nv[aria-current='page'] { background: var(--accent-soft); color: var(--fg); box-shadow: inset 3px 0 0 var(--accent); }
+  .set-nv[aria-current='page'] { background: var(--accent-soft); color: var(--fg); }
   .set-nv[aria-current='page'] .ic { color: var(--accent); }
   .set-pane { display: flex; flex-direction: column; min-height: 0; padding: 24px 32px 20px; }
   .set-body { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 8px; }
