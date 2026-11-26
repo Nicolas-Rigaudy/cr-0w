@@ -8,6 +8,7 @@ Wired in the hub's .claude/settings.json; reads the hook event on stdin.
                     `crow work` (lookups, small fixes) and `crow handoff` (the rest).
   PreToolUse Bash   commit, push, rebase, merge or MR/PR creation in a registered
                     project, or a git worktree under /tmp: ask the owner first.
+                    xdg-open: deny, `bin/crow-open` opens the owner's real browser profile.
 
 CROW_HUB_GUARD=off disables it (unattended hub runs that nobody can answer).
 """
@@ -24,6 +25,7 @@ WRITE = re.compile(
     r"\bgit\b[^|;&\n]*?\s(commit|push|rebase|merge|cherry-pick|am)\b"
     r"|\bgh\s+pr\s+(create|merge)\b|\bglab\s+mr\s+(create|merge)\b"
 )
+XDG_OPEN = re.compile(r"(^|[;&|(\n])\s*(env\s+)?(\w+=\S*\s+)*xdg-open\b")
 TMP_WORKTREE = re.compile(r"\bgit\b[^|;&\n]*\sworktree\s+add\s[^|;&\n]*")
 
 
@@ -134,6 +136,12 @@ def main():
         return
     kind = event.get("hook_event_name")
     if kind == "PreToolUse":
+        cmd = (event.get("tool_input") or {}).get("command", "")
+        if XDG_OPEN.search(cmd):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse", "permissionDecision": "deny",
+                "permissionDecisionReason": "Use bin/crow-open <url or abs path>: xdg-open opens the wrong browser profile."}}))
+            return
         reason = pre_tool(event, projs)
         if reason:
             print(json.dumps({"hookSpecificOutput": {

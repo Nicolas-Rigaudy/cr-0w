@@ -19,7 +19,7 @@ Capture the Nest PWA screens for design review without opening a window.
 3. Copy both sets into `Research/nest-design/<item>/<screen>-compare/` with a `spec.json`:
    one decision, `rows` = sizes/themes, two `options` (Board, Build) whose `images` line up with the rows.
    `context` lists every deliberate gap (data that does not exist yet). Run `bin/crow-compare <spec.json>`.
-4. Open the page in the real browser (`HOME=<real home> xdg-open .../spec.html`), then ask for the OK.
+4. Open the page in the real browser with `bin/crow-open .../spec.html` (never xdg-open: wrong browser profile), then ask for the OK.
 5. When no board draws an element, ask where it goes. Never draw it from the running app.
 
 Gotchas:

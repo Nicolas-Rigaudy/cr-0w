@@ -1,0 +1,178 @@
+<!doctype html><meta charset="utf-8"><title>Nest MR review round 2</title>
+<!-- Review screen of an MR (item_300, round 2). ?v=A|B|C&f=laptop|phone
+     Brief (owner 2026-11-26): web UX with buttons, no keybinds. 1. a summary of the MR. 2. each finding inline in the code
+     with its explanation and Accept / Refuse / Edit / Chat. The owner adds inline comments on any line, keeps them as his own
+     or sends them to crow to check. One Post button with the exact batch. Data: crow-review-run findings, generic names. -->
+<style>
+*{box-sizing:border-box}
+:root{--bg:#24273a;--fg:#cad3f5;--dim:#a5adcb;--sub:#939ab7;--panel:rgba(30,32,48,.78);--line:#494d64;--row:rgba(54,58,79,.55);--btn:rgba(54,58,79,.7);--well:rgba(24,25,38,.6);
+ --acc:#c6a0f6;--ink:#181926;--w:#7dc4e4;--n:#eed49f;--f:#ed8796;--d:#a6da95;--b:#8aadf4;--s:#8087a2;--t:#8bd5ca;
+ --dots:radial-gradient(color-mix(in srgb,#494d64 45%,transparent) 1px,transparent 1.2px) 0 0/18px 18px}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:12px/1.45 'Fira Code',ui-monospace,monospace}
+.lap{width:1440px;height:900px;display:flex;flex-direction:column;background:var(--dots),var(--bg);overflow:hidden;position:relative}
+.hdr{height:54px;flex:0 0 auto;display:flex;align-items:center;gap:18px;padding:0 20px;background:rgba(24,25,38,.85);border-bottom:1px solid var(--line);letter-spacing:.08em;font-size:12.5px}
+.logo{font:18px Michroma,sans-serif;color:var(--acc);letter-spacing:.12em}
+.pill{border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:3px 12px;font-size:11px}
+.nv{color:var(--fg)}.nv.on{background:var(--acc);color:var(--ink);padding:5px 10px;border-radius:7px}.nv b{color:var(--n);font-weight:400}
+.gauge{display:inline-flex;align-items:center;gap:6px;font-size:11px}.gauge i{display:inline-block;width:56px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--d) var(--p),#363a4f var(--p))}
+.cc{border:1px solid var(--n);color:var(--n);border-radius:999px;padding:1px 9px;font-size:11px}.cc.w{border-color:var(--w);color:var(--w)}
+.page{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:14px 20px 16px}
+.bar{display:flex;align-items:center;gap:10px;letter-spacing:.08em}
+.bar h1{font:20px Michroma,sans-serif;margin:0 10px 0 0;letter-spacing:.1em;font-weight:400}
+.seg{display:flex;gap:4px}.seg span{border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:11.5px;background:var(--btn)}.seg .on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.sum{margin-left:auto;color:var(--dim);font-size:12.5px;letter-spacing:.06em}.sum .x{color:var(--n)}
+/* panes with a title set in the top border, as in the deck */
+.pn{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:16px 12px 10px;min-height:0;min-width:0;display:flex;flex-direction:column;gap:5px}
+.pn>.tt{position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 7px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;display:flex;gap:8px}
+.pn>.tr{position:absolute;top:-9px;right:12px;background:var(--bg);padding:0 7px;font-size:11px;color:var(--sub);letter-spacing:.06em}
+.pn.sel{border-color:var(--acc)}
+.r{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:6px 9px;border-radius:7px;font-size:12.5px;min-width:0}
+.r:nth-child(odd){background:var(--row)}.r .ref{color:var(--t)}.r.mine .ref{color:var(--acc)}.r.done{opacity:.55}.r.done .ref{color:var(--d)}
+.r .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.r .ti small{display:block;color:var(--sub);font-size:11px}
+.r.on{background:rgba(198,160,246,.14);box-shadow:inset 2px 0 0 var(--acc)}
+.st{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.ok{color:var(--d)}.ko{color:var(--f)}.ru{color:var(--w)}.wa{color:var(--n)}.mu{color:var(--sub)}.ac{color:var(--acc)}.cy{color:var(--t)}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--btn);border-radius:8px;padding:4px 11px;font-size:11.5px;letter-spacing:.06em;white-space:nowrap}
+.btn.p{background:var(--acc);border-color:var(--acc);color:var(--ink)}.btn.g{background:none}
+.k{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;color:var(--dim);margin-right:3px}
+/* detail */
+.dh{font:17px Michroma,sans-serif;letter-spacing:.04em;line-height:1.35}.dh .ref{color:var(--acc)}
+.meta{color:var(--dim);font-size:12px}
+.facts{display:flex;gap:26px;padding:10px 12px;border-radius:9px;background:var(--well)}
+.facts div{display:flex;flex-direction:column;gap:2px;font-size:13px}.facts small{color:var(--sub);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.sh{font-size:11px;letter-spacing:.12em;color:var(--acc);text-transform:uppercase;margin-top:6px;display:flex;justify-content:space-between}
+.stg{display:flex;align-items:center;gap:0;font-size:12px}.stg span{padding:4px 10px;border:1px solid var(--line);margin-right:-1px}
+.stg span:first-child{border-radius:7px 0 0 7px}.stg span:last-child{border-radius:0 7px 7px 0}.stg .ok{border-color:var(--d)}.stg .ko{border-color:var(--f);background:rgba(237,135,150,.12)}.stg .mu{border-style:dashed}
+.th{border-left:2px solid var(--n);padding:6px 12px;background:var(--well);border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.th .w{color:var(--sub);font-size:11px}.th.res{border-left-color:var(--line);color:var(--sub)}
+.log{font-size:11.5px;background:var(--well);border-radius:8px;padding:8px 12px;color:var(--dim);white-space:pre;line-height:1.5}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.patc{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:11.5px;color:var(--dim)}
+.patc b{color:var(--n);font-weight:400}
+.pop{border:1px solid var(--acc);border-radius:10px;background:#1e2030;padding:10px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 24px #000a}
+.pop .pr{display:grid;grid-template-columns:1fr 70px 50px;gap:10px;font-size:12px;padding:3px 0;border-top:1px solid #363a4f}
+.pop .pr.hit{color:var(--n)}
+.lbl{position:absolute;left:20px;bottom:12px;z-index:9;background:var(--n);color:var(--ink);font:11.5px Michroma,sans-serif;padding:4px 10px;border-radius:6px;letter-spacing:.08em}
+.keys{display:flex;gap:16px;font-size:11px;color:var(--sub);padding:4px 2px 0}
+/* phone */
+.duo{display:flex;gap:24px;padding:12px;align-items:flex-start;background:#181926;width:max-content}
+.pw{width:368px}.pl{font:12px Michroma,sans-serif;color:var(--acc);padding:2px 2px 6px;letter-spacing:.06em}
+.ph{width:368px;height:800px;border:1px solid var(--line);border-radius:24px;background:var(--dots),var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ph .top{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px}.ph .top .logo{font-size:13px}
+.ph .bd{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:6px 12px;overflow:hidden}
+.ph .bar h1{font-size:15px}.ph .pn{padding:14px 8px 8px}.ph .r{grid-template-columns:40px 1fr auto;padding:7px 7px;font-size:12px;gap:8px}
+.ph .nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:11px 0 14px;font-size:11.5px;color:var(--sub);background:rgba(24,25,38,.85)}.ph .nav .on{color:var(--acc)}
+.cap{font-size:11.5px;color:var(--n);padding:8px 2px 0;line-height:1.45;width:368px}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:96px;border-top:1px solid var(--acc);border-radius:18px 18px 0 0;background:#1e2030;padding:10px 14px;display:flex;flex-direction:column;gap:9px;box-shadow:0 -10px 30px #000c}
+.grab{width:42px;height:4px;border-radius:2px;background:#5b6078;margin:0 auto 2px}
+.ph .dh{font-size:14px}.ph .facts{gap:14px;padding:8px 10px}.ph .facts div{font-size:12px}
+.ph .stg{font-size:11px}.ph .stg span{padding:3px 7px}
+.dim{opacity:.35;pointer-events:none}
+/* round 2 */
+.lap{font-size:13px}
+.wrap{flex:1;min-height:0;display:flex;gap:16px;padding:16px 20px 0;overflow:hidden}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.crumb{font-size:12px;color:var(--sub)}.crumb a{color:var(--dim)}
+.ttl{font:20px/1.3 'Fira Code',monospace;color:var(--fg);margin:2px 0 4px}.ttl .ref{color:var(--acc)}
+.meta2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--dim)}.meta2 b{font-weight:500;color:var(--fg)}
+.ok{color:var(--d)}.mu{color:var(--sub)}.wa{color:var(--n)}.ac{color:var(--acc)}.er{color:var(--f)}
+.sumg{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin-top:12px}
+.what{font-size:12.5px;line-height:1.55;color:var(--dim)}
+.ev{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}.ev td{padding:5px 8px;border-top:1px solid rgba(73,77,100,.6);vertical-align:top}.ev td:first-child{color:var(--w);white-space:nowrap}
+.verd{border-radius:10px;background:var(--well);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.verd .v{font-size:14px;color:var(--fg)}.tally{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px}.tally i{display:block}
+.leg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--dim)}.leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.btn2{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--btn);color:var(--fg);border-radius:8px;padding:6px 12px;font-size:12.5px;white-space:nowrap}
+.btn2.p{background:var(--acc);border-color:var(--acc);color:var(--ink);font-weight:600}.btn2.g{background:transparent}.btn2.ok2{border-color:var(--d);color:var(--d)}.btn2.no{border-color:var(--line);color:var(--sub)}
+.btn2.big{padding:10px 16px;font-size:13.5px;justify-content:center}
+.file{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--well)}
+.fhd{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(54,58,79,.6);font-size:12px;border-bottom:1px solid var(--line)}.fhd .mu{margin-left:auto}
+.ln{display:grid;grid-template-columns:22px 44px 16px 1fr;font-size:12.5px;line-height:21px;white-space:pre;position:relative}
+.ln .pl{color:transparent;text-align:center}.ln:hover .pl,.ln.hov .pl{color:var(--ink);background:var(--acc);border-radius:5px;margin:2px 3px;line-height:17px;font-weight:700}
+.ln .n{color:var(--sub);text-align:right;padding-right:8px}.ln.add{background:rgba(166,218,149,.06)}.ln.add .m{color:var(--d)}
+.ln.hit{background:rgba(198,160,246,.15)}.ln.hit .n{color:var(--acc)}.ln.hov{background:rgba(125,196,228,.10)}
+.fold{font-size:11.5px;color:var(--sub);padding:3px 12px 3px 82px;background:rgba(36,39,58,.8)}
+.kw{color:var(--acc)}.str{color:var(--d)}.cm{color:var(--sub);font-style:italic}.fn{color:var(--b)}
+.th{margin:6px 14px 8px 82px;border:1px solid var(--line);border-radius:10px;background:#1e2030;white-space:normal;font-size:12.5px;line-height:1.55;overflow:hidden}
+.th.open{border-color:var(--acc);box-shadow:0 0 0 1px rgba(198,160,246,.25)}
+.th .hd{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;border-bottom:1px solid rgba(73,77,100,.6)}.th .hd .who{color:var(--fg)}.th .hd .r{margin-left:auto;white-space:nowrap}.th .hd{flex-wrap:nowrap}.th .hd>span{white-space:nowrap}
+.th .bd{padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+.th .why{color:var(--dim)}
+.quote{border-left:2px solid var(--acc);background:var(--well);border-radius:0 8px 8px 0;padding:8px 11px;color:var(--fg)}.quote small{display:block;color:var(--sub);font-size:11px;margin-bottom:3px}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.th.mini .hd{border-bottom:0}.th.mini{opacity:.92}
+.av{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;font-size:10.5px;font-weight:700;color:var(--ink)}.av.c{background:var(--acc)}.av.y{background:var(--w)}
+.sev{font-size:11px;padding:1px 7px;border-radius:5px;border:1px solid}.sev.q{color:var(--w);border-color:var(--w)}.sev.s{color:var(--t);border-color:var(--t)}.sev.n{color:var(--sub);border-color:var(--line)}.sev.g{color:var(--d);border-color:var(--d)}.sev.y{color:var(--n);border-color:var(--n)}
+.ta{background:var(--well);border:1px solid var(--w);border-radius:8px;padding:8px 10px;color:var(--fg);min-height:52px}
+.side{width:330px;flex:0 0 330px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.fi{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:7px;font-size:12px}.fi.on{background:rgba(198,160,246,.14)}
+.fi .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.sect{font-size:12px;color:var(--sub);margin:2px 0 4px;display:flex;justify-content:space-between}
+.scroll{overflow:hidden;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.steps2{display:flex;gap:4px;align-items:center;font-size:12px}.steps2 span{padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}.steps2 .on{border-color:var(--acc);background:rgba(198,160,246,.14);color:var(--fg)}.steps2 .dn{color:var(--d);border-color:rgba(166,218,149,.4)}
+.pips{display:flex;gap:5px}.pips i{width:26px;height:6px;border-radius:3px;background:#363a4f}.pips i.a{background:var(--d)}.pips i.r{background:var(--sub)}.pips i.c{background:var(--acc)}
+.fcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.fcard.on{border-color:var(--acc)}
+.fcard .h{display:flex;align-items:center;gap:8px;font-size:12.5px}.fcard .h .r{margin-left:auto}
+.ph .bd{font-size:12px;gap:10px}.ph .ln{grid-template-columns:34px 12px 1fr;font-size:11px;line-height:18px}.ph .ln .pl{display:none}.ph .th{margin:6px 8px}.ph .fold{padding-left:46px}
+.sbar{position:absolute;left:0;right:0;bottom:56px;padding:10px 14px;background:rgba(24,25,38,.96);border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;font-size:12px}
+</style>
+<body><div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),V=(Q.get('v')||'A').toUpperCase(),F=Q.get('f')||'laptop'
+const NAV=['HOME','DESK','OPS','INBOX','MRS','AGENDA','REPORTS']
+const hdr=()=>`<div class="hdr"><span class="logo">CR-0W</span><span class="pill">◈ ALL</span>${NAV.map((n,i)=>`<span class="nv ${n==='MRS'?'on':''}">${i+1} ${n}</span>`).join('')}<span style="margin-left:auto" class="gauge">MAIN <i style="--p:72%"></i> 72%</span><span class="gauge">WORK <i style="--p:41%"></i> 41%</span><span>10:40</span><span>◐</span><span>⚙</span></div>`
+const lbl=t=>`<div class="lbl">${t}</div>`
+const COL={acc:'var(--d)',ref:'var(--sub)',todo:'var(--n)',cur:'var(--acc)',you:'var(--w)'}
+const FD=[
+ ['F1','q','events out of order: recovery before failure','alert_ops.py:199','cur'],
+ ['F2','q','turn-on causes: a new cause closes the alert','alert_ops.py:62','acc'],
+ ['F3','q','voltage event on a shovelled queue','alert_ops.py:223','ref'],
+ ['F4','s','copy of acknowledge_alerts with one filter','alert_ops.py:263','acc'],
+ ['F5','s','loads the whole alert history of the car','alert_ops.py:297','todo'],
+ ['F6','s','repeats the last-alert lookup, no status check','history_steps.py:58','todo'],
+ ['F7','s','three paths without a scenario','alerts.feature','todo'],
+ ['F8','n','three wording nits','alert_ops.py:364','todo'],
+ ['F9','g','history entries keep last_modified_by','alert_ops.py:371','acc'],
+]
+const SV={q:'question',s:'suggestion',n:'nit',g:'praise'}
+const WHY='If Recovered (10:05) is handled before its Failed (10:00), the recovery finds no alert. The late failure then opens one that stays open on a car whose power is fine, until the next recovery.'
+const POST='Question: what happens if the Recovered event is processed before its Failed (retry, redelivery)? The recovery acknowledges nothing, then the late failure opens an alert that stays open until the next recovery. Does the vendor guarantee ordering on this queue?'
+const L=(n,h,k='')=>`<div class="ln add ${k}"><span class="pl">+</span><span class="n">${n}</span><span class="m">+</span><span>${h}</span></div>`
+const fold=t=>`<div class="fold">⋯ ${t}</div>`
+const sev=s=>`<span class="sev ${s}">${SV[s]}</span>`
+const acts=(sm)=>`<div class="acts"><span class="btn2 p">✓ Accept</span><span class="btn2">✕ Refuse</span><span class="btn2">✎ Edit</span><span class="btn2">💬 Ask crow</span>${sm?'':'<span class="mu" style="margin-left:auto;align-self:center;font-size:11.5px">pattern: event ordering · seen 2x</span>'}</div>`
+const thF1=(ph)=>`<div class="th open"><div class="hd"><span class="av c">C</span><span class="who">crow · F1</span>${sev('q')}<span class="r mu">to decide</span></div><div class="bd"><div class="why">${WHY}</div><div class="quote"><small>Comment that will be posted</small>${POST}</div>${acts(ph)}</div></div>`
+const thMini=(id,s,t,st)=>`<div class="th mini"><div class="hd"><span class="av c">C</span><span class="who">crow · ${id}</span>${sev(s)}<span>${t}</span><span class="r ${st==='acc'?'ok':'mu'}">${st==='acc'?'✓ will post':'✕ dropped'} · <span class="ac">change</span></span></div></div>`
+const thYou=()=>`<div class="th" style="border-color:var(--w)"><div class="hd"><span class="av y">Y</span><span class="who">your comment · line 226</span><span class="r mu">draft</span></div><div class="bd"><div class="ta">Is the voltage alert acknowledged when the car gets archived? I don't see it in the archived path.<span class="ac">|</span></div><div class="acts"><span class="btn2 p">🔍 Ask crow to check</span><span class="btn2">Add as my comment</span><span class="btn2 g">Cancel</span><span class="mu" style="margin-left:auto;align-self:center;font-size:11.5px">crow checks the code and drafts a finding</span></div></div></div>`
+const diff=(ph)=>`<div class="file"><div class="fhd"><span>▾</span><span>lambda_layer/domain/car/<b style="font-weight:500">alert_ops.py</b></span><span class="ok">+412</span><span class="er">−3</span><span class="mu">F2 F1 F3 · 2 of 3 decided</span></div>
+${fold('lines 1-58')}${L(60,'<span class="cm"># Restarts the backup battery can power</span>')}${L(62,'POWER_KEEPING_TURN_ON_CAUSES = {<span class="str">"WATCHDOG"</span>, <span class="str">"PLANNED_REBOOT"</span>}')}${thMini('F2','q','a new cause closes the alert','acc')}
+${fold('lines 63-196')}${L(197,'    occurred_at = event.occurred_at <span class="kw">or</span> now()')}${L(199,'    <span class="kw">if</span> event_type == POWER_SUPPLY_RECOVERED:','hit')}${thF1(ph)}${L(200,'        <span class="fn">_acknowledge_power_alerts</span>(car, POWER_SUPPLY_FAILED,')}${L(201,'            ended_at=occurred_at)  <span class="cm"># only alerts triggered before</span>')}${L(202,'        <span class="kw">return</span>')}
+${fold('lines 203-222')}${L(223,'    <span class="kw">if</span> event_type == SUPPLY_VOLTAGE_THRESHOLD_CROSSED:')}${thMini('F3','q','voltage event on a shovelled queue','ref')}${L(224,'        status = event_data.get(<span class="str">"threshold_status"</span>)')}${L(226,'        <span class="kw">if</span> status == <span class="str">"BELOW_THRESHOLD"</span>:','hov')}${thYou()}${L(227,'            <span class="fn">create_alert_on_event</span>(car, VOLTAGE_LOW, occurred_at)')}</div>`
+const summary=(full)=>`<div class="card"><div class="crumb"><a>‹ MRs</a> · to review · api</div><div class="ttl"><span class="ref">!245</span> Power supply alerts from the telematic box</div>
+<div class="meta2"><span><b>dev-b</b> wants to merge <b>power-alerts</b> into <b>main</b></span><span>CI <span class="ok">✓ passed</span></span><span>approvals 0/1</span><span>+612 −14 · 6 files</span><span>reviewed by crow 9:41</span></div>
+${full?`<div class="sumg"><div><div class="what">Turns the box's power events into car alerts. Archived cars get none. An offline alert gets a note when the box lost its power first.</div>
+<table class="ev"><tr><td>PowerSupplyFailed</td><td>opens POWER_SUPPLY_FAILED unless one is open or a later one exists</td></tr><tr><td>PowerSupplyRecovered</td><td>acknowledges the failures triggered before it</td></tr><tr><td>TurnedOn</td><td>same, except causes WATCHDOG and PLANNED_REBOOT</td></tr><tr><td>VoltageThresholdCrossed</td><td>BELOW opens a voltage alert, ABOVE acknowledges it</td></tr></table></div>
+<div class="verd"><div class="mu" style="font-size:12px">crow's verdict</div><div class="v">Solid. Approve once 1 and 2 are answered.</div>${tally()}<div class="mu" style="font-size:11.5px">2 checklist boxes unticked on the MR</div></div></div>`:''}</div>`
+const tally=()=>`<div class="tally">${FD.map(f=>`<i style="flex:1;background:${COL[f[4]]}"></i>`).join('')}</div><div class="leg"><span><i style="background:var(--d)"></i>3 will post</span><span><i style="background:var(--sub)"></i>1 dropped</span><span><i style="background:var(--n)"></i>5 to decide</span><span><i style="background:var(--w)"></i>1 yours</span></div>`
+const flist=()=>FD.map((f,i)=>`<div class="fi ${i===0?'on':''}"><span class="dot" style="background:${COL[f[4]]}"></span><span class="ti">${f[0]} ${f[2]}</span><span class="mu" style="font-size:11px">${f[3].split(':')[1]||''}</span></div>`).join('')+`<div class="fi"><span class="dot" style="background:var(--w)"></span><span class="ti">You: voltage alert on archive?</span><span class="mu" style="font-size:11px">226</span></div>`
+const postBox=()=>`<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:14px"><span class="btn2 p big">Review the batch: 3 comments + 1 yours</span><span class="mu" style="font-size:11.5px">Shows the exact text before anything is posted. Approve stays a separate button.</span></div>`
+const A=()=>`<div class="lap">${hdr()}<div class="wrap"><div class="scroll" style="flex:1">${summary(true)}${diff()}</div>
+<div class="side"><div class="card" style="padding:12px 12px 8px"><div class="sect"><span>Findings</span><span>4 of 10 decided</span></div>${flist()}</div>${postBox()}</div></div>${lbl('A · ONE PAGE: SUMMARY ON TOP, THREADS IN THE DIFF, FINDINGS RAIL')}</div>`
+const codeF1=()=>`<div class="file"><div class="fhd"><span>alert_ops.py</span><span class="mu">lines 195-247 · open full file ↗</span></div>${L(195,'    event_type = EventType(event.event_type).value')}${L(197,'    occurred_at = event.occurred_at <span class="kw">or</span> now()')}${L(199,'    <span class="kw">if</span> event_type == POWER_SUPPLY_RECOVERED:','hit')}${L(200,'        <span class="fn">_acknowledge_power_alerts</span>(car, POWER_SUPPLY_FAILED,')}${L(201,'            ended_at=occurred_at)  <span class="cm"># only alerts triggered before</span>')}${L(202,'        <span class="kw">return</span>')}${fold('37 lines')}${L(241,'    <span class="kw">if</span> <span class="fn">_is_power_failure_covered</span>(car, event_type, occurred_at):','hit')}${L(242,'        <span class="kw">return</span>  <span class="cm"># open alert, or one triggered at/after</span>')}${L(246,'    session.add(event)')}${L(247,'    <span class="fn">create_alert_on_event</span>(car, event_type, occurred_at)','hov')}</div>`
+const card=(f,on)=>`<div class="fcard ${on?'on':''}"><div class="h"><span class="dot" style="background:${COL[f[4]]}"></span><b style="font-weight:500">${f[0]}</b>${sev(f[1])}<span>${f[2]}</span><span class="r mu">${f[3]}</span></div>${on?`<div class="why">${WHY}</div><div class="quote"><small>Comment that will be posted</small>${POST}</div>${acts(1)}`:''}</div>`
+const B=()=>`<div class="lap">${hdr()}<div class="wrap"><div class="scroll" style="width:560px;flex:0 0 560px">${summary(false)}<div class="card" style="padding:12px 14px"><div class="v" style="font-size:13.5px">Solid. Approve once 1 and 2 are answered.</div><div style="margin-top:8px">${tally()}</div></div>
+${card(FD[0],1)}${FD.slice(1,6).map(f=>card(f)).join('')}</div>
+<div class="scroll" style="flex:1">${codeF1()}<div class="th" style="margin:0;border-color:var(--w)"><div class="hd"><span class="av y">Y</span><span class="who">your comment · line 247</span><span class="r mu">draft</span></div><div class="bd"><div class="ta">The alert is created before the offline note check. Can both fire on the same event?<span class="ac">|</span></div><div class="acts"><span class="btn2 p">🔍 Ask crow to check</span><span class="btn2">Add as my comment</span></div></div></div>${postBox()}</div></div>${lbl('B · FINDINGS FEED LEFT, CODE OF THE SELECTED FINDING RIGHT')}</div>`
+const C=()=>`<div class="lap">${hdr()}<div class="wrap" style="flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:14px"><span class="crumb"><a>‹ MRs</a></span><span class="ttl" style="margin:0;font-size:17px"><span class="ref">!245</span> Power supply alerts</span><div class="steps2" style="margin-left:auto"><span class="dn">✓ Summary</span><span class="on">Findings 1 of 9</span><span>Your comments 1</span><span>Post</span></div></div>
+<div style="display:flex;gap:16px;flex:1;min-height:0"><div class="scroll" style="flex:1">${codeF1().replace(/(<div class="ln add hit"><span class="pl">\+<\/span><span class="n">199<\/span>[^]*?<\/div>)/,'$1'+thF1())}</div>
+<div class="side" style="width:360px;flex-basis:360px"><div class="card"><div class="mu" style="font-size:12px">Summary</div><div class="what" style="margin-top:4px">Turns the box's power events into car alerts: failure opens, recovery or turn-on acknowledges, voltage below/above opens/acknowledges.</div><div class="v" style="margin-top:8px">Solid. Approve once 1 and 2 are answered.</div></div>
+<div class="card"><div class="sect"><span>Progress</span><span>4 of 10</span></div><div class="pips">${FD.map(f=>`<i class="${{acc:'a',ref:'r',cur:'c'}[f[4]]||''}"></i>`).join('')}</div><div style="display:flex;gap:8px;margin-top:12px"><span class="btn2 big" style="flex:1">‹ Previous</span><span class="btn2 big" style="flex:1">Next: F2 ›</span></div></div>${postBox()}</div></div></div>${lbl('C · GUIDED: ONE FINDING AT A TIME, SUMMARY STEP FIRST')}</div>`
+const pwrap=b=>`<div class="duo"><div class="pw"><div class="pl">${V} · phone</div><div class="ph"><div class="top"><span class="logo">CR-0W</span><span class="mu">◐ ⚙</span></div><div class="bd" style="overflow:hidden">${b}</div>
+<div class="sbar"><span><span class="ok">3</span> to post · <span class="wa">5</span> to decide</span><span class="btn2 p" style="margin-left:auto">Review batch</span></div><div class="nav"><span>HOME</span><span>DESK</span><span class="on">MRS</span><span>INBOX</span><span>MORE</span></div></div></div></div>`
+const pA=()=>`<div class="ttl" style="font-size:15px"><span class="ref">!245</span> Power supply alerts</div><div class="meta2">dev-b · CI <span class="ok">✓</span> · 0/1</div><div class="what">Turns the box's power events into car alerts. Verdict: <span style="color:var(--fg)">solid, approve once 1 and 2 are answered.</span></div>${tally()}
+<div class="file"><div class="fhd">alert_ops.py</div>${L(199,'  <span class="kw">if</span> event_type == RECOVERED:','hit')}${thF1(1)}${L(200,'    <span class="fn">_acknowledge</span>(car, FAILED,')}</div>`
+const pB=()=>`<div class="ttl" style="font-size:15px"><span class="ref">!245</span> Power supply alerts</div>${tally()}${card(FD[0],1).replace('<div class="why">','<div class="file">'+L(199,'  <span class="kw">if</span> event_type == RECOVERED:','hit')+L(200,'    <span class="fn">_acknowledge</span>(car, FAILED,')+'</div><div class="why">')}${card(FD[1])}`
+const pC=()=>`<div style="display:flex;justify-content:space-between;align-items:center"><span class="ttl" style="font-size:15px;margin:0"><span class="ref">!245</span> Findings</span><span class="mu">1 of 9</span></div><div class="pips">${FD.map(f=>`<i style="width:auto;flex:1" class="${{acc:'a',ref:'r',cur:'c'}[f[4]]||''}"></i>`).join('')}</div>
+<div class="file">${L(199,'  <span class="kw">if</span> event_type == RECOVERED:','hit')}${L(200,'    <span class="fn">_acknowledge</span>(car, FAILED,')}${L(202,'    <span class="kw">return</span>')}</div>${thF1(1)}<div style="display:flex;gap:8px"><span class="btn2" style="flex:1;justify-content:center">‹ Prev</span><span class="btn2" style="flex:1;justify-content:center">Next ›</span></div>`
+document.getElementById('root').innerHTML=F==='phone'?pwrap(({A:pA,B:pB,C:pC})[V]()):({A,B,C})[V]()
+</script>
