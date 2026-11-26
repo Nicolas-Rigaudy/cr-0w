@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-26 14:28:59
 
 # AI Context
 - Summary: Clicking a planet opens the one thing that waits (question or running session) when there is exactly one, else a new Project page. On a group planet (Circle) a moon opens its member project, a second click on the planet opens the group page.
@@ -26,7 +27,8 @@
     - exactly one item waits on the owner for that project: open it (question → its Inbox row open with the answer form, approval → its approval, running session with nothing waiting → Desk on that session);
     - otherwise → `/p/<project>`.
   - Group planet: first click focuses (as today), a member moon is clickable and opens that member with the same rule, a second click on the planet opens `/p/<group>`.
-  - Project page `/p/<name>`: header (planet glyph, state, scope), What needs you (rows answerable inline, same components as Inbox), Live (sessions, runs with open-chat), MRs (with CI state), Missions, recent activity; actions: new session, dispatch, open repo session (crow handoff).
+  - Project page `/p/<name>`: header (planet glyph, state, scope), What needs you (rows answerable inline, same components as Inbox), In flight (item_307: Jira tickets in progress, branches with uncommitted or unpushed work, the last ended session; actions resume, start a session on the ticket, open MR or branch), Live (sessions, runs with open-chat), MRs (with CI state), Missions, recent activity; actions: new session, dispatch, open repo session (crow handoff).
+  - Added 2026-11-26 (req_073): the owner's unfinished ticket work, started on 2026-11-25 and not finished, showed nowhere in Nest.
   - Group page: one row per member (state, counts), sorted by urgency, plus the merged What needs you list.
   - Hero card `open →`, keyboard Enter and the hero list use the same rule.
   - Mockups first: phone (cover, inner) and laptop, two options each, owner picks, then build one screen at a time.
@@ -46,9 +48,11 @@
 
 # Dependencies
 - item_204 work feed (done). Moon hit-testing from item_221 placement.
+- item_307 in-flight data for the In flight section.
 
 # Links
 - Request: req_063_nest_pages_and_inbox_as_the_home_for_everything_that_waits.
+- Request: req_073_nest_shows_what_needs_doing_per_project_unfinished_work_included.
 
 # Priority
 - Priority: High

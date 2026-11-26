@@ -8,6 +8,7 @@
 > Complexity: Medium
 > Theme: Nest
 > Reminder: Update status/understanding/confidence/progress and linked request/task references when you edit this doc.
+> Indicators reviewed: 2026-11-26 14:28:59
 
 # AI Context
 - Summary: A Nest session start reports a session that died, and a live one opens on Desk.
@@ -50,9 +51,9 @@
 - Rationale: Reviews rank second in the owner's priorities; no-terminal days depend on Nest.
 
 # Notes
+- 2026-11-26 14:22 local: a fourth case. Nest start of the hub project (tmux pane named project-account-time) exited after 1.4 s; cdx `launch_history.jsonl` has no launch on that account at that time and no transcript exists, so it failed before claude started. The previous session on that account had ended 85 s earlier (13:20:39Z). Suspect `--on-busy fail` (cdx `session_busy`) or a quota refusal; the pane output was lost. owner-prefs say several live sessions on one account are expected and a launch must never be refused for a busy account: check whether `--on-busy fail` from core contradicts that once the cause is known.
 - Generated locally by logics-manager.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-
