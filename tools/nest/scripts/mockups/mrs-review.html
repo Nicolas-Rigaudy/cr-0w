@@ -1,0 +1,158 @@
+<!doctype html><meta charset="utf-8"><title>Nest MRs review tab mockups</title>
+<!-- Review tab of the MR detail (item_300). ?v=A|B|C&f=laptop|phone
+     Brief: port the crow-deck review walkthrough (tools/crow-deck/mrs.go): stage line review > decide > post > done,
+     the code of the current file with the finding boxed on its line, the Your move panel (steps, current finding,
+     the comment that will be posted, decide accept / refuse / edit / chat, then next / post). Nothing posts without the owner.
+     Data: a crow-review-run findings file (runbooks/review-findings.md) with generic names. -->
+<style>
+*{box-sizing:border-box}
+:root{--bg:#24273a;--fg:#cad3f5;--dim:#a5adcb;--sub:#939ab7;--panel:rgba(30,32,48,.78);--line:#494d64;--row:rgba(54,58,79,.55);--btn:rgba(54,58,79,.7);--well:rgba(24,25,38,.6);
+ --acc:#c6a0f6;--ink:#181926;--w:#7dc4e4;--n:#eed49f;--f:#ed8796;--d:#a6da95;--b:#8aadf4;--s:#8087a2;--t:#8bd5ca;
+ --dots:radial-gradient(color-mix(in srgb,#494d64 45%,transparent) 1px,transparent 1.2px) 0 0/18px 18px}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:12px/1.45 'Fira Code',ui-monospace,monospace}
+.lap{width:1440px;height:900px;display:flex;flex-direction:column;background:var(--dots),var(--bg);overflow:hidden;position:relative}
+.hdr{height:54px;flex:0 0 auto;display:flex;align-items:center;gap:18px;padding:0 20px;background:rgba(24,25,38,.85);border-bottom:1px solid var(--line);letter-spacing:.08em;font-size:12.5px}
+.logo{font:18px Michroma,sans-serif;color:var(--acc);letter-spacing:.12em}
+.pill{border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:3px 12px;font-size:11px}
+.nv{color:var(--fg)}.nv.on{background:var(--acc);color:var(--ink);padding:5px 10px;border-radius:7px}.nv b{color:var(--n);font-weight:400}
+.gauge{display:inline-flex;align-items:center;gap:6px;font-size:11px}.gauge i{display:inline-block;width:56px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--d) var(--p),#363a4f var(--p))}
+.cc{border:1px solid var(--n);color:var(--n);border-radius:999px;padding:1px 9px;font-size:11px}.cc.w{border-color:var(--w);color:var(--w)}
+.page{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:14px 20px 16px}
+.bar{display:flex;align-items:center;gap:10px;letter-spacing:.08em}
+.bar h1{font:20px Michroma,sans-serif;margin:0 10px 0 0;letter-spacing:.1em;font-weight:400}
+.seg{display:flex;gap:4px}.seg span{border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:11.5px;background:var(--btn)}.seg .on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.sum{margin-left:auto;color:var(--dim);font-size:12.5px;letter-spacing:.06em}.sum .x{color:var(--n)}
+/* panes with a title set in the top border, as in the deck */
+.pn{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:16px 12px 10px;min-height:0;min-width:0;display:flex;flex-direction:column;gap:5px}
+.pn>.tt{position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 7px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;display:flex;gap:8px}
+.pn>.tr{position:absolute;top:-9px;right:12px;background:var(--bg);padding:0 7px;font-size:11px;color:var(--sub);letter-spacing:.06em}
+.pn.sel{border-color:var(--acc)}
+.r{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:6px 9px;border-radius:7px;font-size:12.5px;min-width:0}
+.r:nth-child(odd){background:var(--row)}.r .ref{color:var(--t)}.r.mine .ref{color:var(--acc)}.r.done{opacity:.55}.r.done .ref{color:var(--d)}
+.r .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.r .ti small{display:block;color:var(--sub);font-size:11px}
+.r.on{background:rgba(198,160,246,.14);box-shadow:inset 2px 0 0 var(--acc)}
+.st{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.ok{color:var(--d)}.ko{color:var(--f)}.ru{color:var(--w)}.wa{color:var(--n)}.mu{color:var(--sub)}.ac{color:var(--acc)}.cy{color:var(--t)}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--btn);border-radius:8px;padding:4px 11px;font-size:11.5px;letter-spacing:.06em;white-space:nowrap}
+.btn.p{background:var(--acc);border-color:var(--acc);color:var(--ink)}.btn.g{background:none}
+.k{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;color:var(--dim);margin-right:3px}
+/* detail */
+.dh{font:17px Michroma,sans-serif;letter-spacing:.04em;line-height:1.35}.dh .ref{color:var(--acc)}
+.meta{color:var(--dim);font-size:12px}
+.facts{display:flex;gap:26px;padding:10px 12px;border-radius:9px;background:var(--well)}
+.facts div{display:flex;flex-direction:column;gap:2px;font-size:13px}.facts small{color:var(--sub);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.sh{font-size:11px;letter-spacing:.12em;color:var(--acc);text-transform:uppercase;margin-top:6px;display:flex;justify-content:space-between}
+.stg{display:flex;align-items:center;gap:0;font-size:12px}.stg span{padding:4px 10px;border:1px solid var(--line);margin-right:-1px}
+.stg span:first-child{border-radius:7px 0 0 7px}.stg span:last-child{border-radius:0 7px 7px 0}.stg .ok{border-color:var(--d)}.stg .ko{border-color:var(--f);background:rgba(237,135,150,.12)}.stg .mu{border-style:dashed}
+.th{border-left:2px solid var(--n);padding:6px 12px;background:var(--well);border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.th .w{color:var(--sub);font-size:11px}.th.res{border-left-color:var(--line);color:var(--sub)}
+.log{font-size:11.5px;background:var(--well);border-radius:8px;padding:8px 12px;color:var(--dim);white-space:pre;line-height:1.5}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.patc{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:11.5px;color:var(--dim)}
+.patc b{color:var(--n);font-weight:400}
+.pop{border:1px solid var(--acc);border-radius:10px;background:#1e2030;padding:10px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 24px #000a}
+.pop .pr{display:grid;grid-template-columns:1fr 70px 50px;gap:10px;font-size:12px;padding:3px 0;border-top:1px solid #363a4f}
+.pop .pr.hit{color:var(--n)}
+.lbl{position:absolute;left:20px;bottom:12px;z-index:9;background:var(--n);color:var(--ink);font:11.5px Michroma,sans-serif;padding:4px 10px;border-radius:6px;letter-spacing:.08em}
+.keys{display:flex;gap:16px;font-size:11px;color:var(--sub);padding:4px 2px 0}
+/* phone */
+.duo{display:flex;gap:24px;padding:12px;align-items:flex-start;background:#181926;width:max-content}
+.pw{width:368px}.pl{font:12px Michroma,sans-serif;color:var(--acc);padding:2px 2px 6px;letter-spacing:.06em}
+.ph{width:368px;height:800px;border:1px solid var(--line);border-radius:24px;background:var(--dots),var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ph .top{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px}.ph .top .logo{font-size:13px}
+.ph .bd{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:6px 12px;overflow:hidden}
+.ph .bar h1{font-size:15px}.ph .pn{padding:14px 8px 8px}.ph .r{grid-template-columns:40px 1fr auto;padding:7px 7px;font-size:12px;gap:8px}
+.ph .nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:11px 0 14px;font-size:11.5px;color:var(--sub);background:rgba(24,25,38,.85)}.ph .nav .on{color:var(--acc)}
+.cap{font-size:11.5px;color:var(--n);padding:8px 2px 0;line-height:1.45;width:368px}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:96px;border-top:1px solid var(--acc);border-radius:18px 18px 0 0;background:#1e2030;padding:10px 14px;display:flex;flex-direction:column;gap:9px;box-shadow:0 -10px 30px #000c}
+.grab{width:42px;height:4px;border-radius:2px;background:#5b6078;margin:0 auto 2px}
+.ph .dh{font-size:14px}.ph .facts{gap:14px;padding:8px 10px}.ph .facts div{font-size:12px}
+.ph .stg{font-size:11px}.ph .stg span{padding:3px 7px}
+.dim{opacity:.35;pointer-events:none}
+/* review tab */
+.rail{display:flex;flex-wrap:wrap;white-space:nowrap;row-gap:2px;align-items:center;gap:8px;font-size:12px;color:var(--sub);letter-spacing:.06em}
+.rail .ok{color:var(--d)}.rail .cur{color:var(--acc)}.rail i{flex:0 0 18px;height:1px;background:var(--line)}
+.tabs{display:flex;gap:6px}.tabs span{border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:11.5px;background:var(--btn)}.tabs .on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.code{flex-shrink:0;background:var(--well);border-radius:9px;padding:8px 0;font-size:12px;line-height:1.6;overflow:hidden;min-height:0}
+.cl{display:grid;grid-template-columns:40px 18px 1fr;padding:0 10px;white-space:pre}.cl .n{color:var(--sub);text-align:right;padding-right:8px}.cl.add{background:rgba(166,218,149,.07)}.cl.add .m{color:var(--d)}
+.cl.hit{background:rgba(198,160,246,.16);box-shadow:inset 2px 0 0 var(--acc)}.cl .tag{color:var(--acc);margin-left:12px}
+.fbox{margin:4px 14px 6px 68px;border:1px solid var(--acc);border-radius:8px;padding:7px 11px;background:#1e2030;white-space:normal;font-size:12px;line-height:1.5}
+.fbox .h{display:flex;justify-content:space-between;color:var(--acc);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.ftabs{display:flex;gap:6px;flex-wrap:wrap;font-size:11.5px}.ftabs span{border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--dim)}.ftabs .on{border-color:var(--acc);color:var(--fg)}
+.fchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11.5px}.fchip.on{border-color:var(--acc);background:rgba(198,160,246,.14)}
+.steps{display:flex;flex-direction:column;gap:4px;font-size:12.5px}.steps div{display:flex;gap:8px}.steps .cur{color:var(--acc)}.steps .mu{color:var(--sub)}
+.fc{display:flex;flex-direction:column;gap:6px}.fc .fh{display:flex;justify-content:space-between;font-size:12px}.sev{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:1px 7px;border-radius:5px;border:1px solid}
+.sev.q{color:var(--w);border-color:var(--w)}.sev.s{color:var(--t);border-color:var(--t)}.sev.n{color:var(--sub);border-color:var(--line)}.sev.b{color:var(--f);border-color:var(--f)}.sev.g{color:var(--d);border-color:var(--d)}
+.post{border-left:2px solid var(--acc);background:var(--well);border-radius:0 8px 8px 0;padding:7px 11px;font-size:12.5px;line-height:1.5}
+.post small{display:block;color:var(--sub);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.why{color:var(--dim);font-size:12px;line-height:1.5}
+.dec{display:grid;grid-template-columns:1fr 1fr;gap:6px}.dec .btn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 10px;white-space:normal}.dec .btn small{color:var(--sub);font-size:10.5px;letter-spacing:0}.dec .btn.p small{color:#363a4f}
+.then{display:flex;flex-direction:column;gap:5px;border-top:1px dashed var(--line);padding-top:8px;font-size:12px}
+.fl{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:4px 8px;border-radius:6px;font-size:12px}.fl:nth-child(odd){background:var(--row)}.fl.on{background:rgba(198,160,246,.14);box-shadow:inset 2px 0 0 var(--acc)}
+.fl .f{color:var(--acc)}.fl .ti{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.st2{font-size:11px}
+.strip{display:flex;flex-direction:column;gap:6px;width:64px;flex:0 0 64px;align-items:center;padding-top:16px}.strip span{font-size:11.5px;padding:5px 0;width:56px;text-align:center;border-radius:7px;border:1px solid var(--line)}.strip .on{border-color:var(--acc);color:var(--acc)}
+</style>
+<body><div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),V=(Q.get('v')||'A').toUpperCase(),F=Q.get('f')||'laptop'
+const NAV=['HOME','DESK','OPS','INBOX','MRS','AGENDA','REPORTS']
+const hdr=()=>`<div class="hdr"><span class="logo">CR-0W</span><span class="pill">◈ ALL</span>${NAV.map((n,i)=>`<span class="nv ${n==='MRS'?'on':''}">${i+1} ${n}${n==='MRS'?' 3':''}</span>`).join('')}<span style="margin-left:auto" class="gauge">MAIN <i style="--p:72%"></i> 72%</span><span class="gauge">WORK <i style="--p:41%"></i> 41%</span><span class="cc">◆ 5</span><span>10:40</span><span>◐</span><span>⚙</span></div>`
+const lbl=t=>`<div class="lbl">${t}</div>`
+// findings file of one review run: id, file, line, severity, comment to post, why, decision
+const FD=[
+ {id:'F1',sev:'q',f:'alert_ops.py',l:199,t:'events out of order: recovery before failure',post:'Question: what happens if the Recovered event is processed before its Failed (retry, redelivery)? The recovery acknowledges nothing, then the late failure opens an alert that stays open until the next recovery. Does the vendor guarantee ordering on this queue?',why:'Recovered at 10:05 handled first finds no alert. Failed at 10:00 then opens one, and it stays open on a car whose power is fine.'},
+ {id:'F2',sev:'q',f:'alert_ops.py',l:62,t:'turn-on causes: denylist, a new cause closes the alert',post:'Question: any cause not in this set closes the alert, including a missing or new one. An allowlist of the causes that close it looks safer.',d:'acc'},
+ {id:'F3',sev:'q',f:'alert_ops.py',l:223,t:'voltage event on a shovelled queue?',d:'ref',note:'answered by the code'},
+ {id:'F4',sev:'s',f:'alert_ops.py',l:263,t:'copy of acknowledge_alerts with one filter',d:'acc'},
+ {id:'F5',sev:'s',f:'alert_ops.py',l:297,t:'loads the whole alert history of the car'},
+ {id:'F6',sev:'s',f:'history_steps.py',l:58,t:'repeats the last-alert lookup, no status check'},
+ {id:'F7',sev:'s',f:'alerts.feature',l:0,t:'three paths without a scenario'},
+ {id:'F8',sev:'n',f:'alert_ops.py',l:364,t:'docstring reads as a justification'},
+ {id:'F9',sev:'g',f:'alert_ops.py',l:371,t:'history entries keep last_modified_by'},
+]
+const SEV={q:'question',s:'suggestion',n:'nit',b:'blocking',g:'good'}
+const dec=d=>d==='acc'?'<span class="ok st2">✓ post</span>':d==='ref'?'<span class="mu st2">✕ drop</span>':d==='edit'?'<span class="wa st2">✎ edited</span>':'<span class="wa st2">● to decide</span>'
+const CODE=[
+ [195,'    event_type = EventType(event.event_type).value'],[196,'    occurred_at = event.occurred_at or now()'],[197,''],
+ [199,'    if event_type == POWER_SUPPLY_RECOVERED:','hit'],
+ [200,'        _acknowledge_power_alerts(car, POWER_SUPPLY_FAILED,'],[201,'            ended_at=occurred_at)   # only alerts triggered before'],[202,'        return'],[203,''],
+ [241,'    if _is_power_failure_covered(car, event_type, occurred_at):'],[242,'        return   # an open alert, or one triggered at/after'],[243,''],
+ [246,'    session.add(event)'],[247,'    create_alert_on_event(car, event_type, occurred_at)'],
+]
+const code=(box,fold)=>`<div class="code">${CODE.map(([n,t,k],i)=>{const gap=i>0&&n-CODE[i-1][0]>1?`<div class="cl"><span class="n">⋯</span><span></span><span class="mu">${n-CODE[i-1][0]-1} line${n-CODE[i-1][0]>2?'s':''}</span></div>`:'';return gap+`<div class="cl add ${k||''}"><span class="n">${n}</span><span class="m">+</span><span>${t}${k?'<span class="tag">◀ F1 question</span>':''}</span></div>`+(k&&box?`<div class="fbox"><div class="h"><span>question · F1</span><span>alert_ops.py:199</span></div>${FD[0].why}</div>`:'')}).join('')}</div>`
+const rail=()=>`<div class="rail"><span class="ok">✓ review</span><i></i><span class="cur">● decide 3 of 9</span><i></i><span>○ post</span><i></i><span>○ done</span><span style="margin-left:auto" class="mu">run 867f · 9 findings · 0 blocking · nothing posted</span></div>`
+const head=()=>`<div class="dh"><span class="ref">!245</span> power supply alerts</div><div class="meta">dev-b · power-alerts → main · CI <span class="ok">passed</span> · approvals 0/1 · reviewed by crow-review-run 9:41</div>`
+const tabs=()=>`<div class="tabs"><span>Overview</span><span class="on">Review ● 6</span><span>Pipeline ✓</span><span>Patterns ◆4</span></div>`
+const decide=(compact)=>`<div class="dec"><span class="btn p">Accept<small>post the comment below</small></span><span class="btn">Refuse<small>nothing posted</small></span><span class="btn">Edit<small>change the text first</small></span><span class="btn">Chat<small>ask the reviewer run</small></span></div>`
+const then=()=>`<div class="then"><div><span class="k">n</span>next finding <span class="mu">F2 alert_ops.py:62 · question</span></div><div><span class="k">P</span>post 2 accepted comments <span class="mu">after your OK, as line discussions</span></div><div><span class="k">M</span>approve the MR <span class="mu">after posting</span></div></div>`
+const current=()=>`<div class="fc"><div class="fh"><span><span class="ac">F1</span> alert_ops.py:199</span><span class="sev q">question</span></div><div class="why">${FD[0].why}</div><div class="post"><small>will post as</small>${FD[0].post}</div><div class="meta">pattern <span class="wa">event ordering</span> · seen 2x</div></div>`
+const flist=()=>FD.map((f,i)=>`<div class="fl ${i===0?'on':''}"><span class="f">${f.id}</span><span class="ti">${f.t} <span class="mu">${f.f}${f.l?':'+f.l:''}</span></span>${f.note?'<span class="mu st2">✕ '+f.note+'</span>':dec(f.d)}</div>`).join('')
+const LIST=[['TO REVIEW',[['!242','raise alerts from detection events','4d'],['!245','power supply alerts','● 6 to decide',1]]],['MINE',[['!239','one helper for the sync loops','✕ CI'],['!241','rate limit per client','3d']]]]
+const list=w=>`<div class="pn" style="width:${w}px;flex:0 0 ${w}px"><span class="tt">MRs</span>${LIST.map(([g,rs])=>`<div class="sh" style="margin-top:2px"><span>${g}</span></div>`+rs.map(([r,t,s,on])=>`<div class="r ${on?'on':''}"><span class="ref">${r}</span><span class="ti">${t}</span><span class="st ${on?'wa':''}">${s}</span></div>`).join('')).join('')}</div>`
+const A=()=>`<div class="lap">${hdr()}<div class="page"><div style="display:flex;gap:12px;flex:1;min-height:0">${list(300)}
+ <div class="pn sel" style="flex:1"><span class="tt">!245 · review</span><span class="tr">api · gitlab</span>${head()}${tabs()}${rail()}
+  <div class="ftabs"><span class="on">▶ alert_ops.py ● F1 ● F5 ✓ F2 ✓ F4 F8 F9</span><span>history_steps.py F6</span><span>alerts.feature F7</span></div>${code(true)}
+  <div class="keys"><span><span class="k">j</span><span class="k">k</span>scroll</span><span><span class="k">[</span><span class="k">]</span>file</span><span><span class="k">n</span><span class="k">p</span>finding</span></div></div>
+ <div class="pn" style="width:380px;flex:0 0 380px"><span class="tt">Your move · !245</span><span class="tr">finding 1 of 9</span>
+  <div class="steps"><div class="ok">✓ 1 review: 9 findings</div><div class="cur">▶ 2 decide each finding <span class="mu">3 of 9 decided</span></div><div class="mu">○ 3 post the comments</div><div class="mu">○ 4 approve or wait</div></div>
+  <div style="border-top:1px dashed var(--line);margin:4px 0"></div>${current()}${decide()}${then()}</div></div></div>${lbl('A · DECK AS IS: LIST | CODE | YOUR MOVE')}</div>`
+const B=()=>`<div class="lap">${hdr()}<div class="page"><div style="display:flex;gap:12px;flex:1;min-height:0"><div class="strip"><span>!242</span><span class="on">!245</span><span>!239</span><span>!241</span></div>
+ <div class="pn sel" style="flex:1"><span class="tt">!245 · review</span><span class="tr">api · gitlab</span>${head()}${tabs()}${rail()}
+  <div class="ftabs">${FD.map((f,i)=>`<span class="fchip ${i===0?'on':''}">${f.id} ${f.d==='acc'?'<span class="ok">✓</span>':f.d==='ref'?'<span class="mu">✕</span>':'<span class="wa">●</span>'}</span>`).join('')}</div>${code(true)}</div>
+ <div class="pn" style="width:430px;flex:0 0 430px"><span class="tt">Your move</span><span class="tr">finding 1 of 9</span>${current()}${decide()}${then()}
+  <div class="sh"><span>all findings</span><span class="mu">3 of 9 decided</span></div>${flist()}</div></div></div>${lbl('B · LIST FOLDED: WIDE CODE + YOUR MOVE WITH ALL FINDINGS')}</div>`
+const C=()=>`<div class="lap">${hdr()}<div class="page"><div style="display:flex;gap:12px;flex:1;min-height:0">${list(420)}
+ <div class="pn sel" style="flex:1"><span class="tt">!245 · review</span><span class="tr">api · gitlab</span>${head()}${tabs()}${rail()}
+  <div style="display:grid;grid-template-columns:1fr 330px;gap:14px;min-height:0;flex:1">
+   <div style="display:flex;flex-direction:column;gap:8px;min-width:0">${current()}${code(false)}${decide()}</div>
+   <div style="display:flex;flex-direction:column;gap:4px"><div class="sh" style="margin-top:0"><span>findings</span><span class="mu">3 of 9 decided</span></div>${flist()}${then()}</div></div></div></div></div>${lbl('C · CURRENT NEST LAYOUT: FINDING CARD OVER ITS CODE')}</div>`
+const pcode=box=>code(box).replace(/<div class="cl add ">[^]*?<\/div>/g,(m)=>/>(19[5-7]|24[1-7])</.test(m)?'':m).replace(/<div class="cl"><span class="n">⋯<\/span>[^]*?<\/div>/g,'')
+const pchips=()=>`<div class="ftabs">${FD.map((f,i)=>`<span class="fchip ${i===0?'on':''}">${f.id} ${f.d==='acc'?'<span class="ok">✓</span>':f.d==='ref'?'<span class="mu">✕</span>':'<span class="wa">●</span>'}</span>`).join('')}</div>`
+const pbody=()=>V==='A'?pcode(true)+`<div class="post"><small>will post as</small>${FD[0].post}</div>`
+ :V==='B'?pchips()+current()+pcode(false)
+ :current()+pcode(false)+`<div class="sh"><span>findings</span><span class="mu">3 of 9 decided</span></div>`+flist().split('</div>').slice(0,9).join('</div>')+'</div>'
+const phone=()=>`<div class="duo"><div class="pw"><div class="pl">${V} · phone</div><div class="ph"><div class="top"><span class="logo">CR-0W</span><span class="mu">◐ ⚙</span></div><div class="bd" style="overflow:auto">
+ <div class="dh" style="font-size:14px"><span class="ref">!245</span> power supply alerts</div>${rail().replace(/<span style="margin-left:auto".*?<\/span>/,'')}
+ ${pbody()}${decide()}<div class="then" style="font-size:11.5px"><div>Next: F2 alert_ops.py:62</div><div>Post 2 accepted · after your OK</div></div></div><div class="nav"><span>HOME</span><span>DESK</span><span class="on">MRS</span><span>INBOX</span><span>MORE</span></div></div></div></div>`
+document.getElementById('root').innerHTML=F==='phone'?phone():({A,B,C})[V]()
+</script>
