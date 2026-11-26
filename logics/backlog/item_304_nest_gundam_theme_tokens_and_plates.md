@@ -57,7 +57,7 @@
 - Rationale: The theme itself.
 
 # Notes
-- Dependencies: item_303.
+- Dependencies: item_309 (design system and approved mockups for every screen). Build from those, never from the boards directly.
 
 # Executions
 | When | Runner | Run id | Title | State | PR | Notes |

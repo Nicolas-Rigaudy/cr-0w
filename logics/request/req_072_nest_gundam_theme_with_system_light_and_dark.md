@@ -43,9 +43,10 @@
 
 # Execution order
 1. item_303 mode engine (no visual change for existing themes).
-2. item_304 gundam tokens and plates (needs 303).
-3. item_305 hero recolour (needs 304).
-4. item_306 HUD charts (needs 304).
+2. item_309 design system and gundam mockups for every screen (needs 303).
+3. item_304 gundam tokens and plates (needs 309).
+4. item_305 hero recolour (needs 304).
+5. item_306 HUD charts (needs 304).
 Each item runs in its own fresh session from its backlog doc. One screen at a time: show board vs app before moving on.
 
 # Companion docs
@@ -61,6 +62,7 @@ Each item runs in its own fresh session from its backlog doc. One screen at a ti
 
 # Backlog
 - `item_303_nest_system_light_dark_mode`
+- `item_309_nest_design_system_and_gundam_screen_mockups`
 - `item_304_nest_gundam_theme_tokens_and_plates`
 - `item_305_nest_gundam_hero_recolour`
 - `item_306_nest_gundam_hud_charts`
