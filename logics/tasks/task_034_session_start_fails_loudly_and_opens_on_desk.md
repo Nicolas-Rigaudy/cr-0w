@@ -2,9 +2,9 @@
 > From version: 1.0.0
 > Schema version: 1.0
 > Status: In progress
-> Understanding: 90%
-> Confidence: 85%
-> Progress: 0%
+> Understanding: 95%
+> Confidence: 90%
+> Progress: 80%
 > Complexity: Medium
 > Theme: Implementation delivery
 > Reminder: Update status/understanding/confidence/progress and linked request/backlog references when you edit this doc.
@@ -37,10 +37,16 @@
 - [ ] Run `python3 -m logics_manager flow finish task task_034_session_start_fails_loudly_and_opens_on_desk.md` after implementation.
 
 # Validation
-- (no validation recorded yet)
+- `go test ./...` in tools/crow-core: 327 passed.
+- `pytest tests/test_crow_focus.py`: 35 passed.
+- tools/nest `npx tsc --noEmit` clean, `npx vitest run`: 411 passed.
 
 # Report
-- Not started.
+- AC1 cause (from code, no live run): `crow-accounts pick` picks an account that already has a live session, by design. `crow open` still passes `--on-busy fail` to cdx. cdx then refuses any account with a running session (`session_busy`) and exits. The tmux session closed with it and its output was lost.
+- 81c961c: headless sessions keep their pane when the command exits.
+- 005ab08 (AC2, AC3): crow_term waits up to 3 s (`CROW_TERM_SETTLE`). A pane that died returns `{ok:false, code:2}` with the exit status and last lines. Core answers 502 with that text. The Nest sheet shows it on several lines.
+- 4cd95d4 (AC4): starts from MRs and Agenda go to `/desk?tmux=<name>`. The Desk opens that session once it shows up.
+- Open: owner-prefs say a busy account must never refuse a launch. cdx has no mode that allows a second session without a prompt. Owner decision pending.
 
 # Links
 - Request: `req_071_nest_mrs_review_flow_and_visible_session_starts`
